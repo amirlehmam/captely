@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  captely_api:
+    build: .
+    container_name: captely_api
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=Captely-Docker
+      - ENVIRONMENT=local-docker
+    volumes:
+      - .:/app
+    # We'll link a database service in subsequent steps
