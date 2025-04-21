@@ -1,18 +1,13 @@
-# Use an official Python image
-FROM python:3.10-slim
+FROM python:3.12-slim
 
-# Set work directory
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Copy requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml poetry.lock /app/
 
-# Copy the rest of the code
-COPY . .
+RUN pip install --upgrade pip && pip install poetry && poetry install --no-dev
 
-# Expose port 8000 for FastAPI
-EXPOSE 8000
+COPY . /app
 
-# Default command: run Uvicorn
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["gunicorn", "auth_service.wsgi:application", "-b", "0.0.0.0:8000"]
