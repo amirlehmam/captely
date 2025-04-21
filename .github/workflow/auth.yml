@@ -1,0 +1,20 @@
+name: Build & push auth-service
+on:
+  push:
+    paths: ['services/auth-service/**']
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions: { id-token: write, contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/GithubECR
+          aws-region: eu-west-3
+      - name: Build & push
+        run: |
+          cd services/auth-service
+          docker build -t 123456789012.dkr.ecr.eu-west-3.amazonaws.com/captely/auth:${{ github.sha }} .
+          aws ecr get-login-password | docker login --username AWS --password-stdin 123456789012.dkr.ecr.eu-west-3.amazonaws.com
+          docker push 123456789012.dkr.ecr.eu-west-3.amazonaws.com/captely/auth:${{ github.sha }}

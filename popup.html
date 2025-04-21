@@ -1,0 +1,8 @@
+<!DOCTYPE html><html><body>
+    <label>JWT :<input id="tok" style="width:260px"></label>
+    <button onclick="save()">Save</button>
+    <script>
+    function save(){chrome.storage.local.set({token:document.getElementById('tok').value})}
+    </script>
+    </body></html>
+    
