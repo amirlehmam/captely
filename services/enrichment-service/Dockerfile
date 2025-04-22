@@ -10,6 +10,8 @@ COPY requirements.txt /app/
 # Install dependencies from requirements.txt
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+RUN pip install --upgrade setuptools
+
 # Explicitly install Celery if it’s not in your requirements.txt
 RUN pip install celery
 

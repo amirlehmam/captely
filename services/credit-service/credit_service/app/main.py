@@ -5,6 +5,8 @@ from common import get_settings, celery_app, db
 from sqlalchemy import insert
 from .models import ImportJob, Contact
 from credit_service import CreditService
+from credit_service.app.main import app  # Ensure you are importing from the right location
+
 
 # Now you can use the CreditService class
 credit_service = CreditService(name="Captely Credit Service")

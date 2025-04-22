@@ -2,6 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException
 from common import db, get_settings
 from sqlalchemy import select, update
 from jose import jwt
+from credit_service.app.main import app
+
 
 app = FastAPI(title="Captely Credit Service")
 settings = get_settings()
