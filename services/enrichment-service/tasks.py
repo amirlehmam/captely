@@ -1,5 +1,6 @@
-from common.celery_app import celery_app
-from common import get_settings, db
+from celery import Celery
+celery_app = Celery(__name__, broker="redis://redis:6379/0")
+
 import httpx, asyncio, os
 from sqlalchemy import update, text
 
