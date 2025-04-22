@@ -4,6 +4,12 @@ import pandas as pd, uuid, io, boto3, asyncio
 from common import get_settings, celery_app, db
 from sqlalchemy import insert
 from .models import ImportJob, Contact
+from credit_service import CreditService
+
+# Now you can use the CreditService class
+credit_service = CreditService(name="Captely Credit Service")
+credit_info = credit_service.get_credit_info(user_id=12345)
+print(credit_info)
 
 app = FastAPI(title="Captely Import Service")
 

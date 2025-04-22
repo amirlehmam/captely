@@ -1,8 +1,20 @@
-from celery import Celery
-celery_app = Celery(__name__, broker="redis://redis:6379/0")
-
 import httpx, asyncio, os
 from sqlalchemy import update, text
+from common import get_settings
+settings = get_settings()
+from celery import Celery
+
+# Configure Celery app
+celery_app = Celery('enrichment_worker', broker='redis://redis:6379/0')
+
+# Define tasks here
+@celery_app.task
+def sample_task():
+    return "Task Complete"
+
+
+# If you use get_settings for more advanced configurations, ensure it's working as expected.
+
 
 settings = get_settings()
 
