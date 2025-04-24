@@ -8,6 +8,8 @@ WORKDIR /app
 COPY requirements.txt /app/
 
 # Install dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel 
+RUN pip install --upgrade setuptools
 RUN pip install --upgrade pip setuptools wheel \
     && pip install -r requirements.txt
 
