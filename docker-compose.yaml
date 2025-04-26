@@ -1,40 +1,86 @@
+version: '3.8'
+
 services:
+
+  # Postgres
   db:
     image: postgres:16-alpine
     environment: &pg_env
       POSTGRES_DB: captely
       POSTGRES_USER: captely
       POSTGRES_PASSWORD: captely
-    volumes: [db-data:/var/lib/postgresql/data]
-    ports: ["5432:5432"]
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
+  # Redis (for Celery broker/backend)
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports:
+      - "6379:6379"
 
+  # Auth service
   auth-service:
-    build: ./services/auth-service
-    env_file: ./.env
-    depends_on: { db: {condition: service_started} }
-    ports: ["8000:8000"]
+    build:
+      context: ./services/auth-service
+    working_dir: /app
+    volumes:
+      - ./services/common:/app/common
+      - ./services/auth-service:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    ports:
+      - "8001:8000"
 
+  # Import service (Sales Navigator scraper)
   import-service:
-    build: ./services/import-service
-    env_file: ./.env
-    depends_on: [db, redis]
-    ports: ["8001:8001"]
-    
+    build:
+      context: ./services/import-service
+    working_dir: /app
+    volumes:
+      - ./services/common:/app/common
+      - ./services/import-service:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - auth-service
+    ports:
+      - "8003:8003"
+
+  # Enrichment worker (Celery)
   enrichment-worker:
-    build: ./services/enrichment-worker
+    build:
+      context: ./services/enrichment-worker
+    working_dir: /app
+    volumes:
+      - ./services/common:/app/common
+      - ./services/enrichment-worker:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+    # point at your tasks module under /app/app/tasks.py
     command: >
-     celery -A tasks.celery_app worker --loglevel=info
-     celery -A celery worker --loglevel=info
+      celery -A app.tasks.celery_app worker --loglevel=info
 
-
+  # Credit service
   credit-service:
-    build: ./services/credit-service
-    env_file: ./.env
-    depends_on: [db]
-    ports: ["8002:8002"]
+    build:
+      context: ./services/credit-service
+    working_dir: /app
+    volumes:
+      - ./services/common:/app/common
+      - ./services/credit-service:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    ports:
+      - "8002:8002"
 
-volumes: { db-data: {} }
+volumes:
+  db-data:

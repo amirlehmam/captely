@@ -11,7 +11,7 @@ COPY requirements.txt /app/
 # before requirements
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel 
 RUN pip install --upgrade setuptools
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 
 # Explicitly install Celery if it’s not in your requirements.txt
