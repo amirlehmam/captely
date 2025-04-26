@@ -13,4 +13,4 @@ uvicorn
 python-multipart
 gunicorn
 celery
-jose[jwt] 
+jose[jwt]
