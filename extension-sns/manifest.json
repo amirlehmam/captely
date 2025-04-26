@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Captely Sales Navigator Scraper",
+  "version": "1.0.0",
+  "description": "Scrape leads from Sales Navigator and push to Captely for auto‐enrichment",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://your-backend/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/sales/*"],
+      "js": ["contentScript.js"]
+    }
+  ]
+}

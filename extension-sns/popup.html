@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Captely Scraper</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 10px; width: 280px; }
+    label { display: block; margin-top: 10px; }
+    input { width: 100%; padding: 5px; box-sizing: border-box; }
+    button { margin-top: 10px; width: 100%; padding: 8px; }
+    #status { margin-top: 10px; font-size: 0.9em; color: #555; }
+  </style>
+</head>
+<body>
+  <h3>Captely Scraper</h3>
+
+  <label for="token">API Token</label>
+  <input id="token" type="text" placeholder="Bearer TOKEN_HERE" />
+
+  <label for="maxLeads">Max Leads</label>
+  <input id="maxLeads" type="number" min="1" max="150" value="100" />
+
+  <button id="save">Save Settings</button>
+  <button id="start">Start Scraping</button>
+
+  <div id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
