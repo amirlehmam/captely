@@ -1,52 +1,53 @@
-version: '3.9'
+version: "3.8"
+
 services:
   redis:
-    image: redis:7-alpine
-    container_name: captely-redis
-    ports: ['6379:6379']
+    image: redis:7.4.2
+    ports: ["6379:6379"]
 
   db:
     image: postgres:16-alpine
-    container_name: captely-db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB:   ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
-    ports: ['5432:5432']
 
   auth-service:
-    build: ./services/auth-service
-    container_name: captely-auth-service
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    ports: ["8001:8000"]
     env_file: .env
-    ports: ['8001:8000']
+    depends_on: [ db ]
 
   import-service:
-    build: ./services/import-service
-    container_name: captely-import-service
+    build:
+      context: .
+      dockerfile: services/import-service/Dockerfile
+    ports: ["8002:8000"]
     env_file: .env
-    ports: ['8002:8000']
-    depends_on:
-      - redis
-      - db
-      - auth-service
-
-  enrichment-worker:
-    build: ./services/enrichment-worker
-    container_name: captely-enrichment-worker
-    env_file: .env
-    depends_on:
-      - redis
-      - db
+    depends_on: [ auth-service, db, redis ]
 
   credit-service:
-    build: ./services/credit-service
-    container_name: captely-credit-service
+    build:
+      context: .
+      dockerfile: services/credit-service/Dockerfile
+    ports: ["8003:8000"]
     env_file: .env
-    ports: ['8003:8000']
-    depends_on:
-      - db
+    depends_on: [ auth-service, db, redis ]
+
+  enrichment-worker:
+    build:
+      context: .
+      dockerfile: services/enrichment-worker/Dockerfile
+    env_file: .env
+    depends_on: [ redis, db ]
+    command: >
+      celery 
+      -A services.enrichment-worker.tasks 
+      worker --loglevel=info
 
 volumes:
   db-data:

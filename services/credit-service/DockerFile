@@ -1,20 +1,9 @@
-# Use the base Python image
 FROM python:3.12-slim
-
-# Set working directory
 WORKDIR /app
 
-# Copy requirements file first to cache dependencies
-COPY requirements.txt /app/
+COPY common ./common
+COPY services/credit-service/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY services/credit-service ./app
 
-# Install dependencies
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel 
-RUN pip install --upgrade setuptools
-RUN pip install --upgrade pip setuptools wheel \
-    && pip install -r requirements.txt
-
-# Copy the rest of the application files
-COPY . /app/
-
-# Set the entrypoint for your app
-CMD ["uvicorn", "credit_service.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","8000"]

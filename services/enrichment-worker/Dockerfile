@@ -1,22 +1,10 @@
-# Ensure you are using the correct Python base image
 FROM python:3.12-slim
-
-# Set working directory in container
 WORKDIR /app
 
-# Copy requirements.txt to container
-COPY requirements.txt /app/
-
-# Install dependencies from requirements.txt
-# before requirements
+COPY common ./common
+COPY services/enrichment-worker/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+COPY services/enrichment-worker ./services/enrichment-worker
 
-
-# Copy the rest of the application code
-COPY . /app/
-
-# Expose the port
-EXPOSE 8000
-
-# Start the application (this may vary depending on your project)
-CMD ["python", "app.py"]
+# celery worker entrypoint
+CMD ["celery","-A","services.enrichment-worker.tasks","worker","--loglevel=info"]
