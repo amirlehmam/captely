@@ -46,8 +46,9 @@ services:
     depends_on: [ redis, db ]
     command: >
       celery 
-      -A services.enrichment-worker.tasks 
+      -A services.enrichment_worker.tasks 
       worker --loglevel=info
+
 
 volumes:
   db-data:
