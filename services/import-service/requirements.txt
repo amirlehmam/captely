@@ -11,3 +11,6 @@ pydantic-settings>=2.9.1,<3.0
 httpx==0.24.1
 uvicorn
 python-multipart
+gunicorn
+celery
+jose[jwt] 
