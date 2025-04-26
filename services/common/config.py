@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # AWS S3
     aws_access_key_id:    str = Field(..., env="AWS_ACCESS_KEY_ID")
     aws_secret_access_key:str = Field(..., env="AWS_SECRET_ACCESS_KEY")
+    aws_default_region:   str = Field(..., env="AWS_DEFAULT_REGION")
     s3_bucket_raw:        str = Field(..., env="S3_BUCKET_RAW")
 
     class Config:
