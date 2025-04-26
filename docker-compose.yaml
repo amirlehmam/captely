@@ -1,46 +1,93 @@
-version: "3.9"
+version: '3.8'
 services:
   redis:
     image: redis:7-alpine
     container_name: captely-redis
+    ports:
+      - '6379:6379'
 
   db:
     image: postgres:16-alpine
     container_name: captely-db
-    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - captely_db-data:/var/lib/postgresql/data
 
   auth-service:
-    build: ./auth-service
+    build:
+      context: ./services/auth-service
     container_name: captely-auth-service
-    env_file: .env
-    ports: ["8000:8000"]
-    depends_on: [db, redis]
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - '8001:8000'
+    working_dir: /app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    # we use gunicorn+uvicorn worker
+    command: >
+      sh -c "pip install uvicorn gunicorn &&
+             gunicorn
+               auth_service.asgi:application
+               --worker-class uvicorn.workers.UvicornWorker
+               --bind 0.0.0.0:8000"
 
   import-service:
-    build: ./import-service
+    build:
+      context: ./services/import-service
     container_name: captely-import-service
-    env_file: .env
-    ports: ["8001:8000"]
-    depends_on: [db, redis]
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - '8002:8000'
+    working_dir: /app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - S3_BUCKET_RAW=${S3_BUCKET_RAW}
+      - S3_BUCKET_RESULTS=${S3_BUCKET_RESULTS}
+      - JWT_SECRET=${JWT_SECRET}
+    command: >
+      sh -c "pip install uvicorn &&
+             uvicorn app.main:app
+               --host 0.0.0.0
+               --port 8000"
 
   credit-service:
-    build: ./credit-service
+    build:
+      context: ./services/credit-service
     container_name: captely-credit-service
-    env_file: .env
-    ports: ["8002:8000"]
-    depends_on: [db]
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - '8003:8000'
+    working_dir: /app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    command: >
+      sh -c "pip install uvicorn &&
+             uvicorn app.main:app
+               --host 0.0.0.0
+               --port 8000"
 
   enrichment-worker:
-    build: ./enrichment-worker
+    build:
+      context: ./services/enrichment-worker
     container_name: captely-enrichment-worker
-    env_file: .env
-    depends_on: [redis]
-    command: celery -A app.tasks worker --loglevel=info
+    depends_on:
+      - redis
+      - db
+    working_dir: /app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    command: >
+      sh -c "pip install celery &&
+             celery -A app.celery_app worker --loglevel=info"
 
 volumes:
   captely_db-data:

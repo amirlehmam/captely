@@ -1,15 +1,15 @@
 FROM python:3.12-slim
+
 WORKDIR /app
 
-# copy common lib
-COPY common ./common
+# copy requirements first to leverage Docker cache
+COPY requirements.txt .
 
-# install deps
-COPY services/import-service/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# install the bulk of your dependencies
+RUN pip install --upgrade pip setuptools wheel \
+ && pip install -r requirements.txt
 
-# copy our app
-COPY services/import-service ./app
+# finally copy your code
+COPY . .
 
-# run uvicorn
-CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","8000"]
+# no CMD or ENTRYPOINT here—Compose gives the full command
