@@ -1,15 +1,5 @@
-FROM python:3.12-slim
-
+# services/enrichment-worker/Dockerfile
+FROM python:3.12-alpine
 WORKDIR /app
-
-# copy requirements first to leverage Docker cache
-COPY requirements.txt .
-
-# install the bulk of your dependencies
-RUN pip install --upgrade pip setuptools wheel \
- && pip install -r requirements.txt
-
-# finally copy your code
-COPY . .
-
-# no CMD or ENTRYPOINT here—Compose gives the full command
+COPY . /app
+RUN pip install --no-cache-dir -r requirements.txt celery

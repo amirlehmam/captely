@@ -6,7 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # install the bulk of your dependencies
-RUN pip install --upgrade pip setuptools wheel \
+RUN pip install --upgrade pip setuptools wheel gunicorn uvicorn \
  && pip install -r requirements.txt
 
 # finally copy your code
