@@ -19,12 +19,15 @@ services:
       dockerfile: Dockerfile
     container_name: captely-auth-service
     restart: unless-stopped
-    depends_on:
-      - db
-    ports:
-      - "8000:8000"
     env_file:
       - .env
+    ports:
+      - "8000:8000"
+    # Override to make sure Gunicorn/UVicorn worker sees your app under auth-service/app/main.py
+    command: >
+      gunicorn auth_service.app.main:app
+      --worker-class uvicorn.workers.UvicornWorker
+      --bind 0.0.0.0:8000
 
   import-service:
     build:
@@ -32,13 +35,15 @@ services:
       dockerfile: Dockerfile
     container_name: captely-import-service
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       - db
       - redis
     ports:
       - "8001:8000"
-    env_file:
-      - .env
+    # Make sure uvicorn is pointed at import-service/app/main.py
+    command: uvicorn import_service.app.main:app --host 0.0.0.0 --port 8000
 
   credit-service:
     build:
@@ -46,24 +51,27 @@ services:
       dockerfile: Dockerfile
     container_name: captely-credit-service
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       - db
     ports:
       - "8002:8000"
-    env_file:
-      - .env
+    # Point at credit-service/app/main.py
+    command: uvicorn credit_service.app.main:app --host 0.0.0.0 --port 8000
 
   enrichment-worker:
     build:
-      context: .
-      dockerfile: enrichment_worker/Dockerfile
+      context: ./enrichment-worker
+      dockerfile: Dockerfile
     container_name: captely-enrichment-worker
     restart: unless-stopped
-    depends_on:
-      - redis
     env_file:
       - .env
-    # no ports—this is a background worker
+    depends_on:
+      - redis
+    # Point Celery at enrichment-worker/app/tasks.py
+    command: celery -A enrichment_worker.app.tasks worker --loglevel=info
 
 volumes:
   db-data:
