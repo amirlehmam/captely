@@ -22,4 +22,4 @@ class Contact(Base):
     linkedin_url: Mapped[str | None]
     email: Mapped[str | None]
     phone: Mapped[str | None]
-    enriched: Mapped[Boolean] = mapped_column(default=False)
+    enriched: Mapped[bool] = mapped_column(Boolean, default=False)

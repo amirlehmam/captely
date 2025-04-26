@@ -14,7 +14,7 @@ from common.db import get_session
 from common.celery_app import celery_app
 
 from app.models import ImportJob  # your SQLAlchemy models
-from credit_service.app.credit_service import CreditService
+from app.credit_service import CreditService
 
 # ---- app setup ----
 
