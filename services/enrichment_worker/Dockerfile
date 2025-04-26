@@ -1,10 +1,18 @@
-# services/enrichment-worker/Dockerfile
 FROM python:3.12-slim
+
+# 1) put your code under /app
 WORKDIR /app
 
-COPY common ./common
-COPY services/enrichment_worker/requirements.txt .
+# 2) copy requirements and install
+COPY enrichment_worker/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY services/enrichment_worker ./services/enrichment_worker
 
-CMD ["celery","-A","services.enrichment_worker.tasks","worker","--loglevel=info"]
+# 3) copy your worker code
+COPY enrichment_worker enrichment_worker
+# if you have a common/ or config/ shared folder, copy that too:
+COPY common common
+
+# 4) default command
+#    celery will look for `celery_app` in
+#    the module `enrichment_worker.app.tasks`
+CMD ["celery", "-A", "enrichment_worker.app.tasks", "worker", "--loglevel=info"]

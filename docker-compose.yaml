@@ -1,54 +1,69 @@
-version: "3.8"
-
 services:
   redis:
-    image: redis:7.4.2
-    ports: ["6379:6379"]
+    image: redis:7-alpine
+    container_name: captely-redis
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB:   ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    container_name: captely-db
+    restart: unless-stopped
+    env_file:
+      - .env
     volumes:
       - db-data:/var/lib/postgresql/data
 
   auth-service:
     build:
-      context: .
-      dockerfile: services/auth-service/Dockerfile
-    ports: ["8001:8000"]
-    env_file: .env
-    depends_on: [ db ]
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: captely-auth-service
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
 
   import-service:
     build:
-      context: .
-      dockerfile: services/import-service/Dockerfile
-    ports: ["8002:8000"]
-    env_file: .env
-    depends_on: [ auth-service, db, redis ]
+      context: ./import-service
+      dockerfile: Dockerfile
+    container_name: captely-import-service
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
 
   credit-service:
     build:
-      context: .
-      dockerfile: services/credit-service/Dockerfile
-    ports: ["8003:8000"]
-    env_file: .env
-    depends_on: [ auth-service, db, redis ]
+      context: ./credit-service
+      dockerfile: Dockerfile
+    container_name: captely-credit-service
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env
 
   enrichment-worker:
     build:
       context: .
-      dockerfile: services/enrichment-worker/Dockerfile
-    env_file: .env
-    depends_on: [ redis, db ]
-    command: >
-      celery 
-      -A services.enrichment_worker.tasks 
-      worker --loglevel=info
-
+      dockerfile: enrichment_worker/Dockerfile
+    container_name: captely-enrichment-worker
+    restart: unless-stopped
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    # no ports—this is a background worker
 
 volumes:
   db-data:
