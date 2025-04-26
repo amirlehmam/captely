@@ -1,86 +1,52 @@
-version: '3.8'
-
+version: '3.9'
 services:
-
-  # Postgres
-  db:
-    image: postgres:16-alpine
-    environment: &pg_env
-      POSTGRES_DB: captely
-      POSTGRES_USER: captely
-      POSTGRES_PASSWORD: captely
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  # Redis (for Celery broker/backend)
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    container_name: captely-redis
+    ports: ['6379:6379']
 
-  # Auth service
+  db:
+    image: postgres:16-alpine
+    container_name: captely-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports: ['5432:5432']
+
   auth-service:
-    build:
-      context: ./services/auth-service
-    working_dir: /app
-    volumes:
-      - ./services/common:/app/common
-      - ./services/auth-service:/app
-    env_file:
-      - ./.env
-    depends_on:
-      - db
-    ports:
-      - "8001:8000"
+    build: ./services/auth-service
+    container_name: captely-auth-service
+    env_file: .env
+    ports: ['8001:8000']
 
-  # Import service (Sales Navigator scraper)
   import-service:
-    build:
-      context: ./services/import-service
-    working_dir: /app
-    volumes:
-      - ./services/common:/app/common
-      - ./services/import-service:/app
-    env_file:
-      - ./.env
-    depends_on:
-      - db
-      - auth-service
-    ports:
-      - "8003:8003"
-
-  # Enrichment worker (Celery)
-  enrichment-worker:
-    build:
-      context: ./services/enrichment-worker
-    working_dir: /app
-    volumes:
-      - ./services/common:/app/common
-      - ./services/enrichment-worker:/app
-    env_file:
-      - ./.env
+    build: ./services/import-service
+    container_name: captely-import-service
+    env_file: .env
+    ports: ['8002:8000']
     depends_on:
       - redis
-    # point at your tasks module under /app/app/tasks.py
-    command: >
-      celery -A app.tasks.celery_app worker --loglevel=info
+      - db
+      - auth-service
 
-  # Credit service
+  enrichment-worker:
+    build: ./services/enrichment-worker
+    container_name: captely-enrichment-worker
+    env_file: .env
+    depends_on:
+      - redis
+      - db
+
   credit-service:
-    build:
-      context: ./services/credit-service
-    working_dir: /app
-    volumes:
-      - ./services/common:/app/common
-      - ./services/credit-service:/app
-    env_file:
-      - ./.env
+    build: ./services/credit-service
+    container_name: captely-credit-service
+    env_file: .env
+    ports: ['8003:8000']
     depends_on:
       - db
-    ports:
-      - "8002:8002"
 
 volumes:
   db-data:

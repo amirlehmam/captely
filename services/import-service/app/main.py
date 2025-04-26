@@ -1,29 +1,59 @@
-# import-service/main.py
+# services/import-service/app/main.py
 
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import (
+    FastAPI, Request,
+    UploadFile, File,
+    Depends, HTTPException, status,
+    Form
+)
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
-from sqlalchemy import insert
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-import pandas as pd
-import uuid
-import io
-import boto3
 from jose import jwt, JWTError
+from pydantic import BaseModel
+from sqlalchemy import insert, select
+import pandas as pd
+import uuid, io, boto3, httpx
 
-from common import get_settings, celery_app
+from common.config import get_settings
 from common.db import get_session
+from common.celery_app import celery_app
 from .models import ImportJob, Contact
 
+# ─── App & Config ───────────────────────────────────────────────────────────────
+
+settings = get_settings()
 app = FastAPI(
     title="Captely Import Service",
     description="Upload CSV/Excel or push JSON batches of leads for enrichment",
     version="1.0.0",
 )
 
-# Load shared settings and initialize S3 client
-settings = get_settings()
+# mount static files (e.g. your extension UI under /static)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Jinja2 templates
+templates = Jinja2Templates(directory="templates")
+
+# HTTP-Bearer for JWT
+security = HTTPBearer()
+
+def verify_jwt(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        return payload["sub"]
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing authentication token",
+        )
+
+# prepare S3 client
 s3 = boto3.client(
     "s3",
     aws_access_key_id=settings.aws_access_key_id,
@@ -31,37 +61,68 @@ s3 = boto3.client(
     region_name=settings.aws_default_region,
 )
 
-# JWT via HTTP Bearer
-security = HTTPBearer()
+# ─── Web UI ─────────────────────────────────────────────────────────────────────
 
-def verify_jwt(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> str:
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        return payload["sub"]
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
-@app.post("/api/imports/file", status_code=status.HTTP_201_CREATED)
+@app.post("/login")
+async def do_login(
+    username: str = Form(...),
+    password: str = Form(...),
+):
+    # call your auth-service
+    resp = httpx.post(
+        "http://auth-service:8000/api/auth/token/",
+        data={"username": username, "password": password},
+        timeout=5.0,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Bad credentials")
+    token = resp.json()["access"]
+    r = RedirectResponse(url="/dashboard", status_code=302)
+    r.set_cookie("Authorization", f"Bearer {token}", httponly=True)
+    return r
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(
+    request: Request,
+    user_id: str = Depends(verify_jwt),
+):
+    # fetch job list
+    api_token = request.cookies.get("Authorization")
+    resp = httpx.get(
+        "http://import-service:8000/api/jobs",
+        headers={"Authorization": api_token},
+        timeout=5.0,
+    )
+    jobs = resp.json()
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {"request": request, "jobs": jobs},
+    )
+
+# ─── API Endpoints ──────────────────────────────────────────────────────────────
+
+# 1) file upload CSV/XLSX
+@app.post(
+    "/api/imports/file",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_jwt)],
+)
 async def import_file(
     file: UploadFile = File(...),
-    user_id: str = Depends(verify_jwt),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     session=Depends(get_session),
 ):
-    """
-    Upload a CSV or Excel file, create an ImportJob,
-    enqueue enrichment tasks, and store the raw file in S3.
-    """
+    user_id = verify_jwt(credentials)
     data = await file.read()
-    # parse file
     if file.filename.lower().endswith(".csv"):
         df = pd.read_csv(io.BytesIO(data))
     else:
         df = pd.read_excel(io.BytesIO(data))
 
-    # validate required columns
     missing = [c for c in ("first_name", "company") if c not in df.columns]
     if missing:
         raise HTTPException(
@@ -69,59 +130,107 @@ async def import_file(
             detail=f"Missing columns: {', '.join(missing)}"
         )
 
-    # create job
-    job_id = uuid.uuid4()
+    job_id = str(uuid.uuid4())
     await session.execute(
-        insert(ImportJob).values(
-            id=job_id,
-            user_id=user_id,
-            total=df.shape[0]
-        )
+        insert(ImportJob).values(id=job_id, user_id=user_id, total=df.shape[0])
     )
     await session.commit()
 
-    # enqueue enrichment tasks
     for _, row in df.iterrows():
         celery_app.send_task(
-            "services.enrichment-service.tasks.enrich_contact",
-            args=[row.to_dict(), str(job_id), user_id],
+            "enrichment_worker.tasks.enrich_contact",
+            args=[row.to_dict(), job_id, user_id],
         )
 
-    # upload raw file to S3
     key = f"{user_id}/{job_id}/{file.filename}"
     s3.upload_fileobj(io.BytesIO(data), settings.s3_bucket_raw, key)
 
-    return JSONResponse({"job_id": str(job_id)})
+    return JSONResponse({"job_id": job_id})
 
+# 2) JSON batch endpoint (from extension or other clients)
 class LeadsBatch(BaseModel):
     leads: list[dict]
 
-@app.post("/api/imports/leads", status_code=status.HTTP_201_CREATED)
+@app.post(
+    "/api/imports/leads",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_jwt)],
+)
 async def import_leads(
     batch: LeadsBatch,
-    user_id: str = Depends(verify_jwt),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     session=Depends(get_session),
 ):
-    """
-    Receive a batch of leads (from the Chrome extension),
-    create an ImportJob, and enqueue enrichment tasks.
-    """
-    job_id = uuid.uuid4()
+    user_id = verify_jwt(credentials)
+    job_id = str(uuid.uuid4())
     total = len(batch.leads)
 
     await session.execute(
-        insert(ImportJob).values(
-            id=job_id,
-            user_id=user_id,
-            total=total
-        )
+        insert(ImportJob).values(id=job_id, user_id=user_id, total=total)
     )
     await session.commit()
 
     for lead in batch.leads:
         celery_app.send_task(
-            "services.enrichment-service.tasks.enrich_contact",
-            args=[lead, str(job_id), user_id],
+            "enrichment_worker.tasks.enrich_contact",
+            args=[lead, job_id, user_id],
         )
 
-    return {"job_id": str(job_id)}
+    return {"job_id": job_id}
+
+# 3) /api/scraper/leads — used by your Chrome extension
+class LeadIn(BaseModel):
+    first_name: str
+    last_name:   str | None
+    position:    str | None
+    company:     str
+    profile_url: str | None
+    location:    str | None
+    industry:    str | None
+
+@app.post(
+    "/api/scraper/leads",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_jwt)],
+)
+async def scraper_leads(
+    leads: list[LeadIn],
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session=Depends(get_session),
+):
+    user_id = verify_jwt(credentials)
+    job_id = str(uuid.uuid4())
+    await session.execute(
+        insert(ImportJob).values(id=job_id, user_id=user_id, total=len(leads))
+    )
+    await session.commit()
+
+    for lead in leads:
+        celery_app.send_task(
+            "enrichment_worker.tasks.enrich_contact",
+            args=[lead.dict(), job_id, user_id],
+        )
+
+    return {"job_id": job_id}
+
+# 4) list all jobs for this user
+@app.get(
+    "/api/jobs",
+    dependencies=[Depends(verify_jwt)],
+)
+async def list_jobs(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session=Depends(get_session),
+):
+    user_id = verify_jwt(credentials)
+    q = await session.execute(select(ImportJob).where(ImportJob.user_id == user_id))
+    jobs = q.scalars().all()
+    return [
+        {
+            "id":        j.id,
+            "total":     j.total,
+            "completed": j.completed,
+            "status":    j.status,
+        }
+        for j in jobs
+    ]

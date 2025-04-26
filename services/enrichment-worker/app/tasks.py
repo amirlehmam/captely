@@ -1,68 +1,128 @@
-import httpx, asyncio, os
-from sqlalchemy import update, text
-from common import get_settings
-settings = get_settings()
+# services/enrichment-worker/app/tasks.py
+
+import asyncio
+import httpx
 from celery import Celery
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import insert, update, select
+from sqlalchemy.orm import sessionmaker
 
-# Configure Celery app
-celery_app = Celery('enrichment_worker', broker='redis://redis:6379/0')
+# shared config / settings
+from common.config import get_settings
+from common.db import AsyncSessionLocal  # if you have that
+# or define here:
+# engine = create_async_engine(get_settings().database_url, future=True)
+# AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-# Define tasks here
-@celery_app.task
-def sample_task():
-    return "Task Complete"
-
-
-# If you use get_settings for more advanced configurations, ensure it's working as expected.
-
+# your import-service models (make sure these are available in this container)
+from app.models import Contact, ImportJob  
 
 settings = get_settings()
 
-HUNTER_API = os.getenv("HUNTER_API")
-CLEARBIT_API = os.getenv("CLEARBIT_API")
+# 1) Celery setup
+celery_app = Celery(
+    "enrichment_worker",
+    broker=settings.redis_url,
+)
+celery_app.conf.task_routes = {
+    "enrichment_worker.tasks.enrich_contact": {"queue": "enrichment"},
+}
 
-async def call_hunter(first, last, domain):
-    async with httpx.AsyncClient() as client:
-        q = f"{first}.{last}@{domain}"
-        r = await client.get(
-            f"https://api.hunter.io/v2/email-verifier?email={q}&api_key={HUNTER_API}"
-        )
-        if r.status_code == 200 and r.json()["data"]["result"] == "deliverable":
-            return q
-    return None
+# 2) Helpers to talk to the database
 
-async def call_clearbit(email):
-    async with httpx.AsyncClient() as client:
-        r = await client.get(
-            f"https://person.clearbit.com/v2/people/find?email={email}",
-            headers={"Authorization": f"Bearer {CLEARBIT_API}"},
-        )
-        return r.json() if r.status_code == 200 else None
+async def save_contact(session: AsyncSession, job_id: str, lead: dict) -> int:
+    stmt = insert(Contact).values(
+        job_id=job_id,
+        first_name=lead.get("first_name"),
+        last_name=lead.get("last_name"),
+        position=lead.get("position"),
+        company=lead.get("company"),
+        profile_url=lead.get("profile_url"),
+        location=lead.get("location"),
+        industry=lead.get("industry"),
+        enriched=False,
+    ).returning(Contact.id)
+    result = await session.execute(stmt)
+    contact_id = result.scalar_one()
+    await session.commit()
+    return contact_id
 
-@celery_app.task(name="services.enrichment-service.tasks.enrich_contact")
+async def update_contact(session: AsyncSession, contact_id: int, email: str, phone: str):
+    stmt = (
+        update(Contact)
+        .where(Contact.id == contact_id)
+        .values(email=email, phone=phone, enriched=True)
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+async def increment_job_progress(session: AsyncSession, job_id: str):
+    stmt = (
+        update(ImportJob)
+        .where(ImportJob.id == job_id)
+        .values(completed=ImportJob.completed + 1)
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+# 3) External enrichment calls
+
+def call_hunter(lead: dict) -> str:
+    """
+    Calls Hunter.io to find an email.
+    """
+    params = {
+        "first_name": lead.get("first_name"),
+        "last_name":  lead.get("last_name"),
+        "domain":     lead.get("company_domain", ""),  # tweak as needed
+        "api_key":    settings.hunter_api,
+    }
+    resp = httpx.get("https://api.hunter.io/v2/email‐finder", params=params, timeout=10)
+    data = resp.json().get("data", {})
+    return data.get("email", "")
+
+def call_dropcontact(lead: dict) -> str:
+    """
+    Calls Dropcontact to enrich phone/email.
+    """
+    headers = {"Authorization": settings.dropcontact_api}
+    payload = {"email": lead.get("email", "")}
+    resp = httpx.post(
+        "https://api.dropcontact.io/batch",
+        json=payload,
+        headers=headers,
+        timeout=10,
+    )
+    body = resp.json()
+    return body.get("phone", "")
+
+# 4) Orchestrator
+
+async def _do_enrich(lead: dict, job_id: str, user_id: str):
+    # reuse the AsyncSessionLocal from common.db
+    async with AsyncSessionLocal() as session:
+        # a) save raw contact row
+        contact_id = await save_contact(session, job_id, lead)
+
+        # b) call external enrichers
+        email = call_hunter(lead)
+        phone = call_dropcontact(lead)
+
+        # c) write back enriched info
+        await update_contact(session, contact_id, email, phone)
+
+        # d) bump the job counter
+        await increment_job_progress(session, job_id)
+
+        return {
+            "contact_id": contact_id,
+            "email":      email,
+            "phone":      phone,
+        }
+
+@celery_app.task(name="enrichment_worker.tasks.enrich_contact")
 def enrich_contact(lead: dict, job_id: str, user_id: str):
     """
-    lead = {"first_name": "...", "last_name": "...", "company": "..."}
+    Celery entrypoint: wrap the async workflow in asyncio.run
     """
-    import anyio
-    anyio.run(_enrich_async, lead, job_id, user_id)
-
-async def _enrich_async(lead, job_id, user_id):
-    domain = f"{lead['company'].split()[0].lower()}.com"
-    email = await call_hunter(lead["first_name"], lead.get("last_name", ""), domain)
-    phone = None  # placeholder
-
-    async with db.async_session() as s:
-        await s.execute(
-            text(
-                "INSERT INTO contacts (job_id, first_name, last_name, company, email, enriched) "
-                "VALUES (:job, :fn, :ln, :co, :em, true)"
-            ),
-            {"job": job_id, "fn": lead["first_name"], "ln": lead.get("last_name"), "co": lead["company"], "em": email},
-        )
-        # incr completed
-        await s.execute(
-            text("UPDATE import_jobs SET completed = completed + 1 WHERE id = :jid"),
-            {"jid": job_id},
-        )
-        await s.commit()
+    return asyncio.run(_do_enrich(lead, job_id, user_id))

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dashboard – Captely</title></head>
+<body>
+  <h1>Dashboard</h1>
+  <p><a href="/static/extension.html" target="_blank">Install Scraper Extension</a></p>
+  <h2>Your Jobs</h2>
+  <ul>
+    {% for job in jobs %}
+      <li>{{ job.id }} – {{ job.completed }}/{{ job.total }} – {{ job.status }}</li>
+    {% endfor %}
+  </ul>
+  <h2>Upload a File</h2>
+  <form action="/api/imports/file" method="post" enctype="multipart/form-data">
+    <input type="file" name="file"/><button type="submit">Import</button>
+  </form>
+</body>
+</html>
