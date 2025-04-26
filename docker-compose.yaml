@@ -25,12 +25,10 @@ services:
     ports: ["8001:8001"]
     
   enrichment-worker:
-    build: ./services/enrichment-service
-    env_file: ./.env
-    depends_on: 
-      - db
-      - redis
-    command: ["celery", "-A", "tasks.celery_app", "worker", "--loglevel=info"]
+    build: ./services/enrichment-worker
+    command: >
+     celery -A tasks.celery_app worker --loglevel=info
+     celery -A celery worker --loglevel=info
 
 
   credit-service:
