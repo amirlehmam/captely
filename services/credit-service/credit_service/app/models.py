@@ -14,12 +14,12 @@ class ImportJob(Base):
 
 class Contact(Base):
     __tablename__ = "contacts"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    job_id: Mapped[str] = mapped_column(ForeignKey("import_jobs.id", ondelete="CASCADE"))
-    first_name: Mapped[str] = mapped_column(String)
-    last_name: Mapped[str | None]
-    company: Mapped[str]
+    id:           Mapped[int]    = mapped_column(primary_key=True, autoincrement=True)
+    job_id:       Mapped[str]    = mapped_column(ForeignKey("import_jobs.id", ondelete="CASCADE"))
+    first_name:   Mapped[str]    = mapped_column(String)
+    last_name:    Mapped[str | None]
+    company:      Mapped[str]
     linkedin_url: Mapped[str | None]
-    email: Mapped[str | None]
-    phone: Mapped[str | None]
-    enriched: Mapped[Boolean] = mapped_column(default=False)
+    email:        Mapped[str | None]
+    phone:        Mapped[str | None]
+    enriched:     Mapped[bool]    = mapped_column(Boolean, default=False)
