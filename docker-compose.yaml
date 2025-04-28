@@ -29,7 +29,7 @@ services:
     working_dir: /app
     command:
       - gunicorn
-      - auth_service.asgi:application
+      - app.asgi:application
       - --worker-class
       - uvicorn.workers.UvicornWorker
       - --bind
