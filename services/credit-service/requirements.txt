@@ -16,4 +16,5 @@ python-multipart>=0.0.5
 uvicorn
 python-multipart
 gunicorn
-jose[jwt] 
+jose[jwt]
+psycopg2 

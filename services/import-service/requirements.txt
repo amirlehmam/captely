@@ -16,3 +16,4 @@ jose[jwt]
 psycopg[binary]==3.1.18
 asyncpg>=0.27.0
 python-jose==3.3.0
+psycopg2
