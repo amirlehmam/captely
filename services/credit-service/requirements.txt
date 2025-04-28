@@ -18,3 +18,4 @@ python-multipart
 gunicorn
 jose[jwt]
 psycopg2 
+psycopg2-binary

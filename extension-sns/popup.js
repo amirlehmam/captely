@@ -36,3 +36,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
+  // popup.js (or content-script.js)
+async function getApiKey() {
+  return new Promise(resolve => {
+    chrome.storage.sync.get("apiKey", ({ apiKey }) => {
+      if (apiKey) return resolve(apiKey);
+      const k = prompt("Enter your Captely API key");
+      chrome.storage.sync.set({ apiKey: k }, () => resolve(k));
+    });
+  });
+}
+
+async function sendLeads(leadsBatch) {
+  const apiKey = await getApiKey();
+  await fetch("https://your-captely-domain.com/imports", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ leads: leadsBatch }),
+  });
+}
+
+// After scraping a page of prospects:
+sendLeads([{ firstName, lastName, profileUrl, ... }, /*…*/]);
