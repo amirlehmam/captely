@@ -13,8 +13,8 @@ services:
     image: postgres:16-alpine
     container_name: captely-db
     environment:
-      POSTGRES_DB:     ${POSTGRES_DB}
-      POSTGRES_USER:   ${POSTGRES_USER}
+      POSTGRES_DB:      ${POSTGRES_DB}
+      POSTGRES_USER:    ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - captely_db_data:/var/lib/postgresql/data
@@ -26,6 +26,9 @@ services:
     container_name: captely-auth-service
     env_file:
       - .env
+    # 👇 override Django’s default SETTINGS_MODULE to point at your "app/" folder
+    environment:
+      - DJANGO_SETTINGS_MODULE=app.settings
     ports:
       - "8001:8000"
     working_dir: /app
