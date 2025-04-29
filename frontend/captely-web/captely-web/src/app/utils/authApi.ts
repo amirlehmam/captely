@@ -7,6 +7,8 @@
 
 // → After:
 
+console.log("AUTH_URL →", process.env.NEXT_PUBLIC_AUTH_URL);
+
 import axios from "axios";
 
 const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL!;

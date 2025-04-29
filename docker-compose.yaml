@@ -26,16 +26,14 @@ services:
     container_name: captely-auth-service
     env_file:
       - .env
-    # 👇 override Django’s default SETTINGS_MODULE to point at your "app/" folder
-    environment:
-      - DJANGO_SETTINGS_MODULE=app.settings
+    # Run the FastAPI app (not Django) so your CORS and /auth routes are active
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
     ports:
       - "8001:8000"
     working_dir: /app
-    command: >
-      gunicorn app.asgi:application
-      --worker-class uvicorn.workers.UvicornWorker
-      --bind 0.0.0.0:8000
     depends_on:
       - db
       - redis
@@ -47,13 +45,13 @@ services:
     container_name: captely-import-service
     env_file:
       - .env
-    ports:
-      - "8002:8000"
-    working_dir: /app
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
+    ports:
+      - "8002:8000"
+    working_dir: /app
     depends_on:
       - db
       - redis
@@ -65,13 +63,13 @@ services:
     container_name: captely-credit-service
     env_file:
       - .env
-    ports:
-      - "8003:8000"
-    working_dir: /app
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
+    ports:
+      - "8003:8000"
+    working_dir: /app
     depends_on:
       - db
       - redis
@@ -83,9 +81,9 @@ services:
     container_name: captely-enrichment-worker
     env_file:
       - .env
-    working_dir: /app
     command: >
       celery -A common.celery_app worker --loglevel=info
+    working_dir: /app
     depends_on:
       - db
       - redis

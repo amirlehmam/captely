@@ -1,15 +1,22 @@
+# services/auth-service/Dockerfile
 FROM python:3.12-slim
+
+# 1) Install OS-level build deps for asyncpg
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential \
+      gcc \
+      libpq-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# copy requirements first to leverage Docker cache
+# 2) Copy & install Python deps
 COPY requirements.txt .
-
-# install the bulk of your dependencies
 RUN pip install --upgrade pip setuptools wheel gunicorn uvicorn \
  && pip install -r requirements.txt
 
-# finally copy your code
+# 3) Copy app code
 COPY . .
 
-# no CMD or ENTRYPOINT here—Compose gives the full command
+# CMD is provided by docker-compose (uvicorn app.main:app …)

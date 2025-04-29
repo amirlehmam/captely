@@ -1,5 +1,16 @@
-# services/enrichment-worker/Dockerfile
 FROM python:3.12-alpine
+
 WORKDIR /app
-COPY . /app
+
+# add this before pip install
+RUN apk add --no-cache \
+      gcc \
+      musl-dev \
+      postgresql-dev
+
+COPY requirements.txt .
+
+# now this will find pg_config and build psycopg2
 RUN pip install --no-cache-dir -r requirements.txt celery
+
+COPY . .
