@@ -91,5 +91,20 @@ services:
       - redis
     restart: on-failure
 
+  frontend:
+    build:
+      context: ../captely-frontend-web
+      dockerfile: Dockerfile
+    container_name: captely-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_AUTH_URL=http://auth-service:8000
+      - NEXT_PUBLIC_IMPORT_URL=http://import-service:8002
+    depends_on:
+      - auth-service
+      - import-service
+
+
 volumes:
   captely_db_data:

@@ -1,8 +1,13 @@
-// src/app/utils/importApi.ts
 import axios from "axios";
 
+const IMPORT_URL = process.env.NEXT_PUBLIC_IMPORT_URL!;
+if (!IMPORT_URL) {
+  throw new Error("Missing NEXT_PUBLIC_IMPORT_URL");
+}
+
 const importApi = axios.create({
-  baseURL: "http://localhost:8002",            // Import service (docker: 8002→8000)
+  baseURL: `${IMPORT_URL}`,   // import-service root
+  withCredentials: true,
 });
 
 importApi.interceptors.request.use((cfg) => {
