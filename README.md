@@ -72,24 +72,6 @@ npm run dev  # http://localhost:3000
 
 ---
 
-
-## Table of Contents
-
-1. [Architecture Overview](#architecture-overview)  
-2. [Microservices MVP & Responsibilities](#microservices-mvp--responsibilities)  
-3. [Database: Selection & Initial Schema](#database-selection--initial-schema)  
-4. [Asynchronous Processing with Celery & Redis](#asynchronous-processing-with-celery--redis)  
-5. [Proposed AWS Infrastructure](#proposed-aws-infrastructure)  
-6. [CI/CD Pipeline with GitHub Actions](#cicd-pipeline-with-github-actions)  
-7. [Security, Data Protection & Audit](#security-data-protection--audit)  
-8. [Code Organization by Service](#code-organization-by-service)  
-9. [Essential API Endpoints](#essential-api-endpoints)  
-10. [Sales Navigator Chrome Scraper Integration](#sales-navigator-chrome-scraper-integration)  
-11. [Getting Started](#getting-started)  
-12. [Contribution & License](#contribution--license)
-
----
-
 ## Architecture Overview
 
 Captely follows a **microservices** pattern to maximize modularity, resilience, and scalability. Each component focuses on a single domain, communicates via REST or message queues, and can be deployed and scaled independently.
