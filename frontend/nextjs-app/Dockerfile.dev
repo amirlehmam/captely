@@ -1,15 +1,15 @@
+# frontend/nextjs-app/Dockerfile.dev
 FROM node:18-alpine
-
 WORKDIR /app
 
-# copy only package manifests, install deps
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
-# copy all source
+# Copy source
 COPY . .
 
 EXPOSE 3000
 
-# Use the long flags here instead of -p / -H
-CMD ["npm","run","dev","--","--port","3000","--host","0.0.0.0"]
+# Run Next.js dev server (listening on 0.0.0.0)
+CMD ["npm", "run", "dev"]
