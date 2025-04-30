@@ -1,12 +1,13 @@
-# services/auth-service/app/main.py
-
 import secrets
 from datetime import datetime, timedelta
 from typing import List
 
 import jwt
 from fastapi import (
-    FastAPI, HTTPException, Depends, status
+    FastAPI,
+    HTTPException,
+    Depends,
+    status
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -14,21 +15,21 @@ from pydantic import BaseModel, EmailStr
 from pydantic_settings import BaseSettings
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
-    AsyncSession, create_async_engine
+    AsyncSession,
+    create_async_engine
 )
 from sqlalchemy.orm import sessionmaker
 from passlib.hash import bcrypt
+from jwt import ExpiredSignatureError, PyJWTError
 
-from app.models import User, ApiKey  # your SQLAlchemy ORM models
+from app.models import User, ApiKey, Base  # Base = declarative_base()
 
-
-# --- 1. CONFIGURATION VIA Pydantic BaseSettings --------------------------
-
+# 1. CONFIGURATION
 class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://captely:captely_pwd@db:5432/captely"
     jwt_secret: str = "devsecret"
     jwt_algorithm: str = "HS256"
-    jwt_exp_minutes: int = 60  # token lifetime
+    jwt_exp_minutes: int = 60
     cors_origins: List[str] = ["http://localhost:3000"]
 
     class Config:
@@ -38,22 +39,16 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
-# --- 2. DATABASE SETUP ----------------------------------------------------
-
-# async engine & session factory
+# 2. DATABASE SETUP
 engine = create_async_engine(settings.database_url, echo=False, future=True)
-AsyncSessionLocal = sessionmaker(
-    bind=engine, class_=AsyncSession, expire_on_commit=False
-)
+AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 async def get_session() -> AsyncSession:
-    """Dependency: yields an async DB session and closes it after use."""
     async with AsyncSessionLocal() as session:
         yield session
 
 
-# --- 3. SECURITY UTILITIES ------------------------------------------------
-
+# 3. SECURITY UTILITIES
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def get_password_hash(password: str) -> str:
@@ -62,12 +57,12 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.verify(plain, hashed)
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user_id: int) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.jwt_exp_minutes)
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),
+        "iat": datetime.utcnow().timestamp(),
         "exp": expire.timestamp(),
-        "iat": datetime.utcnow().timestamp()
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
@@ -76,26 +71,38 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_session)
 ) -> User:
-    """Dependency to fetch & verify the current user from a JWT."""
+    # 1) Decode & validate JWT
     try:
         payload = jwt.decode(
             token,
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm]
         )
-        user_id: str = payload.get("sub")
-        if not user_id:
-            raise ValueError("Missing sub")
-    except Exception:
+        sub = payload.get("sub")
+        if sub is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user_id = int(sub)
+    except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 2) Fetch the User
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if not user or not user.is_active:
+    if not user or not getattr(user, "is_active", True):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive",
@@ -104,8 +111,7 @@ async def get_current_user(
     return user
 
 
-# --- 4. Pydantic SCHEMAS --------------------------------------------------
-
+# 4. Pydantic SCHEMAS
 class SignupIn(BaseModel):
     email: EmailStr
     password: str
@@ -115,16 +121,16 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 class UserOut(BaseModel):
-    id: str
+    id: int
     email: EmailStr
     is_active: bool
-    date_joined: datetime
+    created_at: datetime
 
     class Config:
         orm_mode = True
 
 class ApiKeyOut(BaseModel):
-    id: str
+    id: int
     key: str
     created_at: datetime
     revoked: bool
@@ -133,25 +139,26 @@ class ApiKeyOut(BaseModel):
         orm_mode = True
 
 
-# --- 5. APP INITIALIZATION & CORS -----------------------------------------
-
+# 5. APP INITIALIZATION & CORS
 app = FastAPI(title="Captely Auth Service")
 
-origins = [
-    "http://localhost:3000",
-    # add any other origins (e.g. production hostname) here
-]
-
+# Use the origins from settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,           # allow cookies/auth headers
-    allow_methods=["*"],              # GET, POST, PUT, DELETE, etc.
-    allow_headers=["*"],              # allow any request headers
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# --- 6. ROUTES -------------------------------------------------------------
+# Create tables on startup (async)
+@app.on_event("startup")
+async def on_startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
+
+# 6. ROUTES
 @app.post(
     "/auth/signup",
     response_model=TokenOut,
@@ -162,7 +169,7 @@ async def signup(
     data: SignupIn,
     db: AsyncSession = Depends(get_session)
 ):
-    # 1) Ensure email is unique
+    # Ensure email is unique
     existing = await db.execute(select(User).where(User.email == data.email))
     if existing.scalar_one_or_none():
         raise HTTPException(
@@ -170,7 +177,7 @@ async def signup(
             detail="Email already registered"
         )
 
-    # 2) Create the user
+    # Create & persist the user
     user = User(
         email=data.email,
         password_hash=get_password_hash(data.password)
@@ -179,7 +186,7 @@ async def signup(
     await db.commit()
     await db.refresh(user)
 
-    # 3) Return an access token
+    # Generate token
     token = create_access_token(user.id)
     return TokenOut(access_token=token)
 
@@ -193,17 +200,16 @@ async def login(
     data: SignupIn,
     db: AsyncSession = Depends(get_session)
 ):
-    # 1) Lookup user & verify password
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
-    if not user or not verify_password(data.password, user.password_hash):
+
+    if not user or not verify_password(data.password, getattr(user, "password_hash")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 2) Return an access token
     token = create_access_token(user.id)
     return TokenOut(access_token=token)
 
@@ -227,10 +233,7 @@ async def create_apikey(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session)
 ):
-    # 1) Generate a secure 64-hex string
     key_value = secrets.token_hex(32)
-
-    # 2) Persist the ApiKey
     api_key = ApiKey(
         user_id=current_user.id,
         key=key_value,
@@ -239,7 +242,6 @@ async def create_apikey(
     db.add(api_key)
     await db.commit()
     await db.refresh(api_key)
-
     return api_key
 
 
