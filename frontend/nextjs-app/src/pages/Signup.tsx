@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 
-export default function SignupPage() {
-  const router = useRouter();
+const AUTH_BASE =
+  import.meta.env.VITE_AUTH_URL ?? 'http://localhost:8001';
+
+const SignupPage: React.FC = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -21,21 +24,18 @@ export default function SignupPage() {
     }
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_URL}/signup`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await fetch(`${AUTH_BASE}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.detail || 'Signup failed');
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail ?? 'Signup failed');
       }
       const { access_token } = await res.json();
       localStorage.setItem('captely_jwt', access_token);
-      router.push('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message);
     }
@@ -53,9 +53,7 @@ export default function SignupPage() {
           Create your account
         </h2>
         {error && (
-          <p className="mt-2 text-center text-sm text-red-600">
-            {error}
-          </p>
+          <p className="mt-2 text-center text-sm text-red-600">{error}</p>
         )}
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Or{' '}
@@ -174,4 +172,6 @@ export default function SignupPage() {
       </div>
     </div>
   );
-}
+};
+
+export default SignupPage;

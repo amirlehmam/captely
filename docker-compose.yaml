@@ -25,24 +25,24 @@ services:
 
   auth-service:
     build:
-      context: ./backend/services/auth-service
+      context: ./services/auth-service
     container_name: captely-auth-service
     env_file:
-      - ./backend/.env
+      - ./backend/.env      # ← make sure this path is correct
     environment:
-      # This tells SQLAlchemy/asyncpg how to reach the DB
-      - SQLALCHEMY_DATABASE_URI=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Must match exactly what your Settings class expects:
+      DATABASE_URL: >-
+        postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
-    ports:
-      - "8001:8000"
     depends_on:
       - db
       - redis
-    restart: on-failure
-
+    ports:
+      - "8001:8000"
+      
   import-service:
     build:
       context: ./backend/services/import-service

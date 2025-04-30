@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginPageProps {
   onLogin: () => void;
 }
 
+const AUTH_BASE =
+  import.meta.env.VITE_AUTH_URL ?? 'http://localhost:8001';
+
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,17 +22,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setError(null);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_URL}/login`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await fetch(`${AUTH_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.detail || 'Invalid credentials');
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail ?? 'Invalid credentials');
       }
       const { access_token } = await res.json();
       if (rememberMe) {
@@ -38,7 +38,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         sessionStorage.setItem('captely_jwt', access_token);
       }
       onLogin();
-      router.push('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message);
     }
@@ -56,9 +56,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           Sign in to your account
         </h2>
         {error && (
-          <p className="mt-2 text-center text-sm text-red-600">
-            {error}
-          </p>
+          <p className="mt-2 text-center text-sm text-red-600">{error}</p>
         )}
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Or{' '}
@@ -66,7 +64,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             href="/signup"
             className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
           >
-            start your 14-day free trial
+            create a new account
           </a>
         </p>
       </div>
@@ -182,7 +180,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               </div>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3">
-              {/* …Google & Microsoft buttons… */}
+              <div>
+                <a
+                  href="#"
+                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  <span className="sr-only">Sign in with Google</span>
+                  {/* Google SVG here */}
+                </a>
+              </div>
+              <div>
+                <a
+                  href="#"
+                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  <span className="sr-only">Sign in with Microsoft</span>
+                  {/* Microsoft SVG here */}
+                </a>
+              </div>
             </div>
           </div>
         </div>
