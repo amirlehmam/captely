@@ -11,5 +11,5 @@ COPY . .
 
 EXPOSE 3000
 
-# bind to 0.0.0.0 so Docker can route host traffic
-CMD ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
+# Use the long flags here instead of -p / -H
+CMD ["npm","run","dev","--","--port","3000","--host","0.0.0.0"]
