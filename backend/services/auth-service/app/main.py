@@ -40,11 +40,11 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # 2. DATABASE
-engine = create_async_engine(settings.database_url, future=True, echo=False)
-AsyncSessionLocal = sessionmaker(
-    bind=engine, class_=AsyncSession, expire_on_commit=False
+engine = create_async_engine(
+    settings.database_url,
+    connect_args={"ssl": False},  # disable SSL for asyncpg
+    echo=True,
 )
-
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
         yield session

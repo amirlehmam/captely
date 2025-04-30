@@ -1,93 +1,102 @@
-version: '3.8'
-
+version: "3.8"
 services:
+  db:
+    image: postgres:15
+    container_name: captely-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespw
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - captely_db-data:/var/lib/postgresql/data
 
-  # ─── Redis for Celery & caching ─────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: captely-redis
-    ports: ["6379:6379"]
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
-  # ─── Auth Service ───────────────────────────────────────────
   auth-service:
     build: ./services/auth-service
     container_name: captely-auth-service
-    env_file: .env
     depends_on:
       - redis
-    ports: ["8001:8000"]
-    command:
-      - uvicorn
-      - app.main:app
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8000"
+      - db
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespw@db:5432/postgres?ssl=false
+    ports:
+      - "8001:8000"
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
     restart: on-failure
 
-  # ─── Import Service ─────────────────────────────────────────
   import-service:
     build: ./services/import-service
     container_name: captely-import-service
-    env_file: .env
     depends_on:
       - redis
-    ports: ["8002:8000"]
-    command:
-      - uvicorn
-      - app.main:app
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8000"
+      - db
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+    ports:
+      - "8002:8000"
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
     restart: on-failure
 
-  # ─── Credit Service ─────────────────────────────────────────
   credit-service:
     build: ./services/credit-service
     container_name: captely-credit-service
-    env_file: .env
     depends_on:
       - redis
-    ports: ["8003:8000"]
-    command:
-      - uvicorn
-      - app.main:app
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8000"
+      - db
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+    ports:
+      - "8003:8000"
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
     restart: on-failure
 
-  # ─── Enrichment Worker (Celery) ────────────────────────────
   enrichment-worker:
     build: ./services/enrichment-worker
     container_name: captely-enrichment-worker
-    env_file: .env
     depends_on:
       - redis
-    command:
-      - celery
-      - "-A"
-      - "common.celery_app:celery_app"
-      - "worker"
-      - "--loglevel=info"
+      - db
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+    command: >
+      celery -A common.celery_app:celery_app
+             worker
+             --loglevel=info
     restart: on-failure
 
-  # ─── Frontend (Next.js / Vite) ──────────────────────────────
   frontend:
     build:
       context: ./frontend/nextjs-app
       dockerfile: Dockerfile.dev
     container_name: captely-frontend
-    env_file: .env
     depends_on:
       - auth-service
       - import-service
       - credit-service
-    ports: ["3000:3000"]
+    ports:
+      - "3000:3000"
     restart: unless-stopped
 
-# No local Postgres service (we rely on Supabase)
-volumes: {}
+volumes:
+  captely_db-data:
