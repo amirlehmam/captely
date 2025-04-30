@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
 
-  # ---------- Backend core ----------
-
+  # — Backend core (shared Redis + Postgres) —
   redis:
     image: redis:7-alpine
     container_name: captely-redis
@@ -27,7 +26,6 @@ services:
   auth-service:
     build:
       context: ./backend/services/auth-service
-      dockerfile: Dockerfile
     container_name: captely-auth-service
     env_file:
       - ./backend/.env
@@ -45,7 +43,6 @@ services:
   import-service:
     build:
       context: ./backend/services/import-service
-      dockerfile: Dockerfile
     container_name: captely-import-service
     env_file:
       - ./backend/.env
@@ -63,7 +60,6 @@ services:
   credit-service:
     build:
       context: ./backend/services/credit-service
-      dockerfile: Dockerfile
     container_name: captely-credit-service
     env_file:
       - ./backend/.env
@@ -81,7 +77,6 @@ services:
   enrichment-worker:
     build:
       context: ./backend/services/enrichment-worker
-      dockerfile: Dockerfile
     container_name: captely-enrichment-worker
     env_file:
       - ./backend/.env
@@ -92,11 +87,10 @@ services:
       - redis
     restart: on-failure
 
-  # ---------- Frontend ----------
-
+  # — Frontend (Next.js dev) —
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend/nextjs-app
       dockerfile: Dockerfile.dev
     container_name: captely-frontend
     ports:
