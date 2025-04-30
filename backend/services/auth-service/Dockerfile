@@ -14,6 +14,7 @@ WORKDIR /app
 
 # 2) Copy & install Python deps
 COPY requirements.txt .
+RUN pip install sqlalchemy[asyncio] pg8000
 RUN pip install --upgrade pip setuptools wheel gunicorn uvicorn \
  && pip install -r requirements.txt
 

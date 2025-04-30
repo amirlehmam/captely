@@ -13,3 +13,4 @@ gunicorn
 jose[jwt] 
 psycopg2
 psycopg2-binary==2.9.10
+pg8000

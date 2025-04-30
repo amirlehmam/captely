@@ -11,6 +11,7 @@ RUN apt-get update \
 
 # 2) Copy and install Python deps
 COPY requirements.txt .
+RUN pip install sqlalchemy[asyncio] pg8000
 RUN pip install --upgrade pip setuptools wheel \
  && pip install -r requirements.txt uvicorn
 

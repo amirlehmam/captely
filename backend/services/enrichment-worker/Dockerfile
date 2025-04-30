@@ -11,6 +11,7 @@ RUN apk add --no-cache \
 COPY requirements.txt .
 
 # now this will find pg_config and build psycopg2
+RUN pip install sqlalchemy[asyncio] pg8000
 RUN pip install --no-cache-dir -r requirements.txt celery
 
 COPY . .

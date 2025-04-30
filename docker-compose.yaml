@@ -27,7 +27,7 @@ services:
       - db
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+asyncpg://postgres:Capitalsteez_94400@db:5432/postgres"
+      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
     ports:
       - "8001:8000"
     command: >
@@ -44,7 +44,7 @@ services:
       - db
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+asyncpg://postgres:Capitalsteez_94400@db:5432/postgres"
+      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
     ports:
       - "8002:8000"
     command: >
@@ -61,7 +61,7 @@ services:
       - db
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+asyncpg://postgres:Capitalsteez_94400@db:5432/postgres"
+      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
     ports:
       - "8003:8000"
     command: >
@@ -78,7 +78,7 @@ services:
       - db
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+asyncpg://postgres:Capitalsteez_94400@db:5432/postgres"
+      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
     command: >
       celery -A common.celery_app:celery_app
              worker
