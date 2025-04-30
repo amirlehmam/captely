@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
+from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt, JWTError
 from pydantic import BaseModel
 from sqlalchemy import insert, select
@@ -29,6 +29,19 @@ app = FastAPI(
     title="Captely Import Service",
     description="Upload CSV/Excel or push JSON batches of leads for enrichment",
     version="1.0.0",
+)
+
+origins = [
+    "http://localhost:3000",
+    # add any other origins (e.g. production hostname) here
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,           # allow cookies/auth headers
+    allow_methods=["*"],              # GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],              # allow any request headers
 )
 
 # mount static files (e.g. your extension UI under /static)

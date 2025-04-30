@@ -137,15 +137,18 @@ class ApiKeyOut(BaseModel):
 
 app = FastAPI(title="Captely Auth Service")
 
-# Enable CORS for your Next.js frontend
+origins = [
+    "http://localhost:3000",
+    # add any other origins (e.g. production hostname) here
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_credentials=True,           # allow cookies/auth headers
+    allow_methods=["*"],              # GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],              # allow any request headers
 )
-
 
 # --- 6. ROUTES -------------------------------------------------------------
 

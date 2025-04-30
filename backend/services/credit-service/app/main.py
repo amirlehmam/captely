@@ -3,7 +3,7 @@
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import uuid, io, boto3
 from jose import jwt, JWTError
@@ -25,6 +25,19 @@ app = FastAPI(
 )
 
 settings = get_settings()
+
+origins = [
+    "http://localhost:3000",
+    # add any other origins (e.g. production hostname) here
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,           # allow cookies/auth headers
+    allow_methods=["*"],              # GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],              # allow any request headers
+)
 
 # S3 client
 s3 = boto3.client(
