@@ -7,6 +7,7 @@ RUN apt-get update \
       build-essential \
       gcc \
       libpq-dev \
+      netcat \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -16,7 +17,11 @@ COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel gunicorn uvicorn \
  && pip install -r requirements.txt
 
-# 3) Copy app code
+# 3) Copy in app code + wait script
 COPY . .
 
-# CMD is provided by docker-compose (uvicorn app.main:app …)
+# 4) Add a small entrypoint script that waits for Postgres
+COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
+RUN chmod +x /usr/local/bin/wait-for-db.sh
+
+ENTRYPOINT ["/usr/local/bin/wait-for-db.sh"]
