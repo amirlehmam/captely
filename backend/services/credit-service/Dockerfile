@@ -1,21 +1,26 @@
 FROM python:3.12-slim
 
-WORKDIR /app
-
-# 1) Install system deps for Postgres client & build tools
+# 1) OS deps for Postgres client + netcat
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       build-essential \
       libpq-dev \
+      netcat \
  && rm -rf /var/lib/apt/lists/*
 
-# 2) Copy and install Python deps
-COPY requirements.txt .
-RUN pip install sqlalchemy[asyncio] pg8000
-RUN pip install --upgrade pip setuptools wheel \
- && pip install -r requirements.txt uvicorn
+WORKDIR /app
 
-# 3) Copy app code
+# 2) Install Python deps (incl. pg8000)
+COPY requirements.txt .
+RUN pip install --upgrade pip setuptools wheel \
+ && pip install --no-cache-dir -r requirements.txt
+
+# 3) Copy app
 COPY . .
 
+# 4) (Optional) wait-for-db then launch
+COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
+RUN chmod +x /usr/local/bin/wait-for-db.sh
+
+ENTRYPOINT ["/usr/local/bin/wait-for-db.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

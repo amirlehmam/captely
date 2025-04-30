@@ -20,21 +20,28 @@ services:
     restart: unless-stopped
 
   auth-service:
-    build: ./services/auth-service
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
     container_name: captely-auth-service
+    env_file:
+      - .env
     depends_on:
-      - redis
-      - db
-    env_file: .env
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
+      # pulled from .env
+      - DATABASE_URL=${DATABASE_URL}
     ports:
       - "8001:8000"
-    command: >
-      uvicorn app.main:app
-      --host 0.0.0.0
-      --port 8000
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h db -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   import-service:
     build: ./services/import-service
