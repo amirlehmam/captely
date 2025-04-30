@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
 
-  # — Backend core (shared Redis + Postgres) —
+  # — Shared Redis + Postgres —
   redis:
     image: redis:7-alpine
     container_name: captely-redis
@@ -12,6 +12,7 @@ services:
 
   db:
     image: postgres:16-alpine
+    container_name: captely-db
     environment:
       POSTGRES_USER: captely
       POSTGRES_PASSWORD: captely_pwd
@@ -23,68 +24,75 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
+  # — Auth service —
   auth-service:
     build:
       context: ./services/auth-service
     container_name: captely-auth-service
-    env_file:
-      - ./backend/.env      # ← make sure this path is correct
     environment:
-      # Must match exactly what your Settings class expects:
-      DATABASE_URL: >-
-        postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # match your Settings() defaults or .env
+      DATABASE_URL: postgresql+asyncpg://captely:captely_pwd@db:5432/captely
+      JWT_SECRET: devsecret
+      JWT_ALGORITHM: HS256
+      JWT_EXP_MINUTES: 60
+      CORS_ORIGINS: http://localhost:3000
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
     depends_on:
-      - db:
-        condition: service_healthy
+      - db
       - redis
     ports:
       - "8001:8000"
+    restart: on-failure
 
+  # — Import service —
   import-service:
     build:
       context: ./backend/services/import-service
     container_name: captely-import-service
-    env_file:
-      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://captely:captely_pwd@db:5432/captely
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
-    ports:
-      - "8002:8000"
     depends_on:
       - db
       - redis
+    ports:
+      - "8002:8000"
     restart: on-failure
 
+  # — Credit service —
   credit-service:
     build:
       context: ./backend/services/credit-service
     container_name: captely-credit-service
-    env_file:
-      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://captely:captely_pwd@db:5432/captely
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
-    ports:
-      - "8003:8000"
     depends_on:
       - db
       - redis
+    ports:
+      - "8003:8000"
     restart: on-failure
 
+  # — Enrichment Celery worker —
   enrichment-worker:
     build:
       context: ./backend/services/enrichment-worker
     container_name: captely-enrichment-worker
-    env_file:
-      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://captely:captely_pwd@db:5432/captely
+      CELERY_BROKER_URL: redis://redis:6379/0
     command: >
       celery -A common.celery_app worker --loglevel=info
     depends_on:
@@ -92,7 +100,7 @@ services:
       - redis
     restart: on-failure
 
-  # — Frontend (Next.js dev) —
+  # — Next.js frontend (dev) —
   frontend:
     build:
       context: ./frontend/nextjs-app
