@@ -41,9 +41,9 @@ settings = Settings()
 
 # 2. DATABASE
 engine = create_async_engine(
-    settings.database_url,
-    connect_args={"ssl": False},  # disable SSL for asyncpg
-    echo=True,
+    settings.database_url,     # the clean URL from step 1
+    connect_args={"ssl": False},  # asyncpg accepts ssl=True/False
+    # …any other args you need
 )
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
