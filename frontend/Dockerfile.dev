@@ -1,0 +1,16 @@
+FROM node:18-alpine
+
+WORKDIR /nextjs-app
+
+# Install deps
+COPY package*.json ./
+RUN npm install
+
+# Copy source
+COPY . .
+
+# Expose Next.js dev port
+EXPOSE 3000
+
+# Start in dev mode, binding to 0.0.0.0 so Docker can route traffic in
+CMD ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]

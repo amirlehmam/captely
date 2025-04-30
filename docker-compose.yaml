@@ -2,6 +2,8 @@ version: '3.8'
 
 services:
 
+  # ---------- Backend core ----------
+
   redis:
     image: redis:7-alpine
     container_name: captely-redis
@@ -13,22 +15,22 @@ services:
     image: postgres:16-alpine
     container_name: captely-db
     env_file:
-      - .env
+      - ./backend/.env
     environment:
       POSTGRES_DB:      ${POSTGRES_DB}
       POSTGRES_USER:    ${POSTGRES_USER}
-      POSTGRES_PASSWORD:${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - captely_db_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   auth-service:
     build:
-      context: ./services/auth-service
+      context: ./backend/services/auth-service
       dockerfile: Dockerfile
     container_name: captely-auth-service
     env_file:
-      - .env
+      - ./backend/.env
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
@@ -42,11 +44,11 @@ services:
 
   import-service:
     build:
-      context: ./services/import-service
+      context: ./backend/services/import-service
       dockerfile: Dockerfile
     container_name: captely-import-service
     env_file:
-      - .env
+      - ./backend/.env
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
@@ -60,11 +62,11 @@ services:
 
   credit-service:
     build:
-      context: ./services/credit-service
+      context: ./backend/services/credit-service
       dockerfile: Dockerfile
     container_name: captely-credit-service
     env_file:
-      - .env
+      - ./backend/.env
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
@@ -78,17 +80,36 @@ services:
 
   enrichment-worker:
     build:
-      context: ./services/enrichment-worker
+      context: ./backend/services/enrichment-worker
       dockerfile: Dockerfile
     container_name: captely-enrichment-worker
     env_file:
-      - .env
+      - ./backend/.env
     command: >
       celery -A common.celery_app worker --loglevel=info
     depends_on:
       - db
       - redis
     restart: on-failure
+
+  # ---------- Frontend ----------
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: captely-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_AUTH_URL:   http://auth-service:8000
+      NEXT_PUBLIC_IMPORT_URL: http://import-service:8000
+      NEXT_PUBLIC_CREDIT_URL: http://credit-service:8000
+    depends_on:
+      - auth-service
+      - import-service
+      - credit-service
+    restart: unless-stopped
 
 volumes:
   captely_db_data:
