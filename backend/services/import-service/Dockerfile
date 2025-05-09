@@ -6,8 +6,7 @@ RUN apk add --no-cache \
     musl-dev \
     postgresql-dev \
     postgresql-client \
-    netcat-openbsd \
-    dos2unix
+    netcat-openbsd
 
 WORKDIR /app
 
@@ -21,7 +20,6 @@ COPY . .
 
 # Make wait script executable
 COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
-RUN dos2unix /usr/local/bin/wait-for-db.sh && chmod +x /usr/local/bin/wait-for-db.sh
+RUN chmod +x /usr/local/bin/wait-for-db.sh
 
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

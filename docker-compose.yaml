@@ -1,16 +1,16 @@
 version: "3.8"
 services:
-  db:
-    image: postgres:15
-    container_name: captely-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespw
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - captely_db-data:/var/lib/postgresql/data
+#  db:
+#    image: postgres:15
+#    container_name: captely-db
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgrespw
+#      POSTGRES_DB: postgres
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - captely_db-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
@@ -27,37 +27,31 @@ services:
     env_file:
       - .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_started
     environment:
-      # pulled from .env
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
     ports:
       - "8001:8000"
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -h db -p 5432"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -h db.kkbqrrrjlfxxtkboxmld.supabase.co -p 5432"]
       interval: 10s
       timeout: 5s
       retries: 5
+    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   import-service:
     build: ./services/import-service
     container_name: captely-import-service
     depends_on:
       - redis
-      - db
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
+      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
     ports:
       - "8002:8000"
-    command: >
-      uvicorn app.main:app
-      --host 0.0.0.0
-      --port 8000
+    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     restart: on-failure
 
   credit-service:
@@ -65,16 +59,12 @@ services:
     container_name: captely-credit-service
     depends_on:
       - redis
-      - db
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
+      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
     ports:
       - "8003:8000"
-    command: >
-      uvicorn app.main:app
-      --host 0.0.0.0
-      --port 8000
+    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     restart: on-failure
 
   enrichment-worker:
@@ -82,14 +72,10 @@ services:
     container_name: captely-enrichment-worker
     depends_on:
       - redis
-      - db
     env_file: .env
     environment:
-      DATABASE_URL: "postgresql+pg8000://postgres:Capitalsteez_94400@db:5432/postgres"
-    command: >
-      celery -A common.celery_app:celery_app
-             worker
-             --loglevel=info
+      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "celery", "-A", "common.celery_app:celery_app", "worker", "--loglevel=info"]
     restart: on-failure
 
   frontend:

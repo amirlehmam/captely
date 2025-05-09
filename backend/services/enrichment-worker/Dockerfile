@@ -6,8 +6,7 @@ RUN apk add --no-cache \
       musl-dev \
       postgresql-dev \
       postgresql-client \
-      netcat-openbsd \
-      dos2unix
+      netcat-openbsd
 
 WORKDIR /app
 
@@ -19,7 +18,6 @@ RUN pip install --upgrade pip setuptools wheel \
 # 3) Copy code + entrypoint
 COPY . .
 COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
-RUN dos2unix /usr/local/bin/wait-for-db.sh && chmod +x /usr/local/bin/wait-for-db.sh
+RUN chmod +x /usr/local/bin/wait-for-db.sh
 
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]
-CMD ["celery", "-A", "common.celery_app:celery_app", "worker", "--loglevel=info"]
