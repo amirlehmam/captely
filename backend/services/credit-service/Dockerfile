@@ -5,7 +5,8 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       build-essential \
       libpq-dev \
-      netcat \
+      netcat-openbsd \
+      postgresql-client \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -20,7 +21,7 @@ COPY . .
 
 # 4) (Optional) wait-for-db then launch
 COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
-RUN chmod +x /usr/local/bin/wait-for-db.sh
+RUN dos2unix /usr/local/bin/wait-for-db.sh && chmod +x /usr/local/bin/wait-for-db.sh
 
-ENTRYPOINT ["/usr/local/bin/wait-for-db.sh"]
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
