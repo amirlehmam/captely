@@ -20,4 +20,8 @@ COPY . .
 COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
 RUN chmod +x /usr/local/bin/wait-for-db.sh
 
+RUN adduser -D appuser \
+    && chown -R appuser /app
+USER appuser
+
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]

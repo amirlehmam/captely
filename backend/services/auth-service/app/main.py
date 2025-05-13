@@ -42,7 +42,7 @@ settings = Settings()
 # 2. DATABASE
 engine = create_async_engine(
     settings.database_url,           # the clean URL from step 1
-    connect_args={"ssl": False},     # <— this tells asyncpg “never do TLS” 
+    connect_args={"ssl": False},     # <— this tells asyncpg "never do TLS" 
     echo=True,                       # optional: prints SQL to your logs
 )
 
@@ -116,7 +116,7 @@ class UserOut(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ApiKeyOut(BaseModel):
     id: int
@@ -125,7 +125,7 @@ class ApiKeyOut(BaseModel):
     revoked: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # 5. APP & CORS
 app = FastAPI(title="Captely Auth Service")

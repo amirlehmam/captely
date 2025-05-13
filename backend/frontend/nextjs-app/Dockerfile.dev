@@ -9,7 +9,7 @@ RUN npm install
 # Copy source
 COPY . .
 
-EXPOSE 3000
+EXPOSE 5173
 
 # Run Next.js dev server (listening on 0.0.0.0)
 CMD ["npm", "run", "dev"]
