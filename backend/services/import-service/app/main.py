@@ -20,7 +20,9 @@ import uuid, io, boto3, httpx
 from common.config import get_settings
 from common.db import get_session
 from common.celery_app import celery_app
+from common.auth import verify_api_token
 from .models import ImportJob, Contact
+from .routers import jobs, salesnav
 
 # ─── App & Config ───────────────────────────────────────────────────────────────
 
@@ -33,7 +35,12 @@ app = FastAPI(
 
 origins = [
     "http://localhost:3000",
-    # add any other origins (e.g. production hostname) here
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://localhost:8001",
+    "http://localhost:8002",
+    "http://localhost:8003",
+    "chrome-extension://*"  # Allow Chrome extensions
 ]
 
 app.add_middleware(
@@ -49,6 +56,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Jinja2 templates
 templates = Jinja2Templates(directory="templates")
+
+# Include routers
+app.include_router(jobs.router)
+app.include_router(salesnav.router)
 
 # HTTP-Bearer for JWT
 security = HTTPBearer()

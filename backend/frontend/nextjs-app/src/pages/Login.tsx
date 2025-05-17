@@ -38,7 +38,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         sessionStorage.setItem('captely_jwt', access_token);
       }
       onLogin();
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     } catch (err: any) {
       setError(err.message);
     }

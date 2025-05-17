@@ -3,10 +3,14 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const Layout: React.FC = () => {
+interface LayoutProps {
+  onLogout: () => void;
+}
+
+const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <Sidebar />
+      <Sidebar onLogout={onLogout} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />

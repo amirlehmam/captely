@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import BatchesPage from './pages/Batches';
 import ImportPage from './pages/Import';
 import IntegrationsPage from './pages/Integrations';
+import ApiTokensPage from './pages/ApiTokens';
 import SettingsPage from './pages/Settings';
 import BillingPage from './pages/Billing';
 import LoginPage from './pages/Login';
@@ -69,6 +70,7 @@ function App() {
               <Route path="/batches" element={<BatchesPage />} />
               <Route path="/import" element={<ImportPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/api-tokens" element={<ApiTokensPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/billing" element={<BillingPage />} />
               <Route path="*" element={<NotFoundPage />} />

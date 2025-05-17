@@ -4,26 +4,172 @@
   <meta charset="UTF-8" />
   <title>Captely Scraper</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 10px; width: 280px; }
-    label { display: block; margin-top: 10px; }
-    input { width: 100%; padding: 5px; box-sizing: border-box; }
-    button { margin-top: 10px; width: 100%; padding: 8px; }
-    #status { margin-top: 10px; font-size: 0.9em; color: #555; }
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 15px; 
+      width: 320px;
+      color: #333;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .logo h2 {
+      color: #0077b5;
+      margin: 0;
+    }
+    .form-group { 
+      margin-bottom: 12px; 
+    }
+    label { 
+      display: block; 
+      margin-bottom: 5px; 
+      font-weight: bold;
+    }
+    input { 
+      width: 100%; 
+      padding: 8px; 
+      box-sizing: border-box; 
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button { 
+      width: 100%; 
+      padding: 10px; 
+      margin: 5px 0;
+      background-color: #0077b5; 
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #005582;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    #download {
+      background-color: #28a745;
+    }
+    #download:hover {
+      background-color: #218838;
+    }
+    .progress {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 10px;
+      width: 0%;
+      background-color: #0077b5;
+      transition: width 0.3s;
+    }
+    #status { 
+      margin-top: 10px; 
+      padding: 10px;
+      font-size: 0.9em; 
+      color: #555; 
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      min-height: 40px;
+    }
+    .status-success {
+      color: #28a745 !important;
+      background-color: #e8f5e9 !important;
+    }
+    .status-error {
+      color: #dc3545 !important;
+      background-color: #fdeded !important;
+    }
+    .status-warning {
+      color: #ffc107 !important;
+      background-color: #fff8e1 !important;
+    }
+    .status-info {
+      color: #0077b5 !important;
+      background-color: #e8f4f8 !important;
+    }
+    .counts {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .count-box {
+      text-align: center;
+      flex: 1;
+      padding: 5px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      margin: 0 2px;
+    }
+    .count-value {
+      font-weight: bold;
+      font-size: 1.2em;
+      color: #0077b5;
+    }
+    .count-label {
+      font-size: 0.8em;
+    }
+    .token-info {
+      margin-top: 5px;
+      font-size: 0.8em;
+    }
+    .token-info a {
+      color: #0077b5;
+      text-decoration: none;
+    }
+    .token-info a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-  <h3>Captely Scraper</h3>
+  <div class="logo">
+    <h2>Captely LinkedIn Scraper</h2>
+  </div>
 
-  <label for="token">API Token</label>
-  <input id="token" type="text" placeholder="Bearer TOKEN_HERE" />
+  <div class="form-group">
+    <label for="token">API Token</label>
+    <input id="token" type="text" placeholder="Enter your API token" />
+    <div class="token-info">
+      <a href="http://localhost:3000/api-tokens" target="_blank">Get API token from Captely Dashboard</a>
+    </div>
+  </div>
 
-  <label for="maxLeads">Max Leads</label>
-  <input id="maxLeads" type="number" min="1" max="150" value="100" />
+  <div class="form-group">
+    <label for="maxLeads">Maximum Leads to Scrape</label>
+    <input id="maxLeads" type="number" min="1" max="500" value="100" />
+  </div>
 
   <button id="save">Save Settings</button>
   <button id="start">Start Scraping</button>
+  <button id="download" disabled>Download CSV</button>
 
-  <div id="status"></div>
+  <div class="progress">
+    <div id="progressBar" class="progress-bar"></div>
+  </div>
+
+  <div class="counts">
+    <div class="count-box">
+      <div id="scrapedCount" class="count-value">0</div>
+      <div class="count-label">Scraped</div>
+    </div>
+    <div class="count-box">
+      <div id="sentCount" class="count-value">0</div>
+      <div class="count-label">Sent</div>
+    </div>
+    <div class="count-box">
+      <div id="enrichedCount" class="count-value">0</div>
+      <div class="count-label">Enriched</div>
+    </div>
+  </div>
+
+  <div id="status">Ready to scrape Sales Navigator leads...</div>
 
   <script src="popup.js"></script>
 </body>

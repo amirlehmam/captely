@@ -2,8 +2,12 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Upload, ArrowDownUp, 
-  Settings, CreditCard, LogOut, Database, PieChart
+  Settings, CreditCard, LogOut, Database, PieChart, Key
 } from 'lucide-react';
+
+interface SidebarProps {
+  onLogout: () => void;
+}
 
 const navItems = [
   { 
@@ -26,6 +30,11 @@ const navItems = [
     icon: <ArrowDownUp className="w-5 h-5" />, 
     label: 'Integrations' 
   },
+  {
+    path: '/api-tokens',
+    icon: <Key className="w-5 h-5" />,
+    label: 'API Tokens'
+  },
   { 
     path: '/settings', 
     icon: <Settings className="w-5 h-5" />, 
@@ -38,7 +47,7 @@ const navItems = [
   },
 ];
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   return (
     <div className="hidden md:flex w-64 flex-shrink-0 flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
       <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
@@ -103,7 +112,10 @@ const Sidebar: React.FC = () => {
               Admin
             </p>
           </div>
-          <button className="ml-auto flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+          <button 
+            onClick={onLogout}
+            className="ml-auto flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
             <LogOut className="h-5 w-5" />
           </button>
         </div>

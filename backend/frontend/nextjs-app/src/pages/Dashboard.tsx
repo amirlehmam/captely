@@ -1,6 +1,6 @@
 // frontend/nextjs-app/pages/dashboard.tsx
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Users, Mail, Phone, Clock, ChevronRight, 
@@ -79,7 +79,7 @@ const getStatusIcon = (status: string) => {
 };
 
 const Dashboard: React.FC = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   // Redirect to login if no JWT is stored
   useEffect(() => {
@@ -88,9 +88,9 @@ const Dashboard: React.FC = () => {
       (localStorage.getItem('captely_jwt') ||
        sessionStorage.getItem('captely_jwt'));
     if (!token) {
-      router.replace('/login');
+      navigate('/login', { replace: true });
     }
-  }, [router]);
+  }, [navigate]);
 
   return (
     <div className="space-y-6">

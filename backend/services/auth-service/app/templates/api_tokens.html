@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tokens - Captely</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .header h1 {
+            margin: 0;
+            color: #0077b5;
+        }
+        .token-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .token-list th, .token-list td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .token-list th {
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+        .token-value {
+            font-family: monospace;
+            padding: 5px 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #0077b5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .button:hover {
+            background-color: #005582;
+        }
+        .button.secondary {
+            background-color: #eee;
+            color: #333;
+        }
+        .button.danger {
+            background-color: #dc3545;
+        }
+        .button.danger:hover {
+            background-color: #bd2130;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .token-instructions {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        .token-instructions code {
+            background-color: #f3f3f3;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>API Tokens</h1>
+        <div>
+            <span>Welcome, {{ user.email }}</span>
+        </div>
+    </div>
+
+    <div class="token-instructions">
+        <h3>How to use your API token</h3>
+        <p>API tokens allow you to authenticate with Captely services from external applications, like our Chrome extension.</p>
+        <ol>
+            <li>Create a new API token below</li>
+            <li>Copy the token value</li>
+            <li>Paste it into the Captely Chrome extension or other application</li>
+            <li>The token will be sent in the Authorization header with your requests</li>
+        </ol>
+        <p><strong>Important:</strong> Keep your tokens secure. Anyone with your token can access your Captely account's API.</p>
+    </div>
+
+    <form action="/auth/apikey" method="post">
+        <button type="submit" class="button">Create New API Token</button>
+    </form>
+
+    <h2>Your API Tokens</h2>
+    
+    {% if api_keys %}
+    <table class="token-list">
+        <thead>
+            <tr>
+                <th>Created On</th>
+                <th>Token Value</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key in api_keys %}
+            <tr>
+                <td>{{ key.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <div class="token-value">{{ key.key }}</div>
+                </td>
+                <td>
+                    <form action="/auth/apikeys/{{ key.id }}" method="post" onsubmit="return confirm('Are you sure you want to revoke this token? This cannot be undone.')">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="button danger">Revoke</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>You don't have any active API tokens.</p>
+        <p>Create a token to get started with the Captely Chrome extension.</p>
+    </div>
+    {% endif %}
+
+    <script>
+        // Handle DELETE request with form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form[action^="/auth/apikeys/"]');
+            forms.forEach(form => {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to revoke this token? This cannot be undone.')) {
+                        const url = form.action;
+                        try {
+                            const response = await fetch(url, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                credentials: 'include'
+                            });
+                            if (response.ok) {
+                                window.location.reload();
+                            } else {
+                                alert('Error revoking token. Please try again.');
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('Error revoking token. Please try again.');
+                        }
+                    }
+                });
+            });
+
+            // Handle token creation
+            const createForm = document.querySelector('form[action="/auth/apikey"]');
+            createForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                try {
+                    const response = await fetch('/auth/apikey', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Error creating token. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error creating token. Please try again.');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

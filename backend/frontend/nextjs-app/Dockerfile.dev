@@ -9,7 +9,16 @@ RUN npm install
 # Copy source
 COPY . .
 
-EXPOSE 5173
+# Set environment variables
+ENV VITE_AUTH_URL=http://auth-service:8000
+ENV VITE_IMPORT_URL=http://import-service:8000
+ENV VITE_CREDIT_URL=http://credit-service:8000
 
-# Run Next.js dev server (listening on 0.0.0.0)
-CMD ["npm", "run", "dev"]
+# Set production environment (needed for build)
+ENV NODE_ENV=development
+
+# Expose the port
+EXPOSE 3000
+
+# Start the app in development mode
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

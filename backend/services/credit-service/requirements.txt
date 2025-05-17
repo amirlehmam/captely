@@ -20,3 +20,4 @@ jose[jwt]
 psycopg2 
 psycopg2-binary
 pg8000
+jinja2

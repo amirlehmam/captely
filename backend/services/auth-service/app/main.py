@@ -9,10 +9,12 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Depends,
-    status
+    status,
+    Request
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, EmailStr
 from pydantic_settings import BaseSettings
 from sqlalchemy import select
@@ -22,6 +24,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import sessionmaker
 from passlib.hash import bcrypt
+from fastapi.responses import HTMLResponse
 
 from app.models import User, ApiKey, Base  # Your SQLAlchemy Base/metadata
 
@@ -31,7 +34,13 @@ class Settings(BaseSettings):
     jwt_secret: str = "devsecret"
     jwt_algorithm: str = "HS256"
     jwt_exp_minutes: int = 60
-    cors_origins: List[str] = ["http://localhost:3000"]
+    cors_origins: List[str] = ["http://localhost:5173",
+                               "http://localhost:3000",
+                               "http://localhost:8000",
+                               "http://localhost:8001",
+                               "http://localhost:8002",
+                               "http://localhost:8003",
+                               "chrome-extension://*"]
 
     class Config:
         env_file = ".env"
@@ -45,6 +54,9 @@ engine = create_async_engine(
     connect_args={"ssl": False},     # <— this tells asyncpg "never do TLS" 
     echo=True,                       # optional: prints SQL to your logs
 )
+
+from sqlalchemy.orm import sessionmaker
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
@@ -138,6 +150,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize templates
+templates = Jinja2Templates(directory="app/templates")
+
 # 6. STARTUP: retry until Postgres is ready
 @app.on_event("startup")
 async def on_startup():
@@ -154,6 +169,23 @@ async def on_startup():
         raise RuntimeError("Could not connect to the database after 10 attempts")
 
 # 7. ROUTES
+
+# New API token validation endpoint
+class TokenValidateIn(BaseModel):
+    token: str
+
+@app.post("/auth/validate-token")
+async def validate_token(data: TokenValidateIn, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ApiKey).where(ApiKey.key == data.token, ApiKey.revoked == False))
+    api_key = result.scalar_one_or_none()
+    
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or revoked API token",
+        )
+    
+    return {"user_id": api_key.user_id}
 
 @app.post("/auth/signup", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
@@ -218,6 +250,41 @@ async def list_apikeys(
         .order_by(ApiKey.created_at.desc())
     )
     return result.scalars().all()
+
+@app.delete("/auth/apikeys/{key_id}")
+async def revoke_apikey(
+    key_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    api_key = await db.get(ApiKey, key_id)
+    if not api_key or str(api_key.user_id) != str(current_user.id):
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    api_key.revoked = True
+    await db.commit()
+    return {"status": "success"}
+
+@app.get("/dashboard/api-tokens", response_class=HTMLResponse)
+async def api_tokens_page(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(ApiKey)
+        .where(ApiKey.user_id == current_user.id, ApiKey.revoked == False)
+        .order_by(ApiKey.created_at.desc())
+    )
+    api_keys = result.scalars().all()
+    
+    return templates.TemplateResponse(
+        "api_tokens.html",
+        {
+            "request": request,
+            "user": current_user,
+            "api_keys": api_keys
+        }
+    )
 
 @app.get("/health", summary="Health check")
 async def health():

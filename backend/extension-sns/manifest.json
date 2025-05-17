@@ -2,15 +2,19 @@
   "manifest_version": 3,
   "name": "Captely Sales Navigator Scraper",
   "version": "1.0.0",
-  "description": "Scrape leads from Sales Navigator and push to Captely for auto‐enrichment",
+  "description": "Scrape leads from Sales Navigator and push to Captely for auto-enrichment",
   "permissions": [
     "activeTab",
     "scripting",
     "storage",
-    "identity"
+    "downloads"
   ],
   "host_permissions": [
-    "https://your-backend/*"
+    "https://*.linkedin.com/*",
+    "http://localhost:8000/*",
+    "http://localhost:8001/*",
+    "http://localhost:8002/*",
+    "http://localhost:8003/*"
   ],
   "action": {
     "default_popup": "popup.html",

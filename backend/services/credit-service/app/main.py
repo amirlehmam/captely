@@ -1,6 +1,6 @@
 # services/credit-service/app/main.py
 
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,12 +8,14 @@ import pandas as pd
 import uuid, io, boto3
 from jose import jwt, JWTError
 from sqlalchemy import insert
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from common.config import get_settings
 from common.db import get_session
 from common.celery_app import celery_app
 
-from app.models import ImportJob  # your SQLAlchemy models
+from app.models import ImportJob, User, CreditLog  # your SQLAlchemy models
 from app.credit_service import CreditService
 
 # ---- app setup ----
@@ -118,3 +120,21 @@ async def get_credit_info(user_id: str, auth=Depends(verify_jwt)):
     Note: we depend on verify_jwt above so only valid tokens can query.
     """
     return credit_service.get_credit_info(user_id)
+
+router = APIRouter(prefix="/api/credits")
+
+@router.post("/check_and_decrement")
+async def check_and_decrement(data: dict, session: AsyncSession = Depends(get_session)):
+    user_id = data.get("user_id")
+    count = int(data.get("count", 0))
+    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "User not found")
+    if user.credits < count:
+        raise HTTPException(402, "Not enough credits")
+    user.credits -= count
+    session.add(CreditLog(user_id=user_id, change=-count, reason="enrichment"))
+    await session.commit()
+    return {"ok": True, "remaining": user.credits}
+
+app.include_router(router)
