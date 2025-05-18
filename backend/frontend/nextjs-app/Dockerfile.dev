@@ -9,10 +9,10 @@ RUN npm install
 # Copy source
 COPY . .
 
-# Set environment variables
-ENV VITE_AUTH_URL=http://auth-service:8000
-ENV VITE_IMPORT_URL=http://import-service:8000
-ENV VITE_CREDIT_URL=http://credit-service:8000
+# Set environment variables for browser access
+ENV VITE_AUTH_URL=http://localhost:8001
+ENV VITE_IMPORT_URL=http://localhost:8002
+ENV VITE_CREDIT_URL=http://localhost:8003
 
 # Set production environment (needed for build)
 ENV NODE_ENV=development

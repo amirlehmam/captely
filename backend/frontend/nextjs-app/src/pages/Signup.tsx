@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const AUTH_BASE = import.meta.env.VITE_AUTH_URL ?? 'http://localhost:8001';
+// Hard-code the URL to localhost for browser access
+const AUTH_BASE = 'http://localhost:8001'; // Use localhost for browser access
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +21,11 @@ const SignupPage: React.FC = () => {
       
       const res = await fetch(`${AUTH_BASE}/auth/signup`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        mode: 'cors', // Explicitly set CORS mode
         body: JSON.stringify({ email, password }),
       }).catch(err => {
         console.error('Network error during fetch:', err);

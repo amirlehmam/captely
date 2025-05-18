@@ -105,6 +105,10 @@ services:
       - credit-service
     ports:
       - "5173:5173"
+    environment:
+      - VITE_AUTH_URL=http://localhost:8001
+      - VITE_IMPORT_URL=http://localhost:8002
+      - VITE_CREDIT_URL=http://localhost:8003
     restart: unless-stopped
 
 volumes:

@@ -41,8 +41,7 @@ class Settings(BaseSettings):
                                "http://localhost:8001",
                                "http://localhost:8002",
                                "http://localhost:8003",
-                               "chrome-extension://*",
-                               "*"]  # Allow all origins
+                               "chrome-extension://*"]  # Remove wildcard when using credentials
 
     class Config:
         env_file = ".env"
@@ -141,12 +140,25 @@ class ApiKeyOut(BaseModel):
 # 5. APP & CORS
 app = FastAPI(title="Captely Auth Service")
 
+# Define CORS origins explicitly without wildcards
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:8000", 
+    "http://localhost:8001",
+    "http://localhost:8002",
+    "http://localhost:8003",
+    # Add any chrome extension origins if needed
+    # "chrome-extension://your-extension-id"
+]
+
+# Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
 )
 
 # Initialize templates
@@ -175,16 +187,30 @@ class TokenValidateIn(BaseModel):
 
 @app.post("/auth/validate-token")
 async def validate_token(data: TokenValidateIn, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(ApiKey).where(ApiKey.key == data.token, ApiKey.revoked == False))
-    api_key = result.scalar_one_or_none()
-    
-    if not api_key:
+    try:
+        # Use direct SQL to avoid model conversion issues
+        query = """
+        SELECT user_id 
+        FROM api_keys 
+        WHERE key = :token AND revoked = FALSE
+        """
+        
+        result = await db.execute(query, {"token": data.token})
+        row = result.fetchone()
+        
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or revoked API token",
+            )
+        
+        return {"user_id": row[0]}
+    except Exception as e:
+        print(f"Error validating token: {e}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or revoked API token",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error validating token: {str(e)}"
         )
-    
-    return {"user_id": api_key.user_id}
 
 @app.post("/auth/signup", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
@@ -227,62 +253,76 @@ async def create_apikey(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    import uuid
-    import secrets
-    
-    key_id = str(uuid.uuid4())
-    key_value = secrets.token_hex(32)
-    
-    # Use direct SQL to avoid type conversion issues
-    query = """
-    INSERT INTO api_keys (id, user_id, key, revoked) 
-    VALUES (:id, :user_id, :key, :revoked)
-    RETURNING id, user_id, key, created_at, revoked
-    """
-    
-    params = {
-        "id": key_id,
-        "user_id": str(current_user.id),  # Explicitly convert to string
-        "key": key_value,
-        "revoked": False
-    }
-    
-    result = await db.execute(query, params)
-    row = result.fetchone()
-    await db.commit()
-    
-    return {
-        "id": row[0],
-        "key": row[2],
-        "created_at": row[3],
-        "revoked": row[4]
-    }
+    try:
+        import uuid
+        import secrets
+        
+        key_id = str(uuid.uuid4())
+        key_value = secrets.token_hex(32)
+        
+        # Use direct SQL to avoid type conversion issues
+        query = """
+        INSERT INTO api_keys (id, user_id, key, revoked) 
+        VALUES (:id, :user_id, :key, :revoked)
+        RETURNING id, user_id, key, created_at, revoked
+        """
+        
+        params = {
+            "id": key_id,
+            "user_id": str(current_user.id),  # Explicitly convert to string
+            "key": key_value,
+            "revoked": False
+        }
+        
+        result = await db.execute(query, params)
+        row = result.fetchone()
+        await db.commit()
+        
+        return {
+            "id": row[0],
+            "key": row[2],
+            "created_at": row[3],
+            "revoked": row[4]
+        }
+    except Exception as e:
+        print(f"Error creating API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating API key: {str(e)}"
+        )
 
 @app.get("/auth/apikeys", response_model=List[ApiKeyOut])
 async def list_apikeys(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Use direct SQL query to avoid model conversion issues
-    query = """
-    SELECT id, user_id, key, created_at, revoked
-    FROM api_keys
-    WHERE user_id = :user_id
-    ORDER BY created_at DESC
-    """
-    
-    result = await db.execute(query, {"user_id": str(current_user.id)})
-    rows = result.fetchall()
-    
-    return [
-        {
-            "id": row[0],
-            "key": row[2],
-            "created_at": row[3],
-            "revoked": row[4]
-        }
-        for row in rows
-    ]
+    try:
+        # Use direct SQL query to avoid model conversion issues
+        query = """
+        SELECT id, user_id, key, created_at, revoked
+        FROM api_keys
+        WHERE user_id = :user_id
+        ORDER BY created_at DESC
+        """
+        
+        result = await db.execute(query, {"user_id": str(current_user.id)})
+        rows = result.fetchall()
+        
+        return [
+            {
+                "id": row[0],
+                "key": row[2],
+                "created_at": row[3],
+                "revoked": row[4]
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        print(f"Error in list_apikeys: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching API keys: {str(e)}"
+        )
 
 @app.delete("/auth/apikeys/{key_id}")
 async def revoke_apikey(
