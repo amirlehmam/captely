@@ -21,7 +21,7 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
+      context: ./backend/services/auth-service
       dockerfile: Dockerfile
     container_name: captely-auth-service
     env_file:
@@ -31,8 +31,11 @@ services:
         condition: service_started
     environment:
       - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - PYTHONPATH=/app:/app/common
     ports:
       - "8001:8000"
+    volumes:
+      - ./backend/services/common:/app/common
     restart: on-failure
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -h db.kkbqrrrjlfxxtkboxmld.supabase.co -p 5432"]
@@ -42,39 +45,54 @@ services:
     command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   import-service:
-    build: ./services/import-service
+    build:
+      context: ./backend/services/import-service
+      dockerfile: Dockerfile
     container_name: captely-import-service
     depends_on:
       - redis
     env_file: .env
     environment:
       - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - PYTHONPATH=/app:/app/common
     ports:
       - "8002:8000"
-    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ./backend/services/common:/app/common
+    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     restart: on-failure
 
   credit-service:
-    build: ./services/credit-service
+    build:
+      context: ./backend/services/credit-service
+      dockerfile: Dockerfile
     container_name: captely-credit-service
     depends_on:
       - redis
     env_file: .env
     environment:
       - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - PYTHONPATH=/app:/app/common
     ports:
       - "8003:8000"
+    volumes:
+      - ./backend/services/common:/app/common
     command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     restart: on-failure
 
   enrichment-worker:
-    build: ./services/enrichment-worker
+    build:
+      context: ./backend/services/enrichment-worker
+      dockerfile: Dockerfile
     container_name: captely-enrichment-worker
     depends_on:
       - redis
     env_file: .env
     environment:
       - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - PYTHONPATH=/app:/app/common
+    volumes:
+      - ./backend/services/common:/app/common
     command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "celery", "-A", "common.celery_app:celery_app", "worker", "--loglevel=info"]
     restart: on-failure
 

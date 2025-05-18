@@ -16,19 +16,33 @@ const SignupPage: React.FC = () => {
     setError(null);
     setSuccess(false);
     try {
+      console.log(`Attempting to connect to ${AUTH_BASE}/auth/signup`);
+      
       const res = await fetch(`${AUTH_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+      }).catch(err => {
+        console.error('Network error during fetch:', err);
+        throw new Error(`Network error: ${err.message || 'Unable to connect to authentication service'}`);
       });
+      
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.detail ?? 'Signup failed');
+        let errorMessage = `Error ${res.status}: ${res.statusText}`;
+        try {
+          const body = await res.json();
+          errorMessage = body?.detail || errorMessage;
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+        }
+        throw new Error(errorMessage);
       }
+      
       setSuccess(true);
       setTimeout(() => navigate('/login', { replace: true }), 1000);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Signup error:', err);
+      setError(err.message || 'An unknown error occurred');
     }
   };
 

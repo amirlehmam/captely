@@ -27,6 +27,7 @@ from passlib.hash import bcrypt
 from fastapi.responses import HTMLResponse
 
 from app.models import User, ApiKey, Base  # Your SQLAlchemy Base/metadata
+from common.db import async_engine, get_async_session
 
 # 1. SETTINGS
 class Settings(BaseSettings):
@@ -40,7 +41,8 @@ class Settings(BaseSettings):
                                "http://localhost:8001",
                                "http://localhost:8002",
                                "http://localhost:8003",
-                               "chrome-extension://*"]
+                               "chrome-extension://*",
+                               "*"]  # Allow all origins
 
     class Config:
         env_file = ".env"
@@ -49,14 +51,11 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # 2. DATABASE
-engine = create_async_engine(
-    settings.database_url,           # the clean URL from step 1
-    connect_args={"ssl": False},     # <— this tells asyncpg "never do TLS" 
-    echo=True,                       # optional: prints SQL to your logs
-)
+# Use common module's database engine instead of creating a new one here
+from common.db import async_engine, get_async_session
 
-from sqlalchemy.orm import sessionmaker
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+# For backward compatibility
+AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
@@ -158,7 +157,7 @@ templates = Jinja2Templates(directory="app/templates")
 async def on_startup():
     for attempt in range(10):
         try:
-            async with engine.begin() as conn:
+            async with async_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             print("✅ Database ready, tables created")
             break
@@ -228,28 +227,62 @@ async def create_apikey(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    import uuid
+    import secrets
+    
+    key_id = str(uuid.uuid4())
     key_value = secrets.token_hex(32)
-    api_key = ApiKey(
-        user_id=current_user.id,
-        key=key_value,
-        revoked=False
-    )
-    db.add(api_key)
+    
+    # Use direct SQL to avoid type conversion issues
+    query = """
+    INSERT INTO api_keys (id, user_id, key, revoked) 
+    VALUES (:id, :user_id, :key, :revoked)
+    RETURNING id, user_id, key, created_at, revoked
+    """
+    
+    params = {
+        "id": key_id,
+        "user_id": str(current_user.id),  # Explicitly convert to string
+        "key": key_value,
+        "revoked": False
+    }
+    
+    result = await db.execute(query, params)
+    row = result.fetchone()
     await db.commit()
-    await db.refresh(api_key)
-    return api_key
+    
+    return {
+        "id": row[0],
+        "key": row[2],
+        "created_at": row[3],
+        "revoked": row[4]
+    }
 
 @app.get("/auth/apikeys", response_model=List[ApiKeyOut])
 async def list_apikeys(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.user_id == current_user.id)
-        .order_by(ApiKey.created_at.desc())
-    )
-    return result.scalars().all()
+    # Use direct SQL query to avoid model conversion issues
+    query = """
+    SELECT id, user_id, key, created_at, revoked
+    FROM api_keys
+    WHERE user_id = :user_id
+    ORDER BY created_at DESC
+    """
+    
+    result = await db.execute(query, {"user_id": str(current_user.id)})
+    rows = result.fetchall()
+    
+    return [
+        {
+            "id": row[0],
+            "key": row[2],
+            "created_at": row[3],
+            "revoked": row[4]
+        }
+        for row in rows
+    ]
 
 @app.delete("/auth/apikeys/{key_id}")
 async def revoke_apikey(
@@ -257,12 +290,28 @@ async def revoke_apikey(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    api_key = await db.get(ApiKey, key_id)
-    if not api_key or str(api_key.user_id) != str(current_user.id):
+    # Use raw SQL to avoid model conversion issues
+    query = """
+    UPDATE api_keys 
+    SET revoked = TRUE
+    WHERE id = :key_id AND user_id = :user_id
+    RETURNING id
+    """
+    
+    result = await db.execute(
+        query, 
+        {
+            "key_id": key_id,
+            "user_id": str(current_user.id)
+        }
+    )
+    
+    row = result.fetchone()
+    await db.commit()
+    
+    if not row:
         raise HTTPException(status_code=404, detail="API key not found")
     
-    api_key.revoked = True
-    await db.commit()
     return {"status": "success"}
 
 @app.get("/dashboard/api-tokens", response_class=HTMLResponse)

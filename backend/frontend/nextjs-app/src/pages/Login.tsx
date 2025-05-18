@@ -22,15 +22,28 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setError(null);
 
     try {
+      console.log(`Attempting to connect to ${AUTH_BASE}/auth/login`);
+      
       const res = await fetch(`${AUTH_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+      }).catch(err => {
+        console.error('Network error during fetch:', err);
+        throw new Error(`Network error: ${err.message || 'Unable to connect to authentication service'}`);
       });
+      
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.detail ?? 'Invalid credentials');
+        let errorMessage = `Error ${res.status}: ${res.statusText}`;
+        try {
+          const body = await res.json();
+          errorMessage = body?.detail || errorMessage;
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+        }
+        throw new Error(errorMessage);
       }
+      
       const { access_token } = await res.json();
       if (rememberMe) {
         localStorage.setItem('captely_jwt', access_token);
@@ -40,7 +53,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       onLogin();
       navigate('/', { replace: true });
     } catch (err: any) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError(err.message || 'An unknown error occurred');
     }
   };
 

@@ -14,7 +14,8 @@ WORKDIR /app
 # 2) Install Python deps (incl. pg8000)
 COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel \
- && pip install --no-cache-dir -r requirements.txt
+ && pip install --no-cache-dir -r requirements.txt \
+ && pip install asyncpg
 
 # 3) Copy app
 COPY . .
