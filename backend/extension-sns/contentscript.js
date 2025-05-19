@@ -211,17 +211,17 @@
           
           // Only add if we have at least a name
           if (fullName) {
-            leads.push({
-              firstName,
-              lastName,
-              fullName,
-              position,
-              company,
-              profileUrl,
-              location,
+          leads.push({
+            firstName,
+            lastName,
+            fullName,
+            position,
+            company,
+            profileUrl,
+            location,
               industry,
-              timestamp: new Date().toISOString()
-            });
+            timestamp: new Date().toISOString()
+          });
             
             console.log(`Successfully scraped search result: ${fullName}, ${position} at ${company}`);
           }
@@ -261,20 +261,20 @@
             firstName = nameParts[0] || '';
             lastName = nameParts.slice(1).join(' ') || '';
           }
-          
+
           // Only add if we have a name
           if (fullName) {
-            leads.push({
-              firstName,
-              lastName,
-              fullName,
-              position: titleEl?.innerText.trim() || '',
-              company: companyEl?.innerText.trim() || '',
+          leads.push({
+            firstName,
+            lastName,
+            fullName,
+            position: titleEl?.innerText.trim() || '',
+            company: companyEl?.innerText.trim() || '',
               profileUrl,
-              location: locationEl?.innerText.trim() || '',
+            location: locationEl?.innerText.trim() || '',
               industry: '',
-              timestamp: new Date().toISOString()
-            });
+            timestamp: new Date().toISOString()
+          });
             
             console.log(`Successfully scraped generic item: ${fullName}`);
           }
