@@ -2,29 +2,73 @@ document.addEventListener('DOMContentLoaded', () => {
   // UI Elements
   const tokenInput = document.getElementById('token');
   const maxLeadsInput = document.getElementById('maxLeads');
+  const autoPaginationCheckbox = document.getElementById('autoPagination');
+  const thoroughScrapingCheckbox = document.getElementById('thoroughScraping');
+  const pageDelayInput = document.getElementById('pageDelay');
   const saveBtn = document.getElementById('save');
   const startBtn = document.getElementById('start');
   const downloadBtn = document.getElementById('download');
+  const enrichBtn = document.getElementById('enrich');
   const statusDiv = document.getElementById('status');
   const progressBar = document.getElementById('progressBar');
   const scrapedCountEl = document.getElementById('scrapedCount');
   const sentCountEl = document.getElementById('sentCount');
   const enrichedCountEl = document.getElementById('enrichedCount');
+  const settingsToggle = document.getElementById('settingsToggle');
+  const settingsSection = document.getElementById('settingsSection');
+  const toggleIcon = settingsToggle.querySelector('.toggle-icon');
   
   // Status/UI Vars
   let isScrapingActive = false;
+  let isEnrichingActive = false;
   let currentJobId = null;
   
-  // Load saved settings
-  chrome.storage.sync.get(['apiToken', 'maxLeads'], ({ apiToken, maxLeads }) => {
-    if (apiToken) tokenInput.value = apiToken;
-    if (maxLeads) maxLeadsInput.value = maxLeads;
+  // Toggle settings section
+  settingsToggle.addEventListener('click', () => {
+    const isHidden = settingsSection.style.display === 'none' || !settingsSection.style.display;
+    settingsSection.style.display = isHidden ? 'block' : 'none';
+    toggleIcon.classList.toggle('open', isHidden);
   });
+  
+  // Load saved settings
+  chrome.storage.sync.get(
+    [
+      'apiToken', 
+      'maxLeads', 
+      'autoPagination', 
+      'thoroughScraping', 
+      'pageDelay',
+      'settingsExpanded'
+    ], 
+    (settings) => {
+      if (settings.apiToken) tokenInput.value = settings.apiToken;
+      if (settings.maxLeads) maxLeadsInput.value = settings.maxLeads;
+      
+      // Load checkbox settings with default values if not set
+      autoPaginationCheckbox.checked = settings.autoPagination !== undefined ? 
+        settings.autoPagination : true;
+      thoroughScrapingCheckbox.checked = settings.thoroughScraping !== undefined ? 
+        settings.thoroughScraping : true;
+      
+      // Load page delay with default if not set
+      if (settings.pageDelay) pageDelayInput.value = settings.pageDelay;
+      
+      // Expand settings section if it was previously expanded
+      if (settings.settingsExpanded) {
+        settingsSection.style.display = 'block';
+        toggleIcon.classList.add('open');
+      }
+    }
+  );
   
   // Save button
   saveBtn.addEventListener('click', async () => {
     const token = tokenInput.value.trim();
     const maxLeads = parseInt(maxLeadsInput.value, 10) || 100;
+    const autoPagination = autoPaginationCheckbox.checked;
+    const thoroughScraping = thoroughScrapingCheckbox.checked;
+    const pageDelay = parseInt(pageDelayInput.value, 10) || 3;
+    const settingsExpanded = settingsSection.style.display === 'block';
     
     // Validate
     if (!token) {
@@ -42,7 +86,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Save settings
         chrome.storage.sync.set({
           apiToken: token,
-          maxLeads: maxLeads
+          maxLeads: maxLeads,
+          autoPagination: autoPagination,
+          thoroughScraping: thoroughScraping,
+          pageDelay: pageDelay,
+          settingsExpanded: settingsExpanded
         }, () => {
           updateStatus('✅ API token validated and settings saved!', 'success');
         });
@@ -57,6 +105,45 @@ document.addEventListener('DOMContentLoaded', () => {
   // Validate API token with the backend
   async function validateApiToken(token) {
     try {
+      // Log the token for debugging
+      console.log('Validating token:', token);
+      
+      // Try direct validation with the auth service - ensuring correct JSON format
+      try {
+        const authResponse = await fetch('http://localhost:8001/auth/validate-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ token: token })
+        });
+        
+        console.log('Auth service response status:', authResponse.status);
+        
+        if (authResponse.ok) {
+          console.log('Token validated successfully by auth service');
+          return true;
+        } else {
+          console.log('Auth service validation failed');
+          // Try to get the error message
+          const errorData = await authResponse.text();
+          console.log('Auth service error:', errorData);
+          
+          // If token validation failed, try to create a new token
+          const newToken = await createNewApiToken();
+          if (newToken) {
+            console.log('Created new API token:', newToken);
+            // Update the token input field with the new token
+            tokenInput.value = newToken;
+            return true;
+          }
+        }
+      } catch (authError) {
+        console.error('Error validating with auth service:', authError);
+      }
+      
+      // Fallback: Try with the import service
+      console.log('Trying fallback validation with import service');
       const response = await fetch('http://localhost:8002/api/jobs', {
         method: 'GET',
         headers: {
@@ -64,10 +151,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       
-      return response.ok;
+      console.log('Import service response status:', response.status);
+      
+      if (response.ok) {
+        console.log('Token validated successfully by import service');
+        return true;
+      } else {
+        console.log('Import service validation failed');
+      }
+      
+      return false;
     } catch (error) {
       console.error('Token validation error:', error);
       return false;
+    }
+  }
+  
+  // Function to create a new API token
+  async function createNewApiToken() {
+    try {
+      // Use the direct endpoint for extension tokens
+      const response = await fetch('http://localhost:8001/extension/get-token');
+      
+      if (!response.ok) {
+        console.error('Failed to generate extension token:', await response.text());
+        return null;
+      }
+      
+      const tokenData = await response.json();
+      return tokenData.key;
+    } catch (error) {
+      console.error('Error creating new API token:', error);
+      return null;
     }
   }
   
@@ -79,23 +194,54 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
+    // Get current settings for scraping
+    const maxLeads = parseInt(maxLeadsInput.value, 10) || 100;
+    const autoPagination = autoPaginationCheckbox.checked;
+    const thoroughScraping = thoroughScrapingCheckbox.checked;
+    const pageDelay = parseInt(pageDelayInput.value, 10) || 3;
+    
     // Disable buttons during scraping
     isScrapingActive = true;
     startBtn.disabled = true;
     downloadBtn.disabled = true;
+    enrichBtn.disabled = true;
     
     // Reset counts
     updateCounts(0, 0, 0);
     updateProgressBar(0);
     
-    // Tell background script to start scraping
-    chrome.runtime.sendMessage({ action: 'startScraping' });
+    // Tell background script to start scraping with current settings
+    chrome.runtime.sendMessage({ 
+      action: 'startScraping',
+      settings: {
+        maxLeads,
+        autoPagination,
+        thoroughScraping,
+        pageDelay
+      }
+    });
+    
     updateStatus('🚀 Starting scraping process...', 'info');
   });
   
   // Download CSV button
   downloadBtn.addEventListener('click', () => {
     chrome.runtime.sendMessage({ action: 'downloadCSV' });
+  });
+  
+  // Enrich button
+  enrichBtn.addEventListener('click', () => {
+    // Disable buttons during enrichment
+    isEnrichingActive = true;
+    enrichBtn.disabled = true;
+    
+    // Reset enrichment counts
+    sentCountEl.textContent = 0;
+    enrichedCountEl.textContent = 0;
+    
+    // Tell background script to send leads for enrichment
+    chrome.runtime.sendMessage({ action: 'sendToEnrichment' });
+    updateStatus('🔍 Starting enrichment process...', 'info');
   });
   
   // Listen for messages from background script
@@ -119,8 +265,18 @@ document.addEventListener('DOMContentLoaded', () => {
         updateProgressBar(progressPercent);
         break;
         
-      case 'enableDownload':
-        downloadBtn.disabled = false;
+      case 'enableButtons':
+        // Enable appropriate buttons based on the message
+        if (message.downloadEnabled) {
+          downloadBtn.disabled = false;
+        }
+        if (message.enrichEnabled) {
+          enrichBtn.disabled = false;
+        }
+        // Update lead count if provided
+        if (message.leadCount) {
+          scrapedCountEl.textContent = message.leadCount;
+        }
         break;
         
       case 'jobCreated':
@@ -133,15 +289,30 @@ document.addEventListener('DOMContentLoaded', () => {
         
       case 'done':
         isScrapingActive = false;
+        isEnrichingActive = false;
         startBtn.disabled = false;
-        updateStatus(`✅ Scraping complete! ${message.total} leads processed.`, 'success');
+        
+        // Only re-enable enrichment button if we're done with enrichment
+        if (message.enrichmentComplete) {
+          enrichBtn.disabled = false;
+        }
+        
+        updateStatus(`✅ Process complete! ${message.total || 0} leads processed.`, 'success');
+        break;
+
+      case 'pauseScraping':
+        // This is sent when auto-pagination is disabled and we need user input
+        startBtn.textContent = 'Continue Scraping';
+        startBtn.disabled = false;
+        updateStatus(`✋ Reached end of page ${message.currentPage} of ${message.totalPages}. Click 'Continue Scraping' to proceed to the next page.`, 'info');
+        isScrapingActive = false;
         break;
     }
   });
   
   // Function to check job status
   function checkJobStatus() {
-    if (!currentJobId || !isScrapingActive) return;
+    if (!currentJobId || (!isScrapingActive && !isEnrichingActive)) return;
     
     chrome.runtime.sendMessage({
       action: 'getJobStatus',
@@ -149,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Continue polling if still active
-    if (isScrapingActive) {
+    if (isScrapingActive || isEnrichingActive) {
       setTimeout(checkJobStatus, 3000);
     }
   }

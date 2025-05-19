@@ -57,6 +57,19 @@
     #download:hover {
       background-color: #218838;
     }
+    #enrich {
+      background-color: #6c5ce7;
+    }
+    #enrich:hover {
+      background-color: #5b4ac7;
+    }
+    .button-row {
+      display: flex;
+      gap: 8px;
+    }
+    .button-row button {
+      flex: 1;
+    }
     .progress {
       margin-top: 15px;
       border: 1px solid #ddd;
@@ -126,6 +139,52 @@
     .token-info a:hover {
       text-decoration: underline;
     }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+    }
+    .checkbox-group label {
+      display: inline;
+      font-weight: normal;
+      font-size: 0.9em;
+    }
+    .settings-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .settings-toggle:hover {
+      background-color: #e8e8e8;
+    }
+    .settings-title {
+      font-weight: bold;
+      margin: 0;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .settings-section {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    .toggle-icon {
+      transition: transform 0.3s;
+    }
+    .toggle-icon.open {
+      transform: rotate(180deg);
+    }
   </style>
 </head>
 <body>
@@ -137,7 +196,7 @@
     <label for="token">API Token</label>
     <input id="token" type="text" placeholder="Enter your API token" />
     <div class="token-info">
-      <a href="http://localhost:3000/api-tokens" target="_blank">Get API token from Captely Dashboard</a>
+      <a href="http://localhost:5173/api-tokens" target="_blank">Get API token from Captely Dashboard</a>
     </div>
   </div>
 
@@ -146,9 +205,35 @@
     <input id="maxLeads" type="number" min="1" max="500" value="100" />
   </div>
 
+  <div class="settings-toggle" id="settingsToggle">
+    <div class="settings-title">Scraping Settings</div>
+    <div class="toggle-icon">▼</div>
+  </div>
+
+  <div class="settings-section" id="settingsSection">
+    <div class="checkbox-group">
+      <input type="checkbox" id="autoPagination" checked />
+      <label for="autoPagination">Automatically navigate through all pages</label>
+    </div>
+    
+    <div class="checkbox-group">
+      <input type="checkbox" id="thoroughScraping" checked />
+      <label for="thoroughScraping">Scroll through each page to load all leads</label>
+    </div>
+    
+    <div class="form-group">
+      <label for="pageDelay">Page load delay (seconds)</label>
+      <input id="pageDelay" type="number" min="1" max="10" value="3" style="width: 60px;" />
+    </div>
+  </div>
+
   <button id="save">Save Settings</button>
   <button id="start">Start Scraping</button>
-  <button id="download" disabled>Download CSV</button>
+  
+  <div class="button-row">
+    <button id="download" disabled>Download CSV</button>
+    <button id="enrich" disabled>Send for Enrichment</button>
+  </div>
 
   <div class="progress">
     <div id="progressBar" class="progress-bar"></div>

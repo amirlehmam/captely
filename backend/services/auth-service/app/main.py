@@ -17,7 +17,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, EmailStr
 from pydantic_settings import BaseSettings
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     create_async_engine
@@ -129,7 +129,7 @@ class UserOut(BaseModel):
         from_attributes = True
 
 class ApiKeyOut(BaseModel):
-    id: int
+    id: str
     key: str
     created_at: datetime
     revoked: bool
@@ -185,26 +185,42 @@ async def on_startup():
 class TokenValidateIn(BaseModel):
     token: str
 
+@app.options("/auth/validate-token", include_in_schema=False)
+async def options_validate_token():
+    """
+    Handle preflight CORS for token validation
+    """
+    return {}  # Return empty response with CORS headers from middleware
+
 @app.post("/auth/validate-token")
 async def validate_token(data: TokenValidateIn, db: AsyncSession = Depends(get_db)):
     try:
-        # Use direct SQL to avoid model conversion issues
-        query = """
+        # Log the incoming token for debugging
+        print(f"Validating token: {data.token[:10]}...")
+        
+        # Use direct SQL with text() to avoid model conversion issues
+        query = text("""
         SELECT user_id 
         FROM api_keys 
         WHERE key = :token AND revoked = FALSE
-        """
+        """)
         
         result = await db.execute(query, {"token": data.token})
         row = result.fetchone()
         
         if not row:
+            print(f"Token validation failed: No matching token found")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or revoked API token",
             )
         
-        return {"user_id": row[0]}
+        user_id = row[0]
+        print(f"Token validation successful for user_id: {user_id}")
+        return {"user_id": user_id, "valid": True}
+    except HTTPException as e:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         print(f"Error validating token: {e}")
         raise HTTPException(
@@ -260,12 +276,12 @@ async def create_apikey(
         key_id = str(uuid.uuid4())
         key_value = secrets.token_hex(32)
         
-        # Use direct SQL to avoid type conversion issues
-        query = """
+        # Use direct SQL with text() to avoid type conversion issues
+        query = text("""
         INSERT INTO api_keys (id, user_id, key, revoked) 
         VALUES (:id, :user_id, :key, :revoked)
         RETURNING id, user_id, key, created_at, revoked
-        """
+        """)
         
         params = {
             "id": key_id,
@@ -297,13 +313,13 @@ async def list_apikeys(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        # Use direct SQL query to avoid model conversion issues
-        query = """
+        # Use direct SQL query with text() to avoid model conversion issues
+        query = text("""
         SELECT id, user_id, key, created_at, revoked
         FROM api_keys
         WHERE user_id = :user_id
         ORDER BY created_at DESC
-        """
+        """)
         
         result = await db.execute(query, {"user_id": str(current_user.id)})
         rows = result.fetchall()
@@ -330,29 +346,36 @@ async def revoke_apikey(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Use raw SQL to avoid model conversion issues
-    query = """
-    UPDATE api_keys 
-    SET revoked = TRUE
-    WHERE id = :key_id AND user_id = :user_id
-    RETURNING id
-    """
-    
-    result = await db.execute(
-        query, 
-        {
-            "key_id": key_id,
-            "user_id": str(current_user.id)
-        }
-    )
-    
-    row = result.fetchone()
-    await db.commit()
-    
-    if not row:
-        raise HTTPException(status_code=404, detail="API key not found")
-    
-    return {"status": "success"}
+    try:
+        # Use raw SQL with text() to avoid model conversion issues
+        query = text("""
+        UPDATE api_keys 
+        SET revoked = TRUE
+        WHERE id = :key_id AND user_id = :user_id
+        RETURNING id
+        """)
+        
+        result = await db.execute(
+            query, 
+            {
+                "key_id": key_id,
+                "user_id": str(current_user.id)
+            }
+        )
+        
+        row = result.fetchone()
+        await db.commit()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="API key not found")
+        
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Error revoking API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error revoking API key: {str(e)}"
+        )
 
 @app.get("/dashboard/api-tokens", response_class=HTMLResponse)
 async def api_tokens_page(
@@ -378,3 +401,60 @@ async def api_tokens_page(
 @app.get("/health", summary="Health check")
 async def health():
     return {"status": "ok"}
+
+@app.get("/extension/get-token", response_model=ApiKeyOut)
+async def generate_extension_token():
+    """
+    Creates a token specifically for the extension to use
+    """
+    try:
+        import uuid
+        import secrets
+        
+        # First find the test user
+        db = AsyncSessionLocal()
+        result = await db.execute(select(User).where(User.email == 'test@captely.com'))
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Test user not found"
+            )
+        
+        # Generate token
+        key_id = str(uuid.uuid4())
+        key_value = secrets.token_hex(32)
+        
+        # Use direct SQL with text() to avoid type conversion issues
+        query = text("""
+        INSERT INTO api_keys (id, user_id, key, revoked) 
+        VALUES (:id, :user_id, :key, :revoked)
+        RETURNING id, user_id, key, created_at, revoked
+        """)
+        
+        params = {
+            "id": key_id,
+            "user_id": str(user.id),  # Explicitly convert to string
+            "key": key_value,
+            "revoked": False
+        }
+        
+        result = await db.execute(query, params)
+        row = result.fetchone()
+        await db.commit()
+        
+        return {
+            "id": row[0],
+            "key": row[2],
+            "created_at": row[3],
+            "revoked": row[4]
+        }
+    except Exception as e:
+        print(f"Error creating extension token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating extension token: {str(e)}"
+        )
+    finally:
+        await db.close()
