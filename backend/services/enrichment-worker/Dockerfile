@@ -1,28 +1,35 @@
-FROM python:3.12-alpine
-
-# 1) Alpine packages for Postgres & build
-RUN apk add --no-cache \
-      gcc \
-      musl-dev \
-      postgresql-dev \
-      postgresql-client \
-      netcat-openbsd
+FROM python:3.9-slim
 
 WORKDIR /app
 
-# 2) Install Python deps (including celery + pg8000)
+# Install PostgreSQL dependencies for psycopg2
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    postgresql-client \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip setuptools wheel \
- && pip install --no-cache-dir -r requirements.txt \
- && pip install asyncpg
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 3) Copy code + entrypoint
-COPY . .
-COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
-RUN chmod +x /usr/local/bin/wait-for-db.sh
+# Create directories for logs and CSV files
+RUN mkdir -p /app/logs /app/csv
 
-RUN adduser -D appuser \
-    && chown -R appuser /app
-USER appuser
+# Copy application files
+COPY app/ /app/app/
+COPY common/ /app/common/
+COPY wait-for-db.sh /app/
 
-ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]
+# Make wait script executable
+RUN chmod +x /app/wait-for-db.sh
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
+
+# Default command
+CMD ["celery", "-A", "app.tasks", "worker", "-l", "info"]

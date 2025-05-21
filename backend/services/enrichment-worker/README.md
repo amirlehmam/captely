@@ -1,100 +1,181 @@
-# Captely - Cascade Enrichment System
+# Captely Enrichment Worker
 
-This service provides a powerful data enrichment system for B2B contact information. It takes LinkedIn Sales Navigator contacts and enriches them with email addresses and phone numbers using multiple data providers in a cascade approach.
+A cost-optimized cascading enrichment system for LinkedIn contact data.
 
-## How It Works
+## Overview
 
-1. The system processes CSV files containing contact information (name, company, LinkedIn URL, etc.)
-2. For each contact, it sequentially tries multiple enrichment services until it finds valid contact information
-3. Each service is called in order of priority and reliability:
-   - Icypeas
-   - DropContact
-   - Hunter.io
-   - Apollo.io
-4. The system stops searching once it finds a high-confidence email address
-5. If no high-confidence result is found, it returns the best available match
-6. All results are combined into a single enriched CSV file
+This service enhances LinkedIn contact data with email addresses and phone numbers using multiple data providers in a cost-efficient cascade. It tries the cheapest providers first and only progresses to more expensive ones if necessary.
 
-## Quick Start
+## Key Features
 
-**Windows Users:**
-1. Simply double-click the `run_enrichment.bat` file
-2. Follow the on-screen prompts
-3. Your enriched CSV files will be saved in the same directory as the originals with "_enriched" added to the filename
+- **Cost Optimization**: Services ordered by cost (cheapest first)
+- **Early Termination**: Stops cascade once high-confidence results are found
+- **Rate Limiting**: Respects API rate limits to prevent throttling
+- **Reliability**: Automatic retries and error handling
+- **Monitoring**: Flower dashboard to track progress
 
-**Command Line Users:**
-```bash
-# Navigate to the enrichment-worker directory
-cd backend/services/enrichment-worker
+## Architecture
 
-# Run the enrichment process
-python run_enrichment.py
-
-# OR to process only a specific number of leads per file
-MAX_LEADS=10 python run_enrichment.py
+```
+┌───────────┐
+│           │
+│ CSV Files │─────┐
+│           │     │
+└───────────┘     ▼
+                ┌─────────────────┐       ┌─────────────┐
+                │                 │       │             │
+                │ Enrichment      │◄──────┤ Redis Queue │
+                │ Worker          │       │             │
+                │                 │       └─────────────┘
+                └─────────────────┘
+                      │   │
+         ┌────────────┘   └────────────┐
+         ▼                             ▼
+┌──────────────────┐          ┌─────────────────┐
+│                  │          │                 │
+│ Cheapest         │          │ Most Expensive  │
+│ Provider APIs    │───...────┤ Provider APIs   │
+│ (Icypeas, etc.)  │          │ (Apollo, etc.)  │
+│                  │          │                 │
+└──────────────────┘          └─────────────────┘
+               │                      │
+               └──────────┬───────────┘
+                          ▼
+                  ┌───────────────┐
+                  │               │
+                  │ PostgreSQL    │
+                  │ Database      │
+                  │               │
+                  └───────────────┘
 ```
 
-## Input Files
+## Setup
 
-Place your CSV files in the `backend/csv` directory. The files should have these columns:
-- First Name
-- Last Name
-- Full Name
-- Position
-- Company
-- LinkedIn URL
-- Location
-- Industry
+### Prerequisites
 
-You can export these directly from LinkedIn Sales Navigator.
+- Docker & Docker Compose
+- API keys for enrichment services:
+  - Icypeas (API key + secret)
+  - Dropcontact
+  - Hunter.io
+  - Apollo
 
-## Features
+### Configuration
 
-- **Intelligent Cascading**: Tries multiple providers in sequence to maximize data coverage
-- **Confidence Scoring**: Evaluates the quality of each result to prioritize reliable data
-- **Rate Limiting**: Respects API limits for each provider
-- **Progress Tracking**: Monitors success rate and enrichment progress
-- **Smart Error Handling**: Gracefully handles API errors and retries where appropriate
-- **Intermediate Results**: Saves partial results during processing to prevent data loss
+1. Set your API keys in the `.env` file in the root directory:
 
-## Configuration
+```
+HUNTER_API_KEY=your_hunter_key
+DROPCONTACT_API_KEY=your_dropcontact_key
+ICYPEAS_API_KEY=your_icypeas_key
+ICYPEAS_API_SECRET=your_icypeas_secret
+APOLLO_API_KEY=your_apollo_key
+```
 
-The system uses API keys for the following services:
-- Hunter.io
-- DropContact
-- Icypeas
-- Apollo.io
+2. Start the services:
 
-These keys are stored in the `enrichment_cascade.py` file. If you need to update them, edit the `API_KEYS` dictionary.
+```bash
+cd backend
+docker-compose up -d
+```
+
+3. Verify the services are running:
+
+```bash
+docker-compose ps
+```
+
+## Usage
+
+### Processing CSV Files
+
+1. Place your CSV file in the `csv` directory at the root of the project.
+
+2. Run the enrichment process:
+
+```bash
+# From the backend directory
+python services/enrichment-worker/enrich_csv.py csv/your_file.csv
+```
+
+Or directly using Docker:
+
+```bash
+docker exec captely-enrichment-worker python -c "from enrichment.tasks import process_csv_file; process_csv_file('/app/csv/your_file.csv')"
+```
+
+### Monitoring
+
+Access the Flower dashboard at http://localhost:5555 to monitor task progress and worker status.
+
+Username: `admin`  
+Password: `flowerpassword`
+
+## Customization
+
+### Adjusting Provider Order
+
+Modify the `service_order` list in `common/config.py`:
+
+```python
+self.service_order = ['icypeas', 'dropcontact', 'hunter', 'apollo']
+```
+
+### Changing Confidence Thresholds
+
+Modify these values in `common/config.py`:
+
+```python
+self.minimum_confidence = 0.70  # Minimum threshold to accept a result
+self.high_confidence = 0.90     # Threshold to stop the cascade early
+```
 
 ## Troubleshooting
 
-### Connection Issues
-- If you encounter connection issues with a specific provider, the system will automatically skip it and try the next one
-- Check your internet connection if all providers fail
-- Verify that your API keys are correct and have sufficient credits
+- **CSV Not Found**: Ensure your CSV is in the correct `csv` directory
+- **Invalid CSV Format**: Check your CSV has the required columns
+- **API Error**: Verify your API keys in the `.env` file
+- **Worker Not Running**: Check Docker container status with `docker-compose ps`
+- **Database Issues**: Make sure the database tables are created properly
 
-### CSV Format Issues
-- Ensure your CSV files have the required columns
-- If you export from LinkedIn Sales Navigator, the format should be compatible
-- For custom CSV files, make sure the column names match exactly
+## Database Schema
 
-### Long Processing Times
-- The enrichment process may take time, especially for large files
-- The system shows progress updates and estimated completion times
-- You can process a smaller batch by setting the `MAX_LEADS` environment variable
+The system uses three main tables:
 
-### File Access Issues
-- Make sure you have write permissions to the CSV directory
-- Close any open CSV files before running the enrichment process
+- `contacts`: Stores contact information
+- `enrichment_results`: Stores individual provider results
+- `import_jobs`: Tracks overall import progress
 
-## Success Metrics
+## Development
 
-The system aims to achieve:
-- 85-90% email discovery rate
-- Efficient API usage to minimize costs
-- Fast processing through intelligent service orchestration
+### Local Development Setup
 
-## Support
+1. Create a virtual environment:
 
-If you encounter any issues, please check the log files in the `logs` directory for detailed error information. 
+```bash
+cd services/enrichment-worker
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the Celery worker:
+
+```bash
+celery -A enrichment.tasks worker -l info
+```
+
+### Running Tests
+
+```bash
+pytest
+```
+
+## License
+
+This project is licensed under the MIT License. 

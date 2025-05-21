@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: captely
+      POSTGRES_PASSWORD: captely_password
+      POSTGRES_DB: captely
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U captely"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  enrichment_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://captely:captely_password@postgres/captely
+      - REDIS_URL=redis://redis:6379/0
+      - HUNTER_API_KEY=${HUNTER_API_KEY}
+      - DROPCONTACT_API_KEY=${DROPCONTACT_API_KEY}
+      - ICYPEAS_API_KEY=${ICYPEAS_API_KEY}
+      - ICYPEAS_API_SECRET=${ICYPEAS_API_SECRET}
+      - APOLLO_API_KEY=${APOLLO_API_KEY}
+    command: celery -A app.tasks worker -Q contact_enrichment,enrichment_batch,cascade_enrichment,db_operations -l info
+    volumes:
+      - ./csv:/app/csv
+      - ./logs:/app/logs
+
+  enrichment_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://captely:captely_password@postgres/captely
+      - REDIS_URL=redis://redis:6379/0
+    command: celery -A app.celery beat -l info
+    volumes:
+      - ./logs:/app/logs
+
+  enrichment_flower:
+    image: mher/flower:1.0
+    ports:
+      - "5555:5555"
+    environment:
+      - FLOWER_BROKER=redis://redis:6379/0
+      - FLOWER_PORT=5555
+    depends_on:
+      - redis
+      - enrichment_worker
+
+volumes:
+  redis_data:
+  postgres_data: 

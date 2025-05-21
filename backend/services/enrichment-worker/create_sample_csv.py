@@ -42,8 +42,8 @@ def create_sample_csv(num_contacts=20, output_dir=None):
     """Create a sample CSV file with random contacts"""
     # Determine output directory
     if not output_dir:
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../'))
-        output_dir = os.path.join(project_root, 'backend', 'csv')
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(current_dir, 'csv')
     
     # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)

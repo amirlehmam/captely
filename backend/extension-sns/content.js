@@ -85,8 +85,8 @@
   
   // Create the scrape button with correct styling
   function createScrapingButton() {
-    const btn = document.createElement('button');
-    btn.id = 'captely-scrape-btn';
+  const btn = document.createElement('button');
+  btn.id = 'captely-scrape-btn';
     btn.textContent = 'Scrape with Captely';
     btn.style = `
       margin-left: 8px;

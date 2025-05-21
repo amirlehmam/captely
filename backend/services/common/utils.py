@@ -1,4 +1,6 @@
-# services/enrichment-worker/app/common.py
+"""
+Shared utility functions for all services
+"""
 import logging
 import time
 import random
@@ -6,17 +8,13 @@ import json
 from functools import wraps
 from typing import Dict, Any, Callable, Optional, Tuple
 
-# Set up logging
+# Configure logger
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("logs/enrichment.log")
-    ]
 )
 
-logger = logging.getLogger('enrichment_worker')
+logger = logging.getLogger('captely')
 
 # API request rate limiting
 class RateLimiter:
@@ -121,3 +119,32 @@ class ServiceStatus:
 
 # Global service status tracker
 service_status = ServiceStatus()
+
+# CSV column normalization
+def normalize_csv_columns(row: Dict[str, str]) -> Dict[str, str]:
+    """Normalize CSV column names to a standard format."""
+    normalized = {}
+    for key, value in row.items():
+        if not key or not isinstance(key, str):
+            continue
+            
+        # Convert to lowercase and replace spaces with underscores
+        normalized_key = key.lower().replace(' ', '_')
+        
+        # Map common variant column names
+        if normalized_key in ('firstname', 'first'):
+            normalized_key = 'first_name'
+        elif normalized_key in ('lastname', 'last'):
+            normalized_key = 'last_name'
+        elif normalized_key in ('company_name', 'organization'):
+            normalized_key = 'company'
+        elif normalized_key in ('title', 'job_title', 'role'):
+            normalized_key = 'position'
+        elif normalized_key in ('linkedin', 'linkedin_profile', 'linkedin_url'):
+            normalized_key = 'profile_url'
+        elif normalized_key in ('domain', 'website'):
+            normalized_key = 'company_domain'
+            
+        normalized[normalized_key] = value
+    
+    return normalized 

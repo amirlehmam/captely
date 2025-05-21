@@ -60,7 +60,7 @@ goto menu
 echo Opening CSV folder...
 echo.
 :: Determine the CSV directory path
-for %%i in ("%~dp0\..\..\..\..\backend\csv") do set "csv_dir=%%~fi"
+set "csv_dir=%~dp0\csv"
 
 :: Create the directory if it doesn't exist
 if not exist "%csv_dir%" (

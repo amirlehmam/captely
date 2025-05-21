@@ -13,7 +13,6 @@ logger = logging.getLogger('api_test')
 # API Keys from command line arguments or environment
 HUNTER_API_KEY = "1b8302af512410b685217b7fcf00be362e094f0e"
 DROPCONTACT_API_KEY = "zzqP8RNF6KXajJVgYaQiWeZW64J2mX"
-
 # API URLs
 HUNTER_API_URL = "https://api.hunter.io/v2"
 DROPCONTACT_API_URL = "https://api.dropcontact.com/v1"  # Fixed base URL
@@ -49,91 +48,33 @@ def test_dropcontact_api():
     """Test Dropcontact API with the provided key"""
     logger.info("Testing Dropcontact API...")
     
-    # Method 1: Test using the credits endpoint
-    credit_url = f"{DROPCONTACT_API_URL}/credit"  # Fixed credit URL
-    
-    try:
-        headers = {
-            "X-Access-Token": DROPCONTACT_API_KEY
-        }
-        
-        response = requests.get(credit_url, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            credit_info = response.json()
-            credits_left = credit_info.get("credit", 0)
-            logger.info(f"✅ Dropcontact API key is valid! Credits remaining: {credits_left}")
-            
-            # If credits available, test the enrichment endpoint with a minimal example
-            if credits_left > 0:
-                return test_dropcontact_enrichment()
-            else:
-                logger.warning("⚠️ Dropcontact account has no credits remaining")
-                return True  # Key is valid even if no credits
-        elif response.status_code == 401 or response.status_code == 403:
-            logger.error(f"❌ Dropcontact API authentication failed. Status: {response.status_code}")
-            logger.error(f"Response: {response.text}")
-            return False
-        elif response.status_code == 404:
-            # If credit endpoint fails, try the alternative method with empty data
-            logger.info("Credit endpoint not found, trying alternative method...")
-            return test_dropcontact_alt_credit()
-        else:
-            logger.error(f"❌ Dropcontact API returned unexpected status: {response.status_code}")
-            logger.error(f"Response: {response.text}")
-            return False
-    except Exception as e:
-        logger.error(f"❌ Error testing Dropcontact API: {str(e)}")
-        # Try alternative method
-        logger.info("Trying alternative credit check method...")
-        return test_dropcontact_alt_credit()
-
-def test_dropcontact_alt_credit():
-    """Alternative method to check Dropcontact credits per their documentation"""
-    logger.info("Testing Dropcontact API using alternative method...")
-    
-    # According to docs, send an empty request to check credits
-    test_data = {
-        "data": [{}]
-    }
-    
     headers = {
-        "Content-Type": "application/json",
-        "X-Access-Token": DROPCONTACT_API_KEY
+        "X-Access-Token": DROPCONTACT_API_KEY,
+        "Content-Type": "application/json"
     }
-    
     try:
-        # Make the request to check credits
-        enrich_url = f"{DROPCONTACT_API_URL}/enrich/all"
-        response = requests.post(
-            enrich_url, 
-            json=test_data, 
+        probe_resp = requests.post(
+            f"{DROPCONTACT_API_URL}/enrich/all",
+            json={"data": [{}]},
             headers=headers,
-            timeout=15
+            timeout=10
         )
-        
-        if response.status_code == 200 or response.status_code == 201:
-            result = response.json()
-            
-            if "error" in result and result["error"]:
-                logger.error(f"❌ Dropcontact API error: {result.get('reason', 'Unknown reason')}")
-                return False
-            
-            credits_left = result.get("credits_left", 0)
+        if probe_resp.status_code in (200, 201):
+            data = probe_resp.json()
+            credits_left = data.get("credits_left", 0)
             logger.info(f"✅ Dropcontact API key is valid! Credits remaining: {credits_left}")
-            
-            # If requesting an enrichment test
             if credits_left > 0:
                 return test_dropcontact_enrichment()
-            else:
-                logger.warning("⚠️ Dropcontact account has no credits remaining")
-                return True  # Key is valid even if no credits
+            return True
+        elif probe_resp.status_code in (401, 403):
+            logger.error(f"❌ Dropcontact API authentication failed. Status: {probe_resp.status_code}")
+            return False
         else:
-            logger.error(f"❌ Dropcontact API returned error status: {response.status_code}")
-            logger.error(f"Response: {response.text}")
+            logger.error(f"❌ Dropcontact API returned status: {probe_resp.status_code}")
+            logger.error(f"Response: {probe_resp.text}")
             return False
     except Exception as e:
-        logger.error(f"❌ Error testing Dropcontact API: {str(e)}")
+        logger.error(f"❌ Error probing Dropcontact API: {str(e)}")
         return False
 
 def test_dropcontact_enrichment():

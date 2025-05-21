@@ -49,22 +49,22 @@ function Run-Enrichment {
     Write-Host "Running the enrichment process..." -ForegroundColor Cyan
     
     try {
-        # Run the main PowerShell script for enrichment
-        & .\run_in_powershell.ps1
+        # Run the enrichment directly using Python instead of calling the PowerShell script
+        python run_enrichment.py
     }
     catch {
         Write-Host "Error running enrichment process: $_" -ForegroundColor Red
-        Write-Host "`nPress any key to return to the menu..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     }
+    
+    Write-Host "`nPress any key to return to the menu..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
 function Open-CsvFolder {
     Write-Host "Opening CSV folder..." -ForegroundColor Cyan
     
     $scriptDir = $PSScriptRoot
-    $projectRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $scriptDir))
-    $csvDir = Join-Path -Path $projectRoot -ChildPath "backend\csv"
+    $csvDir = Join-Path -Path $scriptDir -ChildPath "csv"
     
     # Create the directory if it doesn't exist
     if (-not (Test-Path $csvDir)) {

@@ -32,7 +32,7 @@ API_URLS = {
     "hunter": "https://api.hunter.io/v2",
     "dropcontact": "https://api.dropcontact.com/v1",  # Fixed to correct base URL
     # Official domains per documentation
-    "icypeas": "https://app.icypeas.com/api/v1",
+    "icypeas": "https://app.icypeas.com/api",  # official base URL per docs
     "apollo": "https://api.apollo.io/v1"
 }
 
@@ -267,7 +267,7 @@ class DropcontactEnrichment(EnrichmentService):
                 self.service_available = False
                 return {"email": None, "phone": None, "confidence": 0, "source": self.name}
             
-            # Prepare the request data
+            # Create the request data
             data = {
                 "data": [{
                     "first_name": contact.get("First Name", ""),
@@ -277,43 +277,41 @@ class DropcontactEnrichment(EnrichmentService):
                 }],
                 # For synchronous enrichment, set sync to true (API will wait for results)
                 "siren": True,
+                "language": "en",
                 "num": True,
                 "sync": False  # Use async mode for better reliability
             }
             
+            # Prepare headers
             headers = {
                 "Content-Type": "application/json",
                 "X-Access-Token": self.api_key
             }
-            
-            logger.info(f"Sending request to Dropcontact for {contact.get('Full Name')}")
-            
-            # Verify API before making the main request
+
+            # Quick credits probe recommended by docs - send an empty object that consumes 0 credits
             try:
-                # First check API key validity with a credit check
-                credit_url = f"{self.base_url}/credit"
-                credit_response = requests.get(credit_url, headers=headers, timeout=10)
-                
-                if credit_response.status_code == 200:
-                    credit_info = credit_response.json()
-                    credits_left = credit_info.get("credit", 0)
+                credits_probe = requests.post(
+                    f"{self.base_url}/enrich/all",
+                    json={"data": [{}]},
+                    headers=headers,
+                    timeout=10
+                )
+                if credits_probe.status_code in (200, 201):
+                    credits_info = credits_probe.json()
+                    credits_left = credits_info.get("credits_left", 0)
                     logger.info(f"Dropcontact API valid. Credits remaining: {credits_left}")
-                    
                     if credits_left < 1:
                         logger.warning(f"Dropcontact API has insufficient credits: {credits_left}")
                         self.service_available = False
                         return {"email": None, "phone": None, "confidence": 0, "source": self.name}
-                elif credit_response.status_code == 401 or credit_response.status_code == 403:
-                    logger.error(f"Dropcontact API key is invalid. Status: {credit_response.status_code}")
+                elif credits_probe.status_code in (401, 403):
+                    logger.error(f"Dropcontact API key is invalid. Status: {credits_probe.status_code}")
                     self.service_available = False
                     return {"email": None, "phone": None, "confidence": 0, "source": self.name}
-                elif credit_response.status_code == 404:
-                    # Try alternative method to check credits per the docs
-                    logger.info(f"Dropcontact credit endpoint not found, using alternative method...")
-                    # Will continue to the main request
+                # Any 404 ignored – /credit removed from API
             except Exception as e:
-                logger.warning(f"Error checking Dropcontact API credits: {str(e)}")
-                # Continue anyway as the main request might still work
+                logger.warning(f"Credits probe to Dropcontact failed: {str(e)}")
+                # continue; main request might still work
             
             # Make the main request to the Dropcontact API
             response = requests.post(f"{self.base_url}/enrich/all", 
@@ -445,157 +443,75 @@ class IcypeasEnrichment(EnrichmentService):
         self.base_url = API_URLS.get(self.name)
     
     def enrich_contact(self, contact: Dict) -> Dict:
-        """Enrich a contact using Icypeas API"""
+        """Enrich a contact using Icypeas async email-search API"""
         if not self.service_available:
             logger.warning(f"{self.name} service marked as unavailable, skipping")
             return {"email": None, "phone": None, "confidence": 0, "source": self.name}
-            
+
         try:
-            # Log API configuration
-            logger.info(f"Using Icypeas API endpoint: {self.base_url}")
-            
-            # Using method 1 from Icypeas docs - API key in Authorization header
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": self.api_key
+            headers = {"Content-Type": "application/json", "Authorization": self.api_key}
+
+            launch_payload = {
+                "firstname": contact.get("First Name", ""),
+                "lastname": contact.get("Last Name", ""),
+                "domainOrCompany": contact.get("Company", "") or contact.get("Domain", "")
             }
-            
-            # Prepare data - simplified for better compatibility
-            data = {
-                "first_name": contact.get("First Name", ""),
-                "last_name": contact.get("Last Name", ""),
-                "company_name": contact.get("Company", "")
-            }
-            
-            # Add LinkedIn URL if available
             if contact.get("LinkedIn URL"):
-                data["linkedin_url"] = contact.get("LinkedIn URL", "")
-            
-            logger.info(f"Sending request to Icypeas for {contact.get('Full Name')}")
-            
-            # Email finder endpoint
-            email_finder_url = f"{self.base_url}/finder"
-            
-            # Make the request to the Icypeas API with longer timeout
-            response = requests.post(email_finder_url, json=data, headers=headers, timeout=30)
-            
-            # Log the response status
-            logger.info(f"Icypeas response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                result = response.json()
-                
-                # Extract email, phone, and confidence from the result
-                if "email" in result:
-                    email = result["email"].get("address")
-                    confidence = result["email"].get("confidence", 0)
-                else:
-                    email = None
-                    confidence = 0
-                
-                # Extract phone if available
-                phone = None
-                if "phone" in result:
-                    phone = result["phone"].get("number")
-                
-                logger.info(f"Icypeas found for {contact.get('Full Name')}: Email: {email}, Phone: {phone}")
-                
-                return {
-                    "email": email,
-                    "phone": phone,
-                    "confidence": confidence,
-                    "source": self.name
-                }
-            elif response.status_code == 401 or response.status_code == 403:
-                logger.error(f"Icypeas authentication failed. Trying alternate auth method...")
-                
-                # Try the second authentication method with HMAC-SHA1 signature
-                return self._try_alternate_auth(contact, email_finder_url)
-            else:
-                logger.warning(f"Icypeas API error: {response.status_code} - {response.text}")
+                launch_payload["linkedin"] = contact["LinkedIn URL"]
+
+            # 1) Launch async search
+            launch_url = f"{self.base_url}/email-search"
+            logger.debug(f"Icypeas launch payload: {launch_payload}")
+            launch_resp = self._make_request("post", launch_url, json=launch_payload, headers=headers, timeout=30)
+
+            if launch_resp.status_code not in (200, 201):
+                logger.warning(f"Icypeas launch error: {launch_resp.status_code} {launch_resp.text}")
                 return {"email": None, "phone": None, "confidence": 0, "source": self.name}
-                
+
+            req_id = launch_resp.json().get("item", {}).get("_id")
+            if not req_id:
+                logger.warning("Icypeas did not return request id")
+                return {"email": None, "phone": None, "confidence": 0, "source": self.name}
+
+            # 2) Poll for result
+            poll_url = f"{self.base_url}/bulk-single-searchs/read"
+            max_attempts = 6
+            wait_seq = [3, 5, 8, 12, 20, 30]
+
+            for attempt in range(max_attempts):
+                time.sleep(wait_seq[attempt])
+                poll_resp = self._make_request("post", poll_url, json={"id": req_id}, headers=headers, timeout=20)
+
+                if poll_resp.status_code != 200:
+                    continue
+
+                items = poll_resp.json().get("items", [])
+                if not items:
+                    continue
+
+                item = items[0]
+                status = item.get("status")
+                if status not in ("DEBITED", "FREE"):  # still processing
+                    continue
+
+                results = item.get("results", {})
+                emails = results.get("emails", [])
+                phone = None
+                if results.get("phones"):
+                    phone = results["phones"][0]
+
+                if emails:
+                    best = emails[0]
+                    email_addr = best.get("email")
+                    certainty = best.get("certainty", "risky")
+                    confidence = 0.9 if certainty == "ultra_sure" else 0.75 if certainty == "sure" else 0.4
+                    return {"email": email_addr, "phone": phone, "confidence": confidence, "source": self.name}
+
+            logger.info("Icypeas search completed with no email found")
+            return {"email": None, "phone": None, "confidence": 0, "source": self.name}
+
         except Exception as e:
             logger.error(f"Error in Icypeas enrichment: {str(e)}")
-            return {"email": None, "phone": None, "confidence": 0, "source": self.name}
-    
-    def _try_alternate_auth(self, contact: Dict, url: str) -> Dict:
-        """Try alternate authentication method with signature"""
-        try:
-            import hmac
-            import hashlib
-            from datetime import datetime
-            
-            # Generate timestamp in ISO 8601 format
-            timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-            
-            # Extract endpoint from URL
-            endpoint = url.replace(self.base_url, "")
-            
-            # Create payload to sign
-            method = "post"
-            payload = f"{method}{endpoint}{timestamp}".lower()
-            
-            # Create HMAC-SHA1 signature
-            signature = hmac.new(
-                self.api_secret.encode('utf-8'),
-                payload.encode('utf-8'),
-                hashlib.sha1
-            ).hexdigest()
-            
-            # Prepare headers
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"{self.api_key}:{signature}",
-                "X-ROCK-TIMESTAMP": timestamp
-            }
-            
-            # Prepare data
-            data = {
-                "first_name": contact.get("First Name", ""),
-                "last_name": contact.get("Last Name", ""),
-                "company_name": contact.get("Company", "")
-            }
-            
-            # Add LinkedIn URL if available
-            if contact.get("LinkedIn URL"):
-                data["linkedin_url"] = contact.get("LinkedIn URL", "")
-            
-            logger.info(f"Trying alternate auth method for Icypeas")
-            
-            # Make the request
-            response = requests.post(url, json=data, headers=headers, timeout=30)
-            
-            if response.status_code == 200:
-                result = response.json()
-                
-                # Extract email, phone, and confidence from the result
-                if "email" in result:
-                    email = result["email"].get("address")
-                    confidence = result["email"].get("confidence", 0)
-                else:
-                    email = None
-                    confidence = 0
-                
-                # Extract phone if available
-                phone = None
-                if "phone" in result:
-                    phone = result["phone"].get("number")
-                
-                logger.info(f"Icypeas alternate auth found for {contact.get('Full Name')}: Email: {email}")
-                
-                return {
-                    "email": email,
-                    "phone": phone,
-                    "confidence": confidence,
-                    "source": self.name
-                }
-            else:
-                logger.warning(f"Icypeas alternate auth failed: {response.status_code}")
-                return {"email": None, "phone": None, "confidence": 0, "source": self.name}
-                
-        except Exception as e:
-            logger.error(f"Error in Icypeas alternate auth: {str(e)}")
             return {"email": None, "phone": None, "confidence": 0, "source": self.name}
     
     def get_email_confidence(self, result: Dict) -> float:
@@ -731,16 +647,30 @@ class EnrichmentCascade:
             
             try:
                 if service.name == "icypeas":
-                    # For Icypeas, just do a simple connection test
+                    # For Icypeas, test with a domain verification request
                     try:
-                        # Using a simple URL check first to see if domain is reachable
-                        base_url = service.base_url.split('/api/')[0]
-                        response = requests.head(f"{base_url}/api/health", timeout=5)
-                        logger.info(f"Icypeas base URL is reachable: {response.status_code}")
-                        working_services.append(service)
+                        headers = {"Authorization": service.api_key}
+                        test_url = f"{service.base_url}/domain-verification"
+                        
+                        # Use a simple domain for testing
+                        data = {"domain": "gmail.com"}
+                        response = requests.post(test_url, json=data, headers=headers, timeout=5)
+                        
+                        if response.status_code == 200:
+                            logger.info(f"Icypeas API is accessible: status {response.status_code}")
+                            working_services.append(service)
+                        elif response.status_code in (401, 403):
+                            logger.warning(f"Icypeas API authentication issue: {response.status_code}")
+                            # Still add to try later with alternate auth
+                            working_services.append(service)
+                        else:
+                            logger.warning(f"Icypeas API returned status: {response.status_code}")
+                            # Still keep it for trying
+                            working_services.append(service)
                     except Exception as e:
-                        logger.warning(f"Icypeas domain unreachable, will skip: {str(e)}")
-                        service.service_available = False
+                        logger.warning(f"Icypeas API test error: {str(e)}")
+                        # Still add the service - we'll try it anyway
+                        working_services.append(service)
                 
                 elif service.name == "hunter":
                     # Try account check for Hunter
@@ -760,24 +690,27 @@ class EnrichmentCascade:
                         logger.warning(f"Hunter test error: {str(e)}")
                 
                 elif service.name == "dropcontact":
-                    # Try credit check for Dropcontact
+                    # Quick probe using empty object per docs
                     try:
-                        test_url = f"{service.base_url}/credit"
-                        response = requests.get(
-                            test_url, 
-                            headers={"X-Access-Token": service.api_key},
+                        probe_resp = requests.post(
+                            f"{service.base_url}/enrich/all",
+                            json={"data": [{}]},
+                            headers={"X-Access-Token": service.api_key, "Content-Type": "application/json"},
                             timeout=5
                         )
-                        if response.status_code == 200:
-                            credits = response.json().get("credit", 0)
+                        if probe_resp.status_code in (200, 201):
+                            credits = probe_resp.json().get("credits_left", 0)
                             logger.info(f"Dropcontact API available. Credits: {credits}")
                             working_services.append(service)
+                        elif probe_resp.status_code in (401, 403):
+                            logger.warning(f"Dropcontact API authentication failed: {probe_resp.status_code}")
+                            service.service_available = False
                         else:
-                            logger.warning(f"Dropcontact API error: {response.status_code}")
-                            if response.status_code in (401, 403):
-                                service.service_available = False
+                            logger.warning(f"Dropcontact probe returned status: {probe_resp.status_code}")
+                            working_services.append(service)  # still usable
                     except Exception as e:
-                        logger.warning(f"Dropcontact test error: {str(e)}")
+                        logger.warning(f"Dropcontact probe error: {str(e)}")
+                        working_services.append(service)
                 
                 elif service.name == "apollo":
                     # Simple check for Apollo

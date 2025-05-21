@@ -1,5 +1,6 @@
-# services/enrichment-worker/app/tasks.py
-
+"""
+Enrichment tasks for the Captely system.
+"""
 import os
 import csv
 import time
@@ -8,28 +9,28 @@ import asyncio
 import httpx
 from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
-import logging
 from datetime import datetime
 
 # Celery imports
 from celery import Task, chain, group
 from celery.exceptions import SoftTimeLimitExceeded, Retry
 
-# Database imports
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import insert, update, select, delete, text
-
-# Local imports
-from app.celery import celery_app
-from app.config import get_settings
-from app.common import (
+# Import the shared Celery app
+from common.celery_app import celery_app
+from common.config import get_settings
+from common.utils import (
     logger, 
     retry_with_backoff, 
     calculate_confidence, 
     RateLimiter, 
-    service_status
+    service_status,
+    normalize_csv_columns
 )
+
+# Database imports
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+import sqlalchemy as sa
 
 # Get application settings
 settings = get_settings()
@@ -46,50 +47,69 @@ rate_limiters = {
     'apollo': RateLimiter(calls_per_minute=30)
 }
 
+# Database table names - using string-based approach for better compatibility
+CONTACTS_TABLE = 'contacts'
+ENRICHMENT_RESULTS_TABLE = 'enrichment_results'
+IMPORT_JOBS_TABLE = 'import_jobs'
+
 # ----- Database Operations ----- #
 
 async def get_or_create_job(session: AsyncSession, job_id: str, user_id: str, total_contacts: int) -> str:
     """Get or create an import job record."""
     # Check if job exists
-    stmt = select("*").where(f"id = '{job_id}'").limit(1)
-    result = await session.execute(stmt)
+    query = sa.text(f"SELECT * FROM {IMPORT_JOBS_TABLE} WHERE id = :job_id")
+    result = await session.execute(query, {"job_id": job_id})
     job = result.first()
     
     if not job:
         # Create new job
-        stmt = insert("import_jobs").values(
-            id=job_id,
-            user_id=user_id,
-            status="processing",
-            total=total_contacts,
-            completed=0,
-            created_at=datetime.now(),
-            updated_at=datetime.now()
-        )
-        await session.execute(stmt)
+        query = sa.text(f"""
+            INSERT INTO {IMPORT_JOBS_TABLE} 
+            (id, user_id, status, total, completed, created_at, updated_at)
+            VALUES 
+            (:job_id, :user_id, :status, :total, :completed, :created_at, :updated_at)
+        """)
+        await session.execute(query, {
+            "job_id": job_id,
+            "user_id": user_id,
+            "status": "processing",
+            "total": total_contacts,
+            "completed": 0,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        })
         await session.commit()
     
     return job_id
 
 async def save_contact(session: AsyncSession, job_id: str, lead: dict) -> int:
     """Save a contact to the database and return its ID."""
-    stmt = insert("contacts").values(
-        job_id=job_id,
-        first_name=lead.get("first_name", ""),
-        last_name=lead.get("last_name", ""),
-        position=lead.get("position", ""),
-        company=lead.get("company", ""),
-        company_domain=lead.get("company_domain", ""),
-        profile_url=lead.get("profile_url", ""),
-        location=lead.get("location", ""),
-        industry=lead.get("industry", ""),
-        enriched=False,
-        enrichment_status="pending",
-        created_at=datetime.now(),
-        updated_at=datetime.now()
-    ).returning("id")
+    query = sa.text(f"""
+        INSERT INTO {CONTACTS_TABLE}
+        (job_id, first_name, last_name, position, company, company_domain, 
+        profile_url, location, industry, enriched, enrichment_status, created_at, updated_at)
+        VALUES
+        (:job_id, :first_name, :last_name, :position, :company, :company_domain,
+        :profile_url, :location, :industry, :enriched, :enrichment_status, :created_at, :updated_at)
+        RETURNING id
+    """)
     
-    result = await session.execute(stmt)
+    result = await session.execute(query, {
+        "job_id": job_id,
+        "first_name": lead.get("first_name", ""),
+        "last_name": lead.get("last_name", ""),
+        "position": lead.get("position", ""),
+        "company": lead.get("company", ""),
+        "company_domain": lead.get("company_domain", ""),
+        "profile_url": lead.get("profile_url", ""),
+        "location": lead.get("location", ""),
+        "industry": lead.get("industry", ""),
+        "enriched": False,
+        "enrichment_status": "pending",
+        "created_at": datetime.now(),
+        "updated_at": datetime.now()
+    })
+    
     contact_id = result.scalar_one()
     await session.commit()
     
@@ -118,27 +138,25 @@ async def update_contact(
     
     # Add enrichment data if provided
     if enrichment_data:
-        params["enriched"] = True 
-        set_clauses.append("enriched = :enriched")
-        
-        params["enrichment_status"] = "completed"
+        set_clauses.append("enriched = TRUE")
         set_clauses.append("enrichment_status = :enrichment_status")
+        params["enrichment_status"] = "completed"
         
         if "provider" in enrichment_data:
-            params["enrichment_provider"] = enrichment_data["provider"]
             set_clauses.append("enrichment_provider = :enrichment_provider")
+            params["enrichment_provider"] = enrichment_data["provider"]
             
         if "confidence" in enrichment_data:
-            params["enrichment_score"] = enrichment_data["confidence"]
             set_clauses.append("enrichment_score = :enrichment_score")
+            params["enrichment_score"] = enrichment_data["confidence"]
             
         if "email_verified" in enrichment_data:
-            params["email_verified"] = enrichment_data["email_verified"]
             set_clauses.append("email_verified = :email_verified")
+            params["email_verified"] = enrichment_data["email_verified"]
             
         if "phone_verified" in enrichment_data:
-            params["phone_verified"] = enrichment_data["phone_verified"]
             set_clauses.append("phone_verified = :phone_verified")
+            params["phone_verified"] = enrichment_data["phone_verified"]
     
     # Add updated_at always
     set_clauses.append("updated_at = :updated_at")
@@ -146,8 +164,8 @@ async def update_contact(
     # Build and execute the query
     if set_clauses:
         set_clause = ", ".join(set_clauses)
-        stmt = text(f"UPDATE contacts SET {set_clause} WHERE id = :contact_id")
-        await session.execute(stmt, params)
+        query = sa.text(f"UPDATE {CONTACTS_TABLE} SET {set_clause} WHERE id = :contact_id")
+        await session.execute(query, params)
         await session.commit()
 
 async def save_enrichment_result(
@@ -157,35 +175,58 @@ async def save_enrichment_result(
     result: Dict[str, Any]
 ):
     """Save enrichment result to the database."""
-    stmt = insert("enrichment_results").values(
-        contact_id=contact_id,
-        provider=provider,
-        email=result.get("email"),
-        phone=result.get("phone"),
-        confidence_score=result.get("confidence", 0),
-        email_verified=result.get("email_verified", False),
-        phone_verified=result.get("phone_verified", False),
-        raw_data=json.dumps(result.get("raw_data", {})),
-        created_at=datetime.now()
-    )
+    query = sa.text(f"""
+        INSERT INTO {ENRICHMENT_RESULTS_TABLE}
+        (contact_id, provider, email, phone, confidence_score, email_verified, 
+        phone_verified, raw_data, created_at)
+        VALUES
+        (:contact_id, :provider, :email, :phone, :confidence_score, :email_verified,
+        :phone_verified, :raw_data, :created_at)
+    """)
     
-    await session.execute(stmt)
+    await session.execute(query, {
+        "contact_id": contact_id,
+        "provider": provider,
+        "email": result.get("email"),
+        "phone": result.get("phone"),
+        "confidence_score": result.get("confidence", 0),
+        "email_verified": result.get("email_verified", False),
+        "phone_verified": result.get("phone_verified", False),
+        "raw_data": json.dumps(result.get("raw_data", {})),
+        "created_at": datetime.now()
+    })
+    
     await session.commit()
 
 async def increment_job_progress(session: AsyncSession, job_id: str):
     """Increment the completed count for a job."""
-    stmt = text("UPDATE import_jobs SET completed = completed + 1, updated_at = :updated_at WHERE id = :job_id")
-    await session.execute(stmt, {"job_id": job_id, "updated_at": datetime.now()})
+    query = sa.text(f"""
+        UPDATE {IMPORT_JOBS_TABLE}
+        SET completed = completed + 1, updated_at = :updated_at
+        WHERE id = :job_id
+    """)
+    
+    await session.execute(query, {
+        "job_id": job_id,
+        "updated_at": datetime.now()
+    })
+    
     await session.commit()
 
 async def update_job_status(session: AsyncSession, job_id: str, status: str):
     """Update the status of a job."""
-    stmt = update("import_jobs").where(f"id = '{job_id}'").values(
-        status=status,
-        updated_at=datetime.now()
-    )
+    query = sa.text(f"""
+        UPDATE {IMPORT_JOBS_TABLE}
+        SET status = :status, updated_at = :updated_at
+        WHERE id = :job_id
+    """)
     
-    await session.execute(stmt)
+    await session.execute(query, {
+        "job_id": job_id,
+        "status": status,
+        "updated_at": datetime.now()
+    })
+    
     await session.commit()
 
 # ----- API Service Integration ----- #
@@ -556,14 +597,14 @@ class EnrichmentTask(Task):
         logger.error(f"Task {task_id} failed: {str(exc)}")
         super().on_failure(exc, task_id, args, kwargs, einfo)
 
-@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.process_enrichment_batch')
+@celery_app.task(base=EnrichmentTask, bind=True, name='enrichment.tasks.process_enrichment_batch')
 def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
     """Process a batch of contacts from a CSV file."""
     logger.info(f"Processing enrichment batch: {file_path}")
     
     try:
         # Read the CSV file
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             contacts = list(reader)
         
@@ -573,20 +614,21 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
         
         # Process each contact
         for contact in contacts:
-            # Normalize keys (convert to lowercase with underscores)
-            normalized = {}
-            for key, value in contact.items():
-                normalized_key = key.lower().replace(' ', '_')
-                normalized[normalized_key] = value
+            # Normalize column names
+            normalized = normalize_csv_columns(contact)
             
-            # Map common fields
+            # Skip empty entries
+            if not normalized.get('first_name') and not normalized.get('last_name'):
+                continue
+                
+            # Map common fields and ensure required fields exist
             lead = {
-                'first_name': normalized.get('first_name', '') or normalized.get('firstname', ''),
-                'last_name': normalized.get('last_name', '') or normalized.get('lastname', ''),
-                'company': normalized.get('company', '') or normalized.get('company_name', ''),
-                'company_domain': normalized.get('company_domain', '') or normalized.get('domain', ''),
-                'profile_url': normalized.get('profile_url', '') or normalized.get('linkedin_url', ''),
-                'position': normalized.get('position', '') or normalized.get('title', ''),
+                'first_name': normalized.get('first_name', ''),
+                'last_name': normalized.get('last_name', ''),
+                'company': normalized.get('company', ''),
+                'company_domain': normalized.get('company_domain', ''),
+                'profile_url': normalized.get('profile_url', ''),
+                'position': normalized.get('position', ''),
                 'location': normalized.get('location', ''),
                 'industry': normalized.get('industry', '')
             }
@@ -605,7 +647,7 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
         logger.error(f"Error processing batch {file_path}: {str(e)}")
         raise
 
-@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.cascade_enrich')
+@celery_app.task(base=EnrichmentTask, bind=True, name='enrichment.tasks.cascade_enrich')
 def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     """Cascade through enrichment services based on cost efficiency."""
     logger.info(f"Starting cascading enrichment for {lead.get('first_name')} {lead.get('last_name')}")
@@ -713,7 +755,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         logger.error(f"Error in cascading enrichment: {str(e)}")
         raise
 
-@celery_app.task(name='app.tasks.process_csv_file')
+@celery_app.task(name='enrichment.tasks.process_csv_file')
 def process_csv_file(file_path: str, job_id: str = None, user_id: str = None):
     """Process a CSV file and start the enrichment process."""
     logger.info(f"Processing CSV file: {file_path}")
@@ -723,6 +765,10 @@ def process_csv_file(file_path: str, job_id: str = None, user_id: str = None):
         if not job_id:
             job_id = f"job_{int(time.time())}"
         
+        # Use default user_id if not provided
+        if not user_id:
+            user_id = "system"
+            
         # Process the file
         process_enrichment_batch.delay(file_path, job_id, user_id)
         
@@ -731,4 +777,4 @@ def process_csv_file(file_path: str, job_id: str = None, user_id: str = None):
     
     except Exception as e:
         logger.error(f"Error processing CSV file {file_path}: {str(e)}")
-        raise
+        raise 

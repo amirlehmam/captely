@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'enableButtons':
         // Enable appropriate buttons based on the message
         if (message.downloadEnabled) {
-          downloadBtn.disabled = false;
+        downloadBtn.disabled = false;
         }
         if (message.enrichEnabled) {
           enrichBtn.disabled = false;
