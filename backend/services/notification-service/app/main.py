@@ -13,8 +13,8 @@ from datetime import datetime, timedelta
 import smtplib
 import asyncio
 import httpx
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText as MimeText
+from email.mime.multipart import MIMEMultipart as MimeMultipart
 from jose import jwt, JWTError
 import os
 
