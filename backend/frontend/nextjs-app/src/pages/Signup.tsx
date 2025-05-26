@@ -1,53 +1,49 @@
 import React, { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '../services/api';
 
-// Hard-code the URL to localhost for browser access
-const AUTH_BASE = 'http://localhost:8001'; // Use localhost for browser access
+interface SignupPageProps {
+  onLogin: () => void;
+}
 
-const SignupPage: React.FC = () => {
+const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      console.log(`Attempting to connect to ${AUTH_BASE}/auth/signup`);
-      
-      const res = await fetch(`${AUTH_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        mode: 'cors', // Explicitly set CORS mode
-        body: JSON.stringify({ email, password }),
-      }).catch(err => {
-        console.error('Network error during fetch:', err);
-        throw new Error(`Network error: ${err.message || 'Unable to connect to authentication service'}`);
-      });
-      
-      if (!res.ok) {
-        let errorMessage = `Error ${res.status}: ${res.statusText}`;
-        try {
-          const body = await res.json();
-          errorMessage = body?.detail || errorMessage;
-        } catch (parseError) {
-          console.error('Error parsing response:', parseError);
-        }
-        throw new Error(errorMessage);
-      }
-      
-      setSuccess(true);
-      setTimeout(() => navigate('/login', { replace: true }), 1000);
+      await apiService.signup(email, password);
+      onLogin();
+      navigate('/', { replace: true });
     } catch (err: any) {
       console.error('Signup error:', err);
-      setError(err.message || 'An unknown error occurred');
+      setError(err.message || 'Signup failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,26 +59,28 @@ const SignupPage: React.FC = () => {
           Create your account
         </h2>
         {error && (
-          <p className="mt-2 text-center text-sm text-red-600">{error}s</p>
-        )}
-        {success && (
-          <p className="mt-2 text-center text-sm text-green-600">Account created! Redirecting...</p>
+          <p className="mt-2 text-center text-sm text-red-600">{error}</p>
         )}
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          Or{' '}
+          Already have an account?{' '}
           <a
             href="/login"
             className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
           >
-            sign in to your account
+            Sign in here
           </a>
         </p>
       </div>
+
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Email address
               </label>
               <div className="mt-1">
@@ -98,33 +96,118 @@ const SignupPage: React.FC = () => {
                 />
               </div>
             </div>
+
+            {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Password
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white"
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
               </div>
             </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Confirm Password
+              </label>
+              <div className="mt-1 relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit */}
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                disabled={loading}
+                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign up
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {loading ? 'Creating account...' : 'Create account'}
+                {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
               </button>
             </div>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <div>
+                <a
+                  href="#"
+                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  <span className="sr-only">Sign up with Google</span>
+                  {/* Google SVG here */}
+                </a>
+              </div>
+              <div>
+                <a
+                  href="#"
+                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  <span className="sr-only">Sign up with Microsoft</span>
+                  {/* Microsoft SVG here */}
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -13,11 +13,15 @@ class CreditService:
         This would typically query a database or external API.
         """
         # Here you'd interact with a database or external API to get credit data.
-        # For now, we simulate it with dummy data.
+        # For now, we simulate it with dummy data that matches frontend expectations.
         return {
             "user_id": user_id,
-            "credit_score": 750,
-            "status": "approved"
+            "balance": 3450,
+            "used_today": 25,
+            "limit_daily": 1000,
+            "limit_monthly": 30000,
+            "percentage_used": 72,
+            "status": "active"
         }
 
     def process_credit_application(self, user_id):

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import {
+import { 
   Upload,
   FileText,
   CheckCircle,
@@ -98,7 +98,7 @@ const ImportPage: React.FC = () => {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   };
-
+  
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
@@ -137,8 +137,8 @@ const ImportPage: React.FC = () => {
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
+                  onDrop={handleDrop}
+                >
                 {selectedFile ? (
                   <div className="space-y-4">
                     <FileText className="h-12 w-12 text-green-500 mx-auto" />
@@ -187,7 +187,7 @@ const ImportPage: React.FC = () => {
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         or click to browse files
                       </p>
-                    </div>
+                </div>
                     <input
                       type="file"
                       accept=".csv"
@@ -201,10 +201,10 @@ const ImportPage: React.FC = () => {
                     >
                       Browse Files
                     </label>
-                  </div>
-                )}
+            </div>
+          )}
               </div>
-
+              
               {/* Upload Progress */}
               {uploading && (
                 <div className="mt-6">
@@ -231,15 +231,15 @@ const ImportPage: React.FC = () => {
                   <div className="flex items-center">
                     <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
                     <span className="text-red-700 dark:text-red-300">Upload failed: {error}</span>
-                  </div>
-                </div>
-              )}
+              </div>
+            </div>
+          )}
             </>
           ) : (
             /* Success State */
             <div className="text-center space-y-6">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-              <div>
+            <div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Upload Successful!
                 </h3>
@@ -251,29 +251,29 @@ const ImportPage: React.FC = () => {
               {uploadResult && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
+                  <div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
                         {uploadResult.total_contacts || 0}
-                      </div>
+                  </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">Contacts</div>
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {uploadResult.job_id?.substring(0, 8) || 'N/A'}
-                      </div>
+                  </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">Job ID</div>
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                         Starting
-                      </div>
+                  </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">Status</div>
-                    </div>
+                  </div>
                   </div>
                 </div>
               )}
 
-              <button
+                  <button
                 onClick={() => {
                   setUploadSuccess(false);
                   setUploadResult(null);
@@ -281,7 +281,7 @@ const ImportPage: React.FC = () => {
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700"
               >
                 Upload Another File
-              </button>
+                  </button>
             </div>
           )}
         </div>
@@ -387,8 +387,8 @@ const ImportPage: React.FC = () => {
                   </div>
                 );
               })}
-            </div>
-          </div>
+        </div>
+      </div>
         </motion.div>
       )}
     </div>

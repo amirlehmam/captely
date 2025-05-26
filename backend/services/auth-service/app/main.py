@@ -198,7 +198,22 @@ async def validate_token(data: TokenValidateIn, db: AsyncSession = Depends(get_d
         # Log the incoming token for debugging
         print(f"Validating token: {data.token[:10]}...")
         
-        # Use direct SQL with text() to avoid model conversion issues
+        # First try to validate as JWT token
+        try:
+            payload = jwt.decode(
+                data.token,
+                settings.jwt_secret,
+                algorithms=[settings.jwt_algorithm]
+            )
+            user_id = payload.get("sub")
+            if user_id:
+                print(f"JWT token validation successful for user_id: {user_id}")
+                return {"user_id": int(user_id), "valid": True}
+        except (ExpiredSignatureError, PyJWTError) as jwt_error:
+            print(f"JWT validation failed: {jwt_error}")
+            # Continue to try API key validation
+        
+        # If JWT fails, try API key validation
         query = text("""
         SELECT user_id 
         FROM api_keys 
@@ -208,16 +223,17 @@ async def validate_token(data: TokenValidateIn, db: AsyncSession = Depends(get_d
         result = await db.execute(query, {"token": data.token})
         row = result.fetchone()
         
-        if not row:
-            print(f"Token validation failed: No matching token found")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or revoked API token",
-            )
+        if row:
+            user_id = row[0]
+            print(f"API key validation successful for user_id: {user_id}")
+            return {"user_id": user_id, "valid": True}
         
-        user_id = row[0]
-        print(f"Token validation successful for user_id: {user_id}")
-        return {"user_id": user_id, "valid": True}
+        print(f"Token validation failed: No matching token found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+        
     except HTTPException as e:
         # Re-raise HTTP exceptions
         raise
@@ -262,6 +278,11 @@ async def login(data: SignupIn, db: AsyncSession = Depends(get_db)):
 
 @app.get("/auth/me", response_model=UserOut)
 async def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+# Add missing profile endpoint that frontend expects
+@app.get("/api/auth/profile/", response_model=UserOut)
+async def get_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
 @app.post("/auth/apikey", response_model=ApiKeyOut, status_code=status.HTTP_201_CREATED)

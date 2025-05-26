@@ -4,16 +4,16 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     database_url: str
     redis_url: str
-    jwt_secret: str
+    jwt_secret: str = "devsecret"
 
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    aws_default_region: str
-    s3_bucket_raw: str
-    s3_bucket_results: str
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_default_region: str = "us-east-1"
+    s3_bucket_raw: str = ""
+    s3_bucket_results: str = ""
 
-    hunter_api: str
-    dropcontact_api: str
+    hunter_api: str = ""
+    dropcontact_api: str = ""
 
     class Config:
         env_file = "../../.env"  # relative to use in each service

@@ -57,7 +57,7 @@ function App() {
               path="/login"
               element={<LoginPage onLogin={handleLogin} />}
             />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/signup" element={<SignupPage onLogin={handleLogin} />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </>
         )}

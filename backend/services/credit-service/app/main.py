@@ -127,6 +127,19 @@ async def get_credit_info(user_id: str, auth=Depends(verify_jwt)):
     """
     return credit_service.get_credit_info(user_id)
 
+@app.get("/api/credits/{user_id}/balance", status_code=status.HTTP_200_OK)
+async def get_credit_balance(user_id: str, auth=Depends(verify_jwt)):
+    """
+    Return credit balance for a given user_id (frontend expects this endpoint).
+    """
+    credit_info = credit_service.get_credit_info(user_id)
+    return {
+        "balance": credit_info.get("balance", 0),
+        "used_today": credit_info.get("used_today", 0),
+        "limit_daily": credit_info.get("limit_daily", 1000),
+        "limit_monthly": credit_info.get("limit_monthly", 30000)
+    }
+
 router = APIRouter(prefix="/api/credits")
 
 @router.post("/check_and_decrement")
