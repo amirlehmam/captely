@@ -18,7 +18,7 @@ from celery.exceptions import SoftTimeLimitExceeded, Retry
 # Database imports
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import insert, update, select, delete, text
+from sqlalchemy import insert, update, select, delete, text, Table, Column, Integer, String, MetaData, TIMESTAMP, Boolean, Float, JSON
 
 # Local imports
 from app.celery import celery_app
@@ -38,6 +38,59 @@ settings = get_settings()
 engine = create_async_engine(settings.database_url)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+# Define metadata and tables
+metadata = MetaData()
+
+# Define tables
+import_jobs = Table(
+    'import_jobs', metadata,
+    Column('id', String, primary_key=True),
+    Column('user_id', String),
+    Column('status', String),
+    Column('total', Integer),
+    Column('completed', Integer),
+    Column('created_at', TIMESTAMP),
+    Column('updated_at', TIMESTAMP)
+)
+
+contacts = Table(
+    'contacts', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('job_id', String),
+    Column('first_name', String),
+    Column('last_name', String),
+    Column('position', String),
+    Column('company', String),
+    Column('company_domain', String),
+    Column('profile_url', String),
+    Column('location', String),
+    Column('industry', String),
+    Column('email', String, nullable=True),
+    Column('phone', String, nullable=True),
+    Column('enriched', Boolean, default=False),
+    Column('enrichment_status', String, default='pending'),
+    Column('enrichment_provider', String, nullable=True),
+    Column('enrichment_score', Float, nullable=True),
+    Column('email_verified', Boolean, default=False),
+    Column('phone_verified', Boolean, default=False),
+    Column('created_at', TIMESTAMP),
+    Column('updated_at', TIMESTAMP)
+)
+
+enrichment_results = Table(
+    'enrichment_results', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('contact_id', Integer),
+    Column('provider', String),
+    Column('email', String, nullable=True),
+    Column('phone', String, nullable=True),
+    Column('confidence_score', Float, nullable=True),
+    Column('email_verified', Boolean, default=False),
+    Column('phone_verified', Boolean, default=False),
+    Column('raw_data', JSON, nullable=True),
+    Column('created_at', TIMESTAMP)
+)
+
 # Initialize rate limiters for each service
 rate_limiters = {
     'icypeas': RateLimiter(calls_per_minute=60),
@@ -46,18 +99,32 @@ rate_limiters = {
     'apollo': RateLimiter(calls_per_minute=30)
 }
 
+# ----- Asyncio Helper ----- #
+
+def run_async(coro):
+    """Run an async coroutine in a way that's compatible with Celery workers."""
+    try:
+        # Try to get the current event loop
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        # If there's no event loop in the current context, create one
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    return loop.run_until_complete(coro)
+
 # ----- Database Operations ----- #
 
 async def get_or_create_job(session: AsyncSession, job_id: str, user_id: str, total_contacts: int) -> str:
     """Get or create an import job record."""
     # Check if job exists
-    stmt = select("*").where(f"id = '{job_id}'").limit(1)
-    result = await session.execute(stmt)
+    stmt = text(f"SELECT * FROM import_jobs WHERE id = :job_id LIMIT 1")
+    result = await session.execute(stmt, {"job_id": job_id})
     job = result.first()
     
     if not job:
         # Create new job
-        stmt = insert("import_jobs").values(
+        stmt = insert(import_jobs).values(
             id=job_id,
             user_id=user_id,
             status="processing",
@@ -73,7 +140,7 @@ async def get_or_create_job(session: AsyncSession, job_id: str, user_id: str, to
 
 async def save_contact(session: AsyncSession, job_id: str, lead: dict) -> int:
     """Save a contact to the database and return its ID."""
-    stmt = insert("contacts").values(
+    stmt = insert(contacts).values(
         job_id=job_id,
         first_name=lead.get("first_name", ""),
         last_name=lead.get("last_name", ""),
@@ -87,7 +154,7 @@ async def save_contact(session: AsyncSession, job_id: str, lead: dict) -> int:
         enrichment_status="pending",
         created_at=datetime.now(),
         updated_at=datetime.now()
-    ).returning("id")
+    ).returning(contacts.c.id)
     
     result = await session.execute(stmt)
     contact_id = result.scalar_one()
@@ -157,7 +224,7 @@ async def save_enrichment_result(
     result: Dict[str, Any]
 ):
     """Save enrichment result to the database."""
-    stmt = insert("enrichment_results").values(
+    stmt = insert(enrichment_results).values(
         contact_id=contact_id,
         provider=provider,
         email=result.get("email"),
@@ -180,7 +247,7 @@ async def increment_job_progress(session: AsyncSession, job_id: str):
 
 async def update_job_status(session: AsyncSession, job_id: str, status: str):
     """Update the status of a job."""
-    stmt = update("import_jobs").where(f"id = '{job_id}'").values(
+    stmt = update(import_jobs).where(import_jobs.c.id == job_id).values(
         status=status,
         updated_at=datetime.now()
     )
@@ -203,16 +270,25 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         "Content-Type": "application/json"
     }
     
+    # Determine name to use (prefer full_name, fallback to first+last)
+    full_name = lead.get("full_name", "")
+    name_to_use = full_name if full_name else f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip()
+    
+    # Use the company domain if available, otherwise company name
+    company_info = lead.get("company_domain", "") or lead.get("company", "")
+    
     payload = {
-        "firstname": lead.get("first_name", ""),
-        "lastname": lead.get("last_name", ""),
-        "domainOrCompany": lead.get("company", "") or lead.get("company_domain", "")
+        "fullname": name_to_use,
+        "domainOrCompany": company_info
     }
     
     # Add LinkedIn URL if available
     if linkedin_url := lead.get("profile_url", ""):
         if "linkedin.com" in linkedin_url:
             payload["linkedin"] = linkedin_url
+    
+    # Log the payload for debugging
+    logger.info(f"Icypeas payload: name={name_to_use}, company={company_info}")
     
     # Make the API request (async search)
     response = httpx.post(
@@ -309,14 +385,33 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         "Content-Type": "application/json"
     }
     
+    # Extract name components - Dropcontact prefers separate first/last names
+    # If full_name is available but first/last aren't properly split, do it here
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    if not first_name and not last_name and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            first_name = name_parts[0]
+            last_name = name_parts[1]
+        elif len(name_parts) == 1:
+            last_name = name_parts[0]
+    
+    # Prepare the data payload
+    data_item = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "company": lead.get("company", ""),
+        "linkedin_url": lead.get("profile_url", ""),
+        "email": lead.get("email", "")
+    }
+    
+    # Log the payload for debugging
+    logger.info(f"Dropcontact payload: first_name={first_name}, last_name={last_name}, company={lead.get('company', '')}")
+    
     payload = {
-        "data": [{
-            "first_name": lead.get("first_name", ""),
-            "last_name": lead.get("last_name", ""),
-            "company": lead.get("company", ""),
-            "linkedin_url": lead.get("profile_url", ""),
-            "email": lead.get("email", "")
-        }],
+        "data": [data_item],
         "siren": True,
         "language": "en",
         "num": True,
@@ -412,6 +507,21 @@ def call_hunter(lead: Dict[str, Any]) -> Dict[str, Any]:
     # Respect rate limits
     rate_limiters['hunter'].wait()
     
+    # Extract name components
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    # If we have full_name but not first/last, split them
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            if not first_name:
+                first_name = name_parts[0]
+            if not last_name:
+                last_name = name_parts[1]
+        elif len(name_parts) == 1 and not last_name:
+            last_name = name_parts[0]
+    
     # Initialize empty results
     domain = None
     
@@ -439,6 +549,10 @@ def call_hunter(lead: Dict[str, Any]) -> Dict[str, Any]:
             if domain_response.status_code == 200:
                 domain_data = domain_response.json().get("data", {})
                 domain = domain_data.get("domain")
+                
+                # Log found domain
+                if domain:
+                    logger.info(f"Hunter found domain {domain} for company {company_name}")
     else:
         domain = lead.get("company_domain")
     
@@ -449,16 +563,19 @@ def call_hunter(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # If still no domain, return empty result
     if not domain:
-        logger.info(f"Hunter: No domain found for {lead.get('first_name')} {lead.get('last_name')}")
+        logger.info(f"Hunter: No domain found for {first_name} {last_name}")
         return {"email": None, "phone": None, "confidence": 0, "source": "hunter"}
+    
+    # Log the enrichment data
+    logger.info(f"Hunter email-finder for: first_name={first_name}, last_name={last_name}, domain={domain}")
     
     # Now use email-finder to get the email
     email_response = httpx.get(
         "https://api.hunter.io/v2/email-finder",
         params={
             "domain": domain,
-            "first_name": lead.get("first_name", ""),
-            "last_name": lead.get("last_name", ""),
+            "first_name": first_name,
+            "last_name": last_name,
             "api_key": settings.hunter_api
         },
         timeout=15
@@ -490,11 +607,15 @@ def call_apollo(lead: Dict[str, Any]) -> Dict[str, Any]:
     # Respect rate limits
     rate_limiters['apollo'].wait()
     
+    # Use full name if available, otherwise combine first and last
+    name_to_use = lead.get("full_name", "")
+    if not name_to_use:
+        name_to_use = f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip()
+    
     # Prepare the search parameters
     params = {
-        "api_key": settings.apollo_api,
         "q_organization_domains": lead.get("company_domain", ""),
-        "q_names": f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip(),
+        "q_names": name_to_use,
     }
     
     # Add LinkedIn URL if available
@@ -502,10 +623,20 @@ def call_apollo(lead: Dict[str, Any]) -> Dict[str, Any]:
         if "linkedin.com" in linkedin_url:
             params["contact_linkedin_url"] = linkedin_url
     
+    # Log the payload for debugging
+    logger.info(f"Apollo payload: name={name_to_use}, company_domain={lead.get('company_domain', '')}")
+    
+    # Prepare headers with API key
+    headers = {
+        "X-Api-Key": settings.apollo_api,
+        "Content-Type": "application/json"
+    }
+    
     # Make the API request
     response = httpx.get(
         "https://api.apollo.io/v1/people/search",
         params=params,
+        headers=headers,
         timeout=20
     )
     
@@ -524,7 +655,7 @@ def call_apollo(lead: Dict[str, Any]) -> Dict[str, Any]:
     people = data.get("people", [])
     
     if not people:
-        logger.info(f"Apollo: No results for {lead.get('first_name')} {lead.get('last_name')}")
+        logger.info(f"Apollo: No results for {name_to_use}")
         return {"email": None, "phone": None, "confidence": 0, "source": "apollo"}
     
     # Get the first person
@@ -569,7 +700,7 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
         
         # Create a job if it doesn't exist
         session = AsyncSessionLocal()
-        asyncio.run(get_or_create_job(session, job_id, user_id, len(contacts)))
+        run_async(get_or_create_job(session, job_id, user_id, len(contacts)))
         
         # Process each contact
         for contact in contacts:
@@ -579,10 +710,24 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
                 normalized_key = key.lower().replace(' ', '_')
                 normalized[normalized_key] = value
             
+            # Extract first and last name from full name if available
+            first_name = normalized.get('first_name', '')
+            last_name = normalized.get('last_name', '')
+            full_name = normalized.get('full_name', '')
+            
+            if full_name and (not first_name or not last_name):
+                name_parts = full_name.split(' ', 1)
+                if len(name_parts) >= 2:
+                    first_name = name_parts[0]
+                    last_name = name_parts[1]
+                elif len(name_parts) == 1:
+                    last_name = name_parts[0]
+            
             # Map common fields
             lead = {
-                'first_name': normalized.get('first_name', '') or normalized.get('firstname', ''),
-                'last_name': normalized.get('last_name', '') or normalized.get('lastname', ''),
+                'first_name': first_name or normalized.get('firstname', ''),
+                'last_name': last_name or normalized.get('lastname', ''),
+                'full_name': full_name,
                 'company': normalized.get('company', '') or normalized.get('company_name', ''),
                 'company_domain': normalized.get('company_domain', '') or normalized.get('domain', ''),
                 'profile_url': normalized.get('profile_url', '') or normalized.get('linkedin_url', ''),
@@ -590,6 +735,9 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
                 'location': normalized.get('location', ''),
                 'industry': normalized.get('industry', '')
             }
+            
+            # Log the data being sent for enrichment
+            logger.info(f"Enriching contact: {lead.get('full_name')} at {lead.get('company')}")
             
             # Enqueue the cascading enrichment task
             cascade_enrich.delay(lead, job_id, user_id)
@@ -613,7 +761,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     try:
         # Get database session and save contact
         session = AsyncSessionLocal()
-        contact_id = asyncio.run(save_contact(session, job_id, lead))
+        contact_id = run_async(save_contact(session, job_id, lead))
         
         # Initialize result variables
         best_result = None
@@ -643,7 +791,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 continue
             
             # Save the result
-            asyncio.run(save_enrichment_result(session, contact_id, service, result))
+            run_async(save_enrichment_result(session, contact_id, service, result))
             
             # Calculate confidence
             confidence = calculate_confidence(result, service)
@@ -669,7 +817,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 'phone_verified': bool(best_result.get('phone'))
             }
             
-            asyncio.run(update_contact(
+            run_async(update_contact(
                 session, 
                 contact_id, 
                 email=best_result.get('email'), 
@@ -680,7 +828,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             logger.info(f"Contact updated with best result from {best_result.get('source')}")
         else:
             # No good results, mark as failed
-            asyncio.run(update_contact(
+            run_async(update_contact(
                 session,
                 contact_id,
                 enrichment_data={
@@ -694,7 +842,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             logger.info(f"No valid results found for {lead.get('first_name')} {lead.get('last_name')}")
         
         # Increment job progress
-        asyncio.run(increment_job_progress(session, job_id))
+        run_async(increment_job_progress(session, job_id))
         
         # Return the enrichment result
         return {

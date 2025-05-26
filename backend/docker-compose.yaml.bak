@@ -1,34 +1,29 @@
-services:
-  db:
-    image: postgres:15
-    container_name: captely-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespw
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - captely_db-data:/var/lib/postgresql/data
-      - ./setup_db.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+version: '3.8'
 
+services:
+    # — Local Postgres for development —
+    db:
+      image: postgres:15
+      container_name: captely-db
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgrespw
+        POSTGRES_DB: postgres
+      ports:
+        - "5432:5432"
+      volumes:
+        - captely_db-data:/var/lib/postgresql/data
+        - ./setup_db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # — Redis for Celery & caching —
   redis:
     image: redis:7-alpine
     container_name: captely-redis
     ports:
       - "6379:6379"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
+  # — Auth Service —
   auth-service:
     build:
       context: ./services/auth-service
@@ -36,10 +31,8 @@ services:
     container_name: captely-auth-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     ports:
       - "8001:8000"
     volumes:
@@ -50,6 +43,7 @@ services:
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: on-failure
 
+  # — Import Service —
   import-service:
     build:
       context: ./services/import-service
@@ -57,10 +51,8 @@ services:
     container_name: captely-import-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     ports:
       - "8002:8000"
     volumes:
@@ -71,6 +63,7 @@ services:
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: on-failure
 
+  # — Credit Service —
   credit-service:
     build:
       context: ./services/credit-service
@@ -78,10 +71,8 @@ services:
     container_name: captely-credit-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     ports:
       - "8003:8000"
     volumes:
@@ -92,6 +83,7 @@ services:
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: on-failure
 
+  # — Enrichment Worker (Celery) —
   enrichment-worker:
     build:
       context: ./services/enrichment-worker
@@ -99,10 +91,8 @@ services:
     container_name: captely-enrichment-worker
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     volumes:
       - ./services/common:/app/common
       - ./csv:/app/csv
@@ -110,30 +100,25 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
       - REDIS_URL=redis://redis:6379/0
       - PYTHONPATH=/app
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    command: ["celery", "-A", "app.tasks", "worker", "--loglevel=info", "-E", "-Q", "contact_enrichment,enrichment_batch,cascade_enrichment,db_operations"]
+    command: ["celery", "-A", "app.tasks", "worker", "--loglevel=info"]
     restart: on-failure
 
-  flower:
-    image: mher/flower:2.0.1
+  # — Enrichment Monitor (Flower) —
+  enrichment-flower:
+    image: mher/flower:0.9.7
     container_name: captely-flower
     env_file: .env
     depends_on:
-      redis:
-        condition: service_healthy
-      enrichment-worker:
-        condition: service_started
+      - redis
+      - enrichment-worker
     ports:
       - "5555:5555"
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_BROKER=redis://redis:6379/0
       - FLOWER_BASIC_AUTH=admin:flowerpassword
-      - FLOWER_PORT=5555
-    command: ["sh", "-c", "sleep 15 && celery --broker=redis://redis:6379/0 flower --port=5555 --basic-auth=admin:flowerpassword"]
     restart: on-failure
 
+  # — Frontend (Next.js or Vite) —
   frontend:
     build:
       context: ./frontend/nextjs-app
@@ -153,4 +138,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  captely_db-data: 
+  captely_db-data:

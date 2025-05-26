@@ -22,7 +22,7 @@ from common.db import get_session
 from common.celery_app import celery_app
 from common.auth import verify_api_token
 from .models import ImportJob, Contact
-from .routers import jobs, salesnav
+from .routers import jobs, salesnav, enrichment
 
 # ─── App & Config ───────────────────────────────────────────────────────────────
 
@@ -60,6 +60,7 @@ templates = Jinja2Templates(directory="templates")
 # Include routers
 app.include_router(jobs.router)
 app.include_router(salesnav.router)
+app.include_router(enrichment.router)
 
 # HTTP-Bearer for JWT
 security = HTTPBearer()
@@ -77,13 +78,18 @@ def verify_jwt(
             detail="Invalid or missing authentication token",
         )
 
-# prepare S3 client
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=settings.aws_access_key_id,
-    aws_secret_access_key=settings.aws_secret_access_key,
-    region_name=settings.aws_default_region,
-)
+# prepare S3 client if AWS credentials are available
+s3 = None
+try:
+    if hasattr(settings, 'aws_access_key_id') and settings.aws_access_key_id:
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=settings.aws_access_key_id,
+            aws_secret_access_key=settings.aws_secret_access_key,
+            region_name=settings.aws_default_region,
+        )
+except Exception as e:
+    print(f"Warning: AWS S3 client initialization failed: {e}")
 
 # ─── Web UI ─────────────────────────────────────────────────────────────────────
 
@@ -166,8 +172,10 @@ async def import_file(
             args=[row.to_dict(), job_id, user_id],
         )
 
-    key = f"{user_id}/{job_id}/{file.filename}"
-    s3.upload_fileobj(io.BytesIO(data), settings.s3_bucket_raw, key)
+    # Upload to S3 if available
+    if s3 and hasattr(settings, 's3_bucket_raw'):
+        key = f"{user_id}/{job_id}/{file.filename}"
+        s3.upload_fileobj(io.BytesIO(data), settings.s3_bucket_raw, key)
 
     return JSONResponse({"job_id": job_id})
 

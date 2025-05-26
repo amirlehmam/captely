@@ -41,13 +41,18 @@ app.add_middleware(
     allow_headers=["*"],              # allow any request headers
 )
 
-# S3 client
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=settings.aws_access_key_id,
-    aws_secret_access_key=settings.aws_secret_access_key,
-    region_name=settings.aws_default_region,
-)
+# S3 client (if AWS credentials are available)
+s3 = None
+try:
+    if hasattr(settings, 'aws_access_key_id') and settings.aws_access_key_id:
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=settings.aws_access_key_id,
+            aws_secret_access_key=settings.aws_secret_access_key,
+            region_name=settings.aws_default_region,
+        )
+except Exception as e:
+    print(f"Warning: AWS S3 client initialization failed: {e}")
 
 # JWT auth via HTTPBearer
 security = HTTPBearer()
@@ -103,9 +108,10 @@ async def import_file(
             args=[row.to_dict(), job_id, user_id],
         )
 
-    # upload raw file
-    key = f"{user_id}/{job_id}/{file.filename}"
-    s3.upload_fileobj(io.BytesIO(data), settings.s3_bucket_raw, key)
+    # upload raw file if S3 is available
+    if s3 and hasattr(settings, 's3_bucket_raw'):
+        key = f"{user_id}/{job_id}/{file.filename}"
+        s3.upload_fileobj(io.BytesIO(data), settings.s3_bucket_raw, key)
 
     return JSONResponse({"job_id": job_id})
 

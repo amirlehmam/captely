@@ -1,0 +1,6 @@
+first_name,last_name,company,position,profile_url,location,industry
+John,Smith,Acme Corporation,Software Engineer,https://www.linkedin.com/in/john-smith,New York,Technology
+Sarah,Johnson,Tech Solutions,Product Manager,https://www.linkedin.com/in/sarah-johnson,San Francisco,Software
+Michael,Brown,Data Innovations,Data Scientist,https://www.linkedin.com/in/michael-brown,Chicago,Data Analytics
+Emily,Davis,Cloud Systems,DevOps Engineer,https://www.linkedin.com/in/emily-davis,Austin,Cloud Computing
+David,Wilson,AI Research,Research Scientist,https://www.linkedin.com/in/david-wilson,Seattle,Artificial Intelligence 
