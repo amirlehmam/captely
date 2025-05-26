@@ -672,6 +672,29 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 logger.info(f"Skipping {service} (unavailable)")
                 continue
             
+            # Check credits before making API call
+            service_cost = settings.service_costs.get(service, 1.0)
+            try:
+                credit_check = httpx.post(
+                    "http://credit-service:8000/api/credits/check",
+                    json={
+                        "user_id": user_id,
+                        "provider": service,
+                        "operation_type": "enrichment",
+                        "estimated_cost": service_cost
+                    },
+                    timeout=5.0
+                )
+                if credit_check.status_code == 200:
+                    credit_response = credit_check.json()
+                    if not credit_response.get("allowed", False):
+                        logger.warning(f"Credit check failed for {service}: {credit_response.get('reason')}")
+                        continue
+                else:
+                    logger.warning(f"Credit service unavailable, continuing with {service}")
+            except Exception as e:
+                logger.warning(f"Credit check error: {str(e)}, continuing with {service}")
+            
             # Call the appropriate service
             result = None
             if service == 'icypeas':
@@ -690,6 +713,32 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             
             # Save the result
             asyncio.run(save_enrichment_result(session, contact_id, service, result))
+            
+            # Record credit consumption
+            try:
+                credit_consume = httpx.post(
+                    "http://credit-service:8000/api/credits/consume",
+                    json={
+                        "user_id": user_id,
+                        "contact_id": contact_id,
+                        "provider": service,
+                        "operation_type": "enrichment",
+                        "cost": service_cost,
+                        "success": bool(result.get('email')),
+                        "details": {
+                            "confidence": result.get('confidence', 0),
+                            "email_found": bool(result.get('email')),
+                            "phone_found": bool(result.get('phone'))
+                        }
+                    },
+                    timeout=5.0
+                )
+                if credit_consume.status_code == 200:
+                    logger.info(f"Recorded credit consumption: {service_cost} for {service}")
+                else:
+                    logger.warning(f"Failed to record credit consumption for {service}")
+            except Exception as e:
+                logger.error(f"Error recording credit consumption: {str(e)}")
             
             # Calculate confidence
             confidence = calculate_confidence(result, service)
@@ -803,6 +852,55 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         
         # Increment job progress
         asyncio.run(increment_job_progress(session, job_id))
+        
+        # Check if job is complete and send notification
+        try:
+            job_status_query = sa.text(f"""
+                SELECT total, completed FROM {IMPORT_JOBS_TABLE} WHERE id = :job_id
+            """)
+            job_result = asyncio.run(session.execute(job_status_query, {"job_id": job_id}))
+            job_data = job_result.first()
+            
+            if job_data and job_data[0] <= job_data[1]:  # total <= completed
+                # Job is complete, send notification
+                asyncio.run(update_job_status(session, job_id, "completed"))
+                
+                # Get job statistics for notification
+                stats_query = sa.text(f"""
+                    SELECT 
+                        COUNT(*) as total_contacts,
+                        COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+                        COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
+                        SUM(credits_consumed) as credits_used
+                    FROM {CONTACTS_TABLE}
+                    WHERE job_id = :job_id
+                """)
+                stats_result = asyncio.run(session.execute(stats_query, {"job_id": job_id}))
+                stats = stats_result.first()
+                
+                # Send completion notification
+                notification_data = {
+                    "user_id": user_id,
+                    "job_id": job_id,
+                    "job_status": "completed",
+                    "results_summary": {
+                        "total_contacts": stats[0] or 0,
+                        "emails_found": stats[1] or 0,
+                        "phones_found": stats[2] or 0,
+                        "success_rate": ((stats[1] or 0) / (stats[0] or 1) * 100),
+                        "credits_used": float(stats[3] or 0)
+                    }
+                }
+                
+                httpx.post(
+                    "http://notification-service:8000/api/notifications/job-completion",
+                    json=notification_data,
+                    timeout=5.0
+                )
+                logger.info(f"Job {job_id} completed, notification sent")
+                
+        except Exception as e:
+            logger.error(f"Error checking job completion: {str(e)}")
         
         # Return the enrichment result
         return {

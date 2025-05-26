@@ -1,447 +1,396 @@
-import React, { useState } from 'react';
-import { 
-  Upload, FileSpreadsheet, AlertCircle, CheckCircle, RefreshCw
+import React, { useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Loader,
+  Download,
+  Users,
+  Mail,
+  Phone,
+  X
 } from 'lucide-react';
+import { useFileUpload, useJobs } from '../hooks/useApi';
 
 const ImportPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('csv');
-  const [isDragging, setIsDragging] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadResult, setUploadResult] = useState<any>(null);
   
-  // Handle drag events
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const { uploadFile, uploading, progress, error } = useFileUpload();
+  const { jobs, refetch } = useJobs();
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(true);
-  };
-  
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-  
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const droppedFile = e.dataTransfer.files[0];
-      handleFile(droppedFile);
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        setSelectedFile(file);
+      } else {
+        alert('Please upload a CSV file only');
+      }
+    }
+  }, []);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        setSelectedFile(file);
+      } else {
+        alert('Please upload a CSV file only');
+      }
+    }
+  }, []);
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    try {
+      const result = await uploadFile(selectedFile);
+      setUploadResult(result);
+      setUploadSuccess(true);
+      setSelectedFile(null);
+      refetch(); // Refresh the jobs list
+    } catch (err) {
+      console.error('Upload failed:', err);
     }
   };
-  
-  // Handle file selection
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-      handleFile(selectedFile);
-    }
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    setUploadSuccess(false);
+    setUploadResult(null);
   };
-  
-  const handleFile = (file: File) => {
-    // Check if file is CSV or XLSX
-    const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please upload a CSV or XLSX file');
-      return;
-    }
+
+  const downloadSampleCSV = () => {
+    const sampleData = [
+      ['first_name', 'last_name', 'company', 'position', 'profile_url', 'location', 'industry'],
+      ['John', 'Doe', 'TechCorp Inc', 'CEO', 'https://linkedin.com/in/johndoe', 'San Francisco, CA', 'Technology'],
+      ['Jane', 'Smith', 'MarketCorp', 'VP Marketing', 'https://linkedin.com/in/janesmith', 'New York, NY', 'Marketing'],
+      ['Mike', 'Johnson', 'SalesCorp', 'Sales Director', '', 'Chicago, IL', 'Sales']
+    ];
     
-    setFile(file);
+    const csvContent = sampleData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_contacts.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
-  
-  // Handle file upload
-  const handleUpload = () => {
-    if (!file) return;
-    
-    setUploading(true);
-    
-    // Simulate upload process
-    setTimeout(() => {
-      setUploading(false);
-      // In a real app, would handle the response and redirect or show success
-    }, 2000);
-  };
-  
+
   return (
-    <div>
-      {/* Page header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Import Contacts</h1>
-      </div>
-      
-      {/* Import tabs */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
-          <button
-            className={`px-6 py-3 text-sm font-medium ${
-              activeTab === 'csv'
-                ? 'text-teal-600 dark:text-teal-400 border-b-2 border-teal-500 dark:border-teal-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            onClick={() => setActiveTab('csv')}
-          >
-            CSV/XLSX Upload
-          </button>
-          <button
-            className={`px-6 py-3 text-sm font-medium ${
-              activeTab === 'sales-nav'
-                ? 'text-teal-600 dark:text-teal-400 border-b-2 border-teal-500 dark:border-teal-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            onClick={() => setActiveTab('sales-nav')}
-          >
-            Sales Navigator
-          </button>
-          <button
-            className={`px-6 py-3 text-sm font-medium ${
-              activeTab === 'manual'
-                ? 'text-teal-600 dark:text-teal-400 border-b-2 border-teal-500 dark:border-teal-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            onClick={() => setActiveTab('manual')}
-          >
-            Manual Entry
-          </button>
-        </div>
-        
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
+      >
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          Import Contacts
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          Upload your contact list to start the enrichment process
+        </p>
+      </motion.div>
+
+      {/* Upload Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
+      >
         <div className="p-6">
-          {/* CSV/XLSX Upload */}
-          {activeTab === 'csv' && (
-            <div>
-              <div className="mb-5">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  Upload Contact List
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Import your contacts via CSV or XLSX file. Your file should include at least first name, last name, and company name columns.
-                </p>
-              </div>
-              
-              {/* File upload area */}
-              {!file ? (
-                <div
-                  className={`border-2 border-dashed rounded-lg p-12 text-center ${
-                    isDragging
-                      ? 'border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-900/20'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <FileSpreadsheet className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Drag and drop your file here, or click to browse
-                  </p>
-                  <input
-                    type="file"
-                    id="file-upload"
-                    accept=".csv,.xlsx"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-                  <button
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Browse Files
-                  </button>
-                </div>
-              ) : (
-                /* File selected */
-                <div className="border rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center">
-                      <FileSpreadsheet className="h-8 w-8 text-teal-500 dark:text-teal-400 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {file.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {(file.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setFile(null)}
-                      className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                    >
-                      Change
-                    </button>
-                  </div>
-                  
-                  {/* Settings & Upload button */}
+          {!uploadSuccess ? (
+            <>
+              {/* File Upload Area */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  dragActive
+                    ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                    : selectedFile
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-teal-400'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                {selectedFile ? (
                   <div className="space-y-4">
-                    <div className="flex items-center">
-                      <input 
-                        id="deduplicate" 
-                        type="checkbox"
-                        checked={true}
-                        className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor="deduplicate" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                        Deduplicate contacts (based on name + company hash)
-                      </label>
+                    <FileText className="h-12 w-12 text-green-500 mx-auto" />
+                    <div>
+                      <p className="text-lg font-medium text-gray-900 dark:text-white">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {(selectedFile.size / 1024).toFixed(1)} KB
+                      </p>
                     </div>
-                    <div className="flex items-center">
-                      <input 
-                        id="headers" 
-                        type="checkbox"
-                        checked={true}
-                        className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor="headers" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                        First row contains column headers
-                      </label>
-                    </div>
-                    
-                    <div className="pt-4">
+                    <div className="flex justify-center space-x-4">
                       <button
                         onClick={handleUpload}
                         disabled={uploading}
-                        className={`w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                          uploading
-                            ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                            : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500'
-                        }`}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
                       >
                         {uploading ? (
                           <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            <Loader className="h-4 w-4 mr-2 animate-spin" />
                             Uploading...
                           </>
                         ) : (
                           <>
                             <Upload className="h-4 w-4 mr-2" />
-                            Upload and Process
+                            Start Upload
                           </>
                         )}
                       </button>
+                      <button
+                        onClick={clearFile}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                    <div>
+                      <p className="text-lg font-medium text-gray-900 dark:text-white">
+                        Drop your CSV file here
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        or click to browse files
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 cursor-pointer"
+                    >
+                      Browse Files
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Progress */}
+              {uploading && (
+                <div className="mt-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Uploading...
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {progress}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div
+                      className="bg-teal-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {error && (
+                <div className="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                    <span className="text-red-700 dark:text-red-300">Upload failed: {error}</span>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Success State */
+            <div className="text-center space-y-6">
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Upload Successful!
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Your file has been uploaded and enrichment has started
+                </p>
+              </div>
+              
+              {uploadResult && (
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {uploadResult.total_contacts || 0}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Contacts</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {uploadResult.job_id?.substring(0, 8) || 'N/A'}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Job ID</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        Starting
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Status</div>
                     </div>
                   </div>
                 </div>
               )}
-              
-              {/* Sample file download */}
-              <div className="mt-6 text-center">
-                <button className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
-                  Download sample CSV template
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Sales Navigator Import */}
-          {activeTab === 'sales-nav' && (
-            <div>
-              <div className="mb-5">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  LinkedIn Sales Navigator Importer
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Use our Chrome extension to extract contacts directly from LinkedIn Sales Navigator.
-                </p>
-              </div>
-              
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                  </div>
-                  <div className="ml-3 flex-1 md:flex md:justify-between">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      You need to install our Chrome extension to use this feature.
-                    </p>
-                    <p className="mt-3 text-sm md:mt-0 md:ml-6">
-                      <a href="#" className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-200">
-                        Install <span aria-hidden="true">&rarr;</span>
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:p-6">
-                  <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                    How to use the Sales Navigator Importer
-                  </h3>
-                  <div className="mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-400">
-                    <p>Follow these steps to import your Sales Navigator contacts:</p>
-                  </div>
-                  <ol className="mt-4 space-y-3 text-sm">
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900 text-teal-500 dark:text-teal-400 font-medium text-xs">
-                        1
-                      </span>
-                      <span className="ml-2">Install the Captely Chrome extension from the Chrome Web Store.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900 text-teal-500 dark:text-teal-400 font-medium text-xs">
-                        2
-                      </span>
-                      <span className="ml-2">Log in to LinkedIn and navigate to Sales Navigator.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900 text-teal-500 dark:text-teal-400 font-medium text-xs">
-                        3
-                      </span>
-                      <span className="ml-2">Search for your target contacts and open a search results page.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900 text-teal-500 dark:text-teal-400 font-medium text-xs">
-                        4
-                      </span>
-                      <span className="ml-2">Click the Captely icon in your browser toolbar to activate the importer.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900 text-teal-500 dark:text-teal-400 font-medium text-xs">
-                        5
-                      </span>
-                      <span className="ml-2">Click "Start Scraping" and wait for the process to complete (max 150 contacts per session).</span>
-                    </li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Manual Entry */}
-          {activeTab === 'manual' && (
-            <div>
-              <div className="mb-5">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  Manual Contact Entry
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Add a single contact directly. All fields marked with * are required.
-                </p>
-              </div>
-              
-              <form className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* First Name */}
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      id="firstName"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                    />
-                  </div>
-                  
-                  {/* Last Name */}
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      id="lastName"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                    />
-                  </div>
-                  
-                  {/* Company */}
-                  <div>
-                    <label htmlFor="company" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Company *
-                    </label>
-                    <input
-                      type="text"
-                      name="company"
-                      id="company"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                    />
-                  </div>
-                  
-                  {/* Job Title */}
-                  <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Job Title *
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      id="title"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                    />
-                  </div>
-                  
-                  {/* Email */}
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      placeholder="Leave blank to find via enrichment"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                    />
-                  </div>
-                  
-                  {/* Phone */}
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      id="phone"
-                      placeholder="Leave blank to find via enrichment"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                    />
-                  </div>
-                  
-                  {/* LinkedIn URL */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="linkedinUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      LinkedIn URL
-                    </label>
-                    <input
-                      type="url"
-                      name="linkedinUrl"
-                      id="linkedinUrl"
-                      placeholder="https://www.linkedin.com/in/username"
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex items-center mt-4">
-                  <input
-                    id="enrich"
-                    name="enrich"
-                    type="checkbox"
-                    className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                    defaultChecked
-                  />
-                  <label htmlFor="enrich" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                    Enrich contact data (find email, phone, social profiles)
-                  </label>
-                </div>
-                
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Save Contact
-                  </button>
-                </div>
-              </form>
+
+              <button
+                onClick={() => {
+                  setUploadSuccess(false);
+                  setUploadResult(null);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700"
+              >
+                Upload Another File
+              </button>
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
+
+      {/* Instructions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6"
+      >
+        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
+          CSV Format Requirements
+        </h3>
+        <div className="space-y-3">
+          <p className="text-blue-800 dark:text-blue-200">
+            Your CSV file should include the following columns (headers are required):
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-medium text-blue-900 dark:text-blue-100">Required Fields:</h4>
+              <ul className="list-disc list-inside text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                <li>first_name</li>
+                <li>last_name</li>
+                <li>company</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium text-blue-900 dark:text-blue-100">Optional Fields:</h4>
+              <ul className="list-disc list-inside text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                <li>position</li>
+                <li>profile_url (LinkedIn URL)</li>
+                <li>location</li>
+                <li>industry</li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-4">
+            <button
+              onClick={downloadSampleCSV}
+              className="inline-flex items-center px-3 py-2 border border-blue-300 dark:border-blue-600 text-sm font-medium rounded-md text-blue-700 dark:text-blue-300 bg-white dark:bg-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/70"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download Sample CSV
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Recent Jobs */}
+      {jobs.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
+        >
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Recent Import Jobs
+            </h3>
+            <div className="space-y-4">
+              {jobs.slice(0, 3).map((job) => {
+                const progress = job.total > 0 ? Math.round((job.completed / job.total) * 100) : 0;
+                const isCompleted = job.status === 'completed';
+                
+                return (
+                  <div key={job.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {job.file_name || `Job ${job.id.substring(0, 8)}`}
+                        </h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(job.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        job.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        job.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                        job.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                      }`}>
+                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                        <span className="text-gray-900 dark:text-white">{job.completed}/{job.total} contacts</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            isCompleted ? 'bg-green-500' : 'bg-blue-500'
+                          }`}
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };
