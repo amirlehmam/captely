@@ -134,6 +134,70 @@ services:
     command: ["sh", "-c", "sleep 15 && celery --broker=redis://redis:6379/0 flower --port=5555 --basic-auth=admin:flowerpassword"]
     restart: on-failure
 
+  export-service:
+    build:
+      context: ./services/export-service
+      dockerfile: Dockerfile
+    container_name: captely-export-service
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8004:8000"
+    volumes:
+      - ./services/common:/app/common
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
+    restart: on-failure
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    container_name: captely-analytics-service
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8005:8000"
+    volumes:
+      - ./services/common:/app/common
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
+    restart: on-failure
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: captely-notification-service
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8006:8000"
+    volumes:
+      - ./services/common:/app/common
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - REDIS_URL=redis://redis:6379/0
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
+    restart: on-failure
+
   frontend:
     build:
       context: ./frontend/nextjs-app
@@ -144,12 +208,17 @@ services:
       - auth-service
       - import-service
       - credit-service
+      - export-service
+      - analytics-service
     ports:
       - "5173:5173"
     environment:
       - VITE_AUTH_URL=http://localhost:8001
       - VITE_IMPORT_URL=http://localhost:8002
       - VITE_CREDIT_URL=http://localhost:8003
+      - VITE_EXPORT_URL=http://localhost:8004
+      - VITE_ANALYTICS_URL=http://localhost:8005
+      - VITE_NOTIFICATION_URL=http://localhost:8006
     restart: unless-stopped
 
 volumes:

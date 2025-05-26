@@ -37,3 +37,10 @@ gunicorn
 python-jose[jwt]
 python-multipart
 jinja2
+
+# Email verification dependencies
+dnspython==2.6.1
+email-validator==2.2.0
+
+# Phone verification dependencies
+phonenumbers==8.13.33

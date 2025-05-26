@@ -27,6 +27,10 @@ from common.utils import (
     normalize_csv_columns
 )
 
+# Import email and phone verification
+from enrichment.email_verification import email_verifier, EmailVerificationResult
+from enrichment.phone_verification import phone_verifier, PhoneVerificationResult
+
 # Database imports
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -704,18 +708,80 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         
         # Update the contact with the best result
         if best_result and best_confidence >= settings.minimum_confidence:
+            # Verify the email using our 4-level verification system
+            email_verification = None
+            verified_email = best_result.get('email')
+            
+            if verified_email:
+                try:
+                    email_verification = asyncio.run(email_verifier.verify_email(verified_email))
+                    logger.info(f"Email verification for {verified_email}: Score {email_verification.score}, Level {email_verification.verification_level}")
+                    
+                    # Only accept emails with score >= 70 and not disposable
+                    if email_verification.score < 70 or email_verification.is_disposable:
+                        logger.warning(f"Email {verified_email} failed verification (score: {email_verification.score}, disposable: {email_verification.is_disposable})")
+                        verified_email = None
+                        email_verification = None
+                except Exception as e:
+                    logger.error(f"Email verification failed for {verified_email}: {str(e)}")
+                    email_verification = None
+            
+            # Verify the phone number if available
+            phone_verification = None
+            verified_phone = best_result.get('phone')
+            phone_type = 'unknown'
+            
+            if verified_phone:
+                try:
+                    # Try to determine country from contact info for better parsing
+                    country_hint = None
+                    location = lead.get('location', '')
+                    if 'france' in location.lower() or 'fr' in location.lower():
+                        country_hint = 'FR'
+                    elif 'united states' in location.lower() or 'usa' in location.lower():
+                        country_hint = 'US'
+                    elif 'united kingdom' in location.lower() or 'uk' in location.lower():
+                        country_hint = 'GB'
+                    
+                    phone_verification = asyncio.run(phone_verifier.verify_phone(verified_phone, country_hint))
+                    logger.info(f"Phone verification for {verified_phone}: Score {phone_verification.score}, Type: Mobile({phone_verification.is_mobile}), Landline({phone_verification.is_landline}), VoIP({phone_verification.is_voip})")
+                    
+                    # Determine phone type
+                    if phone_verification.is_mobile:
+                        phone_type = 'mobile'
+                    elif phone_verification.is_landline:
+                        phone_type = 'landline'
+                    elif phone_verification.is_voip:
+                        phone_type = 'voip'
+                    
+                    # Format the phone number to international format
+                    if phone_verification.formatted_international:
+                        verified_phone = phone_verification.formatted_international
+                        
+                except Exception as e:
+                    logger.error(f"Phone verification failed for {verified_phone}: {str(e)}")
+                    phone_verification = None
+            
             enrichment_data = {
                 'provider': best_result.get('source'),
                 'confidence': best_confidence,
-                'email_verified': True,  # Could implement actual verification
-                'phone_verified': bool(best_result.get('phone'))
+                'email_verified': email_verification.is_valid if email_verification else False,
+                'phone_verified': phone_verification.is_valid if phone_verification else False,
+                'email_verification_score': email_verification.score if email_verification else 0,
+                'email_verification_level': email_verification.verification_level if email_verification else 0,
+                'is_disposable': email_verification.is_disposable if email_verification else False,
+                'is_role_based': email_verification.is_role_based if email_verification else False,
+                'is_catchall': email_verification.is_catchall if email_verification else False,
+                'phone_type': phone_type,
+                'phone_country': phone_verification.country if phone_verification else '',
+                'phone_carrier': phone_verification.carrier_name if phone_verification else ''
             }
             
             asyncio.run(update_contact(
                 session, 
                 contact_id, 
-                email=best_result.get('email'), 
-                phone=best_result.get('phone'),
+                email=verified_email,  # Only save if it passed verification
+                phone=verified_phone,  # Use formatted phone number
                 enrichment_data=enrichment_data
             ))
             
