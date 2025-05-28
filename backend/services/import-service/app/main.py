@@ -141,11 +141,15 @@ async def import_file(
     else:
         df = pd.read_excel(io.BytesIO(data))
 
+    # Normalize column names: convert to lowercase and replace spaces with underscores
+    df.columns = df.columns.str.lower().str.replace(' ', '_')
+    
+    # Check for required columns
     missing = [c for c in ("first_name", "company") if c not in df.columns]
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Missing columns: {', '.join(missing)}"
+            detail=f"Missing columns: {', '.join(missing)}. Found columns: {', '.join(df.columns.tolist())}"
         )
 
     job_id = str(uuid.uuid4())
