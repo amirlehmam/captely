@@ -23,7 +23,7 @@ async def create_test_user():
             hashed_password = get_password_hash('password123')
             user = User(
                 email='test@captely.com',
-                hashed_password=hashed_password
+                password_hash=hashed_password
             )
             session.add(user)
             await session.commit()

@@ -253,7 +253,7 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
 
     user = User(
         email=data.email,
-        hashed_password=get_password_hash(data.password)
+        password_hash=get_password_hash(data.password)
     )
     db.add(user)
     await db.commit()
@@ -266,7 +266,7 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
 async def login(data: SignupIn, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
-    if not user or not verify_password(data.password, user.hashed_password):
+    if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
