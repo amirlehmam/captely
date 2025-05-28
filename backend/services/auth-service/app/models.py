@@ -1,6 +1,6 @@
 # services/auth-service/app/models.py
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, func
 import uuid
 
 # Define a single Base class
@@ -9,10 +9,18 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    credits: Mapped[int] = mapped_column(Integer, default=100, nullable=True)
+    total_spent: Mapped[float] = mapped_column(Float, default=0, nullable=True)
+    daily_limit: Mapped[int] = mapped_column(Integer, nullable=True)
+    monthly_limit: Mapped[int] = mapped_column(Integer, nullable=True)
+    provider_limits: Mapped[str] = mapped_column(String, nullable=True)
+    notification_preferences: Mapped[str] = mapped_column(String, nullable=True)
+    last_credit_alert: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class ApiKey(Base):

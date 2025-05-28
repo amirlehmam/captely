@@ -69,10 +69,10 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.verify(plain, hashed)
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.jwt_exp_minutes)
     payload = {
-        "sub": str(user_id),
+        "sub": user_id,
         "exp": expire
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
@@ -95,7 +95,7 @@ async def get_current_user(
         sub = payload.get("sub")
         if sub is None:
             raise credentials_exception
-        user_id = int(sub)
+        user_id = sub
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -121,8 +121,9 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 class UserOut(BaseModel):
-    id: int
+    id: str
     email: EmailStr
+    credits: int
     created_at: datetime
 
     class Config:
@@ -208,7 +209,7 @@ async def validate_token(data: TokenValidateIn, db: AsyncSession = Depends(get_d
             user_id = payload.get("sub")
             if user_id:
                 print(f"JWT token validation successful for user_id: {user_id}")
-                return {"user_id": int(user_id), "valid": True}
+                return {"user_id": user_id, "valid": True}
         except (ExpiredSignatureError, PyJWTError) as jwt_error:
             print(f"JWT validation failed: {jwt_error}")
             # Continue to try API key validation
@@ -251,15 +252,21 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # Generate UUID here to avoid issues
+    import uuid
+    user_id = str(uuid.uuid4())
+    
     user = User(
+        id=user_id,
         email=data.email,
-        password_hash=get_password_hash(data.password)
+        password_hash=get_password_hash(data.password),
+        credits=100,
+        total_spent=0
     )
     db.add(user)
     await db.commit()
-    await db.refresh(user)
 
-    token = create_access_token(user.id)
+    token = create_access_token(user_id)
     return TokenOut(access_token=token)
 
 @app.post("/auth/login", response_model=TokenOut)
