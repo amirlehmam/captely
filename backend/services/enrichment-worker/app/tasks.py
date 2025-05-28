@@ -686,14 +686,14 @@ def call_apollo(lead: Dict[str, Any]) -> Dict[str, Any]:
         email.endswith("@domain.com") or
         "placeholder" in email.lower()
     ):
-        logger.info(f"Apollo returned placeholder email {email} - filtering out")
-        email = None
+        logger.info(f"Apollo returned placeholder/locked email {email} - filtering out")
+        email = None  # Set to None to indicate no valid email found
     
-    # Return results
+    # Return results - only consider successful if we have a real email
     return {
         "email": email,
         "phone": phone,
-        "confidence": 85 if email else 0,  # Default confidence for Apollo
+        "confidence": 85 if email else 0,  # 0 confidence if no valid email
         "source": "apollo",
         "raw_data": person
     }
@@ -809,12 +809,12 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             elif service == 'apollo':
                 result = call_apollo(lead)
             
-            # Skip if no result
+            # Skip if no result or no valid email found
             if not result or not result.get('email'):
-                logger.info(f"{service} returned no email for {lead.get('first_name')} {lead.get('last_name')}")
+                logger.info(f"{service} returned no valid email for {lead.get('first_name')} {lead.get('last_name')}")
                 continue
             
-            # Save the result
+            # Save the result only if we have a valid email
             run_async(save_enrichment_result(session, contact_id, service, result))
             
             # Calculate confidence
@@ -833,7 +833,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 break
         
         # Update the contact with the best result
-        if best_result and best_confidence >= settings.minimum_confidence:
+        if best_result and best_result.get('email') and best_confidence >= settings.minimum_confidence:
             enrichment_data = {
                 'provider': best_result.get('source'),
                 'confidence': best_confidence,
