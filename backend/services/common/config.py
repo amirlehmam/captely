@@ -29,12 +29,12 @@ class Settings:
             'apollo': 0.40,    # Highest cost
         }
         
-        # Service ordering based on cost (cheapest first)
-        self.service_order = ['icypeas', 'dropcontact', 'hunter', 'apollo']
+        # Service ordering based on cost and current availability (cheapest first)
+        self.service_order = ['icypeas', 'dropcontact', 'apollo', 'hunter']  # Hunter last due to rate limits
         
         # Email verification confidence thresholds
-        self.minimum_confidence = 0.70  # Minimum confidence to accept an email
-        self.high_confidence = 0.90     # High confidence threshold to stop cascading
+        self.minimum_confidence = 0.50  # Lower threshold to accept more results
+        self.high_confidence = 0.85     # High confidence threshold to stop cascading
         
         # Task configuration
         self.retry_limit = 3

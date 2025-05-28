@@ -271,7 +271,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
     # Respect rate limits
     rate_limiters['icypeas'].wait()
     
-    # Prepare headers and payload
+    # Prepare headers and payload - use only API key as per working config
     headers = {
         "Authorization": settings.icypeas_api,  # Correct authentication method
         "Content-Type": "application/json"
@@ -279,13 +279,14 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # Determine name to use (prefer full_name, fallback to first+last)
     full_name = lead.get("full_name", "")
-    name_to_use = full_name if full_name else f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip()
+    if not full_name:
+        full_name = f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip()
     
     # Use the company domain if available, otherwise company name
     company_info = lead.get("company_domain", "") or lead.get("company", "")
     
     payload = {
-        "fullname": name_to_use,
+        "fullname": full_name,
         "domainOrCompany": company_info
     }
     
@@ -295,7 +296,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
             payload["linkedin"] = linkedin_url
     
     # Log the payload for debugging
-    logger.info(f"Icypeas payload: name={name_to_use}, company={company_info}")
+    logger.info(f"Icypeas payload: name={full_name}, company={company_info}")
     
     # Make the API request (async search)
     response = httpx.post(
@@ -320,8 +321,10 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
     request_id = data.get("item", {}).get("_id")
     
     if not request_id:
-        logger.warning("Icypeas did not return request ID")
+        logger.warning(f"Icypeas did not return request ID. Response: {data}")
         return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
+    
+    logger.info(f"Icypeas request started with ID: {request_id}")
     
     # Poll for results
     poll_url = "https://app.icypeas.com/api/bulk-single-searchs/read"
@@ -341,6 +344,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         # Check for errors
         if poll_response.status_code != 200:
+            logger.warning(f"Icypeas polling attempt {i+1}: HTTP {poll_response.status_code}")
             continue
         
         # Parse results
@@ -348,6 +352,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         items = poll_data.get("items", [])
         
         if not items:
+            logger.info(f"Icypeas polling {i+1}: no items yet")
             continue
         
         item = items[0]
@@ -355,6 +360,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         # Check if results are ready
         if status not in ("DEBITED", "FREE"):
+            logger.info(f"Icypeas polling {i+1}: status={status}")
             continue
         
         # Extract results
@@ -366,6 +372,9 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         email = emails[0] if emails else None
         phone = phones[0] if phones else None
         
+        if email or phone:
+            logger.info(f"Icypeas found: email={email}, phone={phone}")
+            
         # Return results
         return {
             "email": email,
@@ -393,7 +402,6 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
     }
     
     # Extract name components - Dropcontact prefers separate first/last names
-    # If full_name is available but first/last aren't properly split, do it here
     first_name = lead.get("first_name", "")
     last_name = lead.get("last_name", "")
     
@@ -405,24 +413,39 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         elif len(name_parts) == 1:
             last_name = name_parts[0]
     
-    # Prepare the data payload
+    # Prepare the data payload according to API docs
     data_item = {
         "first_name": first_name,
         "last_name": last_name,
-        "company": lead.get("company", ""),
-        "linkedin_url": lead.get("profile_url", ""),
-        "email": lead.get("email", "")
+        "company": lead.get("company", "")
     }
     
+    # Add optional fields if available
+    if lead.get("profile_url") and "linkedin.com" in lead.get("profile_url", ""):
+        data_item["linkedin"] = lead.get("profile_url")
+    
+    # Extract domain from company name if no direct domain provided
+    company_domain = lead.get("company_domain", "")
+    if not company_domain and lead.get("company"):
+        # Simple domain extraction from company name
+        company_clean = lead.get("company", "").lower().strip()
+        # Remove common suffixes
+        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
+            if company_clean.endswith(suffix):
+                company_clean = company_clean[:-len(suffix)].strip()
+        if company_clean:
+            company_domain = f"{company_clean.replace(' ', '')}.com"
+    
+    if company_domain:
+        data_item["website"] = company_domain
+    
     # Log the payload for debugging
-    logger.info(f"Dropcontact payload: first_name={first_name}, last_name={last_name}, company={lead.get('company', '')}")
+    logger.info(f"Dropcontact payload: {data_item}")
     
     payload = {
         "data": [data_item],
         "siren": True,
-        "language": "en",
-        "num": True,
-        "sync": False  # Async mode for better reliability
+        "language": "en"
     }
     
     # Make the API request
@@ -451,8 +474,10 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning("Dropcontact did not return request ID")
         return {"email": None, "phone": None, "confidence": 0, "source": "dropcontact"}
     
-    # Poll for results
-    wait_times = [2, 3, 5, 8, 10, 15, 20, 25]  # Optimized progressive waiting
+    logger.info(f"Dropcontact request started with ID: {request_id}")
+    
+    # Poll for results with faster intervals
+    wait_times = [3, 5, 8, 12, 15]  # Shorter polling as per docs recommendation
     
     for i, wait_time in enumerate(wait_times):
         # Wait before checking results
@@ -462,7 +487,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         poll_response = httpx.get(
             f"https://api.dropcontact.com/v1/enrich/all/{request_id}",
             headers=headers,
-            timeout=10  # Reduced timeout
+            timeout=15
         )
         
         # Check for errors
@@ -472,43 +497,68 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         # Parse results
         poll_data = poll_response.json()
-        status = poll_data.get("status")
         
-        logger.info(f"Dropcontact status check {i+1}: {status}")
-        
-        # Check if results are ready
-        if status == "completed":
-            # Extract results
-            if "data" in poll_data and len(poll_data["data"]) > 0:
-                result = poll_data["data"][0]
-                
-                email = result.get("email", {}).get("email")
-                phone = result.get("phone", {}).get("number")
-                
-                # Determine confidence score
-                quality = result.get("email", {}).get("quality", "")
-                confidence = 0
-                if quality == "high":
-                    confidence = 90
-                elif quality == "medium":
-                    confidence = 70
-                elif quality == "low":
-                    confidence = 40
-                
-                # Return results
-                return {
-                    "email": email,
-                    "phone": phone,
-                    "confidence": confidence,
-                    "source": "dropcontact",
-                    "raw_data": result
-                }
-        elif status == "failed":
-            logger.warning(f"Dropcontact job failed")
-            break
-        elif status == "processing" or status is None:
-            # Still processing, continue polling
+        # Check if still processing
+        if poll_data.get("success") == False and "not ready yet" in poll_data.get("reason", "").lower():
+            logger.info(f"Dropcontact status check {i+1}: still processing")
             continue
+        
+        # Check if completed successfully
+        if poll_data.get("success") == True and "data" in poll_data:
+            data_results = poll_data["data"]
+            if len(data_results) > 0:
+                result = data_results[0]
+                
+                # Extract email - handle both list and single email formats
+                email = None
+                email_data = result.get("email")
+                if isinstance(email_data, list) and len(email_data) > 0:
+                    # New format: email is a list
+                    best_email = email_data[0]
+                    email = best_email.get("email")
+                    qualification = best_email.get("qualification", "")
+                elif isinstance(email_data, dict):
+                    # Old format: email is a dict
+                    email = email_data.get("email")
+                    qualification = email_data.get("qualification", "")
+                elif isinstance(email_data, str):
+                    # Simple string format
+                    email = email_data
+                    qualification = ""
+                
+                # Extract phone
+                phone = None
+                phone_data = result.get("phone")
+                if isinstance(phone_data, list) and len(phone_data) > 0:
+                    phone = phone_data[0].get("number")
+                elif isinstance(phone_data, dict):
+                    phone = phone_data.get("number")
+                elif isinstance(phone_data, str):
+                    phone = phone_data
+                
+                # Determine confidence based on qualification
+                confidence = 0
+                if "nominative@pro" in qualification:
+                    confidence = 95
+                elif "pro" in qualification:
+                    confidence = 80
+                elif email:
+                    confidence = 60
+                
+                if email or phone:
+                    logger.info(f"Dropcontact found: email={email}, phone={phone}, confidence={confidence}")
+                    return {
+                        "email": email,
+                        "phone": phone,
+                        "confidence": confidence,
+                        "source": "dropcontact",
+                        "raw_data": result
+                    }
+        
+        # Check for errors
+        if poll_data.get("error") == True:
+            logger.warning(f"Dropcontact returned error: {poll_data}")
+            break
     
     # No results after polling
     logger.warning(f"Dropcontact polling timeout for request ID {request_id}")
@@ -559,6 +609,10 @@ def call_hunter(lead: Dict[str, Any]) -> Dict[str, Any]:
                 logger.error("Hunter authentication failed")
                 service_status.mark_unavailable('hunter')
                 return {"email": None, "phone": None, "confidence": 0, "source": "hunter"}
+            elif domain_response.status_code == 429:
+                logger.warning("Hunter rate limit exceeded - marking temporarily unavailable")
+                service_status.mark_unavailable('hunter')
+                return {"email": None, "phone": None, "confidence": 0, "source": "hunter"}
             
             if domain_response.status_code == 200:
                 domain_data = domain_response.json().get("data", {})
@@ -569,11 +623,6 @@ def call_hunter(lead: Dict[str, Any]) -> Dict[str, Any]:
                     logger.info(f"Hunter found domain {domain} for company {company_name}")
     else:
         domain = lead.get("company_domain")
-    
-    # If still no domain, try LinkedIn URL as fallback
-    if not domain and lead.get("profile_url") and "linkedin.com" in lead.get("profile_url", ""):
-        # Could try to parse company from LinkedIn URL if needed
-        pass
     
     # If still no domain, return empty result
     if not domain:
@@ -596,7 +645,11 @@ def call_hunter(lead: Dict[str, Any]) -> Dict[str, Any]:
     )
     
     # Check for errors
-    if email_response.status_code != 200:
+    if email_response.status_code == 429:
+        logger.warning("Hunter rate limit exceeded on email-finder")
+        service_status.mark_unavailable('hunter')
+        return {"email": None, "phone": None, "confidence": 0, "source": "hunter"}
+    elif email_response.status_code != 200:
         logger.warning(f"Hunter email-finder error: {email_response.status_code}")
         return {"email": None, "phone": None, "confidence": 0, "source": "hunter"}
     
@@ -604,6 +657,9 @@ def call_hunter(lead: Dict[str, Any]) -> Dict[str, Any]:
     email_data = email_response.json().get("data", {})
     email = email_data.get("email")
     score = email_data.get("score", 0)
+    
+    if email:
+        logger.info(f"Hunter found email: {email} (score: {score})")
     
     # Return results
     return {
