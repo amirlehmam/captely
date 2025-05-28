@@ -6,7 +6,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import uuid, io, boto3
-from jose import jwt, JWTError
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -14,6 +13,7 @@ from sqlalchemy.future import select
 from common.config import get_settings
 from common.db import get_session
 from common.celery_app import celery_app
+from common.auth import verify_api_token
 
 from app.models import ImportJob, User, CreditLog  # your SQLAlchemy models
 from app.credit_service import CreditService
@@ -65,22 +65,12 @@ except Exception as e:
 # JWT auth via HTTPBearer
 security = HTTPBearer()
 
-def verify_jwt(
-    creds: HTTPAuthorizationCredentials = Depends(security)
-) -> str:
-    token = creds.credentials
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        return payload["sub"]
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
 # ---- import endpoint ----
 
 @app.post("/api/imports/file", status_code=status.HTTP_201_CREATED)
 async def import_file(
     file: UploadFile = File(...),
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session = Depends(get_session),
 ):
     """
@@ -128,15 +118,15 @@ async def import_file(
 credit_service = CreditService(name="Captely Credit Service")
 
 @app.get("/api/credits/{user_id}", status_code=status.HTTP_200_OK)
-async def get_credit_info(user_id: str, auth=Depends(verify_jwt)):
+async def get_credit_info(user_id: str, auth=Depends(verify_api_token)):
     """
     Return credit info for a given user_id.
-    Note: we depend on verify_jwt above so only valid tokens can query.
+    Note: we depend on verify_api_token above so only valid tokens can query.
     """
     return credit_service.get_credit_info(user_id)
 
 @app.get("/api/credits/{user_id}/balance", status_code=status.HTTP_200_OK)
-async def get_credit_balance(user_id: str, auth=Depends(verify_jwt)):
+async def get_credit_balance(user_id: str, auth=Depends(verify_api_token)):
     """
     Return credit balance for a given user_id (frontend expects this endpoint).
     """
