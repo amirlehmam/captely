@@ -30,12 +30,20 @@ settings = get_settings()
 
 origins = [
     "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://localhost:8001",
+    "http://localhost:8002",
+    "http://localhost:8003",
+    "http://localhost:8004",
+    "http://localhost:8005",
+    "http://localhost:8006",
     # add any other origins (e.g. production hostname) here
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,           # allow cookies/auth headers
     allow_methods=["*"],              # GET, POST, PUT, DELETE, etc.
     allow_headers=["*"],              # allow any request headers

@@ -14,7 +14,8 @@ from datetime import datetime, timedelta, date
 from jose import jwt, JWTError
 
 from common.config import get_settings
-from common.db import get_session
+from common.db import get_session, async_engine
+from app.models import Base
 
 app = FastAPI(
     title="Captely Analytics Service",
@@ -33,6 +34,12 @@ app.add_middleware(
 )
 
 security = HTTPBearer()
+
+# @app.on_event("startup")
+# async def startup_event():
+#     """Create database tables on startup"""
+#     async with async_engine.begin() as conn:
+#         await conn.run_sync(Base.metadata.create_all)
 
 def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """Verify JWT token and return user ID"""

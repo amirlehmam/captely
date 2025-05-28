@@ -29,10 +29,10 @@ async def import_salesnav(
     session = Depends(get_session)
 ):
     job_id = str(uuid.uuid4())
-    await session.execute(insert(ImportJob).values(id=job_id, user_id=user_id, total=len(batch.leads)))
-    await session.commit()
+    session.execute(insert(ImportJob).values(id=job_id, user_id=user_id, total=len(batch.leads)))
+    session.commit()
     
     for lead in batch.leads:
-        celery_app.send_task("enrichment_worker.tasks.enrich_contact", args=[lead.dict(), job_id, user_id])
+        celery_app.send_task("app.tasks.cascade_enrich", args=[lead.dict(), job_id, user_id])
     
     return {"job_id": job_id}

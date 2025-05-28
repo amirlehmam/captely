@@ -1,3 +1,43 @@
+# Database Configuration
+DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgrespw
+POSTGRES_DB=postgres
+
+# Redis Configuration
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key-here-change-this-in-production
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# API Keys (replace with actual keys)
+OPENAI_API_KEY=your-openai-api-key
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# Service URLs
+AUTH_SERVICE_URL=http://auth-service:8000
+IMPORT_SERVICE_URL=http://import-service:8000
+CREDIT_SERVICE_URL=http://credit-service:8000
+EXPORT_SERVICE_URL=http://export-service:8000
+ANALYTICS_SERVICE_URL=http://analytics-service:8000
+NOTIFICATION_SERVICE_URL=http://notification-service:8000
+
+# Frontend URLs
+VITE_AUTH_URL=http://localhost:8001
+VITE_IMPORT_URL=http://localhost:8002
+VITE_CREDIT_URL=http://localhost:8003
+VITE_EXPORT_URL=http://localhost:8004
+VITE_ANALYTICS_URL=http://localhost:8005
+VITE_NOTIFICATION_URL=http://localhost:8006
+
+# Other Configuration
+DEBUG=True
+ENVIRONMENT=development
+
 services:
   db:
     image: postgres:15
@@ -10,7 +50,7 @@ services:
       - "5432:5432"
     volumes:
       - captely_db-data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./setup_db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

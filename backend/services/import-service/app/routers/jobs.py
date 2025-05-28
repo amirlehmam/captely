@@ -11,20 +11,20 @@ from app.models import ImportJob, Contact
 router = APIRouter(prefix="/api")
 
 @router.get("/jobs")
-async def list_jobs(user_id: str = Depends(verify_api_token), session=Depends(get_session)):
-    q = await session.execute(select(ImportJob).where(ImportJob.user_id == user_id))
+def list_jobs(user_id: str = Depends(verify_api_token), session=Depends(get_session)):
+    q = session.execute(select(ImportJob).where(ImportJob.user_id == user_id))
     jobs = q.scalars().all()
     return [{"id": j.id, "total": j.total, "completed": j.completed, "status": j.status} for j in jobs]
 
 @router.get("/jobs/{job_id}")
-async def get_job(job_id: str, user_id: str = Depends(verify_api_token), session=Depends(get_session)):
-    job = await session.get(ImportJob, job_id)
+def get_job(job_id: str, user_id: str = Depends(verify_api_token), session=Depends(get_session)):
+    job = session.get(ImportJob, job_id)
     if not job or job.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job not found"
         )
-    contacts = (await session.execute(select(Contact).where(Contact.job_id == job_id))).scalars().all()
+    contacts = session.execute(select(Contact).where(Contact.job_id == job_id)).scalars().all()
     return {
         "id": job.id,
         "status": job.status,
@@ -50,14 +50,14 @@ async def get_job(job_id: str, user_id: str = Depends(verify_api_token), session
     }
 
 @router.get("/jobs/{job_id}/export")
-async def export_job(job_id: str, user_id: str = Depends(verify_api_token), session=Depends(get_session)):
-    job = await session.get(ImportJob, job_id)
+def export_job(job_id: str, user_id: str = Depends(verify_api_token), session=Depends(get_session)):
+    job = session.get(ImportJob, job_id)
     if not job or job.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job not found"
         )
-    contacts = (await session.execute(select(Contact).where(Contact.job_id == job_id))).scalars().all()
+    contacts = session.execute(select(Contact).where(Contact.job_id == job_id)).scalars().all()
     df = pd.DataFrame([
         {
             "first_name": c.first_name,

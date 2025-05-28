@@ -34,7 +34,7 @@ async def enrich_csv(
     job_id = f"enrich_{uuid.uuid4()}"
     
     # Create job record
-    await session.execute(
+    session.execute(
         insert(ImportJob).values(
             id=job_id,
             user_id=request.user_id,
@@ -44,11 +44,11 @@ async def enrich_csv(
             file_name=os.path.basename(request.file_path)
         )
     )
-    await session.commit()
+    session.commit()
     
     # Send task to Celery worker
     celery_app.send_task(
-        "app.tasks.process_csv_file",
+        "app.tasks.process_enrichment_batch",
         args=[request.file_path, job_id, request.user_id],
         kwargs={"max_contacts": request.max_contacts}
     )

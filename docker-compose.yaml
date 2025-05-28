@@ -30,19 +30,14 @@ services:
       redis:
         condition: service_started
     environment:
-      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - DATABASE_URL=postgresql+asyncpg://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
       - PYTHONPATH=/app:/app/common
     ports:
       - "8001:8000"
     volumes:
       - ./backend/services/common:/app/common
     restart: on-failure
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -h db.kkbqrrrjlfxxtkboxmld.supabase.co -p 5432"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   import-service:
     build:
@@ -53,13 +48,13 @@ services:
       - redis
     env_file: .env
     environment:
-      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - DATABASE_URL=postgresql://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
       - PYTHONPATH=/app:/app/common
     ports:
       - "8002:8000"
     volumes:
       - ./backend/services/common:/app/common
-    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    entrypoint: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     restart: on-failure
 
   credit-service:
@@ -71,13 +66,13 @@ services:
       - redis
     env_file: .env
     environment:
-      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - DATABASE_URL=postgresql://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
       - PYTHONPATH=/app:/app/common
     ports:
       - "8003:8000"
     volumes:
       - ./backend/services/common:/app/common
-    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     restart: on-failure
 
   enrichment-worker:
@@ -89,11 +84,11 @@ services:
       - redis
     env_file: .env
     environment:
-      - DATABASE_URL=postgresql+pg8000://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
+      - DATABASE_URL=postgresql+asyncpg://postgres:Capitalsteez_94400@db.kkbqrrrjlfxxtkboxmld.supabase.co:5432/postgres
       - PYTHONPATH=/app:/app/common
     volumes:
       - ./backend/services/common:/app/common
-    command: ["db.kkbqrrrjlfxxtkboxmld.supabase.co", "celery", "-A", "common.celery_app:celery_app", "worker", "--loglevel=info"]
+    entrypoint: ["celery", "-A", "common.celery_app:celery_app", "worker", "--loglevel=info"]
     restart: on-failure
 
   frontend:

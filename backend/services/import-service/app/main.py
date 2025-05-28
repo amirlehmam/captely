@@ -18,10 +18,10 @@ import pandas as pd
 import uuid, io, boto3, httpx
 
 from common.config import get_settings
-from common.db import get_session
+from common.db import get_session, async_engine
 from common.celery_app import celery_app
 from common.auth import verify_api_token
-from .models import ImportJob, Contact
+from .models import ImportJob, Contact, Base
 from .routers import jobs, salesnav, enrichment
 
 # ─── App & Config ───────────────────────────────────────────────────────────────
@@ -65,18 +65,8 @@ app.include_router(enrichment.router)
 # HTTP-Bearer for JWT
 security = HTTPBearer()
 
-def verify_jwt(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> str:
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        return payload["sub"]
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing authentication token",
-        )
+# Startup event removed to fix async engine issues
+# Tables will be created by the enrichment worker or manually
 
 # prepare S3 client if AWS credentials are available
 s3 = None
@@ -118,7 +108,7 @@ async def do_login(
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(
     request: Request,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
 ):
     # fetch job list
     api_token = request.cookies.get("Authorization")
@@ -139,14 +129,12 @@ async def dashboard(
 @app.post(
     "/api/imports/file",
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(verify_jwt)],
 )
 async def import_file(
     file: UploadFile = File(...),
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    user_id: str = Depends(verify_api_token),
     session=Depends(get_session),
 ):
-    user_id = verify_jwt(credentials)
     data = await file.read()
     if file.filename.lower().endswith(".csv"):
         df = pd.read_csv(io.BytesIO(data))
@@ -161,15 +149,22 @@ async def import_file(
         )
 
     job_id = str(uuid.uuid4())
-    await session.execute(
+    session.execute(
         insert(ImportJob).values(id=job_id, user_id=user_id, total=df.shape[0])
     )
-    await session.commit()
+    session.commit()
 
     for _, row in df.iterrows():
+        # Convert row to dict and normalize field names
+        lead_data = row.to_dict()
+        
+        # Log what we're sending to enrichment
+        print(f"📤 Sending to enrichment: {lead_data.get('first_name', '')} {lead_data.get('last_name', '')} at {lead_data.get('company', '')}")
+        
+        # Send to the cascade enrichment task
         celery_app.send_task(
-            "enrichment_worker.tasks.enrich_contact",
-            args=[row.to_dict(), job_id, user_id],
+            "app.tasks.cascade_enrich",
+            args=[lead_data, job_id, user_id],
         )
 
     # Upload to S3 if available
@@ -186,25 +181,24 @@ class LeadsBatch(BaseModel):
 @app.post(
     "/api/imports/leads",
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(verify_jwt)],
 )
 async def import_leads(
     batch: LeadsBatch,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    user_id: str = Depends(verify_api_token),
     session=Depends(get_session),
 ):
-    user_id = verify_jwt(credentials)
     job_id = str(uuid.uuid4())
     total = len(batch.leads)
 
-    await session.execute(
+    session.execute(
         insert(ImportJob).values(id=job_id, user_id=user_id, total=total)
     )
-    await session.commit()
+    session.commit()
 
     for lead in batch.leads:
+        print(f"📤 Sending batch lead to enrichment: {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}")
         celery_app.send_task(
-            "enrichment_worker.tasks.enrich_contact",
+            "app.tasks.cascade_enrich",
             args=[lead, job_id, user_id],
         )
 
@@ -223,24 +217,24 @@ class LeadIn(BaseModel):
 @app.post(
     "/api/scraper/leads",
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(verify_jwt)],
 )
 async def scraper_leads(
     leads: list[LeadIn],
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    user_id: str = Depends(verify_api_token),
     session=Depends(get_session),
 ):
-    user_id = verify_jwt(credentials)
     job_id = str(uuid.uuid4())
-    await session.execute(
+    session.execute(
         insert(ImportJob).values(id=job_id, user_id=user_id, total=len(leads))
     )
-    await session.commit()
+    session.commit()
 
     for lead in leads:
+        lead_dict = lead.dict()
+        print(f"📤 Sending scraper lead to enrichment: {lead_dict.get('first_name', '')} {lead_dict.get('last_name', '')} at {lead_dict.get('company', '')}")
         celery_app.send_task(
-            "enrichment_worker.tasks.enrich_contact",
-            args=[lead.dict(), job_id, user_id],
+            "app.tasks.cascade_enrich",
+            args=[lead_dict, job_id, user_id],
         )
 
     return {"job_id": job_id}
@@ -248,14 +242,12 @@ async def scraper_leads(
 # 4) list all jobs for this user
 @app.get(
     "/api/jobs",
-    dependencies=[Depends(verify_jwt)],
 )
 async def list_jobs(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    user_id: str = Depends(verify_api_token),
     session=Depends(get_session),
 ):
-    user_id = verify_jwt(credentials)
-    q = await session.execute(select(ImportJob).where(ImportJob.user_id == user_id))
+    q = session.execute(select(ImportJob).where(ImportJob.user_id == user_id))
     jobs = q.scalars().all()
     return [
         {

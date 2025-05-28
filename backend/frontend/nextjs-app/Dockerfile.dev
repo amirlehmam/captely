@@ -13,12 +13,15 @@ COPY . .
 ENV VITE_AUTH_URL=http://localhost:8001
 ENV VITE_IMPORT_URL=http://localhost:8002
 ENV VITE_CREDIT_URL=http://localhost:8003
+ENV VITE_EXPORT_URL=http://localhost:8004
+ENV VITE_ANALYTICS_URL=http://localhost:8005
+ENV VITE_NOTIFICATION_URL=http://localhost:8006
 
 # Set production environment (needed for build)
 ENV NODE_ENV=development
 
-# Expose the port
-EXPOSE 3000
+# Expose the port (Vite default port)
+EXPOSE 5173
 
 # Start the app in development mode
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev"]
