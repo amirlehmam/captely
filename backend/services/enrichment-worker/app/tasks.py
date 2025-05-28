@@ -427,7 +427,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # Make the API request
     response = httpx.post(
-        "https://api.dropcontact.io/v1/enrich/all",
+        "https://api.dropcontact.com/v1/enrich/all",
         json=payload,
         headers=headers,
         timeout=30
@@ -460,7 +460,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         # Make polling request
         poll_response = httpx.get(
-            f"https://api.dropcontact.io/v1/enrich/all/{request_id}",
+            f"https://api.dropcontact.com/v1/enrich/all/{request_id}",
             headers=headers,
             timeout=10  # Reduced timeout
         )
@@ -678,6 +678,16 @@ def call_apollo(lead: Dict[str, Any]) -> Dict[str, Any]:
     # Extract email and phone
     email = person.get("email")
     phone = person.get("phone_number")
+    
+    # Filter out placeholder/locked emails from Apollo
+    if email and (
+        "email_not_unlocked" in email.lower() or
+        "not_unlocked" in email.lower() or
+        email.endswith("@domain.com") or
+        "placeholder" in email.lower()
+    ):
+        logger.info(f"Apollo returned placeholder email {email} - filtering out")
+        email = None
     
     # Return results
     return {

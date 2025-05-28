@@ -370,7 +370,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # Make the API request
     response = httpx.post(
-        "https://api.dropcontact.io/batch",
+        "https://api.dropcontact.com/v1/enrich/all",
         json=payload,
         headers=headers,
         timeout=30
@@ -402,11 +402,9 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         time.sleep(wait_time)
         
         # Make polling request
-        poll_response = httpx.get(
-            f"https://api.dropcontact.io/batch/{request_id}",
-            headers=headers,
-            timeout=20
-        )
+        poll_response = httpx.get(f"https://api.dropcontact.com/v1/enrich/all/{request_id}", 
+                            headers=headers,
+                            timeout=10)
         
         # Check for errors
         if poll_response.status_code != 200:

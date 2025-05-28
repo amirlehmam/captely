@@ -262,37 +262,72 @@ async def validate_token(data: TokenValidateIn, db: AsyncSession = Depends(get_d
 
 @app.post("/auth/signup", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
-    # unique email
-    existing = await db.execute(select(User).where(User.email == data.email))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    user = User(
-        email=data.email,
-        password_hash=get_password_hash(data.password),
-        credits=100,
-        total_spent=0
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
+    try:
+        print(f"Signup attempt for email: {data.email}")
+        
+        # unique email
+        existing = await db.execute(select(User).where(User.email == data.email))
+        existing_user = existing.scalar_one_or_none()
+        
+        if existing_user:
+            print(f"User already exists: {data.email}")
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        print(f"Creating new user for: {data.email}")
+        user = User(
+            email=data.email,
+            password_hash=get_password_hash(data.password),
+            credits=100,
+            total_spent=0
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
-    token = create_access_token(str(user.id))
-    return TokenOut(access_token=token)
+        print(f"User created successfully: {user.id}")
+        token = create_access_token(str(user.id))
+        return TokenOut(access_token=token)
+    except HTTPException as e:
+        print(f"HTTPException in signup: {e.detail}")
+        raise
+    except Exception as e:
+        print(f"Unexpected error in signup: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post("/auth/login", response_model=TokenOut)
 async def login(data: SignupIn, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == data.email))
-    user = result.scalar_one_or_none()
-    if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    try:
+        print(f"Login attempt for email: {data.email}")
+        
+        result = await db.execute(select(User).where(User.email == data.email))
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            print(f"User not found: {data.email}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        print(f"User found: {user.email}, verifying password...")
+        if not verify_password(data.password, user.password_hash):
+            print(f"Password verification failed for: {data.email}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-    token = create_access_token(str(user.id))
-    return TokenOut(access_token=token)
+        print(f"Login successful for: {data.email}")
+        token = create_access_token(str(user.id))
+        return TokenOut(access_token=token)
+    except HTTPException as e:
+        print(f"HTTPException in login: {e.detail}")
+        raise
+    except Exception as e:
+        print(f"Unexpected error in login: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/auth/me", response_model=UserOut)
 async def me(current_user: User = Depends(get_current_user)):
