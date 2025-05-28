@@ -11,10 +11,9 @@ from typing import Dict, List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime, timedelta, date
-from jose import jwt, JWTError
-
 from common.config import get_settings
-from common.db import get_session, async_engine
+from common.db import get_async_session, async_engine
+from common.auth import verify_api_token
 from app.models import Base
 
 app = FastAPI(
@@ -41,15 +40,6 @@ security = HTTPBearer()
 #     async with async_engine.begin() as conn:
 #         await conn.run_sync(Base.metadata.create_all)
 
-def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """Verify JWT token and return user ID"""
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        return payload["sub"]
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
 # Pydantic models
 class DateRange(BaseModel):
     start_date: Optional[date] = None
@@ -58,8 +48,8 @@ class DateRange(BaseModel):
 @app.get("/api/analytics/dashboard/{user_id}")
 async def get_user_dashboard(
     user_id: str,
-    session: AsyncSession = Depends(get_session),
-    auth_user: str = Depends(verify_jwt)
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_api_token)
 ):
     """Get comprehensive dashboard analytics for a user"""
     
@@ -218,8 +208,8 @@ async def get_user_dashboard(
 async def get_enrichment_statistics(
     user_id: str,
     date_range: Optional[DateRange] = None,
-    session: AsyncSession = Depends(get_session),
-    auth_user: str = Depends(verify_jwt)
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_api_token)
 ):
     """Get detailed enrichment statistics with filtering"""
     
@@ -353,8 +343,8 @@ async def get_enrichment_statistics(
 @app.get("/api/analytics/job/{job_id}")
 async def get_job_analytics(
     job_id: str,
-    session: AsyncSession = Depends(get_session),
-    auth_user: str = Depends(verify_jwt)
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_api_token)
 ):
     """Get detailed analytics for a specific job"""
     
@@ -452,8 +442,8 @@ async def get_job_analytics(
 async def get_credit_analytics(
     user_id: str,
     period: str = Query("30d", regex="^(7d|30d|90d|1y)$"),
-    session: AsyncSession = Depends(get_session),
-    auth_user: str = Depends(verify_jwt)
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_api_token)
 ):
     """Get credit usage analytics"""
     

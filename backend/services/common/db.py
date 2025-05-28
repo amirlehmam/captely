@@ -7,7 +7,8 @@ from common.config import get_settings
 settings = get_settings()
 
 # Non-async engine (for services that need it)
-db_url = settings.database_url.replace("postgresql+pg8000://", "postgresql://")
+# Convert async URL to sync URL
+db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://").replace("postgresql+pg8000://", "postgresql://")
 engine = create_engine(db_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -72,7 +72,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 def create_access_token(user_id: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.jwt_exp_minutes)
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),  # Ensure it's a string
         "exp": expire
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
@@ -251,13 +251,8 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(User).where(User.email == data.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
-
-    # Generate UUID here to avoid issues
-    import uuid
-    user_id = str(uuid.uuid4())
     
     user = User(
-        id=user_id,
         email=data.email,
         password_hash=get_password_hash(data.password),
         credits=100,
@@ -265,8 +260,9 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
     )
     db.add(user)
     await db.commit()
+    await db.refresh(user)
 
-    token = create_access_token(user_id)
+    token = create_access_token(str(user.id))
     return TokenOut(access_token=token)
 
 @app.post("/auth/login", response_model=TokenOut)
@@ -280,7 +276,7 @@ async def login(data: SignupIn, db: AsyncSession = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = create_access_token(user.id)
+    token = create_access_token(str(user.id))
     return TokenOut(access_token=token)
 
 @app.get("/auth/me", response_model=UserOut)
