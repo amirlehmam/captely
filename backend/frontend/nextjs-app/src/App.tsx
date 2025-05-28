@@ -21,6 +21,8 @@ import SignupPage from './pages/Signup';
 import NotFoundPage from './pages/NotFound';
 
 function App() {
+  console.log('🚀 App component is loading...');
+  
   const hasToken = () =>
     Boolean(
       localStorage.getItem('captely_jwt') ||
@@ -29,6 +31,8 @@ function App() {
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasToken());
 
+  console.log('🔐 Authentication status:', isAuthenticated);
+
   useEffect(() => {
     const onStorage = () => setIsAuthenticated(hasToken());
     window.addEventListener('storage', onStorage);
@@ -36,14 +40,18 @@ function App() {
   }, []);
 
   const handleLogin = () => {
+    console.log('✅ Login successful');
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
+    console.log('👋 Logging out');
     localStorage.removeItem('captely_jwt');
     sessionStorage.removeItem('captely_jwt');
     setIsAuthenticated(false);
   };
+
+  console.log('📄 Rendering App with authentication:', isAuthenticated);
 
   return (
     <Router>

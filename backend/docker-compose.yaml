@@ -131,7 +131,8 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - FLOWER_BASIC_AUTH=admin:flowerpassword
       - FLOWER_PORT=5555
-    command: ["sh", "-c", "sleep 15 && celery --broker=redis://redis:6379/0 flower --port=5555 --basic-auth=admin:flowerpassword"]
+      - FLOWER_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    command: ["sh", "-c", "sleep 15 && celery --broker=redis://redis:6379/0 flower --port=5555 --basic-auth=admin:flowerpassword --cors-allowed-origins=http://localhost:5173,http://localhost:3000"]
     restart: on-failure
 
   export-service:

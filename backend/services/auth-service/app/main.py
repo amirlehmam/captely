@@ -15,7 +15,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from pydantic_settings import BaseSettings
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import (
@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import sessionmaker
 from passlib.hash import bcrypt
 from fastapi.responses import HTMLResponse
+from uuid import UUID
 
 from app.models import User, ApiKey, Base  # Your SQLAlchemy Base/metadata
 from common.db import async_engine, get_async_session
@@ -126,6 +127,13 @@ class UserOut(BaseModel):
     credits: int
     created_at: datetime
 
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid_to_str(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v
+
     class Config:
         from_attributes = True
 
@@ -134,6 +142,13 @@ class ApiKeyOut(BaseModel):
     key: str
     created_at: datetime
     revoked: bool
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid_to_str(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v
 
     class Config:
         from_attributes = True

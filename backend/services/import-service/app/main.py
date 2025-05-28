@@ -162,6 +162,11 @@ async def import_file(
         # Convert row to dict and normalize field names
         lead_data = row.to_dict()
         
+        # Clean NaN values - replace with empty strings
+        for key, value in lead_data.items():
+            if pd.isna(value):
+                lead_data[key] = ""
+        
         # Log what we're sending to enrichment
         print(f"📤 Sending to enrichment: {lead_data.get('first_name', '')} {lead_data.get('last_name', '')} at {lead_data.get('company', '')}")
         
@@ -169,6 +174,7 @@ async def import_file(
         celery_app.send_task(
             "app.tasks.cascade_enrich",
             args=[lead_data, job_id, user_id],
+            queue="cascade_enrichment"
         )
 
     # Upload to S3 if available
@@ -204,6 +210,7 @@ async def import_leads(
         celery_app.send_task(
             "app.tasks.cascade_enrich",
             args=[lead, job_id, user_id],
+            queue="cascade_enrichment"
         )
 
     return {"job_id": job_id}
@@ -239,6 +246,7 @@ async def scraper_leads(
         celery_app.send_task(
             "app.tasks.cascade_enrich",
             args=[lead_dict, job_id, user_id],
+            queue="cascade_enrichment"
         )
 
     return {"job_id": job_id}

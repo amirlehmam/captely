@@ -39,36 +39,36 @@ const EnrichmentStats: React.FC = () => {
     );
   }
 
-  if (!stats) {
+  if (!stats || !stats.overview) {
     return null;
   }
 
   const statsData = [
     {
       name: 'Total Contacts',
-      value: stats.overview.total_contacts.toLocaleString(),
+      value: (stats.overview.total_contacts || 0).toLocaleString(),
       change: '+12.5%', // Could calculate from historical data
       trend: 'up' as const,
       icon: <Users className="h-5 w-5 text-blue-500" />,
     },
     {
       name: 'Email Hit Rate',
-      value: `${Math.round(stats.overview.success_rate)}%`,
+      value: `${Math.round(stats.overview.success_rate || 0)}%`,
       change: '+3.2%', // Could calculate from historical data
       trend: 'up' as const,
       icon: <Mail className="h-5 w-5 text-green-500" />,
     },
     {
       name: 'Phone Hit Rate',
-      value: `${Math.round((stats.overview.phones_found / stats.overview.total_contacts) * 100)}%`,
+      value: `${Math.round(((stats.overview.phones_found || 0) / (stats.overview.total_contacts || 1)) * 100)}%`,
       change: '+5.1%', // Could calculate from historical data
       trend: 'up' as const,
       icon: <Phone className="h-5 w-5 text-purple-500" />,
     },
     {
       name: 'Credits Remaining',
-      value: stats.overview.credits_remaining.toLocaleString(),
-      change: `-${stats.overview.credits_used}`,
+      value: (stats.overview.credits_remaining || 0).toLocaleString(),
+      change: `-${stats.overview.credits_used || 0}`,
       trend: 'down' as const,
       icon: <Clock className="h-5 w-5 text-orange-500" />,
     },

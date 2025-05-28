@@ -48,8 +48,8 @@ const CreditUsage: React.FC = () => {
   }
 
   // Calculate usage percentage
-  const usagePercent = balance.total_credits > 0 
-    ? Math.round((balance.remaining_credits / balance.total_credits) * 100) 
+  const usagePercent = (balance.total_credits || 0) > 0 
+    ? Math.round(((balance.remaining_credits || 0) / (balance.total_credits || 1)) * 100) 
     : 0;
 
   // Format daily usage data from analytics
@@ -60,7 +60,7 @@ const CreditUsage: React.FC = () => {
     ? analytics.period_stats.total_spent / 30 
     : 0;
   const daysRemaining = avgDailyUsage > 0 
-    ? Math.floor(balance.remaining_credits / avgDailyUsage) 
+    ? Math.floor((balance.remaining_credits || 0) / avgDailyUsage) 
     : null;
   const estimatedMonthlyUsage = analytics?.predictions?.estimated_monthly_usage || 0;
   return (
@@ -131,15 +131,15 @@ const CreditUsage: React.FC = () => {
         <div className="grid grid-cols-3 gap-2 mb-6">
           <div className="text-center">
             <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
-            <div className="text-lg font-medium text-gray-900 dark:text-white">{balance.total_credits.toLocaleString()}</div>
+            <div className="text-lg font-medium text-gray-900 dark:text-white">{(balance.total_credits || 0).toLocaleString()}</div>
           </div>
           <div className="text-center">
             <div className="text-sm text-gray-500 dark:text-gray-400">Used</div>
-            <div className="text-lg font-medium text-blue-600 dark:text-blue-400">{balance.used_credits.toLocaleString()}</div>
+            <div className="text-lg font-medium text-blue-600 dark:text-blue-400">{(balance.used_credits || 0).toLocaleString()}</div>
           </div>
           <div className="text-center">
             <div className="text-sm text-gray-500 dark:text-gray-400">Left</div>
-            <div className="text-lg font-medium text-green-600 dark:text-green-400">{balance.remaining_credits.toLocaleString()}</div>
+            <div className="text-lg font-medium text-green-600 dark:text-green-400">{(balance.remaining_credits || 0).toLocaleString()}</div>
           </div>
         </div>
         
@@ -153,7 +153,7 @@ const CreditUsage: React.FC = () => {
                   Projected Usage
                 </h4>
                 <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">
-                  At your current rate, you'll use approximately <strong>{estimatedMonthlyUsage.toLocaleString()}</strong> credits by the end of this billing cycle ({daysRemaining} days remaining).
+                  At your current rate, you'll use approximately <strong>{(estimatedMonthlyUsage || 0).toLocaleString()}</strong> credits by the end of this billing cycle ({daysRemaining} days remaining).
                 </p>
               </div>
             </div>

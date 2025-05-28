@@ -9,6 +9,7 @@ import concurrent.futures
 from pathlib import Path
 import random
 import socket
+import base64
 
 # Configure logging
 logging.basicConfig(
@@ -30,7 +31,7 @@ API_KEYS = {
 # API base URLs - consolidated in one place for easier management
 API_URLS = {
     "hunter": "https://api.hunter.io/v2",
-    "dropcontact": "https://api.dropcontact.com/v1",  # Fixed to correct base URL
+    "dropcontact": "https://api.dropcontact.io",  # Fixed to correct base URL per official docs
     # Official domains per documentation
     "icypeas": "https://app.icypeas.com/api",  # official base URL per docs
     "apollo": "https://api.apollo.io/v1"
@@ -254,6 +255,25 @@ class DropcontactEnrichment(EnrichmentService):
         self.min_interval = 60 / RATE_LIMITS.get(self.name, 10)
         self.base_url = API_URLS.get(self.name)
     
+    def _extract_domain_from_company(self, company_name: str) -> str:
+        """Extract a likely domain from company name"""
+        if not company_name:
+            return ""
+        
+        # Clean the company name
+        company = company_name.lower().strip()
+        # Remove common suffixes
+        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co", " sa", " sas", " sarl"]:
+            if company.endswith(suffix):
+                company = company[:-len(suffix)].strip()
+        
+        # Remove special characters and spaces
+        company = "".join(c for c in company if c.isalnum())
+        
+        if company:
+            return f"{company}.com"
+        return ""
+    
     def enrich_contact(self, contact: Dict) -> Dict:
         """Enrich a contact using Dropcontact's API"""
         if not self.service_available:
@@ -267,19 +287,20 @@ class DropcontactEnrichment(EnrichmentService):
                 self.service_available = False
                 return {"email": None, "phone": None, "confidence": 0, "source": self.name}
             
-            # Create the request data
+            # Create the request data - optimized for faster processing
             data = {
                 "data": [{
                     "first_name": contact.get("First Name", ""),
                     "last_name": contact.get("Last Name", ""),
                     "company": contact.get("Company", ""),
+                    "website": self._extract_domain_from_company(contact.get("Company", "")),
                     "linkedin": contact.get("LinkedIn URL", "")
                 }],
-                # For synchronous enrichment, set sync to true (API will wait for results)
+                # Use sync mode for immediate results when possible
+                "sync": True,  # Try sync mode first for faster results
                 "siren": True,
                 "language": "en",
-                "num": True,
-                "sync": False  # Use async mode for better reliability
+                "num": True
             }
             
             # Prepare headers
@@ -291,7 +312,7 @@ class DropcontactEnrichment(EnrichmentService):
             # Quick credits probe recommended by docs - send an empty object that consumes 0 credits
             try:
                 credits_probe = requests.post(
-                    f"{self.base_url}/enrich/all",
+                    f"{self.base_url}/v1/enrich/all",
                     json={"data": [{}]},
                     headers=headers,
                     timeout=10
@@ -314,50 +335,90 @@ class DropcontactEnrichment(EnrichmentService):
                 # continue; main request might still work
             
             # Make the main request to the Dropcontact API
-            response = requests.post(f"{self.base_url}/enrich/all", 
+            response = requests.post(f"{self.base_url}/v1/enrich/all", 
                                      json=data, 
                                      headers=headers,
-                                     timeout=30)
+                                     timeout=45)  # Increased timeout for sync mode
             
             if response.status_code == 200 or response.status_code == 201:
                 result = response.json()
                 
-                # If sync mode returned data directly
+                # Check if sync mode returned data directly
                 if "data" in result and len(result["data"]) > 0:
                     first_data = result["data"][0]
-                    email = first_data.get("email", {}).get("email")
-                    phone = first_data.get("phone", {}).get("number")
-                    confidence = first_data.get("email", {}).get("quality") or 0
+                    email_data = first_data.get("email", {})
+                    phone_data = first_data.get("phone", {})
                     
-                    logger.info(f"Dropcontact found for {contact.get('Full Name')}: Email: {email}, Phone: {phone}")
+                    if isinstance(email_data, list) and len(email_data) > 0:
+                        # New format: email is a list of objects
+                        email = email_data[0].get("email")
+                        qualification = email_data[0].get("qualification", "")
+                    elif isinstance(email_data, dict):
+                        # Old format: email is a dict
+                        email = email_data.get("email")
+                        qualification = email_data.get("quality", "")
+                    else:
+                        email = None
+                        qualification = ""
                     
-                    return {
-                        "email": email,
-                        "phone": phone,
-                        "confidence": confidence,
-                        "source": self.name
-                    }
-                # If async mode, we need to check status and wait for response
-                elif "request_id" in result:
-                    request_id = result["request_id"]
-                    logger.info(f"Dropcontact request submitted, ID: {request_id}")
+                    if isinstance(phone_data, list) and len(phone_data) > 0:
+                        phone = phone_data[0].get("number")
+                    elif isinstance(phone_data, dict):
+                        phone = phone_data.get("number")
+                    else:
+                        phone = None
                     
-                    # Get the results by polling with reasonable timeouts
-                    polling_result = self._poll_dropcontact_results(request_id, headers)
-                    if polling_result and "data" in polling_result and len(polling_result["data"]) > 0:
-                        first_data = polling_result["data"][0]
-                        email = first_data.get("email", {}).get("email")
-                        phone = first_data.get("phone", {}).get("number")
-                        confidence = first_data.get("email", {}).get("quality") or 0
-                        
-                        logger.info(f"Dropcontact found for {contact.get('Full Name')}: Email: {email}, Phone: {phone}")
-                        
+                    # Map qualification to confidence
+                    confidence = 0.9 if "nominative@pro" in qualification else 0.7 if "pro" in qualification else 0.5
+                    
+                    if email:
+                        logger.info(f"Dropcontact SYNC found for {contact.get('Full Name')}: Email: {email}, Phone: {phone}")
                         return {
                             "email": email,
                             "phone": phone,
                             "confidence": confidence,
                             "source": self.name
                         }
+                
+                # If sync mode didn't return data, check for async request_id
+                elif "request_id" in result:
+                    request_id = result["request_id"]
+                    logger.info(f"Dropcontact sync mode empty, trying async with ID: {request_id}")
+                    
+                    # Fallback to async polling with shorter timeout
+                    polling_result = self._poll_dropcontact_results_fast(request_id, headers)
+                    if polling_result and "data" in polling_result and len(polling_result["data"]) > 0:
+                        first_data = polling_result["data"][0]
+                        email_data = first_data.get("email", {})
+                        phone_data = first_data.get("phone", {})
+                        
+                        if isinstance(email_data, list) and len(email_data) > 0:
+                            email = email_data[0].get("email")
+                            qualification = email_data[0].get("qualification", "")
+                        elif isinstance(email_data, dict):
+                            email = email_data.get("email")
+                            qualification = email_data.get("quality", "")
+                        else:
+                            email = None
+                            qualification = ""
+                        
+                        if isinstance(phone_data, list) and len(phone_data) > 0:
+                            phone = phone_data[0].get("number")
+                        elif isinstance(phone_data, dict):
+                            phone = phone_data.get("number")
+                        else:
+                            phone = None
+                        
+                        confidence = 0.9 if "nominative@pro" in qualification else 0.7 if "pro" in qualification else 0.5
+                        
+                        if email:
+                            logger.info(f"Dropcontact ASYNC found for {contact.get('Full Name')}: Email: {email}, Phone: {phone}")
+                            return {
+                                "email": email,
+                                "phone": phone,
+                                "confidence": confidence,
+                                "source": self.name
+                            }
                 else:
                     logger.warning(f"Unexpected Dropcontact response format: {result}")
             else:
@@ -372,48 +433,54 @@ class DropcontactEnrichment(EnrichmentService):
         
         return {"email": None, "phone": None, "confidence": 0, "source": self.name}
     
-    def _poll_dropcontact_results(self, request_id: str, headers: Dict) -> Dict:
-        """Poll for results from Dropcontact with more reasonable timeout"""
-        max_attempts = 6  # Reduced from 10 to be more practical
+    def _poll_dropcontact_results_fast(self, request_id: str, headers: Dict) -> Dict:
+        """Fast polling for Dropcontact with shorter timeouts as fallback"""
+        max_attempts = 4  # Shorter polling for fallback
         attempts = 0
         
         while attempts < max_attempts:
             attempts += 1
             
-            # Modified polling schedule: 3s, 5s, 8s, 12s, 20s, 30s
-            wait_times = [3, 5, 8, 12, 20, 30]
-            wait_time = wait_times[attempts - 1] if attempts <= len(wait_times) else 30
+            # Fast polling schedule: 2s, 4s, 6s, 8s
+            wait_times = [2, 4, 6, 8]
+            wait_time = wait_times[attempts - 1] if attempts <= len(wait_times) else 10
             
-            logger.info(f"Waiting {wait_time} seconds before checking Dropcontact status (attempt {attempts}/{max_attempts})")
+            logger.info(f"Fast polling Dropcontact status (attempt {attempts}/{max_attempts}) - waiting {wait_time}s")
             time.sleep(wait_time)
             
             try:
-                response = requests.get(f"{self.base_url}/enrich/all/{request_id}", 
+                response = requests.get(f"{self.base_url}/v1/enrich/all/{request_id}", 
                                      headers=headers,
-                                     timeout=15)
+                                     timeout=10)
                 
                 if response.status_code == 200:
                     result = response.json()
                     status = result.get("status")
                     
+                    logger.info(f"Dropcontact fast poll {attempts}: {status}")
+                    
                     if status == "completed":
-                        logger.info(f"Dropcontact job completed after {attempts} attempts")
+                        logger.info(f"Dropcontact fast poll completed after {attempts} attempts")
                         return result
                     elif status == "failed":
-                        logger.warning(f"Dropcontact job failed: {result}")
+                        logger.warning(f"Dropcontact fast poll failed: {result}")
                         return {}
+                    elif status == "processing" or status is None:
+                        continue
                     else:
-                        logger.info(f"Dropcontact job status: {status}")
-                else:
-                    logger.warning(f"Dropcontact status check error: {response.status_code} - {response.text}")
-                    if attempts > max_attempts / 2:
-                        return {}
-            except Exception as e:
-                logger.error(f"Error checking Dropcontact status: {str(e)}")
-                if attempts > max_attempts / 2:
+                        logger.info(f"Dropcontact fast poll status: {status}")
+                        continue
+                elif response.status_code == 404:
+                    logger.warning(f"Dropcontact request ID not found: {request_id}")
                     return {}
+                else:
+                    logger.warning(f"Dropcontact fast poll error: {response.status_code}")
+                    continue
+            except Exception as e:
+                logger.error(f"Error in fast polling: {str(e)}")
+                continue
         
-        logger.warning(f"Dropcontact max polling attempts reached for request_id {request_id}")
+        logger.info(f"Dropcontact fast polling timeout for request_id {request_id}")
         return {}
     
     def get_email_confidence(self, result: Dict) -> float:
@@ -449,7 +516,11 @@ class IcypeasEnrichment(EnrichmentService):
             return {"email": None, "phone": None, "confidence": 0, "source": self.name}
 
         try:
-            headers = {"Content-Type": "application/json", "Authorization": self.api_key}
+            # Icypeas authentication - use only the API key in Authorization header
+            headers = {
+                "Content-Type": "application/json", 
+                "Authorization": self.api_key  # This is the correct method!
+            }
 
             launch_payload = {
                 "firstname": contact.get("First Name", ""),
@@ -462,10 +533,14 @@ class IcypeasEnrichment(EnrichmentService):
             # 1) Launch async search
             launch_url = f"{self.base_url}/email-search"
             logger.debug(f"Icypeas launch payload: {launch_payload}")
+            logger.debug(f"Icypeas auth headers: {headers}")
             launch_resp = self._make_request("post", launch_url, json=launch_payload, headers=headers, timeout=30)
 
             if launch_resp.status_code not in (200, 201):
                 logger.warning(f"Icypeas launch error: {launch_resp.status_code} {launch_resp.text}")
+                if launch_resp.status_code == 401:
+                    logger.error("Icypeas authentication failed. Check API credentials.")
+                    self.service_available = False
                 return {"email": None, "phone": None, "confidence": 0, "source": self.name}
 
             req_id = launch_resp.json().get("item", {}).get("_id")
@@ -473,7 +548,7 @@ class IcypeasEnrichment(EnrichmentService):
                 logger.warning("Icypeas did not return request id")
                 return {"email": None, "phone": None, "confidence": 0, "source": self.name}
 
-            # 2) Poll for result
+            # 2) Poll for result using the same headers
             poll_url = f"{self.base_url}/bulk-single-searchs/read"
             max_attempts = 6
             wait_seq = [3, 5, 8, 12, 20, 30]
@@ -568,18 +643,29 @@ class ApolloEnrichment(EnrichmentService):
                     email = result["person"].get("email")
                     phone = result["person"].get("phone_number")
                     
+                    # Filter out Apollo's placeholder emails that indicate locked results
+                    if email and ("email_not_unlocked" in email.lower() or 
+                                 "not_unlocked" in email.lower() or
+                                 email.endswith("@domain.com") or
+                                 email.startswith("email_not_unlocked")):
+                        logger.warning(f"Apollo returned locked email placeholder: {email}")
+                        email = None
+                    
                     # In Apollo, we can check if email is verified
                     email_status = result["person"].get("email_status")
-                    confidence = 0.9 if email_status == "verified" else 0.6
                     
-                    logger.info(f"Apollo found for {contact.get('Full Name')}: Email: {email}, Phone: {phone}")
-                    
-                    return {
-                        "email": email,
-                        "phone": phone,
-                        "confidence": confidence,
-                        "source": self.name
-                    }
+                    if email:
+                        confidence = 0.9 if email_status == "verified" else 0.6
+                        logger.info(f"Apollo found for {contact.get('Full Name')}: Email: {email}, Phone: {phone}")
+                        
+                        return {
+                            "email": email,
+                            "phone": phone,
+                            "confidence": confidence,
+                            "source": self.name
+                        }
+                    else:
+                        logger.info(f"Apollo - Email found but locked/placeholder for {contact.get('Full Name')}")
                 else:
                     logger.info(f"Apollo - No match found for {contact.get('Full Name')}")
             else:
@@ -693,7 +779,7 @@ class EnrichmentCascade:
                     # Quick probe using empty object per docs
                     try:
                         probe_resp = requests.post(
-                            f"{service.base_url}/enrich/all",
+                            f"{service.base_url}/v1/enrich/all",
                             json={"data": [{}]},
                             headers={"X-Access-Token": service.api_key, "Content-Type": "application/json"},
                             timeout=5

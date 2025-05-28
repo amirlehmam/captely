@@ -140,16 +140,24 @@ async def get_or_create_job(session: AsyncSession, job_id: str, user_id: str, to
 
 async def save_contact(session: AsyncSession, job_id: str, lead: dict) -> int:
     """Save a contact to the database and return its ID."""
+    
+    # Clean NaN values from lead data
+    def clean_value(value):
+        import math
+        if isinstance(value, float) and math.isnan(value):
+            return ""
+        return value if value is not None else ""
+    
     stmt = insert(contacts).values(
         job_id=job_id,
-        first_name=lead.get("first_name", ""),
-        last_name=lead.get("last_name", ""),
-        position=lead.get("position", ""),
-        company=lead.get("company", ""),
-        company_domain=lead.get("company_domain", ""),
-        profile_url=lead.get("profile_url", ""),
-        location=lead.get("location", ""),
-        industry=lead.get("industry", ""),
+        first_name=clean_value(lead.get("first_name", "")),
+        last_name=clean_value(lead.get("last_name", "")),
+        position=clean_value(lead.get("position", "")),
+        company=clean_value(lead.get("company", "")),
+        company_domain=clean_value(lead.get("company_domain", "")),
+        profile_url=clean_value(lead.get("profile_url", "")),
+        location=clean_value(lead.get("location", "")),
+        industry=clean_value(lead.get("industry", "")),
         enriched=False,
         enrichment_status="pending",
         created_at=datetime.now(),
@@ -265,8 +273,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # Prepare headers and payload
     headers = {
-        "X-API-KEY": settings.icypeas_api,
-        "X-API-SECRET": settings.icypeas_secret,
+        "Authorization": settings.icypeas_api,  # Correct authentication method
         "Content-Type": "application/json"
     }
     
@@ -420,7 +427,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # Make the API request
     response = httpx.post(
-        "https://api.dropcontact.io/batch",
+        "https://api.dropcontact.io/v1/enrich/all",
         json=payload,
         headers=headers,
         timeout=30
@@ -445,7 +452,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         return {"email": None, "phone": None, "confidence": 0, "source": "dropcontact"}
     
     # Poll for results
-    wait_times = [3, 5, 8, 12, 20, 30]  # Progressive waiting
+    wait_times = [2, 3, 5, 8, 10, 15, 20, 25]  # Optimized progressive waiting
     
     for i, wait_time in enumerate(wait_times):
         # Wait before checking results
@@ -453,48 +460,55 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         # Make polling request
         poll_response = httpx.get(
-            f"https://api.dropcontact.io/batch/{request_id}",
+            f"https://api.dropcontact.io/v1/enrich/all/{request_id}",
             headers=headers,
-            timeout=20
+            timeout=10  # Reduced timeout
         )
         
         # Check for errors
         if poll_response.status_code != 200:
+            logger.warning(f"Dropcontact polling attempt {i+1}: HTTP {poll_response.status_code}")
             continue
         
         # Parse results
         poll_data = poll_response.json()
         status = poll_data.get("status")
         
-        # Check if results are ready
-        if status != "completed":
-            continue
+        logger.info(f"Dropcontact status check {i+1}: {status}")
         
-        # Extract results
-        if "data" in poll_data and len(poll_data["data"]) > 0:
-            result = poll_data["data"][0]
-            
-            email = result.get("email", {}).get("email")
-            phone = result.get("phone", {}).get("number")
-            
-            # Determine confidence score
-            quality = result.get("email", {}).get("quality", "")
-            confidence = 0
-            if quality == "high":
-                confidence = 90
-            elif quality == "medium":
-                confidence = 70
-            elif quality == "low":
-                confidence = 40
-            
-            # Return results
-            return {
-                "email": email,
-                "phone": phone,
-                "confidence": confidence,
-                "source": "dropcontact",
-                "raw_data": result
-            }
+        # Check if results are ready
+        if status == "completed":
+            # Extract results
+            if "data" in poll_data and len(poll_data["data"]) > 0:
+                result = poll_data["data"][0]
+                
+                email = result.get("email", {}).get("email")
+                phone = result.get("phone", {}).get("number")
+                
+                # Determine confidence score
+                quality = result.get("email", {}).get("quality", "")
+                confidence = 0
+                if quality == "high":
+                    confidence = 90
+                elif quality == "medium":
+                    confidence = 70
+                elif quality == "low":
+                    confidence = 40
+                
+                # Return results
+                return {
+                    "email": email,
+                    "phone": phone,
+                    "confidence": confidence,
+                    "source": "dropcontact",
+                    "raw_data": result
+                }
+        elif status == "failed":
+            logger.warning(f"Dropcontact job failed")
+            break
+        elif status == "processing" or status is None:
+            # Still processing, continue polling
+            continue
     
     # No results after polling
     logger.warning(f"Dropcontact polling timeout for request ID {request_id}")
