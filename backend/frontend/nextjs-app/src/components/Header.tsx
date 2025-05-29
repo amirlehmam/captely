@@ -1,80 +1,41 @@
-import React, { useState } from 'react';
-import { 
-  Menu, Bell, Moon, Sun, Search, User, BarChart
-} from 'lucide-react';
+import React from 'react';
+import { Bell, Search, Menu } from 'lucide-react';
 
 const Header: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    // In a real app, would toggle dark mode class on html/body
-  };
-
-  // Mobile sidebar toggle
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left side - Mobile menu button */}
-          <div className="flex items-center md:hidden">
-            <button
-              type="button"
-              className="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
-              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-          </div>
-          
-          {/* Left side - Page title (hidden on small screens) */}
-          <div className="hidden md:block">
-            <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-              Dashboard
-            </h1>
-          </div>
-          
-          {/* Right side */}
-          <div className="flex items-center space-x-4">
-            {/* Search */}
-            <div className="relative hidden md:block">
+          {/* Mobile menu button */}
+          <button className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+            <Menu className="h-6 w-6" />
+          </button>
+
+          {/* Search bar */}
+          <div className="flex-1 max-w-lg mx-4">
+            <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                type="text"
-                className="block w-64 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm text-gray-900 dark:text-gray-100"
-                placeholder="Search batches or contacts..."
+                type="search"
+                placeholder="Search leads, companies, campaigns..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 text-sm"
               />
             </div>
-            
-            {/* Dark mode toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="p-1 rounded-full text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </div>
+
+          {/* Right side items */}
+          <div className="flex items-center space-x-4">
+            <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+              <Bell className="h-6 w-6" />
+              <span className="absolute top-1 right-1 h-2 w-2 bg-primary-500 rounded-full"></span>
             </button>
             
-            {/* Notifications */}
-            <button className="p-1 rounded-full text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-xs font-bold text-white">
-                3
-              </span>
-            </button>
-            
-            {/* Analytics */}
-            <button className="p-1 rounded-full text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
-              <BarChart className="h-5 w-5" />
-            </button>
-            
-            {/* Profile dropdown (simplified) */}
-            <button className="p-1 rounded-full text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
-              <User className="h-5 w-5" />
-            </button>
+            <div className="hidden md:flex items-center space-x-2 text-sm">
+              <span className="text-gray-500">Good morning,</span>
+              <span className="text-gray-900 font-medium">Test User</span>
+            </div>
           </div>
         </div>
       </div>

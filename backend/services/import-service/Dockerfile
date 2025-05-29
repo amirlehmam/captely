@@ -1,12 +1,13 @@
-FROM python:3.12-alpine
+FROM python:3.11-slim
 
 # Install build dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     gcc \
-    musl-dev \
-    postgresql-dev \
+    python3-dev \
+    libpq-dev \
     postgresql-client \
-    netcat-openbsd
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
