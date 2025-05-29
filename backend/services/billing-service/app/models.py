@@ -57,7 +57,7 @@ class PaymentMethod(Base):
     brand: Mapped[str | None] = mapped_column(String(50))
     exp_month: Mapped[int | None] = mapped_column(Integer)
     exp_year: Mapped[int | None] = mapped_column(Integer)
-    metadata: Mapped[dict] = mapped_column(JSON, default={})
+    payment_metadata: Mapped[dict] = mapped_column(JSON, default={})
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
 class BillingTransaction(Base):
@@ -73,7 +73,7 @@ class BillingTransaction(Base):
     currency: Mapped[str] = mapped_column(String(3), default='USD')
     description: Mapped[str | None] = mapped_column(String)
     provider_transaction_id: Mapped[str | None] = mapped_column(String(255))
-    metadata: Mapped[dict] = mapped_column(JSON, default={})
+    transaction_metadata: Mapped[dict] = mapped_column(JSON, default={})
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
 class CreditPackage(Base):

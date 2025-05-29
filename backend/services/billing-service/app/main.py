@@ -22,7 +22,7 @@ from app.models import (
 from app.schemas import (
     PackageResponse, SubscriptionCreate, SubscriptionResponse,
     PaymentMethodCreate, PaymentMethodResponse,
-    CreditPackagePurchase, BillingResponse
+    CreditPackagePurchase, CreditPackageResponse, BillingResponse
 )
 
 # ---- app setup ----

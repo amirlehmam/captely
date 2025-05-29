@@ -73,7 +73,6 @@ class CreditPackageResponse(BaseModel):
     name: str
     credits: int
     price: float
-    price_per_credit: float
     is_active: bool
     
     class Config:

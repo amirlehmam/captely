@@ -55,7 +55,7 @@ class CRMActivity(Base):
     status: Mapped[str] = mapped_column(String(20), default='completed')
     scheduled_at: Mapped[DateTime | None] = mapped_column(DateTime)
     completed_at: Mapped[DateTime | None] = mapped_column(DateTime)
-    metadata: Mapped[dict] = mapped_column(JSON, default={})
+    activity_metadata: Mapped[dict] = mapped_column(JSON, default={})
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     
     # Relationships

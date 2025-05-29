@@ -231,3 +231,121 @@ CREATE TABLE IF NOT EXISTS integration_configs (
     updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(user_id, provider)
 );
+
+-- Initialize Captely Database
+
+-- Insert default packages
+INSERT INTO packages (id, name, display_name, price_monthly, price_yearly, credits_monthly, features, limits, is_active) VALUES
+    ('00000000-0000-0000-0000-000000000001', 'free', 'Free Tier', 0, 0, 100, '{"basic_enrichment": true, "export_csv": true}', '{"daily_enrichment": 50}', true),
+    ('00000000-0000-0000-0000-000000000002', 'starter', 'Starter', 49, 468, 1000, '{"advanced_enrichment": true, "export_all": true, "api_access": true}', '{"daily_enrichment": 500}', true),
+    ('00000000-0000-0000-0000-000000000003', 'professional', 'Professional', 149, 1428, 5000, '{"priority_support": true, "custom_integrations": true, "bulk_operations": true}', '{"daily_enrichment": 2000}', true),
+    ('00000000-0000-0000-0000-000000000004', 'enterprise', 'Enterprise', 499, 4788, 20000, '{"dedicated_support": true, "custom_features": true, "unlimited_integrations": true}', '{"daily_enrichment": 10000}', true)
+ON CONFLICT (name) DO UPDATE SET
+    display_name = EXCLUDED.display_name,
+    price_monthly = EXCLUDED.price_monthly,
+    price_yearly = EXCLUDED.price_yearly,
+    credits_monthly = EXCLUDED.credits_monthly,
+    features = EXCLUDED.features,
+    limits = EXCLUDED.limits;
+
+-- Insert credit packages
+INSERT INTO credit_packages (id, name, credits, price, is_active) VALUES
+    ('00000000-0000-0000-0001-000000000001', '1,000 Credits', 1000, 10, true),
+    ('00000000-0000-0000-0001-000000000002', '5,000 Credits', 5000, 45, true),
+    ('00000000-0000-0000-0001-000000000003', '10,000 Credits', 10000, 80, true),
+    ('00000000-0000-0000-0001-000000000004', '50,000 Credits', 50000, 350, true),
+    ('00000000-0000-0000-0001-000000000005', '100,000 Credits', 100000, 600, true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create test user with enterprise package
+-- Email: test@captely.com
+-- Password: TestUser123! (bcrypt hash)
+INSERT INTO users (
+    id, 
+    email, 
+    password_hash,
+    is_active, 
+    is_verified, 
+    created_at, 
+    updated_at, 
+    credits,
+    plan,
+    onboarding_completed,
+    company_name
+) VALUES (
+    '00000000-0000-0000-0002-000000000001',
+    'test@captely.com',
+    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyNiGGS6oKgo7K',
+    true,
+    true,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    20000,
+    'enterprise',
+    true,
+    'Test Company'
+) ON CONFLICT (email) DO UPDATE SET
+    credits = 20000,
+    plan = 'enterprise',
+    is_verified = true,
+    onboarding_completed = true;
+
+-- Add enterprise subscription for test user
+INSERT INTO user_subscriptions (
+    id,
+    user_id,
+    package_id,
+    status,
+    billing_cycle,
+    current_period_start,
+    current_period_end,
+    created_at,
+    updated_at
+) VALUES (
+    '00000000-0000-0000-0003-000000000001',
+    '00000000-0000-0000-0002-000000000001',
+    '00000000-0000-0000-0000-000000000004',
+    'active',
+    'monthly',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP + INTERVAL '30 days',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+) ON CONFLICT (id) DO UPDATE SET
+    status = 'active',
+    current_period_end = CURRENT_TIMESTAMP + INTERVAL '30 days';
+
+-- Update user's current subscription
+UPDATE users 
+SET current_subscription_id = '00000000-0000-0000-0003-000000000001'
+WHERE id = '00000000-0000-0000-0002-000000000001';
+
+-- Log initial credits
+INSERT INTO credit_logs (
+    user_id,
+    change,
+    reason,
+    created_at
+) VALUES (
+    '00000000-0000-0000-0002-000000000001',
+    20000,
+    'Initial enterprise package credits',
+    CURRENT_TIMESTAMP
+);
+
+-- Add some sample notification preferences for test user
+INSERT INTO notification_preferences (
+    user_id,
+    email_notifications,
+    job_completion_alerts,
+    credit_warnings,
+    weekly_summary,
+    low_credit_threshold
+) VALUES (
+    '00000000-0000-0000-0002-000000000001',
+    true,
+    true,
+    true,
+    true,
+    1000
+) ON CONFLICT (user_id) DO NOTHING;

@@ -28,7 +28,7 @@ from fastapi.responses import HTMLResponse
 from uuid import UUID
 
 from app.models import User, ApiKey, Base  # Your SQLAlchemy Base/metadata
-from common.db import async_engine, get_async_session
+from common.db import async_engine, AsyncSessionLocal
 
 # 1. SETTINGS
 class Settings(BaseSettings):
@@ -52,14 +52,15 @@ settings = Settings()
 
 # 2. DATABASE
 # Use common module's database engine instead of creating a new one here
-from common.db import async_engine, get_async_session
+from common.db import async_engine, AsyncSessionLocal
 
-# For backward compatibility
-AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
-
-async def get_db() -> AsyncSession:
+# Updated get_db function to properly manage sessions
+async def get_db():
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
 
 # 3. AUTH HELPERS
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
