@@ -11,17 +11,17 @@ const CreditUsage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+      <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+        <div className="px-6 py-5 flex justify-between items-center">
           <div>
-            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mt-2 w-32 animate-pulse"></div>
+            <div className="h-6 bg-gray-100 rounded-lg animate-pulse"></div>
+            <div className="h-4 bg-gray-100 rounded-lg mt-2 w-32 animate-pulse"></div>
           </div>
-          <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-8 w-24 bg-gray-100 rounded-lg animate-pulse"></div>
         </div>
-        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-6">
+        <div className="border-t border-gray-100 px-6 py-6">
           <div className="flex justify-center mb-6">
-            <Loader className="h-12 w-12 animate-spin text-gray-400" />
+            <Loader className="h-12 w-12 animate-spin text-primary-500" />
           </div>
         </div>
       </div>
@@ -30,12 +30,12 @@ const CreditUsage: React.FC = () => {
 
   if (balanceError) {
     return (
-      <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+        <div className="px-6 py-5">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <span className="text-red-700 dark:text-red-300">Failed to load credit info: {balanceError}</span>
+              <span className="text-red-700">Failed to load credit info: {balanceError}</span>
             </div>
           </div>
         </div>
@@ -64,32 +64,32 @@ const CreditUsage: React.FC = () => {
     : null;
   const estimatedMonthlyUsage = analytics?.predictions?.estimated_monthly_usage || 0;
   return (
-    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-      <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+    <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100 hover:shadow-xl transition-all duration-300">
+      <div className="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-primary-50 to-secondary-50">
         <div>
-          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+          <h3 className="text-lg leading-6 font-semibold text-gray-900">
             Credit Usage
           </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 max-w-2xl text-sm text-gray-600">
             Current billing period
           </p>
         </div>
-        <button className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none">
-          <CreditCard className="h-3.5 w-3.5 mr-1" />
+        <button className="inline-flex items-center px-4 py-2 border border-primary-200 shadow-sm text-sm font-medium rounded-lg text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+          <CreditCard className="h-4 w-4 mr-2" />
           Buy Credits
         </button>
       </div>
       
-      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-6">
+      <div className="border-t border-gray-100 px-6 py-6">
         {/* Credit circle progress */}
-        <div className="flex justify-center mb-6">
-          <div className="relative h-36 w-36 flex items-center justify-center">
+        <div className="flex justify-center mb-8">
+          <div className="relative h-40 w-40 flex items-center justify-center">
             {/* SVG circle progress */}
             <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
               {/* Background circle */}
               <circle 
-                className="text-gray-200 dark:text-gray-700" 
-                strokeWidth="8"
+                className="text-gray-200" 
+                strokeWidth="6"
                 stroke="currentColor"
                 fill="transparent"
                 r="45"
@@ -98,8 +98,8 @@ const CreditUsage: React.FC = () => {
               />
               {/* Foreground circle */}
               <circle 
-                className="text-teal-500 dark:text-teal-400 transition-all duration-1000 ease-in-out" 
-                strokeWidth="8"
+                className="text-primary-500 transition-all duration-1000 ease-in-out" 
+                strokeWidth="6"
                 strokeLinecap="round"
                 stroke="currentColor"
                 fill="transparent"
@@ -112,15 +112,18 @@ const CreditUsage: React.FC = () => {
                 strokeDashoffset={`${282.7 * (1 - usagePercent / 100)}`}
                 // This rotates the circle so the progress starts from the top
                 transform="rotate(-90 50 50)"
+                style={{
+                  filter: 'drop-shadow(0 4px 6px rgba(15, 118, 110, 0.2))'
+                }}
               />
             </svg>
             
             {/* Center text */}
             <div className="relative text-center">
-              <div className="text-3xl font-bold text-gray-900 dark:text-white">
+              <div className="text-3xl font-bold text-gray-900">
                 {usagePercent}%
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="text-sm text-gray-600 font-medium">
                 Remaining
               </div>
             </div>
@@ -128,31 +131,31 @@ const CreditUsage: React.FC = () => {
         </div>
         
         {/* Credit stats */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="text-center">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
-            <div className="text-lg font-medium text-gray-900 dark:text-white">{(balance.total_credits || 0).toLocaleString()}</div>
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="text-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+            <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total</div>
+            <div className="text-xl font-bold text-gray-900 mt-1">{(balance.total_credits || 0).toLocaleString()}</div>
           </div>
-          <div className="text-center">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Used</div>
-            <div className="text-lg font-medium text-blue-600 dark:text-blue-400">{(balance.used_credits || 0).toLocaleString()}</div>
+          <div className="text-center bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+            <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">Used</div>
+            <div className="text-xl font-bold text-blue-900 mt-1">{(balance.used_credits || 0).toLocaleString()}</div>
           </div>
-          <div className="text-center">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Left</div>
-            <div className="text-lg font-medium text-green-600 dark:text-green-400">{(balance.remaining_credits || 0).toLocaleString()}</div>
+          <div className="text-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+            <div className="text-sm font-medium text-green-600 uppercase tracking-wide">Left</div>
+            <div className="text-xl font-bold text-green-900 mt-1">{(balance.remaining_credits || 0).toLocaleString()}</div>
           </div>
         </div>
         
         {/* Usage projection */}
         {daysRemaining !== null && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 mb-6">
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 mb-6">
             <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                <h4 className="text-sm font-semibold text-yellow-800">
                   Projected Usage
                 </h4>
-                <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">
+                <p className="mt-1 text-sm text-yellow-700">
                   At your current rate, you'll use approximately <strong>{(estimatedMonthlyUsage || 0).toLocaleString()}</strong> credits by the end of this billing cycle ({daysRemaining} days remaining).
                 </p>
               </div>
@@ -162,10 +165,10 @@ const CreditUsage: React.FC = () => {
         
         {/* Usage history graph (simplified) */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          <h4 className="text-sm font-semibold text-gray-900 mb-4">
             Daily Usage
           </h4>
-          <div className="h-24 flex items-end space-x-1">
+          <div className="h-28 flex items-end space-x-2 bg-gradient-to-t from-gray-50 to-transparent rounded-lg p-3">
             {dailyUsage.map((day: any, index: number) => {
               // Calculate bar height based on max value in history
               const maxCredits = Math.max(...dailyUsage.map((d: any) => d.credits_used || 0));
@@ -174,10 +177,10 @@ const CreditUsage: React.FC = () => {
               return (
                 <div key={day.date || index} className="flex-1 flex flex-col items-center">
                   <div 
-                    className="w-full bg-teal-500 dark:bg-teal-600 rounded-t transition-all hover:bg-teal-600 dark:hover:bg-teal-500"
+                    className="w-full bg-gradient-to-t from-primary-500 to-primary-400 rounded-t-md transition-all hover:from-primary-600 hover:to-primary-500 shadow-sm"
                     style={{ height: `${heightPercent}%` }}
                   ></div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate w-full text-center">
+                  <div className="text-xs text-gray-500 mt-2 font-medium">
                     {day.date ? new Date(day.date).getDate() : index + 1}
                   </div>
                 </div>

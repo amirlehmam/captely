@@ -1,9 +1,10 @@
 # services/billing-service/app/schemas.py
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from datetime import datetime
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 from uuid import UUID
+import re
 
 # Package schemas
 class PackageResponse(BaseModel):
@@ -24,8 +25,14 @@ class PackageResponse(BaseModel):
 # Subscription schemas
 class SubscriptionCreate(BaseModel):
     package_id: UUID
-    billing_cycle: str = Field(default="monthly", regex="^(monthly|yearly)$")
+    billing_cycle: str = Field(default="monthly")
     start_trial: bool = False
+    
+    @validator('billing_cycle')
+    def validate_billing_cycle(cls, v):
+        if v not in ['monthly', 'yearly']:
+            raise ValueError('billing_cycle must be either monthly or yearly')
+        return v
 
 class SubscriptionResponse(BaseModel):
     id: UUID
@@ -45,12 +52,24 @@ class SubscriptionResponse(BaseModel):
 
 # Payment method schemas
 class PaymentMethodCreate(BaseModel):
-    type: str = Field(..., regex="^(card|paypal|bank_transfer)$")
-    provider: str = Field(..., regex="^(stripe|paypal)$")
+    type: str
+    provider: str
     provider_payment_method_id: str
     last_four: Optional[str]
     brand: Optional[str]
     is_default: bool = False
+    
+    @validator('type')
+    def validate_type(cls, v):
+        if v not in ['card', 'paypal', 'bank_transfer']:
+            raise ValueError('type must be one of: card, paypal, bank_transfer')
+        return v
+    
+    @validator('provider')
+    def validate_provider(cls, v):
+        if v not in ['stripe', 'paypal']:
+            raise ValueError('provider must be one of: stripe, paypal')
+        return v
 
 class PaymentMethodResponse(BaseModel):
     id: UUID

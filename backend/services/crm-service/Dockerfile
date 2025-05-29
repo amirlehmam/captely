@@ -6,22 +6,21 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
-    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code
+COPY app/ ./app/
 
 # Copy wait script
 COPY wait-for-db.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/wait-for-db.sh
 
-# Copy application code
-COPY . .
+# Expose the port
+EXPOSE 8000
 
-# Set PYTHONPATH so Python can find the common package
-ENV PYTHONPATH=/app:$PYTHONPATH
-
-# Default command (will be overridden by docker-compose)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+# Command to run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, func
 
-from common.db import get_session
+from common.db import AsyncSessionLocal
 from app.models import User, CreditLog
 
 class CreditService:
@@ -27,7 +27,7 @@ class CreditService:
         Returns: (has_credits, reason, details)
         """
         if not session:
-            async with get_session() as session:
+            async with AsyncSessionLocal() as session:
                 return await self._check_credits_internal(
                     user_id, required_credits, provider, session
                 )
@@ -103,7 +103,7 @@ class CreditService:
     ) -> bool:
         """Deduct credits from user account and log the transaction"""
         if not session:
-            async with get_session() as session:
+            async with AsyncSessionLocal() as session:
                 return await self._deduct_credits_internal(
                     user_id, amount, reason, provider, job_id, session
                 )
@@ -157,7 +157,7 @@ class CreditService:
     ) -> bool:
         """Add credits to user account"""
         if not session:
-            async with get_session() as session:
+            async with AsyncSessionLocal() as session:
                 return await self._add_credits_internal(
                     user_id, amount, reason, session
                 )
@@ -201,7 +201,7 @@ class CreditService:
     
     async def get_credit_info(self, user_id: str) -> Dict:
         """Get comprehensive credit information for a user"""
-        async with get_session() as session:
+        async with AsyncSessionLocal() as session:
             # Get user
             user_result = await session.execute(
                 select(User).where(User.id == user_id)

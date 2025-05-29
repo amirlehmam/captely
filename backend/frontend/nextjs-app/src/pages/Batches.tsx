@@ -143,6 +143,36 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'failed':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'processing':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'warning':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+const getSourceBadge = (source: string) => {
+  switch (source) {
+    case 'Extension':
+      return 'bg-purple-100 text-purple-800 border-purple-200';
+    case 'CSV':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'Manual':
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    case 'API':
+      return 'bg-green-100 text-green-800 border-green-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
 const BatchesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -163,14 +193,14 @@ const BatchesPage: React.FC = () => {
   return (
     <div>
       {/* Page header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Batches</h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">All Batches</h1>
         <div className="mt-4 md:mt-0 flex space-x-3">
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+          <button className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </button>
-          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
             <Download className="h-4 w-4 mr-2" />
             Export All
           </button>
@@ -178,8 +208,8 @@ const BatchesPage: React.FC = () => {
       </div>
       
       {/* Search and filter section */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6 p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 md:space-x-4">
+      <div className="bg-white shadow-lg rounded-xl border border-gray-100 mb-8 p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-6">
           <div className="w-full md:w-1/3">
             <label htmlFor="search" className="sr-only">Search</label>
             <div className="relative">
@@ -192,175 +222,191 @@ const BatchesPage: React.FC = () => {
                 id="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-sm text-gray-900 dark:text-white"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm text-gray-900 transition-all duration-200"
                 placeholder="Search batches..."
               />
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Status:
-            </span>
-            <select className="rounded-md border-gray-300 dark:border-gray-600 py-2 pl-3 pr-10 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 focus:outline-none focus:ring-teal-500 focus:border-teal-500">
-              <option value="all">All</option>
-              <option value="completed">Completed</option>
-              <option value="processing">Processing</option>
-              <option value="failed">Failed</option>
-              <option value="warning">Warning</option>
-            </select>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Status:
+              </span>
+              <select className="rounded-lg border-gray-200 py-3 pl-3 pr-10 text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+                <option value="all">All</option>
+                <option value="completed">Completed</option>
+                <option value="processing">Processing</option>
+                <option value="failed">Failed</option>
+                <option value="warning">Warning</option>
+              </select>
+            </div>
             
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 ml-4">
-              Date:
-            </span>
-            <select className="rounded-md border-gray-300 dark:border-gray-600 py-2 pl-3 pr-10 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 focus:outline-none focus:ring-teal-500 focus:border-teal-500">
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="last7days">Last 7 Days</option>
-              <option value="last30days">Last 30 Days</option>
-              <option value="thisMonth">This Month</option>
-              <option value="lastMonth">Last Month</option>
-            </select>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Date:
+              </span>
+              <select className="rounded-lg border-gray-200 py-3 pl-3 pr-10 text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last7days">Last 7 Days</option>
+                <option value="last30days">Last 30 Days</option>
+                <option value="thisMonth">This Month</option>
+                <option value="lastMonth">Last Month</option>
+              </select>
+            </div>
             
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 ml-4">
-              Source:
-            </span>
-            <select className="rounded-md border-gray-300 dark:border-gray-600 py-2 pl-3 pr-10 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 focus:outline-none focus:ring-teal-500 focus:border-teal-500">
-              <option value="all">All Sources</option>
-              <option value="csv">CSV</option>
-              <option value="extension">Extension</option>
-              <option value="manual">Manual</option>
-              <option value="api">API</option>
-            </select>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Source:
+              </span>
+              <select className="rounded-lg border-gray-200 py-3 pl-3 pr-10 text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+                <option value="all">All Sources</option>
+                <option value="csv">CSV</option>
+                <option value="extension">Extension</option>
+                <option value="manual">Manual</option>
+                <option value="api">API</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
       
       {/* Batches table */}
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+      <div className="bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gradient-to-r from-gray-50 to-white">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Batch
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Source
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Status
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Contacts
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Emails
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Phones
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Success
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center">
                     Date
-                    <button className="ml-1 text-gray-400">
+                    <button className="ml-2 text-gray-400 hover:text-gray-600">
                       <ArrowUpDown className="h-4 w-4" />
                     </button>
                   </div>
                 </th>
-                <th scope="col" className="relative px-6 py-3">
+                <th scope="col" className="relative px-6 py-4">
                   <span className="sr-only">Actions</span>
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white divide-y divide-gray-100">
               {currentBatches.map((batch) => (
-                <tr key={batch.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                <tr key={batch.id} className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all duration-200 group">
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
                       {batch.name}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-gray-500 font-mono">
                       {batch.id}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getSourceBadge(batch.source)}`}>
                       {batch.source}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-5 whitespace-nowrap">
                     <div className="flex items-center">
-                      {getStatusIcon(batch.status)}
-                      <span className="ml-1.5 text-sm text-gray-700 dark:text-gray-300 capitalize">
-                        {batch.status}
-                      </span>
+                      <div className="mr-3">
+                        {getStatusIcon(batch.status)}
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(batch.status)}`}>
+                        {batch.status.charAt(0).toUpperCase() + batch.status.slice(1)}
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {batch.totalContacts}
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {batch.totalContacts}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {batch.emailsFound}
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {batch.emailsFound}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {batch.phonesFound}
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {batch.phonesFound}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`text-sm font-medium ${
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className={`text-sm font-bold px-3 py-1 rounded-full ${
                       batch.successRate >= 80 
-                        ? 'text-green-600 dark:text-green-400' 
+                        ? 'text-green-700 bg-green-100' 
                         : batch.successRate >= 50 
-                          ? 'text-yellow-600 dark:text-yellow-400' 
-                          : 'text-red-600 dark:text-red-400'
+                          ? 'text-yellow-700 bg-yellow-100' 
+                          : 'text-red-700 bg-red-100'
                     }`}>
                       {batch.successRate}%
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {batch.date}
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-700">
+                      {batch.date}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300">
+                  <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+                    <button className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200" title="Download">
                       <Download className="h-4 w-4" />
                     </button>
                   </td>
@@ -371,42 +417,41 @@ const BatchesPage: React.FC = () => {
         </div>
         
         {/* Pagination */}
-        <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+        <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-4 flex items-center justify-between border-t border-gray-100">
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                Showing <span className="font-medium">{indexOfFirstBatch + 1}</span> to <span className="font-medium">
+              <p className="text-sm font-medium text-gray-700">
+                Showing <span className="font-bold">{indexOfFirstBatch + 1}</span> to <span className="font-bold">
                   {Math.min(indexOfLastBatch, filteredBatches.length)}
-                </span> of <span className="font-medium">{filteredBatches.length}</span> results
+                </span> of <span className="font-bold">{filteredBatches.length}</span> results
               </p>
             </div>
             <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px" aria-label="Pagination">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium ${
+                  className={`relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
                     currentPage === 1
-                      ? 'text-gray-300 dark:text-gray-500 cursor-not-allowed'
-                      : 'text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
                   }`}
                 >
                   <span className="sr-only">Previous</span>
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 
-                {/* Page numbers would go here in a full implementation */}
-                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="relative inline-flex items-center px-4 py-2 border border-gray-200 bg-primary-50 text-sm font-semibold text-primary-700">
                   Page {currentPage} of {totalPages}
                 </span>
                 
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium ${
+                  className={`relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
                     currentPage === totalPages
-                      ? 'text-gray-300 dark:text-gray-500 cursor-not-allowed'
-                      : 'text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
                   }`}
                 >
                   <span className="sr-only">Next</span>

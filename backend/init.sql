@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id),
     key VARCHAR(255) NOT NULL,
+    revoked BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -36,6 +37,9 @@ CREATE TABLE IF NOT EXISTS import_jobs (
     status VARCHAR(50) NOT NULL DEFAULT 'processing',
     total INTEGER NOT NULL DEFAULT 0,
     completed INTEGER NOT NULL DEFAULT 0,
+    file_name VARCHAR(255),
+    mapping JSONB DEFAULT '{}',
+    type VARCHAR(50) DEFAULT 'csv',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -96,7 +100,9 @@ CREATE TABLE IF NOT EXISTS credit_logs (
     cost FLOAT NOT NULL,
     success BOOLEAN DEFAULT TRUE,
     details JSONB DEFAULT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    change INTEGER DEFAULT 0,
+    reason VARCHAR(255) DEFAULT NULL
 );
 
 -- Notification logs for tracking email notifications
@@ -232,6 +238,19 @@ CREATE TABLE IF NOT EXISTS integration_configs (
     UNIQUE(user_id, provider)
 );
 
+-- Notification preferences table
+CREATE TABLE IF NOT EXISTS notification_preferences (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) UNIQUE,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    job_completion_alerts BOOLEAN DEFAULT TRUE,
+    credit_warnings BOOLEAN DEFAULT TRUE,
+    weekly_summary BOOLEAN DEFAULT TRUE,
+    low_credit_threshold INTEGER DEFAULT 1000,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Initialize Captely Database
 
 -- Insert default packages
@@ -264,31 +283,26 @@ INSERT INTO users (
     id, 
     email, 
     password_hash,
-    is_active, 
-    is_verified, 
     created_at, 
     updated_at, 
     credits,
-    plan,
     onboarding_completed,
-    company_name
+    company_name,
+    current_subscription_id
 ) VALUES (
     '00000000-0000-0000-0002-000000000001',
     'test@captely.com',
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyNiGGS6oKgo7K',
-    true,
-    true,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP,
     20000,
-    'enterprise',
     true,
-    'Test Company'
+    'Test Company',
+    '00000000-0000-0000-0003-000000000001'
 ) ON CONFLICT (email) DO UPDATE SET
     credits = 20000,
-    plan = 'enterprise',
-    is_verified = true,
-    onboarding_completed = true;
+    onboarding_completed = true,
+    current_subscription_id = '00000000-0000-0000-0003-000000000001';
 
 -- Add enterprise subscription for test user
 INSERT INTO user_subscriptions (

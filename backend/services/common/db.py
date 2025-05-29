@@ -34,11 +34,19 @@ def get_session():
     finally:
         db.close()
 
+# Async session dependency for FastAPI
+async def get_async_session():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
 # Async session context manager
 @asynccontextmanager
-async def get_async_session():
+async def get_async_session_context():
     async with AsyncSessionLocal() as session:
         yield session
 
 # For backward compatibility
-async_session = get_async_session
+async_session = get_async_session_context

@@ -1,14 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 host="$1"
 shift
+cmd="$@"
 
-echo "Checking database connection..."
+until PGPASSWORD=postgrespw psql -h "$host" -U "postgres" -c '\q'; do
+  >&2 echo "Postgres is unavailable - sleeping"
+  sleep 1
+done
 
-if [ -z "$DATABASE_URL" ]; then
-    echo "Skipping DB check, assuming database is available - executing command"
-    exec "$@"
-fi
-
-exec "$@" 
+>&2 echo "Postgres is up - executing command"
+exec $cmd 

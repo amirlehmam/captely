@@ -22,7 +22,7 @@ import NotFoundPage from './pages/NotFound';
 
 // CRM Pages - We'll create placeholder components for now
 const ContactsPage = React.lazy(() => import('./pages/crm/Contacts'));
-const ActivitiesPage = () => <div className="p-8"><h1 className="text-2xl font-bold">Activities Page - Coming Soon</h1></div>;
+const ActivitiesPage = React.lazy(() => import('./pages/crm/Activities'));
 const CampaignsPage = React.lazy(() => import('./pages/crm/Campaigns'));
 
 function App() {
@@ -93,7 +93,11 @@ function App() {
                   <ContactsPage />
                 </React.Suspense>
               } />
-              <Route path="/crm/activities" element={<ActivitiesPage />} />
+              <Route path="/crm/activities" element={
+                <React.Suspense fallback={<div>Loading...</div>}>
+                  <ActivitiesPage />
+                </React.Suspense>
+              } />
               <Route path="/crm/campaigns" element={
                 <React.Suspense fallback={<div>Loading...</div>}>
                   <CampaignsPage />

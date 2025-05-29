@@ -3,12 +3,17 @@
 from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import and_, or_, func, desc
-from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Column, String, DateTime, Text, Enum, Boolean, Integer, ForeignKey, select, update, delete
+from sqlalchemy.dialects.postgresql import UUID
+from pydantic import BaseModel, Field
 from typing import List, Optional
+from datetime import datetime
 import uuid
+import enum
+import os
+from contextlib import asynccontextmanager
 
 from common.config import get_settings
 from common.db import get_async_session
@@ -25,16 +30,210 @@ from app.schemas import (
     CampaignContactResponse, ContactImport
 )
 
-# ---- app setup ----
+# Database configuration
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@captely-db:5432/captely")
 
+# SQLAlchemy setup
+engine = create_async_engine(DATABASE_URL, echo=True)
+async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+Base = declarative_base()
+
+# Enums
+class ActivityType(str, enum.Enum):
+    call = "call"
+    email = "email"
+    meeting = "meeting"
+    task = "task"
+    note = "note"
+    follow_up = "follow_up"
+
+class ActivityStatus(str, enum.Enum):
+    pending = "pending"
+    completed = "completed"
+    cancelled = "cancelled"
+    overdue = "overdue"
+
+class Priority(str, enum.Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+    urgent = "urgent"
+
+class ContactStatus(str, enum.Enum):
+    new = "new"
+    contacted = "contacted"
+    qualified = "qualified"
+    customer = "customer"
+    lost = "lost"
+
+class CampaignStatus(str, enum.Enum):
+    draft = "draft"
+    active = "active"
+    paused = "paused"
+    completed = "completed"
+
+# Database Models
+class CrmContact(Base):
+    __tablename__ = "crm_contacts"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String)
+    email = Column(String)
+    phone = Column(String)
+    company = Column(String)
+    position = Column(String)
+    status = Column(Enum(ContactStatus), default=ContactStatus.new)
+    lead_score = Column(Integer, default=0)
+    tags = Column(Text)  # JSON string for tags
+    last_contacted_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class CrmActivity(Base):
+    __tablename__ = "crm_activities"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    type = Column(Enum(ActivityType), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    contact_id = Column(UUID(as_uuid=True), ForeignKey("crm_contacts.id"))
+    status = Column(Enum(ActivityStatus), default=ActivityStatus.pending)
+    priority = Column(Enum(Priority), default=Priority.medium)
+    due_date = Column(DateTime)
+    completed_at = Column(DateTime)
+    created_by = Column(String, nullable=False)
+    assigned_to = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class CrmCampaign(Base):
+    __tablename__ = "crm_campaigns"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
+    type = Column(String, default="email")
+    status = Column(Enum(CampaignStatus), default=CampaignStatus.draft)
+    from_email = Column(String)
+    from_name = Column(String)
+    total_contacts = Column(Integer, default=0)
+    sent_count = Column(Integer, default=0)
+    open_count = Column(Integer, default=0)
+    click_count = Column(Integer, default=0)
+    reply_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+# Pydantic Models
+class ContactCreate(BaseModel):
+    first_name: str
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    position: Optional[str] = None
+    status: ContactStatus = ContactStatus.new
+    lead_score: int = 0
+
+class ContactResponse(BaseModel):
+    id: str
+    first_name: str
+    last_name: Optional[str]
+    email: Optional[str]
+    phone: Optional[str]
+    company: Optional[str]
+    position: Optional[str]
+    status: str
+    lead_score: int
+    tags: Optional[List[str]] = []
+    last_contacted_at: Optional[datetime]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ActivityCreate(BaseModel):
+    type: ActivityType
+    title: str
+    description: Optional[str] = None
+    contact_id: Optional[str] = None
+    status: ActivityStatus = ActivityStatus.pending
+    priority: Priority = Priority.medium
+    due_date: Optional[datetime] = None
+    created_by: str
+    assigned_to: Optional[str] = None
+
+class ActivityResponse(BaseModel):
+    id: str
+    type: str
+    title: str
+    description: Optional[str]
+    contact_id: Optional[str]
+    contact_name: Optional[str]
+    contact_email: Optional[str]
+    status: str
+    priority: str
+    due_date: Optional[datetime]
+    completed_at: Optional[datetime]
+    created_by: str
+    assigned_to: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class CampaignCreate(BaseModel):
+    name: str
+    type: str = "email"
+    from_email: Optional[str] = None
+    from_name: Optional[str] = None
+
+class CampaignResponse(BaseModel):
+    id: str
+    name: str
+    type: str
+    status: str
+    from_email: Optional[str]
+    from_name: Optional[str]
+    total_contacts: int
+    sent_count: int
+    open_count: int
+    click_count: int
+    reply_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Dependency to get database session
+async def get_db_session():
+    async with async_session_maker() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+# Application lifecycle
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # Shutdown
+    await engine.dispose()
+
+# FastAPI app
 app = FastAPI(
-    title="Captely CRM Service",
-    description="Internal CRM for managing contacts, activities, and campaigns",
+    title="CAPTELY CRM Service",
+    description="CRM service for managing contacts, activities, and campaigns",
     version="1.0.0",
+    lifespan=lifespan
 )
 
-settings = get_settings()
-
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,466 +242,313 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---- Contact Management ----
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "crm-service"}
 
-@app.post("/api/crm/contacts", response_model=ContactResponse)
+# Contact endpoints
+@app.get("/api/contacts", response_model=List[ContactResponse])
+async def get_contacts(
+    limit: int = Query(50, le=100),
+    skip: int = Query(0, ge=0),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """Get all contacts with pagination"""
+    try:
+        result = await session.execute(
+            select(CrmContact)
+            .order_by(CrmContact.created_at.desc())
+            .limit(limit)
+            .offset(skip)
+        )
+        contacts = result.scalars().all()
+        
+        return [
+            ContactResponse(
+                id=str(contact.id),
+                first_name=contact.first_name,
+                last_name=contact.last_name,
+                email=contact.email,
+                phone=contact.phone,
+                company=contact.company,
+                position=contact.position,
+                status=contact.status.value,
+                lead_score=contact.lead_score,
+                tags=contact.tags.split(',') if contact.tags else [],
+                last_contacted_at=contact.last_contacted_at,
+                created_at=contact.created_at
+            )
+            for contact in contacts
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch contacts: {str(e)}")
+
+@app.post("/api/contacts", response_model=ContactResponse)
 async def create_contact(
     contact: ContactCreate,
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_db_session)
 ):
-    """Create a new CRM contact"""
-    # Check if contact already exists
-    existing = await session.execute(
-        select(CRMContact).where(
-            and_(
-                CRMContact.user_id == user_id,
-                CRMContact.email == contact.email
-            )
-        )
-    )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Contact with this email already exists")
-    
-    # Create new contact
-    new_contact = CRMContact(
-        user_id=user_id,
-        first_name=contact.first_name,
-        last_name=contact.last_name,
-        email=contact.email,
-        phone=contact.phone,
-        company=contact.company,
-        position=contact.position,
-        status=contact.status or 'new',
-        tags=contact.tags or [],
-        custom_fields=contact.custom_fields or {},
-        lead_score=0
-    )
-    
-    session.add(new_contact)
-    await session.commit()
-    return new_contact
-
-@app.get("/api/crm/contacts", response_model=List[ContactResponse])
-async def get_contacts(
-    user_id: str = Depends(verify_api_token),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    status: Optional[str] = None,
-    tags: Optional[str] = None,
-    search: Optional[str] = None,
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Get all CRM contacts for a user with filtering"""
-    query = select(CRMContact).where(CRMContact.user_id == user_id)
-    
-    # Apply filters
-    if status:
-        query = query.where(CRMContact.status == status)
-    
-    if tags:
-        tag_list = tags.split(',')
-        query = query.where(CRMContact.tags.contains(tag_list))
-    
-    if search:
-        search_term = f"%{search}%"
-        query = query.where(
-            or_(
-                CRMContact.first_name.ilike(search_term),
-                CRMContact.last_name.ilike(search_term),
-                CRMContact.email.ilike(search_term),
-                CRMContact.company.ilike(search_term)
-            )
-        )
-    
-    # Execute query with pagination
-    query = query.order_by(desc(CRMContact.created_at)).offset(skip).limit(limit)
-    result = await session.execute(query)
-    contacts = result.scalars().all()
-    
-    return contacts
-
-@app.get("/api/crm/contacts/{contact_id}", response_model=ContactResponse)
-async def get_contact(
-    contact_id: str,
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Get a specific CRM contact"""
-    result = await session.execute(
-        select(CRMContact).where(
-            and_(
-                CRMContact.id == contact_id,
-                CRMContact.user_id == user_id
-            )
-        )
-    )
-    contact = result.scalar_one_or_none()
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    
-    return contact
-
-@app.put("/api/crm/contacts/{contact_id}", response_model=ContactResponse)
-async def update_contact(
-    contact_id: str,
-    contact_update: ContactUpdate,
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Update a CRM contact"""
-    result = await session.execute(
-        select(CRMContact).where(
-            and_(
-                CRMContact.id == contact_id,
-                CRMContact.user_id == user_id
-            )
-        )
-    )
-    contact = result.scalar_one_or_none()
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    
-    # Update fields
-    for field, value in contact_update.dict(exclude_unset=True).items():
-        setattr(contact, field, value)
-    
-    contact.updated_at = datetime.utcnow()
-    await session.commit()
-    
-    return contact
-
-@app.post("/api/crm/contacts/import")
-async def import_contacts(
-    contact_import: ContactImport,
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Import contacts from enrichment job"""
-    # Get enriched contacts from job
-    if contact_import.job_id:
-        enriched_contacts = await session.execute(
-            select(Contact).where(
-                and_(
-                    Contact.job_id == contact_import.job_id,
-                    Contact.enriched == True,
-                    Contact.email.isnot(None)
-                )
-            )
-        )
-        contacts = enriched_contacts.scalars().all()
-    else:
-        contacts = []
-    
-    imported_count = 0
-    skipped_count = 0
-    
-    for contact in contacts:
-        # Check if already exists
-        existing = await session.execute(
-            select(CRMContact).where(
-                and_(
-                    CRMContact.user_id == user_id,
-                    CRMContact.email == contact.email
-                )
-            )
-        )
-        if existing.scalar_one_or_none():
-            skipped_count += 1
-            continue
+    """Create a new contact"""
+    try:
+        db_contact = CrmContact(**contact.dict())
+        session.add(db_contact)
+        await session.commit()
+        await session.refresh(db_contact)
         
-        # Create CRM contact
-        crm_contact = CRMContact(
-            user_id=user_id,
-            contact_id=contact.id,
-            first_name=contact.first_name,
-            last_name=contact.last_name,
-            email=contact.email,
-            phone=contact.phone,
-            company=contact.company,
-            position=contact.position,
-            status='new',
-            tags=contact_import.default_tags or [],
-            crm_provider='internal'
+        return ContactResponse(
+            id=str(db_contact.id),
+            first_name=db_contact.first_name,
+            last_name=db_contact.last_name,
+            email=db_contact.email,
+            phone=db_contact.phone,
+            company=db_contact.company,
+            position=db_contact.position,
+            status=db_contact.status.value,
+            lead_score=db_contact.lead_score,
+            tags=[],
+            last_contacted_at=db_contact.last_contacted_at,
+            created_at=db_contact.created_at
         )
-        session.add(crm_contact)
-        imported_count += 1
-    
-    await session.commit()
-    
-    return {
-        "imported": imported_count,
-        "skipped": skipped_count,
-        "total": len(contacts)
-    }
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create contact: {str(e)}")
 
-# ---- Activity Management ----
+# Activity endpoints
+@app.get("/api/activities", response_model=List[ActivityResponse])
+async def get_activities(
+    limit: int = Query(50, le=100),
+    skip: int = Query(0, ge=0),
+    type_filter: Optional[str] = Query(None, alias="type"),
+    status_filter: Optional[str] = Query(None, alias="status"),
+    priority_filter: Optional[str] = Query(None, alias="priority"),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """Get all activities with filtering and pagination"""
+    try:
+        query = select(CrmActivity, CrmContact).outerjoin(
+            CrmContact, CrmActivity.contact_id == CrmContact.id
+        ).order_by(CrmActivity.created_at.desc())
+        
+        # Apply filters
+        if type_filter:
+            query = query.where(CrmActivity.type == type_filter)
+        if status_filter:
+            query = query.where(CrmActivity.status == status_filter)
+        if priority_filter:
+            query = query.where(CrmActivity.priority == priority_filter)
+            
+        query = query.limit(limit).offset(skip)
+        
+        result = await session.execute(query)
+        activities_with_contacts = result.all()
+        
+        return [
+            ActivityResponse(
+                id=str(activity.id),
+                type=activity.type.value,
+                title=activity.title,
+                description=activity.description,
+                contact_id=str(activity.contact_id) if activity.contact_id else None,
+                contact_name=f"{contact.first_name} {contact.last_name}" if contact else None,
+                contact_email=contact.email if contact else None,
+                status=activity.status.value,
+                priority=activity.priority.value,
+                due_date=activity.due_date,
+                completed_at=activity.completed_at,
+                created_by=activity.created_by,
+                assigned_to=activity.assigned_to,
+                created_at=activity.created_at,
+                updated_at=activity.updated_at
+            )
+            for activity, contact in activities_with_contacts
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch activities: {str(e)}")
 
-@app.post("/api/crm/activities", response_model=ActivityResponse)
+@app.post("/api/activities", response_model=ActivityResponse)
 async def create_activity(
     activity: ActivityCreate,
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_db_session)
 ):
-    """Create a new activity for a contact"""
-    # Verify contact exists
-    contact_result = await session.execute(
-        select(CRMContact).where(
-            and_(
-                CRMContact.id == activity.contact_id,
-                CRMContact.user_id == user_id
-            )
+    """Create a new activity"""
+    try:
+        # Convert contact_id to UUID if provided
+        contact_uuid = None
+        if activity.contact_id:
+            try:
+                contact_uuid = uuid.UUID(activity.contact_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid contact_id format")
+        
+        db_activity = CrmActivity(
+            type=activity.type,
+            title=activity.title,
+            description=activity.description,
+            contact_id=contact_uuid,
+            status=activity.status,
+            priority=activity.priority,
+            due_date=activity.due_date,
+            created_by=activity.created_by,
+            assigned_to=activity.assigned_to
         )
-    )
-    contact = contact_result.scalar_one_or_none()
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    
-    # Create activity
-    new_activity = CRMActivity(
-        user_id=user_id,
-        contact_id=activity.contact_id,
-        type=activity.type,
-        subject=activity.subject,
-        content=activity.content,
-        status=activity.status or 'completed',
-        scheduled_at=activity.scheduled_at,
-        completed_at=activity.completed_at or (datetime.utcnow() if activity.status == 'completed' else None)
-    )
-    
-    session.add(new_activity)
-    
-    # Update contact's last activity
-    contact.last_activity_at = datetime.utcnow()
-    if activity.type in ['email', 'call', 'meeting']:
-        contact.last_contacted_at = datetime.utcnow()
-    
-    await session.commit()
-    return new_activity
+        
+        session.add(db_activity)
+        await session.commit()
+        await session.refresh(db_activity)
+        
+        # Get contact info if available
+        contact_name = None
+        contact_email = None
+        if contact_uuid:
+            contact_result = await session.execute(
+                select(CrmContact).where(CrmContact.id == contact_uuid)
+            )
+            contact = contact_result.scalar_one_or_none()
+            if contact:
+                contact_name = f"{contact.first_name} {contact.last_name}"
+                contact_email = contact.email
+        
+        return ActivityResponse(
+            id=str(db_activity.id),
+            type=db_activity.type.value,
+            title=db_activity.title,
+            description=db_activity.description,
+            contact_id=str(db_activity.contact_id) if db_activity.contact_id else None,
+            contact_name=contact_name,
+            contact_email=contact_email,
+            status=db_activity.status.value,
+            priority=db_activity.priority.value,
+            due_date=db_activity.due_date,
+            completed_at=db_activity.completed_at,
+            created_by=db_activity.created_by,
+            assigned_to=db_activity.assigned_to,
+            created_at=db_activity.created_at,
+            updated_at=db_activity.updated_at
+        )
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create activity: {str(e)}")
 
-@app.get("/api/crm/activities", response_model=List[ActivityResponse])
-async def get_activities(
-    user_id: str = Depends(verify_api_token),
-    contact_id: Optional[str] = None,
-    type: Optional[str] = None,
-    status: Optional[str] = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    session: AsyncSession = Depends(get_async_session)
+@app.put("/api/activities/{activity_id}/status")
+async def update_activity_status(
+    activity_id: str,
+    status: ActivityStatus,
+    session: AsyncSession = Depends(get_db_session)
 ):
-    """Get activities with filtering"""
-    query = select(CRMActivity).where(CRMActivity.user_id == user_id)
-    
-    if contact_id:
-        query = query.where(CRMActivity.contact_id == contact_id)
-    if type:
-        query = query.where(CRMActivity.type == type)
-    if status:
-        query = query.where(CRMActivity.status == status)
-    
-    query = query.order_by(desc(CRMActivity.created_at)).offset(skip).limit(limit)
-    result = await session.execute(query)
-    activities = result.scalars().all()
-    
-    return activities
+    """Update activity status"""
+    try:
+        activity_uuid = uuid.UUID(activity_id)
+        
+        # Set completed_at if marking as completed
+        completed_at = datetime.utcnow() if status == ActivityStatus.completed else None
+        
+        await session.execute(
+            update(CrmActivity)
+            .where(CrmActivity.id == activity_uuid)
+            .values(status=status, completed_at=completed_at, updated_at=datetime.utcnow())
+        )
+        await session.commit()
+        
+        return {"message": "Activity status updated successfully"}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid activity ID format")
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update activity: {str(e)}")
 
-# ---- Campaign Management ----
+# Campaign endpoints
+@app.get("/api/campaigns", response_model=List[CampaignResponse])
+async def get_campaigns(
+    limit: int = Query(50, le=100),
+    skip: int = Query(0, ge=0),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """Get all campaigns with pagination"""
+    try:
+        result = await session.execute(
+            select(CrmCampaign)
+            .order_by(CrmCampaign.created_at.desc())
+            .limit(limit)
+            .offset(skip)
+        )
+        campaigns = result.scalars().all()
+        
+        return [
+            CampaignResponse(
+                id=str(campaign.id),
+                name=campaign.name,
+                type=campaign.type,
+                status=campaign.status.value,
+                from_email=campaign.from_email,
+                from_name=campaign.from_name,
+                total_contacts=campaign.total_contacts,
+                sent_count=campaign.sent_count,
+                open_count=campaign.open_count,
+                click_count=campaign.click_count,
+                reply_count=campaign.reply_count,
+                created_at=campaign.created_at,
+                updated_at=campaign.updated_at
+            )
+            for campaign in campaigns
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch campaigns: {str(e)}")
 
-@app.post("/api/crm/campaigns", response_model=CampaignResponse)
+@app.post("/api/campaigns", response_model=CampaignResponse)
 async def create_campaign(
     campaign: CampaignCreate,
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_db_session)
 ):
     """Create a new campaign"""
-    new_campaign = CRMCampaign(
-        user_id=user_id,
-        name=campaign.name,
-        type=campaign.type,
-        status='draft',
-        from_email=campaign.from_email,
-        from_name=campaign.from_name,
-        reply_to_email=campaign.reply_to_email,
-        subject_lines=campaign.subject_lines or [],
-        email_templates=campaign.email_templates or [],
-        timezone=campaign.timezone or 'UTC',
-        send_days=campaign.send_days or [1, 2, 3, 4, 5],
-        send_hours_start=campaign.send_hours_start or 9,
-        send_hours_end=campaign.send_hours_end or 17,
-        daily_limit=campaign.daily_limit or 50
-    )
-    
-    session.add(new_campaign)
-    await session.commit()
-    return new_campaign
-
-@app.get("/api/crm/campaigns", response_model=List[CampaignResponse])
-async def get_campaigns(
-    user_id: str = Depends(verify_api_token),
-    status: Optional[str] = None,
-    type: Optional[str] = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Get all campaigns for a user"""
-    query = select(CRMCampaign).where(CRMCampaign.user_id == user_id)
-    
-    if status:
-        query = query.where(CRMCampaign.status == status)
-    if type:
-        query = query.where(CRMCampaign.type == type)
-    
-    query = query.order_by(desc(CRMCampaign.created_at)).offset(skip).limit(limit)
-    result = await session.execute(query)
-    campaigns = result.scalars().all()
-    
-    return campaigns
-
-@app.post("/api/crm/campaigns/{campaign_id}/contacts")
-async def add_contacts_to_campaign(
-    campaign_id: str,
-    contact_ids: List[str],
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Add contacts to a campaign"""
-    # Verify campaign exists
-    campaign_result = await session.execute(
-        select(CRMCampaign).where(
-            and_(
-                CRMCampaign.id == campaign_id,
-                CRMCampaign.user_id == user_id
-            )
-        )
-    )
-    campaign = campaign_result.scalar_one_or_none()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-    
-    added_count = 0
-    
-    for contact_id in contact_ids:
-        # Check if contact exists and not already in campaign
-        existing = await session.execute(
-            select(CRMCampaignContact).where(
-                and_(
-                    CRMCampaignContact.campaign_id == campaign_id,
-                    CRMCampaignContact.contact_id == contact_id
-                )
-            )
-        )
-        if existing.scalar_one_or_none():
-            continue
+    try:
+        db_campaign = CrmCampaign(**campaign.dict())
+        session.add(db_campaign)
+        await session.commit()
+        await session.refresh(db_campaign)
         
-        # Add to campaign
-        campaign_contact = CRMCampaignContact(
-            campaign_id=campaign_id,
-            contact_id=contact_id,
-            status='pending'
+        return CampaignResponse(
+            id=str(db_campaign.id),
+            name=db_campaign.name,
+            type=db_campaign.type,
+            status=db_campaign.status.value,
+            from_email=db_campaign.from_email,
+            from_name=db_campaign.from_name,
+            total_contacts=db_campaign.total_contacts,
+            sent_count=db_campaign.sent_count,
+            open_count=db_campaign.open_count,
+            click_count=db_campaign.click_count,
+            reply_count=db_campaign.reply_count,
+            created_at=db_campaign.created_at,
+            updated_at=db_campaign.updated_at
         )
-        session.add(campaign_contact)
-        added_count += 1
-    
-    # Update campaign total contacts
-    campaign.total_contacts += added_count
-    
-    await session.commit()
-    
-    return {
-        "added": added_count,
-        "total_contacts": campaign.total_contacts
-    }
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create campaign: {str(e)}")
 
-@app.put("/api/crm/campaigns/{campaign_id}/status")
+@app.put("/api/campaigns/{campaign_id}/status")
 async def update_campaign_status(
     campaign_id: str,
-    new_status: str,
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
+    status: CampaignStatus,
+    session: AsyncSession = Depends(get_db_session)
 ):
-    """Update campaign status (start, pause, complete)"""
-    result = await session.execute(
-        select(CRMCampaign).where(
-            and_(
-                CRMCampaign.id == campaign_id,
-                CRMCampaign.user_id == user_id
-            )
+    """Update campaign status"""
+    try:
+        campaign_uuid = uuid.UUID(campaign_id)
+        
+        await session.execute(
+            update(CrmCampaign)
+            .where(CrmCampaign.id == campaign_uuid)
+            .values(status=status, updated_at=datetime.utcnow())
         )
-    )
-    campaign = result.scalar_one_or_none()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-    
-    # Validate status transition
-    valid_statuses = ['draft', 'active', 'paused', 'completed']
-    if new_status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
-    
-    campaign.status = new_status
-    campaign.updated_at = datetime.utcnow()
-    
-    await session.commit()
-    
-    return {"campaign_id": campaign_id, "new_status": new_status}
-
-# ---- Analytics & Reporting ----
-
-@app.get("/api/crm/analytics/overview")
-async def get_crm_analytics(
-    user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Get CRM analytics overview"""
-    # Contact stats
-    total_contacts = await session.execute(
-        select(func.count()).select_from(CRMContact).where(CRMContact.user_id == user_id)
-    )
-    
-    contact_by_status = await session.execute(
-        select(CRMContact.status, func.count())
-        .select_from(CRMContact)
-        .where(CRMContact.user_id == user_id)
-        .group_by(CRMContact.status)
-    )
-    
-    # Activity stats
-    recent_activities = await session.execute(
-        select(CRMActivity.type, func.count())
-        .select_from(CRMActivity)
-        .where(
-            and_(
-                CRMActivity.user_id == user_id,
-                CRMActivity.created_at >= datetime.utcnow() - timedelta(days=30)
-            )
-        )
-        .group_by(CRMActivity.type)
-    )
-    
-    # Campaign stats
-    active_campaigns = await session.execute(
-        select(func.count())
-        .select_from(CRMCampaign)
-        .where(
-            and_(
-                CRMCampaign.user_id == user_id,
-                CRMCampaign.status == 'active'
-            )
-        )
-    )
-    
-    return {
-        "contacts": {
-            "total": total_contacts.scalar(),
-            "by_status": {row[0]: row[1] for row in contact_by_status}
-        },
-        "activities": {
-            "recent_30_days": {row[0]: row[1] for row in recent_activities}
-        },
-        "campaigns": {
-            "active": active_campaigns.scalar()
-        }
-    }
+        await session.commit()
+        
+        return {"message": "Campaign status updated successfully"}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid campaign ID format")
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update campaign: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -36,7 +36,7 @@ const Dashboard: React.FC = () => {
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-bold text-gray-900 dark:text-white"
+          className="text-2xl font-bold text-gray-900"
         >
           Dashboard
         </motion.h1>
@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           className="mt-4 md:mt-0 flex space-x-3"
         >
-          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
             <Upload className="h-4 w-4 mr-2" />
             New Import
           </button>

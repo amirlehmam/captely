@@ -7,12 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, or_, func
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import stripe
 import uuid
 
 from common.config import get_settings
-from common.db import get_async_session
+from common.db import AsyncSessionLocal, get_async_session
 from common.auth import verify_api_token
 
 from app.models import (
@@ -49,27 +49,26 @@ app.add_middleware(
 # ---- Package Management ----
 
 @app.get("/api/packages", response_model=List[PackageResponse])
-async def get_packages(session: AsyncSession = Depends(get_async_session)):
+async def get_packages():
     """Get all available packages"""
-    result = await session.execute(
-        select(Package).where(Package.is_active == True).order_by(Package.price_monthly)
-    )
-    packages = result.scalars().all()
-    return packages
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(Package).where(Package.is_active == True).order_by(Package.price_monthly)
+        )
+        packages = result.scalars().all()
+        return packages
 
 @app.get("/api/packages/{package_id}", response_model=PackageResponse)
-async def get_package(
-    package_id: str,
-    session: AsyncSession = Depends(get_async_session)
-):
+async def get_package(package_id: str):
     """Get a specific package by ID"""
-    result = await session.execute(
-        select(Package).where(Package.id == package_id)
-    )
-    package = result.scalar_one_or_none()
-    if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
-    return package
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(Package).where(Package.id == package_id)
+        )
+        package = result.scalar_one_or_none()
+        if not package:
+            raise HTTPException(status_code=404, detail="Package not found")
+        return package
 
 # ---- Subscription Management ----
 
@@ -237,14 +236,17 @@ async def add_payment_method(
     
     # If setting as default, unset other defaults
     if payment_method.is_default:
-        await session.execute(
+        # First, get existing default payment methods
+        existing_defaults = await session.execute(
             select(PaymentMethod).where(
                 and_(
                     PaymentMethod.user_id == user_id,
                     PaymentMethod.is_default == True
                 )
-            ).update({'is_default': False})
+            )
         )
+        for default_method in existing_defaults.scalars().all():
+            default_method.is_default = False
     
     session.add(new_payment_method)
     await session.commit()
@@ -266,13 +268,14 @@ async def get_payment_methods(
 # ---- Credit Packages ----
 
 @app.get("/api/credit-packages", response_model=List[CreditPackageResponse])
-async def get_credit_packages(session: AsyncSession = Depends(get_async_session)):
+async def get_credit_packages():
     """Get all available credit packages"""
-    result = await session.execute(
-        select(CreditPackage).where(CreditPackage.is_active == True).order_by(CreditPackage.credits)
-    )
-    packages = result.scalars().all()
-    return packages
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(CreditPackage).where(CreditPackage.is_active == True).order_by(CreditPackage.credits)
+        )
+        packages = result.scalars().all()
+        return packages
 
 @app.post("/api/credit-packages/purchase")
 async def purchase_credit_package(

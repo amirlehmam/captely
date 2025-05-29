@@ -107,10 +107,10 @@ const ImportPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
           Import Contacts
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
+        <p className="text-lg text-gray-600">
           Upload your contact list to start the enrichment process
         </p>
       </motion.div>
@@ -120,33 +120,33 @@ const ImportPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
+        className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
       >
-        <div className="p-6">
+        <div className="p-8">
           {!uploadSuccess ? (
             <>
               {/* File Upload Area */}
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
                   dragActive
-                    ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                    ? 'border-primary-500 bg-primary-50 shadow-md'
                     : selectedFile
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-teal-400'
+                    ? 'border-green-500 bg-green-50 shadow-md'
+                    : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
-                  onDrop={handleDrop}
+                onDrop={handleDrop}
                 >
                 {selectedFile ? (
-                  <div className="space-y-4">
-                    <FileText className="h-12 w-12 text-green-500 mx-auto" />
+                  <div className="space-y-6">
+                    <FileText className="h-16 w-16 text-green-500 mx-auto" />
                     <div>
-                      <p className="text-lg font-medium text-gray-900 dark:text-white">
+                      <p className="text-xl font-semibold text-gray-900">
                         {selectedFile.name}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 mt-1">
                         {(selectedFile.size / 1024).toFixed(1)} KB
                       </p>
                     </div>
@@ -154,7 +154,7 @@ const ImportPage: React.FC = () => {
                       <button
                         onClick={handleUpload}
                         disabled={uploading}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
+                        className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-all duration-200"
                       >
                         {uploading ? (
                           <>
@@ -170,7 +170,7 @@ const ImportPage: React.FC = () => {
                       </button>
                       <button
                         onClick={clearFile}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        className="inline-flex items-center px-6 py-3 border border-gray-200 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
                       >
                         <X className="h-4 w-4 mr-2" />
                         Remove
@@ -178,13 +178,13 @@ const ImportPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                  <div className="space-y-6">
+                    <Upload className="h-16 w-16 text-gray-400 mx-auto" />
                     <div>
-                      <p className="text-lg font-medium text-gray-900 dark:text-white">
+                      <p className="text-xl font-semibold text-gray-900">
                         Drop your CSV file here
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 mt-2">
                         or click to browse files
                       </p>
                 </div>
@@ -197,7 +197,7 @@ const ImportPage: React.FC = () => {
                     />
                     <label
                       htmlFor="file-upload"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 cursor-pointer"
+                      className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 cursor-pointer transition-all duration-200"
                     >
                       Browse Files
                     </label>
@@ -207,18 +207,18 @@ const ImportPage: React.FC = () => {
               
               {/* Upload Progress */}
               {uploading && (
-                <div className="mt-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div className="mt-8">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-semibold text-gray-700">
                       Uploading...
                     </span>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <span className="text-sm font-semibold text-primary-600">
                       {progress}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-teal-600 h-2.5 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-primary-500 to-primary-400 h-3 rounded-full transition-all duration-300 shadow-sm"
                       style={{ width: `${progress}%` }}
                     ></div>
                   </div>
@@ -227,47 +227,47 @@ const ImportPage: React.FC = () => {
 
               {/* Error Display */}
               {error && (
-                <div className="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="mt-8 bg-red-50 border border-red-200 rounded-xl p-4">
                   <div className="flex items-center">
-                    <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                    <span className="text-red-700 dark:text-red-300">Upload failed: {error}</span>
+                    <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+                    <span className="text-red-700">Upload failed: {error}</span>
               </div>
             </div>
           )}
             </>
           ) : (
             /* Success State */
-            <div className="text-center space-y-6">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+            <div className="text-center space-y-8">
+              <CheckCircle className="h-20 w-20 text-green-500 mx-auto" />
             <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-2xl font-bold text-gray-900">
                   Upload Successful!
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-600 mt-2">
                   Your file has been uploaded and enrichment has started
                 </p>
               </div>
               
               {uploadResult && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-6 border border-gray-200">
+                  <div className="grid grid-cols-3 gap-6 text-center">
                   <div>
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <div className="text-3xl font-bold text-gray-900">
                         {uploadResult.total_contacts || 0}
                   </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Contacts</div>
+                      <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Contacts</div>
                   </div>
                   <div>
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      <div className="text-3xl font-bold text-blue-600">
                         {uploadResult.job_id?.substring(0, 8) || 'N/A'}
                   </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Job ID</div>
+                      <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Job ID</div>
                   </div>
                   <div>
-                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      <div className="text-3xl font-bold text-green-600">
                         Starting
                   </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Status</div>
+                      <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Status</div>
                   </div>
                   </div>
                 </div>
@@ -278,7 +278,7 @@ const ImportPage: React.FC = () => {
                   setUploadSuccess(false);
                   setUploadResult(null);
                 }}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 transition-all duration-200"
               >
                 Upload Another File
                   </button>
@@ -292,27 +292,27 @@ const ImportPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6"
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8"
       >
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
+        <h3 className="text-lg font-bold text-blue-900 mb-6">
           CSV Format Requirements
         </h3>
-        <div className="space-y-3">
-          <p className="text-blue-800 dark:text-blue-200">
+        <div className="space-y-4">
+          <p className="text-blue-800 font-medium">
             Your CSV file should include the following columns (headers are required):
           </p>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium text-blue-900 dark:text-blue-100">Required Fields:</h4>
-              <ul className="list-disc list-inside text-sm text-blue-800 dark:text-blue-200 space-y-1">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-3">Required Fields:</h4>
+              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
                 <li>first_name</li>
                 <li>last_name</li>
                 <li>company</li>
               </ul>
             </div>
-            <div>
-              <h4 className="font-medium text-blue-900 dark:text-blue-100">Optional Fields:</h4>
-              <ul className="list-disc list-inside text-sm text-blue-800 dark:text-blue-200 space-y-1">
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-3">Optional Fields:</h4>
+              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
                 <li>position</li>
                 <li>profile_url (LinkedIn URL)</li>
                 <li>location</li>
@@ -323,7 +323,7 @@ const ImportPage: React.FC = () => {
           <div className="pt-4">
             <button
               onClick={downloadSampleCSV}
-              className="inline-flex items-center px-3 py-2 border border-blue-300 dark:border-blue-600 text-sm font-medium rounded-md text-blue-700 dark:text-blue-300 bg-white dark:bg-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/70"
+              className="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-semibold rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
             >
               <Download className="h-4 w-4 mr-2" />
               Download Sample CSV
@@ -338,47 +338,55 @@ const ImportPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
+          className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
         >
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="p-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">
               Recent Import Jobs
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {jobs.slice(0, 3).map((job) => {
                 const progress = job.total > 0 ? Math.round((job.completed / job.total) * 100) : 0;
                 const isCompleted = job.status === 'completed';
                 
+                const getStatusBadge = (status: string) => {
+                  switch (status) {
+                    case 'completed':
+                      return 'bg-green-100 text-green-800 border-green-200';
+                    case 'processing':
+                      return 'bg-blue-100 text-blue-800 border-blue-200';
+                    case 'failed':
+                      return 'bg-red-100 text-red-800 border-red-200';
+                    default:
+                      return 'bg-gray-100 text-gray-800 border-gray-200';
+                  }
+                };
+                
                 return (
-                  <div key={job.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
+                  <div key={job.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">
+                        <h4 className="font-semibold text-gray-900">
                           {job.file_name || `Job ${job.id.substring(0, 8)}`}
                         </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-gray-600 mt-1">
                           {new Date(job.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        job.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                        job.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                        job.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                      }`}>
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(job.status)}`}>
                         {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Progress</span>
-                        <span className="text-gray-900 dark:text-white">{job.completed}/{job.total} contacts</span>
+                        <span className="font-medium text-gray-700">Progress</span>
+                        <span className="font-semibold text-gray-900">{job.completed}/{job.total} contacts</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                         <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            isCompleted ? 'bg-green-500' : 'bg-blue-500'
+                          className={`h-3 rounded-full transition-all duration-300 ${
+                            isCompleted ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-blue-400'
                           }`}
                           style={{ width: `${progress}%` }}
                         ></div>
