@@ -11,7 +11,7 @@ from typing import List, Optional
 import uuid
 
 from common.config import get_settings
-from common.db import get_session
+from common.db import get_async_session
 from common.auth import verify_api_token
 
 from app.models import (
@@ -49,7 +49,7 @@ app.add_middleware(
 async def create_contact(
     contact: ContactCreate,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new CRM contact"""
     # Check if contact already exists
@@ -91,7 +91,7 @@ async def get_contacts(
     status: Optional[str] = None,
     tags: Optional[str] = None,
     search: Optional[str] = None,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get all CRM contacts for a user with filtering"""
     query = select(CRMContact).where(CRMContact.user_id == user_id)
@@ -126,7 +126,7 @@ async def get_contacts(
 async def get_contact(
     contact_id: str,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get a specific CRM contact"""
     result = await session.execute(
@@ -148,7 +148,7 @@ async def update_contact(
     contact_id: str,
     contact_update: ContactUpdate,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Update a CRM contact"""
     result = await session.execute(
@@ -176,7 +176,7 @@ async def update_contact(
 async def import_contacts(
     contact_import: ContactImport,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Import contacts from enrichment job"""
     # Get enriched contacts from job
@@ -242,7 +242,7 @@ async def import_contacts(
 async def create_activity(
     activity: ActivityCreate,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new activity for a contact"""
     # Verify contact exists
@@ -288,7 +288,7 @@ async def get_activities(
     status: Optional[str] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get activities with filtering"""
     query = select(CRMActivity).where(CRMActivity.user_id == user_id)
@@ -312,7 +312,7 @@ async def get_activities(
 async def create_campaign(
     campaign: CampaignCreate,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new campaign"""
     new_campaign = CRMCampaign(
@@ -343,7 +343,7 @@ async def get_campaigns(
     type: Optional[str] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get all campaigns for a user"""
     query = select(CRMCampaign).where(CRMCampaign.user_id == user_id)
@@ -364,7 +364,7 @@ async def add_contacts_to_campaign(
     campaign_id: str,
     contact_ids: List[str],
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Add contacts to a campaign"""
     # Verify campaign exists
@@ -419,7 +419,7 @@ async def update_campaign_status(
     campaign_id: str,
     new_status: str,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Update campaign status (start, pause, complete)"""
     result = await session.execute(
@@ -451,7 +451,7 @@ async def update_campaign_status(
 @app.get("/api/crm/analytics/overview")
 async def get_crm_analytics(
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get CRM analytics overview"""
     # Contact stats

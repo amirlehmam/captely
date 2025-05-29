@@ -11,4 +11,5 @@ redis==4.5.3
 httpx==0.24.1
 stripe==7.0.0
 paypalrestsdk==1.13.1
-python-dateutil==2.8.2 
+python-dateutil==2.8.2
+celery==5.2.7 

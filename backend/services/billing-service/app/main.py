@@ -12,7 +12,7 @@ import stripe
 import uuid
 
 from common.config import get_settings
-from common.db import get_session
+from common.db import get_async_session
 from common.auth import verify_api_token
 
 from app.models import (
@@ -49,7 +49,7 @@ app.add_middleware(
 # ---- Package Management ----
 
 @app.get("/api/packages", response_model=List[PackageResponse])
-async def get_packages(session: AsyncSession = Depends(get_session)):
+async def get_packages(session: AsyncSession = Depends(get_async_session)):
     """Get all available packages"""
     result = await session.execute(
         select(Package).where(Package.is_active == True).order_by(Package.price_monthly)
@@ -60,7 +60,7 @@ async def get_packages(session: AsyncSession = Depends(get_session)):
 @app.get("/api/packages/{package_id}", response_model=PackageResponse)
 async def get_package(
     package_id: str,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get a specific package by ID"""
     result = await session.execute(
@@ -77,7 +77,7 @@ async def get_package(
 async def create_subscription(
     subscription: SubscriptionCreate,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new subscription for a user"""
     # Check if package exists
@@ -142,7 +142,7 @@ async def create_subscription(
 @app.get("/api/subscriptions/current", response_model=SubscriptionResponse)
 async def get_current_subscription(
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get current subscription for a user"""
     result = await session.execute(
@@ -162,7 +162,7 @@ async def get_current_subscription(
 async def cancel_subscription(
     subscription_id: str,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Cancel a subscription"""
     result = await session.execute(
@@ -188,7 +188,7 @@ async def cancel_subscription(
 async def add_payment_method(
     payment_method: PaymentMethodCreate,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Add a payment method for a user"""
     # Create Stripe customer if needed
@@ -254,7 +254,7 @@ async def add_payment_method(
 @app.get("/api/payment-methods", response_model=List[PaymentMethodResponse])
 async def get_payment_methods(
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get all payment methods for a user"""
     result = await session.execute(
@@ -266,7 +266,7 @@ async def get_payment_methods(
 # ---- Credit Packages ----
 
 @app.get("/api/credit-packages", response_model=List[CreditPackageResponse])
-async def get_credit_packages(session: AsyncSession = Depends(get_session)):
+async def get_credit_packages(session: AsyncSession = Depends(get_async_session)):
     """Get all available credit packages"""
     result = await session.execute(
         select(CreditPackage).where(CreditPackage.is_active == True).order_by(CreditPackage.credits)
@@ -278,7 +278,7 @@ async def get_credit_packages(session: AsyncSession = Depends(get_session)):
 async def purchase_credit_package(
     purchase: CreditPackagePurchase,
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Purchase a credit package"""
     # Get package
@@ -362,7 +362,7 @@ async def get_billing_history(
     user_id: str = Depends(verify_api_token),
     limit: int = 50,
     offset: int = 0,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get billing history for a user"""
     result = await session.execute(
@@ -393,7 +393,7 @@ async def get_billing_history(
 @app.post("/api/webhooks/stripe")
 async def stripe_webhook(
     request: dict,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Handle Stripe webhooks"""
     # Verify webhook signature

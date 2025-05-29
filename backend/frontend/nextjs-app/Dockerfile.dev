@@ -2,11 +2,13 @@
 FROM node:18-alpine
 WORKDIR /app
 
-# Install dependencies
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy source
+# Copy the rest of the application
 COPY . .
 
 # Set environment variables for browser access
@@ -20,8 +22,8 @@ ENV VITE_NOTIFICATION_URL=http://localhost:8006
 # Set production environment (needed for build)
 ENV NODE_ENV=development
 
-# Expose the port (Vite default port)
-EXPOSE 5173
+# Expose port 3000
+EXPOSE 3000
 
-# Start the app in development mode
+# Start the development server
 CMD ["npm", "run", "dev"]
