@@ -14,7 +14,12 @@ CREATE TABLE IF NOT EXISTS users (
     notification_preferences JSONB DEFAULT NULL,
     last_credit_alert TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMP DEFAULT NOW(),
+    current_subscription_id UUID,
+    credits_purchased INTEGER DEFAULT 0,
+    onboarding_completed BOOLEAN DEFAULT FALSE,
+    company_name VARCHAR(255),
+    company_size VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -118,4 +123,111 @@ CREATE TABLE IF NOT EXISTS export_logs (
     export_config JSONB DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMP DEFAULT NULL
+);
+
+-- Packages/Plans table
+CREATE TABLE IF NOT EXISTS packages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(50) NOT NULL UNIQUE,
+    display_name VARCHAR(100) NOT NULL,
+    price_monthly DECIMAL(10,2) NOT NULL DEFAULT 0,
+    price_yearly DECIMAL(10,2) NOT NULL DEFAULT 0,
+    credits_monthly INTEGER NOT NULL DEFAULT 0,
+    credits_rollover BOOLEAN DEFAULT FALSE,
+    features JSONB NOT NULL DEFAULT '{}',
+    limits JSONB NOT NULL DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- User subscriptions
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    package_id UUID NOT NULL REFERENCES packages(id),
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly',
+    current_period_start TIMESTAMP NOT NULL DEFAULT NOW(),
+    current_period_end TIMESTAMP NOT NULL,
+    trial_end TIMESTAMP,
+    cancel_at_period_end BOOLEAN DEFAULT FALSE,
+    cancelled_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Payment methods
+CREATE TABLE IF NOT EXISTS payment_methods (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    provider VARCHAR(50),
+    provider_customer_id VARCHAR(255),
+    provider_payment_method_id VARCHAR(255),
+    last_four VARCHAR(4),
+    brand VARCHAR(50),
+    exp_month INTEGER,
+    exp_year INTEGER,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Credit packages for one-time purchases
+CREATE TABLE IF NOT EXISTS credit_packages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    credits INTEGER NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    price_per_credit DECIMAL(10,4) GENERATED ALWAYS AS (price / credits) STORED,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- CRM Contacts
+CREATE TABLE IF NOT EXISTS crm_contacts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    contact_id INTEGER REFERENCES contacts(id),
+    external_id VARCHAR(255),
+    crm_provider VARCHAR(50),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    company VARCHAR(255),
+    position VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'new',
+    lead_score INTEGER DEFAULT 0,
+    deal_value DECIMAL(10,2),
+    tags TEXT[],
+    custom_fields JSONB DEFAULT '{}',
+    last_contacted_at TIMESTAMP,
+    last_activity_at TIMESTAMP,
+    next_follow_up TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, email)
+);
+
+-- Integration configurations
+CREATE TABLE IF NOT EXISTS integration_configs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    api_key VARCHAR(500),
+    api_secret VARCHAR(500),
+    access_token TEXT,
+    refresh_token TEXT,
+    token_expires_at TIMESTAMP,
+    config JSONB DEFAULT '{}',
+    field_mappings JSONB DEFAULT '{}',
+    sync_enabled BOOLEAN DEFAULT FALSE,
+    sync_direction VARCHAR(20) DEFAULT 'both',
+    last_sync_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, provider)
 );

@@ -20,6 +20,11 @@ import LoginPage from './pages/Login';
 import SignupPage from './pages/Signup';
 import NotFoundPage from './pages/NotFound';
 
+// CRM Pages - We'll create placeholder components for now
+const ContactsPage = React.lazy(() => import('./pages/crm/Contacts'));
+const ActivitiesPage = () => <div className="p-8"><h1 className="text-2xl font-bold">Activities Page - Coming Soon</h1></div>;
+const CampaignsPage = React.lazy(() => import('./pages/crm/Campaigns'));
+
 function App() {
   console.log('🚀 App component is loading...');
   
@@ -81,6 +86,20 @@ function App() {
               <Route path="/api-tokens" element={<ApiTokensPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/billing" element={<BillingPage />} />
+              
+              {/* CRM Routes */}
+              <Route path="/crm/contacts" element={
+                <React.Suspense fallback={<div>Loading...</div>}>
+                  <ContactsPage />
+                </React.Suspense>
+              } />
+              <Route path="/crm/activities" element={<ActivitiesPage />} />
+              <Route path="/crm/campaigns" element={
+                <React.Suspense fallback={<div>Loading...</div>}>
+                  <CampaignsPage />
+                </React.Suspense>
+              } />
+              
               <Route path="*" element={<NotFoundPage />} />
             </Route>
             <Route path="/login" element={<Navigate to="/" replace />} />

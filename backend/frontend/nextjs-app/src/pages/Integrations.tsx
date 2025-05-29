@@ -1,459 +1,510 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle, XCircle, ExternalLink, Link as LinkIcon, 
-  RefreshCw, PlusCircle, Trash2, ArrowRight
+  RefreshCw, PlusCircle, Trash2, ArrowRight, Settings,
+  Loader2, Shield, Zap, Globe, Database, Webhook, Clock
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import apiService from '../services/api';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
 
-// Mock data for integrations
-const integrationsMockData = [
+interface Integration {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  category: string;
+  status: 'connected' | 'disconnected';
+  lastSync?: string;
+  connectedBy?: string;
+  connectedAt?: string;
+  apiKey?: string;
+  config?: any;
+}
+
+const integrations: Integration[] = [
   {
     id: 'hubspot',
     name: 'HubSpot',
     icon: '🟠',
-    description: 'Push enriched contacts to HubSpot CRM',
-    status: 'connected',
-    lastSync: '2 hours ago',
-    connectedBy: 'john.doe@company.com',
-    connectedAt: '2025-04-15',
-  },
-  {
-    id: 'lemlist',
-    name: 'Lemlist',
-    icon: '🔵',
-    description: 'Sync contacts to your Lemlist campaigns',
-    status: 'connected',
-    lastSync: '1 day ago',
-    connectedBy: 'john.doe@company.com',
-    connectedAt: '2025-04-10',
-  },
-  {
-    id: 'smartlead',
-    name: 'Smartlead',
-    icon: '🟢',
-    description: 'Push contacts to Smartlead sequences',
+    description: 'Push enriched contacts directly to HubSpot CRM',
+    category: 'CRM',
     status: 'disconnected',
-    lastSync: 'Never',
-    connectedBy: '',
-    connectedAt: '',
-  },
-  {
-    id: 'zapier',
-    name: 'Zapier',
-    icon: '⚡',
-    description: 'Connect to 5,000+ apps through Zapier',
-    status: 'connected',
-    lastSync: '3 days ago',
-    connectedBy: 'sarah.smith@company.com',
-    connectedAt: '2025-03-22',
-  },
-  {
-    id: 'make',
-    name: 'Make (Integromat)',
-    icon: '🔄',
-    description: 'Build complex automated workflows',
-    status: 'disconnected',
-    lastSync: 'Never',
-    connectedBy: '',
-    connectedAt: '',
-  },
-  {
-    id: 'notion',
-    name: 'Notion',
-    icon: '📝',
-    description: 'Save contact lists to Notion databases',
-    status: 'disconnected',
-    lastSync: 'Never',
-    connectedBy: '',
-    connectedAt: '',
   },
   {
     id: 'salesforce',
     name: 'Salesforce',
     icon: '☁️',
-    description: 'Sync with Salesforce CRM',
+    description: 'Sync leads with the world\'s #1 CRM platform',
+    category: 'CRM',
     status: 'disconnected',
-    lastSync: 'Never',
-    connectedBy: '',
-    connectedAt: '',
   },
   {
-    id: 'webhook',
-    name: 'Webhook',
-    icon: '🔗',
-    description: 'Send data to custom webhook endpoints',
-    status: 'connected',
-    lastSync: '12 hours ago',
-    connectedBy: 'john.doe@company.com',
-    connectedAt: '2025-04-01',
+    id: 'lemlist',
+    name: 'Lemlist',
+    icon: '📧',
+    description: 'Add contacts to your cold email campaigns',
+    category: 'Outreach',
+    status: 'disconnected',
+  },
+  {
+    id: 'smartlead',
+    name: 'Smartlead',
+    icon: '🚀',
+    description: 'Scale your outreach with AI-powered sequences',
+    category: 'Outreach',
+    status: 'disconnected',
+  },
+  {
+    id: 'outreach',
+    name: 'Outreach',
+    icon: '📤',
+    description: 'Enterprise sales engagement platform',
+    category: 'Outreach',
+    status: 'disconnected',
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    icon: '⚡',
+    description: 'Connect to 5,000+ apps through webhooks',
+    category: 'Automation',
+    status: 'disconnected',
   },
 ];
 
 const IntegrationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('all');
-  const [showMapping, setShowMapping] = useState(false);
-  const [selectedIntegration, setSelectedIntegration] = useState('');
-  
-  const filteredIntegrations = activeTab === 'all' 
-    ? integrationsMockData 
-    : activeTab === 'connected'
-      ? integrationsMockData.filter(int => int.status === 'connected')
-      : integrationsMockData.filter(int => int.status === 'disconnected');
-  
-  const handleConnect = (id: string) => {
-    // In a real app, would open OAuth flow or connection modal
-    console.log(`Connecting to ${id}`);
+  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [showConfig, setShowConfig] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
+  const [configForm, setConfigForm] = useState({
+    apiKey: '',
+    instanceUrl: '',
+    campaignId: '',
+    webhookUrl: ''
+  });
+
+  useEffect(() => {
+    fetchIntegrationConfigs();
+  }, []);
+
+  const fetchIntegrationConfigs = async () => {
+    try {
+      // This would fetch user's saved integration configs
+      // For now, we'll simulate some connected integrations
+      setConnectedIntegrations(new Set(['hubspot', 'zapier']));
+    } catch (error) {
+      console.error('Failed to fetch integrations');
+    }
   };
-  
-  const handleDisconnect = (id: string) => {
-    // In a real app, would show confirmation and disconnect
-    console.log(`Disconnecting from ${id}`);
+
+  const getFilteredIntegrations = () => {
+    const integrationsWithStatus = integrations.map(int => ({
+      ...int,
+      status: (connectedIntegrations.has(int.id) ? 'connected' : 'disconnected') as 'connected' | 'disconnected'
+    }));
+
+    switch (activeTab) {
+      case 'connected':
+        return integrationsWithStatus.filter(int => int.status === 'connected');
+      case 'disconnected':
+        return integrationsWithStatus.filter(int => int.status === 'disconnected');
+      default:
+        return integrationsWithStatus;
+    }
   };
-  
-  const handleShowMapping = (id: string) => {
-    setSelectedIntegration(id);
-    setShowMapping(true);
+
+  const handleConnect = async (integration: Integration) => {
+    setSelectedIntegration(integration);
+    setShowConfig(true);
   };
-  
-  return (
-    <div>
-      {/* Page header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Integrations</h1>
-      </div>
+
+  const handleDisconnect = async (integrationId: string) => {
+    if (confirm('Are you sure you want to disconnect this integration?')) {
+      try {
+        setLoading(true);
+        // API call to disconnect
+        setConnectedIntegrations(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(integrationId);
+          return newSet;
+        });
+        toast.success('Integration disconnected successfully');
+      } catch (error) {
+        toast.error('Failed to disconnect integration');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    if (!selectedIntegration) return;
+
+    try {
+      setLoading(true);
       
+      // Here we would make actual API calls based on the integration
+      switch (selectedIntegration.id) {
+        case 'hubspot':
+          // await apiService.saveIntegrationConfig('hubspot', { apiKey: configForm.apiKey });
+          break;
+        case 'salesforce':
+          // await apiService.saveIntegrationConfig('salesforce', { 
+          //   instanceUrl: configForm.instanceUrl,
+          //   accessToken: configForm.apiKey 
+          // });
+          break;
+        case 'zapier':
+          // await apiService.registerZapierWebhook(configForm.webhookUrl);
+          break;
+      }
+
+      setConnectedIntegrations(prev => new Set([...prev, selectedIntegration.id]));
+      toast.success(`${selectedIntegration.name} connected successfully!`);
+      setShowConfig(false);
+      setConfigForm({ apiKey: '', instanceUrl: '', campaignId: '', webhookUrl: '' });
+    } catch (error) {
+      toast.error('Failed to connect integration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'CRM': return <Database className="w-5 h-5" />;
+      case 'Outreach': return <Globe className="w-5 h-5" />;
+      case 'Automation': return <Zap className="w-5 h-5" />;
+      default: return <Shield className="w-5 h-5" />;
+    }
+  };
+
+  const filteredIntegrations = getFilteredIntegrations();
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      {/* Page Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Integrations
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Connect Captely with your favorite tools and automate your workflow
+        </p>
+      </motion.div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card gradient>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Connected</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                  {connectedIntegrations.size}
+                </p>
+              </div>
+              <CheckCircle className="w-10 h-10 text-green-500" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card gradient>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Available</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                  {integrations.length - connectedIntegrations.size}
+                </p>
+              </div>
+              <PlusCircle className="w-10 h-10 text-blue-500" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card gradient>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Synced Today</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                  1,247
+                </p>
+              </div>
+              <RefreshCw className="w-10 h-10 text-purple-500" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card gradient>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">API Calls</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                  24.5k
+                </p>
+              </div>
+              <Webhook className="w-10 h-10 text-teal-500" />
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`${
-              activeTab === 'all'
-                ? 'border-teal-500 text-teal-600 dark:text-teal-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-          >
-            All Integrations
-          </button>
-          <button
-            onClick={() => setActiveTab('connected')}
-            className={`${
-              activeTab === 'connected'
-                ? 'border-teal-500 text-teal-600 dark:text-teal-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-          >
-            Connected
-          </button>
-          <button
-            onClick={() => setActiveTab('disconnected')}
-            className={`${
-              activeTab === 'disconnected'
-                ? 'border-teal-500 text-teal-600 dark:text-teal-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-          >
-            Available
-          </button>
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-8">
+        <nav className="flex space-x-8">
+          {['all', 'connected', 'disconnected'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm capitalize
+                ${activeTab === tab
+                  ? 'border-teal-500 text-teal-600 dark:text-teal-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                }
+                transition-all duration-200
+              `}
+            >
+              {tab === 'disconnected' ? 'Available' : tab}
+            </button>
+          ))}
         </nav>
       </div>
-      
-      {showMapping ? (
-        // Field Mapping UI
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
-            <div>
-              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                Field Mapping: {integrationsMockData.find(i => i.id === selectedIntegration)?.name}
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-                Configure how your contact fields map to the destination fields.
-              </p>
-            </div>
-            <button 
-              onClick={() => setShowMapping(false)}
-              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-            >
-              <XCircle className="h-5 w-5" />
-            </button>
-          </div>
-          
-          <div className="px-4 py-5 sm:p-6">
-            <div className="space-y-4">
-              {/* Mapping rows */}
-              <div className="grid grid-cols-5 gap-4 py-2 font-medium text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-                <div className="col-span-2">Captely Field</div>
-                <div className="col-span-2">Destination Field</div>
-                <div className="col-span-1">Required</div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center border-b border-gray-100 dark:border-gray-700">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">First Name</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="first_name">First Name</option>
-                    <option value="firstname">FirstName</option>
-                    <option value="given_name">Given Name</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-green-500 dark:text-green-400 flex items-center">
-                  <CheckCircle className="h-5 w-5" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center border-b border-gray-100 dark:border-gray-700">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">Last Name</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="last_name">Last Name</option>
-                    <option value="lastname">LastName</option>
-                    <option value="surname">Surname</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-green-500 dark:text-green-400 flex items-center">
-                  <CheckCircle className="h-5 w-5" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center border-b border-gray-100 dark:border-gray-700">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">Email</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="email">Email</option>
-                    <option value="email_address">Email Address</option>
-                    <option value="work_email">Work Email</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-green-500 dark:text-green-400 flex items-center">
-                  <CheckCircle className="h-5 w-5" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center border-b border-gray-100 dark:border-gray-700">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">Phone</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="phone">Phone</option>
-                    <option value="phone_number">Phone Number</option>
-                    <option value="work_phone">Work Phone</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-gray-400 flex items-center">
-                  <XCircle className="h-5 w-5" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center border-b border-gray-100 dark:border-gray-700">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">Company</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="company">Company</option>
-                    <option value="company_name">Company Name</option>
-                    <option value="organization">Organization</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-gray-400 flex items-center">
-                  <XCircle className="h-5 w-5" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center border-b border-gray-100 dark:border-gray-700">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">Title</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="title">Title</option>
-                    <option value="job_title">Job Title</option>
-                    <option value="position">Position</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-gray-400 flex items-center">
-                  <XCircle className="h-5 w-5" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center border-b border-gray-100 dark:border-gray-700">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">LinkedIn URL</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="linkedin_url">LinkedIn URL</option>
-                    <option value="linkedin">LinkedIn</option>
-                    <option value="linkedin_profile">LinkedIn Profile</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-gray-400 flex items-center">
-                  <XCircle className="h-5 w-5" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-4 py-2 items-center">
-                <div className="col-span-2 text-gray-800 dark:text-gray-200">Email Status</div>
-                <div className="col-span-2">
-                  <select className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                    <option value="email_status">Email Status</option>
-                    <option value="email_valid">Email Valid</option>
-                    <option value="email_quality">Email Quality</option>
-                  </select>
-                </div>
-                <div className="col-span-1 text-gray-400 flex items-center">
-                  <XCircle className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setShowMapping(false)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-              >
-                Save Mapping
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        // Integrations grid
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredIntegrations.map((integration) => (
-            <div
+
+      {/* Integrations Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <AnimatePresence>
+          {filteredIntegrations.map((integration, index) => (
+            <motion.div
               key={integration.id}
-              className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg flex flex-col"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ delay: index * 0.05 }}
             >
-              <div className="px-4 py-5 sm:p-6 flex-1">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 text-3xl">
-                    {integration.icon}
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {integration.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {integration.description}
-                    </p>
-                  </div>
-                </div>
-                
-                {integration.status === 'connected' && (
-                  <div className="mt-4">
+              <Card hover className="h-full flex flex-col">
+                <div className="p-6 flex-1">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Connected
-                      </span>
+                      <div className="text-4xl mr-4">{integration.icon}</div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {integration.name}
+                        </h3>
+                        <div className="flex items-center space-x-2 mt-1">
+                          {getCategoryIcon(integration.category)}
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {integration.category}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Last sync: {integration.lastSync}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Connected by: {integration.connectedBy}
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              <div className="px-4 py-4 sm:px-6 bg-gray-50 dark:bg-gray-700">
-                {integration.status === 'connected' ? (
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleShowMapping(integration.id)}
-                      className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    <Badge 
+                      variant={integration.status === 'connected' ? 'success' : 'default'}
                     >
-                      <LinkIcon className="h-4 w-4 mr-2" />
-                      Field Mapping
-                    </button>
-                    <button
-                      onClick={() => handleDisconnect(integration.id)}
-                      className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-red-300 dark:border-red-700 shadow-sm text-sm font-medium rounded-md text-red-700 dark:text-red-300 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Disconnect
-                    </button>
+                      {integration.status}
+                    </Badge>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => handleConnect(integration.id)}
-                    className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Connect
-                  </button>
-                )}
-              </div>
-            </div>
+                  
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    {integration.description}
+                  </p>
+
+                  {integration.status === 'connected' && (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center text-gray-500 dark:text-gray-400">
+                        <Clock className="w-4 h-4 mr-2" />
+                        Last sync: 2 hours ago
+                      </div>
+                      <div className="flex items-center text-gray-500 dark:text-gray-400">
+                        <Shield className="w-4 h-4 mr-2" />
+                        Connected securely
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
+                  {integration.status === 'connected' ? (
+                    <div className="flex space-x-2">
+                      <button className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Configure
+                      </button>
+                      <button 
+                        onClick={() => handleDisconnect(integration.id)}
+                        className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-red-300 dark:border-red-700 text-sm font-medium rounded-lg text-red-700 dark:text-red-300 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Disconnect
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleConnect(integration)}
+                      className="w-full inline-flex justify-center items-center px-4 py-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Connect
+                    </button>
+                  )}
+                </div>
+              </Card>
+            </motion.div>
           ))}
-        </div>
-      )}
-      
-      {/* API Documentation */}
-      <div className="mt-8 bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-            API Integration
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-            Use our RESTful API to integrate Captely with custom applications.
-          </p>
-        </div>
-        
-        <div className="px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
-                API Documentation
-              </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Comprehensive documentation for the Captely API, including authentication, endpoints, and example requests.
-              </p>
-              <a 
-                href="#"
-                className="inline-flex items-center text-sm font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
-              >
-                View API Documentation
-                <ExternalLink className="ml-1 h-4 w-4" />
-              </a>
-            </div>
-            
-            <div>
-              <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
-                Webhooks
-              </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Configure webhooks to receive real-time notifications when batches are processed or contacts are updated.
-              </p>
-              <a 
-                href="#"
-                className="inline-flex items-center text-sm font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
-              >
-                Configure Webhooks
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </a>
-            </div>
-          </div>
-          
-          <div className="mt-6 bg-gray-50 dark:bg-gray-700 rounded-md p-4">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-              Your API Key
-            </h4>
-            <div className="flex items-center">
-              <div className="flex-1 bg-white dark:bg-gray-600 rounded-md px-3 py-2 text-sm font-mono text-gray-700 dark:text-gray-300 truncate">
-                sk_live_••••••••••••••••••••••••••••••
-              </div>
-              <button className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              This key grants full access to your account. Never share it publicly or include it in client-side code.
-            </p>
-          </div>
-        </div>
+        </AnimatePresence>
       </div>
+
+      {/* Configuration Modal */}
+      <AnimatePresence>
+        {showConfig && selectedIntegration && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={() => setShowConfig(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <span className="text-3xl mr-3">{selectedIntegration.icon}</span>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Connect {selectedIntegration.name}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowConfig(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {selectedIntegration.id === 'hubspot' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      HubSpot API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={configForm.apiKey}
+                      onChange={(e) => setConfigForm({ ...configForm, apiKey: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="pk_••••••••••••••••"
+                    />
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Find your API key in HubSpot Settings → Integrations → API Key
+                    </p>
+                  </div>
+                )}
+
+                {selectedIntegration.id === 'salesforce' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Instance URL
+                      </label>
+                      <input
+                        type="url"
+                        value={configForm.instanceUrl}
+                        onChange={(e) => setConfigForm({ ...configForm, instanceUrl: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="https://your-instance.salesforce.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Access Token
+                      </label>
+                      <input
+                        type="password"
+                        value={configForm.apiKey}
+                        onChange={(e) => setConfigForm({ ...configForm, apiKey: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="00D••••••••••••••"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {selectedIntegration.id === 'zapier' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Webhook URL
+                    </label>
+                    <input
+                      type="url"
+                      value={configForm.webhookUrl}
+                      onChange={(e) => setConfigForm({ ...configForm, webhookUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="https://hooks.zapier.com/..."
+                    />
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Create a Zap with "Webhooks by Zapier" trigger to get this URL
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={() => setShowConfig(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveConfig}
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                    ) : (
+                      'Connect'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

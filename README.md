@@ -232,7 +232,7 @@ Each service has its own `Dockerfile`, `requirements.txt`, and isolated test sui
 
 We integrate and extend the open‑source scraper [qtecsolution/Linkedin-Sales-Navigator-Scraper](https://github.com/qtecsolution/Linkedin-Sales-Navigator-Scraper):
 
-1. **UI Injection**: Add a non-intrusive “Scrape” button via Content Script.  
+1. **UI Injection**: Add a non-intrusive "Scrape" button via Content Script.  
 2. **Profile Extraction**: Collect name, title, company, URL, location, and industry for visible results.  
 3. **Human-like Behavior**: Randomized scrolling, delays, and batch size limits (≤150 profiles/session).  
 4. **Secure Transmission**: Batch POST to Auth Service with Bearer token authentication.  
@@ -286,6 +286,21 @@ npm run dev  # http://localhost:3000
 Contributions are welcome via pull requests. Please follow the [code of conduct](CODE_OF_CONDUCT.md) and commit conventions.
 
 Licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
+
+---
+
+🚀 **Production-Ready MVP** - A comprehensive SaaS platform for B2B contact enrichment with intelligent cascade processing, real-time verification, and advanced analytics.
+
+## 🆕 Latest Updates (v2.0)
+
+**Major features added:**
+- 💰 **Subscription & Billing System** - 4 tiers with package-based limits
+- 🏢 **Internal CRM** - Full contact management, activities, and campaigns
+- 🔌 **6 Real CRM Integrations** - HubSpot, Salesforce, Lemlist, Smartlead, Outreach, Zapier
+- 💳 **Payment Processing** - Stripe integration with credit packages
+- 📊 **Enhanced Analytics** - Provider usage tracking and cost optimization
+
+See [NEW_FEATURES_README.md](backend/NEW_FEATURES_README.md) for implementation details.
 
 ---
 

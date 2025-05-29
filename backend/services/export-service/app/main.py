@@ -13,12 +13,14 @@ import io
 import json
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from jose import jwt, JWTError
+from datetime import datetime
 
 from common.config import get_settings
 from common.db import get_session
 from common.auth import verify_api_token
+from app.integrations import get_integration
 
 app = FastAPI(
     title="Captely Export Service",
@@ -134,66 +136,271 @@ async def export_data(
 @app.post("/api/integrations/hubspot")
 async def export_to_hubspot(
     request: IntegrationRequest,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_session)
 ):
     """Export data to HubSpot CRM"""
-    
-    # Get user's HubSpot API key
-    hubspot_api_key = request.config.get("api_key") if request.config else None
-    if not hubspot_api_key:
-        raise HTTPException(status_code=400, detail="HubSpot API key required")
-    
-    # Get enriched contacts
-    query = """
-        SELECT * FROM contacts WHERE job_id = :job_id AND enriched = true
-    """
-    result = await session.execute(query, {"job_id": request.job_id})
-    contacts = result.fetchall()
-    
-    # Transform data according to mapping
-    hubspot_contacts = []
-    for contact in contacts:
-        hubspot_contact = {}
-        for captely_field, hubspot_field in request.mapping.items():
-            if hasattr(contact, captely_field):
-                hubspot_contact[hubspot_field] = getattr(contact, captely_field)
-        hubspot_contacts.append(hubspot_contact)
-    
-    # TODO: Implement actual HubSpot API call
-    # This would use the HubSpot API to create/update contacts
-    
-    return {"status": "success", "exported_count": len(hubspot_contacts)}
+    try:
+        # Get contacts from job
+        contacts_query = await session.execute(
+            select(Contact).where(
+                and_(
+                    Contact.job_id == request.job_id,
+                    Contact.enriched == True,
+                    Contact.email.isnot(None)
+                )
+            )
+        )
+        contacts = contacts_query.scalars().all()
+        
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No enriched contacts found")
+        
+        # Get user's HubSpot integration config
+        integration_config = await session.execute(
+            select(IntegrationConfig).where(
+                and_(
+                    IntegrationConfig.user_id == user_id,
+                    IntegrationConfig.provider == 'hubspot',
+                    IntegrationConfig.is_active == True
+                )
+            )
+        )
+        config = integration_config.scalar_one_or_none()
+        
+        if not config:
+            # Use provided config if no saved config
+            if not request.config or not request.config.get("api_key"):
+                raise HTTPException(status_code=400, detail="HubSpot API key required")
+            api_key = request.config["api_key"]
+        else:
+            api_key = config.api_key
+        
+        # Prepare contact data
+        contact_data = []
+        for contact in contacts:
+            data = {
+                "first_name": contact.first_name,
+                "last_name": contact.last_name,
+                "email": contact.email,
+                "phone": contact.phone,
+                "company": contact.company,
+                "position": contact.position
+            }
+            
+            # Apply field mapping if provided
+            if request.mapping:
+                mapped_data = {}
+                for captely_field, hubspot_field in request.mapping.items():
+                    if hasattr(contact, captely_field):
+                        mapped_data[hubspot_field] = getattr(contact, captely_field)
+                data.update(mapped_data)
+            
+            contact_data.append(data)
+        
+        # Use HubSpot integration
+        hubspot = get_integration("hubspot", {"api_key": api_key})
+        result = await hubspot.create_or_update_contacts(contact_data)
+        
+        # Log export
+        export_log = ExportLog(
+            user_id=user_id,
+            job_id=request.job_id,
+            export_type='hubspot',
+            status='completed' if not result.get("errors") else 'partial',
+            export_config=request.dict()
+        )
+        session.add(export_log)
+        await session.commit()
+        
+        return {
+            "status": "success",
+            "exported_count": result.get("created", 0) + result.get("updated", 0),
+            "errors": result.get("errors", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/integrations/lemlist")
 async def export_to_lemlist(
     request: IntegrationRequest,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_session)
 ):
     """Export data to Lemlist"""
-    
-    # Get Lemlist API key
-    lemlist_api_key = request.config.get("api_key") if request.config else None
-    if not lemlist_api_key:
-        raise HTTPException(status_code=400, detail="Lemlist API key required")
-    
-    # Similar implementation to HubSpot
-    # TODO: Implement Lemlist API integration
-    
-    return {"status": "success", "message": "Export to Lemlist initiated"}
+    try:
+        # Get contacts
+        contacts_query = await session.execute(
+            select(Contact).where(
+                and_(
+                    Contact.job_id == request.job_id,
+                    Contact.enriched == True,
+                    Contact.email.isnot(None)
+                )
+            )
+        )
+        contacts = contacts_query.scalars().all()
+        
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No enriched contacts found")
+        
+        # Get Lemlist config
+        campaign_id = request.config.get("campaign_id")
+        api_key = request.config.get("api_key")
+        
+        if not campaign_id or not api_key:
+            raise HTTPException(status_code=400, detail="Lemlist campaign ID and API key required")
+        
+        # Prepare contact data
+        contact_data = []
+        for contact in contacts:
+            contact_data.append({
+                "first_name": contact.first_name,
+                "last_name": contact.last_name,
+                "email": contact.email,
+                "phone": contact.phone,
+                "company": contact.company,
+                "position": contact.position
+            })
+        
+        # Use Lemlist integration
+        lemlist = get_integration("lemlist", {"api_key": api_key})
+        result = await lemlist.add_to_campaign(campaign_id, contact_data)
+        
+        # Log export
+        export_log = ExportLog(
+            user_id=user_id,
+            job_id=request.job_id,
+            export_type='lemlist',
+            status='completed' if not result.get("errors") else 'partial',
+            export_config=request.dict()
+        )
+        session.add(export_log)
+        await session.commit()
+        
+        return {
+            "status": "success",
+            "exported_count": result.get("added", 0),
+            "campaign_id": campaign_id,
+            "errors": result.get("errors", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/integrations/smartlead")
 async def export_to_smartlead(
     request: IntegrationRequest,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_session)
 ):
     """Export data to Smartlead"""
-    
-    # TODO: Implement Smartlead API integration
-    
-    return {"status": "success", "message": "Export to Smartlead initiated"}
+    try:
+        # Get contacts
+        contacts_query = await session.execute(
+            select(Contact).where(
+                and_(
+                    Contact.job_id == request.job_id,
+                    Contact.enriched == True,
+                    Contact.email.isnot(None)
+                )
+            )
+        )
+        contacts = contacts_query.scalars().all()
+        
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No enriched contacts found")
+        
+        # Get Smartlead config
+        campaign_id = request.config.get("campaign_id")
+        api_key = request.config.get("api_key")
+        
+        if not campaign_id or not api_key:
+            raise HTTPException(status_code=400, detail="Smartlead campaign ID and API key required")
+        
+        # Prepare contact data
+        contact_data = []
+        for contact in contacts:
+            contact_data.append({
+                "first_name": contact.first_name,
+                "last_name": contact.last_name,
+                "email": contact.email,
+                "phone": contact.phone,
+                "company": contact.company,
+                "position": contact.position
+            })
+        
+        # Use Smartlead integration
+        smartlead = get_integration("smartlead", {"api_key": api_key})
+        result = await smartlead.add_prospects(campaign_id, contact_data)
+        
+        return {
+            "status": "success",
+            "exported_count": result.get("added", 0),
+            "campaign_id": campaign_id,
+            "errors": result.get("errors", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/integrations/salesforce")
+async def export_to_salesforce(
+    request: IntegrationRequest,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_session)
+):
+    """Export data to Salesforce"""
+    try:
+        # Get contacts
+        contacts_query = await session.execute(
+            select(Contact).where(
+                and_(
+                    Contact.job_id == request.job_id,
+                    Contact.enriched == True
+                )
+            )
+        )
+        contacts = contacts_query.scalars().all()
+        
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No enriched contacts found")
+        
+        # Get Salesforce config
+        instance_url = request.config.get("instance_url")
+        access_token = request.config.get("access_token")
+        
+        if not instance_url or not access_token:
+            raise HTTPException(status_code=400, detail="Salesforce instance URL and access token required")
+        
+        # Prepare contact data
+        contact_data = []
+        for contact in contacts:
+            contact_data.append({
+                "first_name": contact.first_name,
+                "last_name": contact.last_name,
+                "email": contact.email,
+                "phone": contact.phone,
+                "company": contact.company,
+                "position": contact.position
+            })
+        
+        # Use Salesforce integration
+        salesforce = get_integration("salesforce", {
+            "instance_url": instance_url,
+            "access_token": access_token
+        })
+        result = await salesforce.create_leads(contact_data)
+        
+        return {
+            "status": "success",
+            "exported_count": result.get("created", 0),
+            "errors": result.get("errors", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Zapier webhook endpoint
 @app.post("/api/integrations/zapier/webhook")
@@ -212,29 +419,76 @@ async def register_zapier_webhook(
 @app.post("/api/integrations/zapier/trigger")
 async def trigger_zapier_webhook(
     job_id: str,
-    webhook_url: str,
-    user_id: str = Depends(verify_jwt),
+    webhook_id: str,
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_session)
 ):
     """Trigger Zapier webhook with enrichment results"""
-    
-    # Get job results
-    query = """
-        SELECT * FROM contacts WHERE job_id = :job_id AND enriched = true
-    """
-    result = await session.execute(query, {"job_id": job_id})
-    contacts = result.fetchall()
-    
-    # Format data for Zapier
-    payload = {
-        "job_id": job_id,
-        "enriched_count": len(contacts),
-        "contacts": [dict(contact) for contact in contacts[:10]]  # First 10 contacts
-    }
-    
-    # TODO: Send HTTP POST to Zapier webhook URL
-    
-    return {"status": "success", "sent_to": webhook_url}
+    try:
+        # Get webhook config
+        webhook_result = await session.execute(
+            select(Webhook).where(
+                and_(
+                    Webhook.id == webhook_id,
+                    Webhook.user_id == user_id,
+                    Webhook.is_active == True
+                )
+            )
+        )
+        webhook = webhook_result.scalar_one_or_none()
+        
+        if not webhook:
+            raise HTTPException(status_code=404, detail="Webhook not found or inactive")
+        
+        # Get enriched contacts
+        contacts_query = await session.execute(
+            select(Contact).where(
+                and_(
+                    Contact.job_id == job_id,
+                    Contact.enriched == True
+                )
+            )
+        )
+        contacts = contacts_query.scalars().all()
+        
+        # Prepare contact data
+        contact_data = []
+        for contact in contacts:
+            contact_data.append({
+                "id": contact.id,
+                "first_name": contact.first_name,
+                "last_name": contact.last_name,
+                "email": contact.email,
+                "phone": contact.phone,
+                "company": contact.company,
+                "position": contact.position,
+                "email_verified": contact.email_verified,
+                "phone_verified": contact.phone_verified,
+                "enrichment_provider": contact.enrichment_provider,
+                "enrichment_score": contact.enrichment_score
+            })
+        
+        # Use Zapier integration
+        zapier = get_integration("zapier", {"webhook_url": webhook.url})
+        result = await zapier.send_contacts(contact_data, "contacts.enriched")
+        
+        # Update webhook stats
+        if result.get("errors"):
+            webhook.failure_count += 1
+        else:
+            webhook.success_count += 1
+        webhook.last_triggered_at = datetime.utcnow()
+        
+        await session.commit()
+        
+        return {
+            "status": "success" if not result.get("errors") else "partial",
+            "sent_count": result.get("sent", 0),
+            "errors": result.get("errors", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Column customization endpoint
 @app.get("/api/export/columns/{job_id}")
