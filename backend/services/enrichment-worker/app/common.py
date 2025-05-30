@@ -75,16 +75,9 @@ def calculate_confidence(result: Dict[str, Any], provider: str) -> float:
         score = result.get('confidence', 0)
         confidence = float(score) / 100.0
     elif provider == 'dropcontact':
-        # Dropcontact uses string values for quality
-        quality = result.get('confidence', '')
-        if quality == 'high':
-            confidence = 0.9
-        elif quality == 'medium':
-            confidence = 0.7
-        elif quality == 'low':
-            confidence = 0.4
-        else:
-            confidence = 0.3
+        # Dropcontact returns numeric confidence (0-100)
+        score = result.get('confidence', 0)
+        confidence = float(score) / 100.0
     elif provider == 'hunter':
         # Hunter returns a score from 0-100
         score = result.get('confidence', 0)

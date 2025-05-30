@@ -277,16 +277,34 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         "Content-Type": "application/json"
     }
     
-    # Determine name to use (prefer full_name, fallback to first+last)
-    full_name = lead.get("full_name", "")
-    if not full_name:
-        full_name = f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip()
+    # Extract first and last name
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    # If we don't have first/last name but have full_name, split it
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            if not first_name:
+                first_name = name_parts[0]
+            if not last_name:
+                last_name = name_parts[1]
+        elif len(name_parts) == 1:
+            # If only one name part, use it as last name (common for API requirements)
+            if not last_name:
+                last_name = name_parts[0]
+    
+    # Ensure we have at least a last name (required by API)
+    if not last_name:
+        logger.warning(f"Icypeas: No last name available for contact")
+        return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
     
     # Use the company domain if available, otherwise company name
     company_info = lead.get("company_domain", "") or lead.get("company", "")
     
     payload = {
-        "fullname": full_name,
+        "firstname": first_name,  # Changed from fullname to firstname
+        "lastname": last_name,    # Added lastname field
         "domainOrCompany": company_info
     }
     
@@ -296,7 +314,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
             payload["linkedin"] = linkedin_url
     
     # Log the payload for debugging
-    logger.info(f"Icypeas payload: name={full_name}, company={company_info}")
+    logger.info(f"Icypeas payload: firstname={first_name}, lastname={last_name}, company={company_info}")
     
     # Make the API request (async search)
     response = httpx.post(
@@ -511,6 +529,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
                 
                 # Extract email - handle both list and single email formats
                 email = None
+                qualification = ""  # Initialize qualification to empty string
                 email_data = result.get("email")
                 if isinstance(email_data, list) and len(email_data) > 0:
                     # New format: email is a list
@@ -716,6 +735,16 @@ def call_apollo(lead: Dict[str, Any]) -> Dict[str, Any]:
         service_status.mark_unavailable('apollo')
         return {"email": None, "phone": None, "confidence": 0, "source": "apollo"}
     
+    if response.status_code == 422:
+        # Handle insufficient credits error
+        error_msg = response.json().get('error', '')
+        if 'insufficient credits' in error_msg.lower():
+            logger.warning("Apollo API error: Insufficient credits - marking service unavailable")
+            service_status.mark_unavailable('apollo')
+        else:
+            logger.warning(f"Apollo API error: {response.status_code} - {response.text}")
+        return {"email": None, "phone": None, "confidence": 0, "source": "apollo"}
+    
     if response.status_code != 200:
         logger.warning(f"Apollo API error: {response.status_code} - {response.text}")
         return {"email": None, "phone": None, "confidence": 0, "source": "apollo"}
@@ -779,8 +808,11 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
             contacts = list(reader)
         
         # Create a job if it doesn't exist
-        session = AsyncSessionLocal()
-        run_async(get_or_create_job(session, job_id, user_id, len(contacts)))
+        async def create_job_async():
+            async with AsyncSessionLocal() as session:
+                return await get_or_create_job(session, job_id, user_id, len(contacts))
+        
+        run_async(create_job_async())
         
         # Process each contact
         for contact in contacts:
@@ -839,9 +871,12 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     logger.info(f"Starting cascading enrichment for {lead.get('first_name')} {lead.get('last_name')}")
     
     try:
-        # Get database session and save contact
-        session = AsyncSessionLocal()
-        contact_id = run_async(save_contact(session, job_id, lead))
+        # Save contact and get its ID
+        async def save_contact_async():
+            async with AsyncSessionLocal() as session:
+                return await save_contact(session, job_id, lead)
+        
+        contact_id = run_async(save_contact_async())
         
         # Initialize result variables
         best_result = None
@@ -871,7 +906,11 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 continue
             
             # Save the result only if we have a valid email
-            run_async(save_enrichment_result(session, contact_id, service, result))
+            async def save_result_async():
+                async with AsyncSessionLocal() as session:
+                    await save_enrichment_result(session, contact_id, service, result)
+            
+            run_async(save_result_async())
             
             # Calculate confidence
             confidence = calculate_confidence(result, service)
@@ -882,6 +921,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             if confidence > best_confidence:
                 best_result = result
                 best_confidence = confidence
+                best_result['source'] = service  # Ensure source is set
             
             # If we have a high confidence result, stop cascading
             if confidence >= settings.high_confidence:
@@ -897,32 +937,45 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 'phone_verified': bool(best_result.get('phone'))
             }
             
-            run_async(update_contact(
-                session, 
-                contact_id, 
-                email=best_result.get('email'), 
-                phone=best_result.get('phone'),
-                enrichment_data=enrichment_data
-            ))
+            async def update_contact_async():
+                async with AsyncSessionLocal() as session:
+                    await update_contact(
+                        session, 
+                        contact_id, 
+                        email=best_result.get('email'), 
+                        phone=best_result.get('phone'),
+                        enrichment_data=enrichment_data
+                    )
             
-            logger.info(f"Contact updated with best result from {best_result.get('source')}")
+            run_async(update_contact_async())
+            
+            logger.info(f"✅ Contact enriched successfully! Email: {best_result.get('email')}, Provider: {best_result.get('source')}, Confidence: {best_confidence:.2%}")
         else:
             # No good results, mark as failed
-            run_async(update_contact(
-                session,
-                contact_id,
-                enrichment_data={
-                    'provider': None,
-                    'confidence': 0,
-                    'email_verified': False,
-                    'phone_verified': False
-                }
-            ))
+            async def update_failed_async():
+                async with AsyncSessionLocal() as session:
+                    await update_contact(
+                        session,
+                        contact_id,
+                        enrichment_data={
+                            'provider': None,
+                            'confidence': 0,
+                            'email_verified': False,
+                            'phone_verified': False,
+                            'enrichment_status': 'failed'
+                        }
+                    )
             
-            logger.info(f"No valid results found for {lead.get('first_name')} {lead.get('last_name')}")
+            run_async(update_failed_async())
+            
+            logger.info(f"❌ No valid results found for {lead.get('first_name')} {lead.get('last_name')}")
         
         # Increment job progress
-        run_async(increment_job_progress(session, job_id))
+        async def increment_progress_async():
+            async with AsyncSessionLocal() as session:
+                await increment_job_progress(session, job_id)
+        
+        run_async(increment_progress_async())
         
         # Return the enrichment result
         return {

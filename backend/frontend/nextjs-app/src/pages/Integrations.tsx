@@ -151,16 +151,43 @@ const IntegrationsPage: React.FC = () => {
       // Here we would make actual API calls based on the integration
       switch (selectedIntegration.id) {
         case 'hubspot':
-          // await apiService.saveIntegrationConfig('hubspot', { apiKey: configForm.apiKey });
+          await apiService.exportToHubSpot(
+            'test-job-id', // This would be a real job ID in production
+            {}, // field mapping
+            configForm.apiKey
+          );
           break;
         case 'salesforce':
-          // await apiService.saveIntegrationConfig('salesforce', { 
-          //   instanceUrl: configForm.instanceUrl,
-          //   accessToken: configForm.apiKey 
-          // });
+          await apiService.exportToSalesforce(
+            'test-job-id',
+            {},
+            configForm.instanceUrl,
+            configForm.apiKey
+          );
+          break;
+        case 'lemlist':
+          await apiService.exportToLemlist(
+            'test-job-id',
+            {},
+            configForm.apiKey
+          );
+          break;
+        case 'smartlead':
+          await apiService.exportToSmartlead(
+            'test-job-id',
+            {},
+            configForm.apiKey
+          );
+          break;
+        case 'outreach':
+          await apiService.exportToOutreach(
+            'test-job-id',
+            {},
+            configForm.apiKey
+          );
           break;
         case 'zapier':
-          // await apiService.registerZapierWebhook(configForm.webhookUrl);
+          await apiService.registerZapierWebhook(configForm.webhookUrl);
           break;
       }
 
@@ -459,6 +486,30 @@ const IntegrationsPage: React.FC = () => {
                   </>
                 )}
 
+                {(selectedIntegration.id === 'lemlist' || selectedIntegration.id === 'smartlead' || selectedIntegration.id === 'outreach') && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={configForm.apiKey}
+                      onChange={(e) => setConfigForm({ ...configForm, apiKey: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                      placeholder={
+                        selectedIntegration.id === 'lemlist' ? 'lml_••••••••••••••••' :
+                        selectedIntegration.id === 'smartlead' ? 'sl_••••••••••••••••' :
+                        'api_••••••••••••••••'
+                      }
+                    />
+                    <p className="mt-2 text-sm text-gray-600">
+                      {selectedIntegration.id === 'lemlist' && 'Find your API key in Lemlist → Settings → Integrations'}
+                      {selectedIntegration.id === 'smartlead' && 'Find your API key in Smartlead → Settings → API'}
+                      {selectedIntegration.id === 'outreach' && 'Find your API key in Outreach → Settings → API'}
+                    </p>
+                  </div>
+                )}
+
                 {selectedIntegration.id === 'zapier' && (
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -477,6 +528,19 @@ const IntegrationsPage: React.FC = () => {
                   </div>
                 )}
 
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <div className="flex items-start">
+                    <Shield className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-semibold text-blue-900 mb-1">Secure Connection</p>
+                      <p className="text-blue-700">
+                        Your credentials are encrypted and never stored in plain text. 
+                        You can disconnect at any time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex space-x-3 pt-4">
                   <button
                     onClick={() => setShowConfig(false)}
@@ -486,7 +550,12 @@ const IntegrationsPage: React.FC = () => {
                   </button>
                   <button
                     onClick={handleSaveConfig}
-                    disabled={loading}
+                    disabled={loading || (
+                      selectedIntegration.id === 'hubspot' ? !configForm.apiKey :
+                      selectedIntegration.id === 'salesforce' ? !configForm.instanceUrl || !configForm.apiKey :
+                      selectedIntegration.id === 'zapier' ? !configForm.webhookUrl :
+                      !configForm.apiKey
+                    )}
                     className="flex-1 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 font-semibold"
                   >
                     {loading ? (

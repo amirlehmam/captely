@@ -15,6 +15,8 @@ from common.config import get_settings
 from common.db import get_async_session, async_engine
 from common.auth import verify_api_token
 from app.models import Base
+import httpx
+import base64
 
 app = FastAPI(
     title="Captely Analytics Service",
@@ -44,6 +46,48 @@ security = HTTPBearer()
 class DateRange(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+
+# Flower proxy configuration
+FLOWER_URL = "http://captely-flower:5555"
+FLOWER_AUTH = base64.b64encode(b"admin:flowerpassword").decode()
+
+@app.get("/api/flower/workers")
+async def proxy_flower_workers():
+    """Proxy Flower workers endpoint with authentication"""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                f"{FLOWER_URL}/api/workers",
+                headers={"Authorization": f"Basic {FLOWER_AUTH}"},
+                follow_redirects=True
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as e:
+        print(f"Flower error: {e}")
+        raise HTTPException(status_code=503, detail=f"Flower service unavailable: {str(e)}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
+@app.get("/api/flower/tasks")
+async def proxy_flower_tasks():
+    """Proxy Flower tasks endpoint with authentication"""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                f"{FLOWER_URL}/api/tasks",
+                headers={"Authorization": f"Basic {FLOWER_AUTH}"},
+                follow_redirects=True
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as e:
+        print(f"Flower error: {e}")
+        raise HTTPException(status_code=503, detail=f"Flower service unavailable: {str(e)}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 @app.get("/api/analytics/dashboard/{user_id}")
 async def get_user_dashboard(

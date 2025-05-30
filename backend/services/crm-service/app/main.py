@@ -1,40 +1,24 @@
-# services/crm-service/app/main.py
-
-from fastapi import FastAPI, HTTPException, Depends, status, Query
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import Column, String, DateTime, Text, Enum, Boolean, Integer, ForeignKey, select, update, delete
-from sqlalchemy.dialects.postgresql import UUID
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime
+# CRM Service - Standalone
+import os
 import uuid
 import enum
-import os
+from datetime import datetime
 from contextlib import asynccontextmanager
+from typing import List, Optional
 
-from common.config import get_settings
-from common.db import get_async_session
-from common.auth import verify_api_token
-
-from app.models import (
-    CRMContact, CRMActivity, CRMCampaign, CRMCampaignContact,
-    Contact, User
-)
-from app.schemas import (
-    ContactCreate, ContactUpdate, ContactResponse,
-    ActivityCreate, ActivityResponse,
-    CampaignCreate, CampaignUpdate, CampaignResponse,
-    CampaignContactResponse, ContactImport
-)
+from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, String, DateTime, Text, Enum, Boolean, Integer, ForeignKey, select, update
+from sqlalchemy.dialects.postgresql import UUID
+from pydantic import BaseModel
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@captely-db:5432/captely")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgrespw@captely-db:5432/postgres")
 
 # SQLAlchemy setup
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(DATABASE_URL, echo=False)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
@@ -77,16 +61,24 @@ class CrmContact(Base):
     __tablename__ = "crm_contacts"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    first_name = Column(String, nullable=False)
+    user_id = Column(UUID(as_uuid=True), nullable=False)
+    contact_id = Column(Integer)
+    external_id = Column(String)
+    crm_provider = Column(String)
+    first_name = Column(String)
     last_name = Column(String)
     email = Column(String)
     phone = Column(String)
     company = Column(String)
     position = Column(String)
-    status = Column(Enum(ContactStatus), default=ContactStatus.new)
+    status = Column(String, default="new")
     lead_score = Column(Integer, default=0)
-    tags = Column(Text)  # JSON string for tags
+    deal_value = Column(Integer)
+    tags = Column(Text)  # Will handle as array in responses
+    custom_fields = Column(Text)
     last_contacted_at = Column(DateTime)
+    last_activity_at = Column(DateTime)
+    next_follow_up = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -207,7 +199,7 @@ class CampaignResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Dependency to get database session
+# Database session dependency
 async def get_db_session():
     async with async_session_maker() as session:
         try:
@@ -219,9 +211,13 @@ async def get_db_session():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        print("✅ CRM service started, using existing database schema")
+    except Exception as e:
+        print(f"❌ Error during startup: {e}")
+    
     yield
+    
     # Shutdown
     await engine.dispose()
 
@@ -273,7 +269,7 @@ async def get_contacts(
                 phone=contact.phone,
                 company=contact.company,
                 position=contact.position,
-                status=contact.status.value,
+                status=contact.status,
                 lead_score=contact.lead_score,
                 tags=contact.tags.split(',') if contact.tags else [],
                 last_contacted_at=contact.last_contacted_at,
@@ -283,36 +279,6 @@ async def get_contacts(
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch contacts: {str(e)}")
-
-@app.post("/api/contacts", response_model=ContactResponse)
-async def create_contact(
-    contact: ContactCreate,
-    session: AsyncSession = Depends(get_db_session)
-):
-    """Create a new contact"""
-    try:
-        db_contact = CrmContact(**contact.dict())
-        session.add(db_contact)
-        await session.commit()
-        await session.refresh(db_contact)
-        
-        return ContactResponse(
-            id=str(db_contact.id),
-            first_name=db_contact.first_name,
-            last_name=db_contact.last_name,
-            email=db_contact.email,
-            phone=db_contact.phone,
-            company=db_contact.company,
-            position=db_contact.position,
-            status=db_contact.status.value,
-            lead_score=db_contact.lead_score,
-            tags=[],
-            last_contacted_at=db_contact.last_contacted_at,
-            created_at=db_contact.created_at
-        )
-    except Exception as e:
-        await session.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create contact: {str(e)}")
 
 # Activity endpoints
 @app.get("/api/activities", response_model=List[ActivityResponse])
@@ -373,7 +339,6 @@ async def create_activity(
 ):
     """Create a new activity"""
     try:
-        # Convert contact_id to UUID if provided
         contact_uuid = None
         if activity.contact_id:
             try:
@@ -430,33 +395,6 @@ async def create_activity(
         await session.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to create activity: {str(e)}")
 
-@app.put("/api/activities/{activity_id}/status")
-async def update_activity_status(
-    activity_id: str,
-    status: ActivityStatus,
-    session: AsyncSession = Depends(get_db_session)
-):
-    """Update activity status"""
-    try:
-        activity_uuid = uuid.UUID(activity_id)
-        
-        # Set completed_at if marking as completed
-        completed_at = datetime.utcnow() if status == ActivityStatus.completed else None
-        
-        await session.execute(
-            update(CrmActivity)
-            .where(CrmActivity.id == activity_uuid)
-            .values(status=status, completed_at=completed_at, updated_at=datetime.utcnow())
-        )
-        await session.commit()
-        
-        return {"message": "Activity status updated successfully"}
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid activity ID format")
-    except Exception as e:
-        await session.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to update activity: {str(e)}")
-
 # Campaign endpoints
 @app.get("/api/campaigns", response_model=List[CampaignResponse])
 async def get_campaigns(
@@ -502,7 +440,14 @@ async def create_campaign(
 ):
     """Create a new campaign"""
     try:
-        db_campaign = CrmCampaign(**campaign.dict())
+        db_campaign = CrmCampaign(
+            name=campaign.name,
+            type=campaign.type,
+            from_email=campaign.from_email,
+            from_name=campaign.from_name,
+            status=CampaignStatus.draft  # New campaigns start as draft
+        )
+        
         session.add(db_campaign)
         await session.commit()
         await session.refresh(db_campaign)
@@ -529,26 +474,88 @@ async def create_campaign(
 @app.put("/api/campaigns/{campaign_id}/status")
 async def update_campaign_status(
     campaign_id: str,
-    status: CampaignStatus,
+    status_update: dict,
     session: AsyncSession = Depends(get_db_session)
 ):
     """Update campaign status"""
     try:
-        campaign_uuid = uuid.UUID(campaign_id)
+        # Validate campaign_id
+        try:
+            campaign_uuid = uuid.UUID(campaign_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid campaign ID format")
         
-        await session.execute(
-            update(CrmCampaign)
-            .where(CrmCampaign.id == campaign_uuid)
-            .values(status=status, updated_at=datetime.utcnow())
+        # Validate status
+        new_status = status_update.get('status')
+        if not new_status or new_status not in ['draft', 'active', 'paused', 'completed']:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        
+        # Get campaign
+        result = await session.execute(
+            select(CrmCampaign).where(CrmCampaign.id == campaign_uuid)
         )
+        campaign = result.scalar_one_or_none()
+        
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        
+        # Update status
+        campaign.status = CampaignStatus[new_status]
+        campaign.updated_at = datetime.utcnow()
+        
         await session.commit()
         
-        return {"message": "Campaign status updated successfully"}
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid campaign ID format")
+        return {"message": f"Campaign status updated to {new_status}"}
+    except HTTPException:
+        raise
     except Exception as e:
         await session.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to update campaign: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update campaign status: {str(e)}")
+
+@app.put("/api/activities/{activity_id}/status")
+async def update_activity_status(
+    activity_id: str,
+    status_update: dict,
+    session: AsyncSession = Depends(get_db_session)
+):
+    """Update activity status"""
+    try:
+        # Validate activity_id
+        try:
+            activity_uuid = uuid.UUID(activity_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid activity ID format")
+        
+        # Validate status
+        new_status = status_update.get('status')
+        if not new_status or new_status not in ['pending', 'completed', 'cancelled', 'overdue']:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        
+        # Get activity
+        result = await session.execute(
+            select(CrmActivity).where(CrmActivity.id == activity_uuid)
+        )
+        activity = result.scalar_one_or_none()
+        
+        if not activity:
+            raise HTTPException(status_code=404, detail="Activity not found")
+        
+        # Update status
+        activity.status = ActivityStatus[new_status]
+        activity.updated_at = datetime.utcnow()
+        
+        # Set completed_at if completing
+        if new_status == 'completed':
+            activity.completed_at = datetime.utcnow()
+        
+        await session.commit()
+        
+        return {"message": f"Activity status updated to {new_status}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update activity status: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

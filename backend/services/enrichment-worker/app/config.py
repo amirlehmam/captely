@@ -30,11 +30,11 @@ class Settings:
         }
         
         # Service ordering based on cost (cheapest first)
-        self.service_order = ['icypeas', 'dropcontact', 'hunter', 'apollo']
+        self.service_order = ['dropcontact', 'icypeas', 'hunter', 'apollo']
         
         # Email verification confidence thresholds
-        self.minimum_confidence = 0.70  # Minimum confidence to accept an email
-        self.high_confidence = 0.90     # High confidence threshold to stop cascading
+        self.minimum_confidence = 0.30  # Lower minimum confidence to accept more results
+        self.high_confidence = 0.80     # High confidence threshold to stop cascading
         
         # Task configuration
         self.retry_limit = 3
