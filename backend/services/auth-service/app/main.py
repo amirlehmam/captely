@@ -119,6 +119,10 @@ async def get_current_user(
 class SignupIn(BaseModel):
     email: EmailStr
     password: str
+    first_name: str = None
+    last_name: str = None
+    company: str = None
+    phone: str = None
 
 class TokenOut(BaseModel):
     access_token: str
@@ -280,6 +284,10 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
         user = User(
             email=data.email,
             password_hash=get_password_hash(data.password),
+            first_name=data.first_name,
+            last_name=data.last_name,
+            company=data.company,
+            phone=data.phone,
             credits=100,
             total_spent=0
         )
