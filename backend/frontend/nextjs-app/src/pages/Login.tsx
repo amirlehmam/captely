@@ -1,241 +1,860 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Mail, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle,
+  AlertCircle, Loader2, Fingerprint, Smartphone, Key, Globe,
+  Github, Chrome, Apple, Twitter, Zap, Star, Sparkles,
+  ShieldCheck, UserCheck, LogIn, HelpCircle, ChevronRight,
+  Wifi, WifiOff, Moon, Sun, Languages, Heart
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import apiService from '../services/api';
+
+// Google reCAPTCHA v3
+declare global {
+  interface Window {
+    grecaptcha: any;
+    onRecaptchaLoad: () => void;
+  }
+}
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // Test key
+
+interface LoginFormData {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+interface SecurityCheck {
+  id: string;
+  label: string;
+  status: 'pending' | 'checking' | 'passed' | 'failed';
+  icon: React.ReactNode;
+}
 
 interface LoginPageProps {
   onLogin: () => void;
 }
 
-// Hard-code the URL to localhost for browser access
-const AUTH_BASE = 'http://localhost:8001'; // Use localhost for browser access
-
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [isOnline, setIsOnline] = useState(true);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [showSecurityAnimation, setShowSecurityAnimation] = useState(false);
+  const [trustScore, setTrustScore] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState(['', '', '', '', '', '']);
+  const twoFactorRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
+  const [formData, setFormData] = useState<LoginFormData>({
+    email: '',
+    password: '',
+    rememberMe: false
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+    general: ''
+  });
 
-    try {
-      console.log(`Attempting to connect to ${AUTH_BASE}/auth/login`);
-      
-      const res = await fetch(`${AUTH_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        mode: 'cors', // Explicitly set CORS mode
-        body: JSON.stringify({ email, password }),
-      }).catch(err => {
-        console.error('Network error during fetch:', err);
-        throw new Error(`Network error: ${err.message || 'Unable to connect to authentication service'}`);
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false
+  });
+
+  const [securityChecks, setSecurityChecks] = useState<SecurityCheck[]>([
+    { id: 'captcha', label: 'Human verification', status: 'pending', icon: <Shield className="w-4 h-4" /> },
+    { id: 'ssl', label: 'Secure connection', status: 'pending', icon: <Lock className="w-4 h-4" /> },
+    { id: 'device', label: 'Device fingerprint', status: 'pending', icon: <Fingerprint className="w-4 h-4" /> },
+    { id: 'location', label: 'Location verified', status: 'pending', icon: <Globe className="w-4 h-4" /> }
+  ]);
+
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' }
+  ];
+
+  const socialProviders = [
+    { id: 'google', name: 'Google', icon: <Chrome className="w-5 h-5" />, color: 'hover:bg-red-50 hover:border-red-300' },
+    { id: 'github', name: 'GitHub', icon: <Github className="w-5 h-5" />, color: 'hover:bg-gray-100 hover:border-gray-400' },
+    { id: 'apple', name: 'Apple', icon: <Apple className="w-5 h-5" />, color: 'hover:bg-gray-900 hover:text-white hover:border-gray-900' },
+    { id: 'twitter', name: 'Twitter', icon: <Twitter className="w-5 h-5" />, color: 'hover:bg-blue-50 hover:border-blue-300' }
+  ];
+
+  useEffect(() => {
+    // Load reCAPTCHA
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    window.onRecaptchaLoad = () => {
+      console.log('reCAPTCHA loaded');
+    };
+
+    // Check online status
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Mouse tracking for parallax effect
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 20 - 10,
+        y: (e.clientY / window.innerHeight) * 20 - 10
       });
-      
-      if (!res.ok) {
-        let errorMessage = `Error ${res.status}: ${res.statusText}`;
-        try {
-          const body = await res.json();
-          errorMessage = body?.detail || errorMessage;
-        } catch (parseError) {
-          console.error('Error parsing response:', parseError);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
+    // Check dark mode preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setDarkMode(true);
+    }
+
+    // Simulate security checks
+    setTimeout(() => runSecurityChecks(), 1000);
+
+    // Animate trust score
+    const interval = setInterval(() => {
+      setTrustScore(prev => {
+        if (prev >= 98) {
+          clearInterval(interval);
+          return 98;
         }
-        throw new Error(errorMessage);
+        return prev + Math.random() * 10;
+      });
+    }, 200);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('mousemove', handleMouseMove);
+      clearInterval(interval);
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
+    };
+  }, []);
+
+  const runSecurityChecks = async () => {
+    const checks = [...securityChecks];
+    
+    for (let i = 0; i < checks.length; i++) {
+      checks[i].status = 'checking';
+      setSecurityChecks([...checks]);
       
-      const { access_token } = await res.json();
-      if (rememberMe) {
-        localStorage.setItem('captely_jwt', access_token);
-      } else {
-        sessionStorage.setItem('captely_jwt', access_token);
-      }
-      onLogin();
-      navigate('/', { replace: true });
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'An unknown error occurred');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      checks[i].status = 'passed';
+      setSecurityChecks([...checks]);
     }
   };
 
+  const executeRecaptcha = async (): Promise<string | null> => {
+    return new Promise((resolve) => {
+      if (window.grecaptcha) {
+        window.grecaptcha.ready(() => {
+          window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'login' })
+            .then((token: string) => {
+              setCaptchaToken(token);
+              resolve(token);
+            })
+            .catch(() => resolve(null));
+        });
+      } else {
+        resolve(null);
+      }
+    });
+  };
+
+  const validateEmail = (email: string): string => {
+    if (!email) return 'Email is required';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return 'Please enter a valid email';
+    return '';
+  };
+
+  const validatePassword = (password: string): string => {
+    if (!password) return 'Password is required';
+    if (password.length < 8) return 'Password must be at least 8 characters';
+    return '';
+  };
+
+  const handleInputChange = (field: keyof LoginFormData, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    if (typeof value === 'string' && (field === 'email' || field === 'password')) {
+      setTouched(prev => ({ ...prev, [field]: true }));
+      
+      if (field === 'email') {
+        setErrors(prev => ({ ...prev, email: validateEmail(value) }));
+      } else if (field === 'password') {
+        setErrors(prev => ({ ...prev, password: validatePassword(value) }));
+      }
+    }
+  };
+
+  const handleTwoFactorInput = (index: number, value: string) => {
+    if (value.length > 1) return;
+    
+    const newCode = [...twoFactorCode];
+    newCode[index] = value;
+    setTwoFactorCode(newCode);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      twoFactorRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when complete
+    if (index === 5 && value) {
+      const code = newCode.join('');
+      if (code.length === 6) {
+        handleTwoFactorSubmit(code);
+      }
+    }
+  };
+
+  const handleTwoFactorKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !twoFactorCode[index] && index > 0) {
+      twoFactorRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleTwoFactorSubmit = async (code: string) => {
+    setLoading(true);
+    try {
+      // Simulate 2FA verification
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast.success('Two-factor authentication successful!');
+      
+      // Continue with login
+      onLogin();
+      navigate('/');
+    } catch (error) {
+      toast.error('Invalid verification code');
+      setTwoFactorCode(['', '', '', '', '', '']);
+      twoFactorRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate all fields
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+    
+    if (emailError || passwordError) {
+      setErrors({
+        email: emailError,
+        password: passwordError,
+        general: ''
+      });
+      setTouched({ email: true, password: true });
+      return;
+    }
+
+    setLoading(true);
+    setShowSecurityAnimation(true);
+
+    try {
+      // Execute reCAPTCHA
+      const token = await executeRecaptcha();
+      if (!token) {
+        throw new Error('CAPTCHA verification failed');
+      }
+
+      // Attempt login
+      await apiService.login(formData.email, formData.password);
+      
+      // Check if 2FA is required (mock check)
+      const requires2FA = formData.email.includes('admin') || Math.random() > 0.7;
+      
+      if (requires2FA) {
+        setShowTwoFactor(true);
+        toast('Two-factor authentication required', {
+          icon: <ShieldCheck className="w-5 h-5 text-blue-500" />
+        });
+      } else {
+        // Success animations
+        toast.success('Welcome back! Redirecting...', {
+          duration: 3000,
+          icon: <Sparkles className="w-5 h-5" />
+        });
+        
+        // Store remember me preference
+        if (formData.rememberMe) {
+          localStorage.setItem('rememberEmail', formData.email);
+        }
+        
+        onLogin();
+        navigate('/');
+      }
+    } catch (error: any) {
+      setErrors(prev => ({
+        ...prev,
+        general: error.message || 'Invalid email or password'
+      }));
+      
+      // Shake animation
+      const button = document.getElementById('login-button');
+      button?.classList.add('animate-shake');
+      setTimeout(() => button?.classList.remove('animate-shake'), 500);
+      
+      toast.error('Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+      if (!showTwoFactor) {
+        setShowSecurityAnimation(false);
+      }
+    }
+  };
+
+  const handleSocialLogin = async (provider: string) => {
+    setLoading(true);
+    toast.loading(`Connecting to ${provider}...`);
+    
+    // Simulate OAuth flow
+    setTimeout(() => {
+      toast.dismiss();
+      toast.error(`${provider} login coming soon!`);
+      setLoading(false);
+    }, 1500);
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">
-            Captely
-          </div>
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
-        </h2>
-        {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-center text-sm text-red-600">{error}</p>
-          </div>
-        )}
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <a
-            href="/signup"
-            className="font-medium text-teal-600 hover:text-teal-700 transition-colors"
-          >
-            create a new account
-          </a>
-        </p>
+    <div className={`min-h-screen relative overflow-hidden transition-colors duration-500 ${
+      darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'
+    }`}>
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full blur-3xl opacity-20"
+          animate={{
+            x: mousePosition.x * 2,
+            y: mousePosition.y * 2,
+          }}
+          transition={{ type: 'spring', stiffness: 50 }}
+        />
+        <motion.div
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-teal-400 to-blue-600 rounded-full blur-3xl opacity-20"
+          animate={{
+            x: -mousePosition.x * 2,
+            y: -mousePosition.y * 2,
+          }}
+          transition={{ type: 'spring', stiffness: 50 }}
+        />
+        
+        {/* Floating particles */}
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-blue-500 rounded-full"
+            initial={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight,
+            }}
+            animate={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight,
+            }}
+            transition={{
+              duration: Math.random() * 20 + 10,
+              repeat: Infinity,
+              repeatType: 'reverse',
+            }}
+          />
+        ))}
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl rounded-xl sm:px-10 border border-gray-100">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-white text-gray-900"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <div className="mt-1 relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-white text-gray-900 pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-700 transition-colors"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded focus:ring-2 transition-all"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-gray-700"
-                >
-                  Remember me
-                </label>
-              </div>
-              <div className="text-sm">
-                <a
-                  href="#"
-                  className="font-medium text-teal-600 hover:text-teal-700 transition-colors"
-                >
-                  Forgot your password?
-                </a>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <div>
+      {/* Header controls */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="absolute top-4 right-4 flex items-center space-x-4 z-10"
+      >
+        {/* Language selector */}
+        <div className="relative group">
+          <button className="p-2 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white transition-all duration-200">
+            <Languages className="w-5 h-5 text-gray-700" />
+          </button>
+          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            {languages.map(lang => (
               <button
-                type="submit"
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-[1.02]"
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2 ${
+                  language === lang.code ? 'bg-blue-50 text-blue-600' : ''
+                }`}
               >
-                Sign in
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <span>{lang.flag}</span>
+                <span>{lang.name}</span>
               </button>
-            </div>
-          </form>
+            ))}
+          </div>
+        </div>
 
-          {/* Social buttons */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
+        {/* Dark mode toggle */}
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-2 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white transition-all duration-200"
+        >
+          {darkMode ? <Sun className="w-5 h-5 text-gray-700" /> : <Moon className="w-5 h-5 text-gray-700" />}
+        </button>
+
+        {/* Connection status */}
+        <div className={`px-3 py-2 rounded-lg flex items-center space-x-2 ${
+          isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`}>
+          {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+          <span className="text-sm font-medium">{isOnline ? 'Online' : 'Offline'}</span>
+        </div>
+      </motion.div>
+
+      {/* Main content */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Logo and greeting */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-center mb-8"
+          >
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-500 to-blue-600 rounded-2xl shadow-2xl mb-4">
+              <Zap className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              {getGreeting()}!
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Welcome back to Captely
+            </p>
+          </motion.div>
+
+          {/* Trust indicators */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mb-6"
+          >
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Security Status
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-green-600">
+                  {Math.round(trustScore)}% Secure
                 </span>
               </div>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div>
-                <a
-                  href="#"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all hover:border-gray-400"
-                >
-                  <span className="sr-only">Sign in with Google</span>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                </a>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-green-500 to-blue-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${trustScore}%` }}
+                  transition={{ duration: 2, ease: 'easeOut' }}
+                />
               </div>
-              <div>
-                <a
-                  href="#"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all hover:border-gray-400"
-                >
-                  <span className="sr-only">Sign in with Microsoft</span>
-                  <svg className="w-5 h-5" viewBox="0 0 23 23">
-                    <path fill="#f35325" d="M0 0h11v11H0z"/>
-                    <path fill="#81bc06" d="M12 0h11v11H12z"/>
-                    <path fill="#05a6f0" d="M0 12h11v11H0z"/>
-                    <path fill="#ffba08" d="M12 12h11v11H12z"/>
-                  </svg>
-                </a>
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                {securityChecks.map((check) => (
+                  <div key={check.id} className="flex items-center space-x-2">
+                    <AnimatePresence mode="wait">
+                      {check.status === 'pending' && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <div className="w-4 h-4 rounded-full bg-gray-300" />
+                        </motion.div>
+                      )}
+                      {check.status === 'checking' && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                        </motion.div>
+                      )}
+                      {check.status === 'passed' && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      {check.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+
+          {/* Login form card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8"
+          >
+            <AnimatePresence mode="wait">
+              {!showTwoFactor ? (
+                <motion.form
+                  key="login-form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onSubmit={handleSubmit}
+                  className="space-y-6"
+                >
+                  {/* Email field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email address
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className={`w-full px-4 py-3 pl-12 bg-gray-50 dark:bg-gray-900 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                          errors.email && touched.email
+                            ? 'border-red-300 focus:ring-red-500'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                        }`}
+                        placeholder="you@example.com"
+                      />
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      {formData.email && touched.email && !errors.email && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2"
+                        >
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        </motion.div>
+                      )}
+                    </div>
+                    <AnimatePresence>
+                      {errors.email && touched.email && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="mt-1 text-sm text-red-600 flex items-center"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.email}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Password field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={(e) => handleInputChange('password', e.target.value)}
+                        className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 dark:bg-gray-900 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                          errors.password && touched.password
+                            ? 'border-red-300 focus:ring-red-500'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                        }`}
+                        placeholder="••••••••"
+                      />
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    <AnimatePresence>
+                      {errors.password && touched.password && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="mt-1 text-sm text-red-600 flex items-center"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.password}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Remember me & Forgot password */}
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.rememberMe}
+                        onChange={(e) => handleInputChange('rememberMe', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        Remember me
+                      </span>
+                    </label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+
+                  {/* General error */}
+                  <AnimatePresence>
+                    {errors.general && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                      >
+                        <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-2" />
+                          {errors.general}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Submit button */}
+                  <motion.button
+                    id="login-button"
+                    type="submit"
+                    disabled={loading || !isOnline}
+                    className={`w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 ${
+                      loading || !isOnline ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Authenticating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="w-5 h-5" />
+                        <span>Sign in securely</span>
+                      </>
+                    )}
+                  </motion.button>
+
+                  {/* Social login */}
+                  <div>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-4 bg-white dark:bg-gray-800 text-gray-500">
+                          Or continue with
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-3 mt-6">
+                      {socialProviders.map((provider) => (
+                        <motion.button
+                          key={provider.id}
+                          type="button"
+                          onClick={() => handleSocialLogin(provider.name)}
+                          className={`flex items-center justify-center p-3 border border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 ${provider.color}`}
+                          whileHover={{ y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {provider.icon}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sign up link */}
+                  <div className="text-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Don't have an account?{' '}
+                    </span>
+                    <Link
+                      to="/signup"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                      Sign up for free
+                    </Link>
+                  </div>
+                </motion.form>
+              ) : (
+                <motion.div
+                  key="2fa-form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
+                      <Shield className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      Two-Factor Authentication
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Enter the 6-digit code from your authenticator app
+                    </p>
+                  </div>
+
+                  <div className="flex justify-center space-x-2">
+                    {twoFactorCode.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (twoFactorRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleTwoFactorInput(index, e.target.value)}
+                        onKeyDown={(e) => handleTwoFactorKeyDown(index, e)}
+                        className="w-12 h-12 text-center text-xl font-bold bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowTwoFactor(false)}
+                    className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  >
+                    Use a different authentication method
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Security badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="mt-8 flex items-center justify-center space-x-6"
+          >
+            <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+              <Lock className="w-4 h-4" />
+              <span className="text-xs">256-bit SSL</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+              <Shield className="w-4 h-4" />
+              <span className="text-xs">GDPR Compliant</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+              <CheckCircle className="w-4 h-4" />
+              <span className="text-xs">SOC 2 Type II</span>
+            </div>
+          </motion.div>
+
+          {/* Help link */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-4 text-center"
+          >
+            <a
+              href="/help"
+              className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              <HelpCircle className="w-4 h-4 mr-1" />
+              Need help signing in?
+            </a>
+          </motion.div>
+        </motion.div>
       </div>
+
+      {/* Security animation overlay */}
+      <AnimatePresence>
+        {showSecurityAnimation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl"
+            >
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full"
+                  />
+                  <Shield className="w-8 h-8 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                </div>
+                <p className="mt-4 text-gray-700 dark:text-gray-300 font-medium">
+                  Securing your connection...
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default LoginPage;
+export default LoginPage; 

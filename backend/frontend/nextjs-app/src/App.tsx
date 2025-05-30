@@ -18,6 +18,7 @@ import SettingsPage from './pages/Settings';
 import BillingPage from './pages/Billing';
 import LoginPage from './pages/Login';
 import SignupPage from './pages/Signup';
+import ForgotPasswordPage from './pages/ForgotPassword';
 import NotFoundPage from './pages/NotFound';
 
 // CRM Pages - We'll create placeholder components for now
@@ -71,6 +72,7 @@ function App() {
               element={<LoginPage onLogin={handleLogin} />}
             />
             <Route path="/signup" element={<SignupPage onLogin={handleLogin} />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </>
         )}
@@ -108,6 +110,7 @@ function App() {
             </Route>
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/signup" element={<Navigate to="/" replace />} />
+            <Route path="/forgot-password" element={<Navigate to="/" replace />} />
           </>
         )}
       </Routes>
