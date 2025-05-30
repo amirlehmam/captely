@@ -98,7 +98,79 @@ const BillingPage: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [packages, setPackages] = useState<CurrentPlan[]>([]);
-  const [proPlans, setProPlans] = useState<any[]>([]);
+  
+  // All Pro Plan Options - Complete list from 1K to 50K
+  const proPlans: CurrentPlan[] = [
+    { id: 'pro-1k', name: 'Pro 1K', display_name: 'Pro 1K', plan_type: 'pro', credits_monthly: 1000, price_monthly: 38, price_annual: 364.8, features: [], is_active: false },
+    { id: 'pro-2k', name: 'Pro 2K', display_name: 'Pro 2K', plan_type: 'pro', credits_monthly: 2000, price_monthly: 76, price_annual: 729.6, features: [], is_active: false },
+    { id: 'pro-3k', name: 'Pro 3K', display_name: 'Pro 3K', plan_type: 'pro', credits_monthly: 3000, price_monthly: 113, price_annual: 1084.8, features: [], is_active: false },
+    { id: 'pro-5k', name: 'Pro 5K', display_name: 'Pro 5K', plan_type: 'pro', credits_monthly: 5000, price_monthly: 186, price_annual: 1785.6, features: [], popular: true, is_active: false },
+    { id: 'pro-10k', name: 'Pro 10K', display_name: 'Pro 10K', plan_type: 'pro', credits_monthly: 10000, price_monthly: 366, price_annual: 3513.6, features: [], is_active: false },
+    { id: 'pro-15k', name: 'Pro 15K', display_name: 'Pro 15K', plan_type: 'pro', credits_monthly: 15000, price_monthly: 542, price_annual: 5203.2, features: [], is_active: false },
+    { id: 'pro-20k', name: 'Pro 20K', display_name: 'Pro 20K', plan_type: 'pro', credits_monthly: 20000, price_monthly: 701, price_annual: 6729.6, features: [], is_active: false },
+    { id: 'pro-30k', name: 'Pro 30K', display_name: 'Pro 30K', plan_type: 'pro', credits_monthly: 30000, price_monthly: 1018, price_annual: 9772.8, features: [], is_active: false },
+    { id: 'pro-50k', name: 'Pro 50K', display_name: 'Pro 50K', plan_type: 'pro', credits_monthly: 50000, price_monthly: 1683, price_annual: 16156.8, features: [], is_active: false }
+  ];
+
+  // Main Plans (Starter, Pro showcase, Enterprise)
+  const mainPlans: CurrentPlan[] = [
+    {
+      id: 'starter',
+      name: 'Starter',
+      display_name: 'Starter',
+      plan_type: 'starter',
+      credits_monthly: 500,
+      price_monthly: 19,
+      price_annual: 182.4,
+      features: [
+        'Import CSV files',
+        'API enrichment',
+        'Chrome extension',
+        'Shared database access',
+        'Standard support',
+        'All platform features'
+      ],
+      is_active: false
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      display_name: 'Pro',
+      plan_type: 'pro',
+      credits_monthly: 5000,
+      price_monthly: 186,
+      price_annual: 1785.6,
+      popular: true,
+      features: [
+        'All Starter features',
+        'Modular credit volumes (1K - 50K)',
+        'Priority support',
+        'Advanced analytics',
+        'Bulk operations',
+        'Custom integrations'
+      ],
+      is_active: false
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise',
+      display_name: 'Enterprise',
+      plan_type: 'enterprise',
+      credits_monthly: 0,
+      price_monthly: 0,
+      price_annual: 0,
+      features: [
+        'All Pro features',
+        'Custom credit volumes (20K+)',
+        'SSO integration',
+        'Enhanced security',
+        'Dedicated support',
+        'Custom API endpoints',
+        'White-label options'
+      ],
+      is_active: false
+    }
+  ];
 
   const fetchBillingDashboard = async () => {
     try {
@@ -124,13 +196,6 @@ const BillingPage: React.FC = () => {
       
       const packagesData = await packagesResponse.json();
       setPackages(packagesData);
-
-      // Fetch pro plans specifically
-      const proPlansResponse = await fetch('http://localhost:8006/api/packages/pro-plans');
-      if (!proPlansResponse.ok) throw new Error('Failed to fetch pro plans');
-      
-      const proPlansData = await proPlansResponse.json();
-      setProPlans(proPlansData.plans || []);
     } catch (error) {
       console.error('Error fetching packages:', error);
     }
@@ -390,11 +455,6 @@ const BillingPage: React.FC = () => {
     );
   }
 
-  // Get main plans from packages
-  const mainPlans = packages.filter(pkg => 
-    ['starter', 'pro-5k', 'enterprise'].includes(pkg.id)
-  );
-
   return (
     <div className="max-w-7xl mx-auto bg-white min-h-screen">
       {/* Page Header */}
@@ -440,6 +500,50 @@ const BillingPage: React.FC = () => {
               )}
               Download Invoice
             </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Credit Consumption Info Box */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8"
+      >
+        <div className="flex items-start space-x-4">
+          <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Credit Consumption Logic</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-700 flex items-center">
+                  <Zap className="w-4 h-4 text-blue-500 mr-2" />
+                  <strong>1 email found = 1 credit</strong>
+                </p>
+                <p className="text-sm text-gray-700 flex items-center">
+                  <Zap className="w-4 h-4 text-purple-500 mr-2" />
+                  <strong>1 phone found = 10 credits</strong>
+                </p>
+                <p className="text-sm text-gray-700 flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                  No result = No charge
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-700 flex items-center">
+                  <Eye className="w-4 h-4 text-blue-500 mr-2" />
+                  Cached results still consume credits
+                </p>
+                <p className="text-sm text-gray-700 flex items-center">
+                  <Clock className="w-4 h-4 text-orange-500 mr-2" />
+                  Monthly: Credits expire after 3 months
+                </p>
+                <p className="text-sm text-gray-700 flex items-center">
+                  <Calendar className="w-4 h-4 text-green-500 mr-2" />
+                  Annual: Credits valid for 18 months
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -652,6 +756,12 @@ const BillingPage: React.FC = () => {
           className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8"
         >
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Credit Expiration Schedule</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            {subscription?.billing_cycle === 'annual' 
+              ? 'Annual plan: All credits allocated upfront, valid for 18 months'
+              : 'Monthly plan: Credits roll over for 3 months with FIFO usage (oldest credits used first)'
+            }
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {creditUsage.credits_by_month.map((month, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
