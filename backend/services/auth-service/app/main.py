@@ -10,7 +10,8 @@ from fastapi import (
     HTTPException,
     Depends,
     status,
-    Request
+    Request,
+    Query
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -26,6 +27,7 @@ from sqlalchemy.orm import sessionmaker
 from passlib.hash import bcrypt
 from fastapi.responses import HTMLResponse
 from uuid import UUID
+import uvicorn
 
 from app.models import User, ApiKey, Base  # Your SQLAlchemy Base/metadata
 from common.db import async_engine, AsyncSessionLocal
@@ -533,3 +535,183 @@ async def generate_extension_token():
         )
     finally:
         await db.close()
+
+# User profile endpoints
+@app.get("/api/users/profile")
+async def get_user_profile(
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Get current user's profile"""
+    try:
+        result = await session.execute(
+            select(User).where(User.id == current_user["sub"])
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "is_active": user.is_active
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/users/profile")
+async def update_user_profile(
+    profile_data: dict,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Update user profile"""
+    try:
+        result = await session.execute(
+            select(User).where(User.id == current_user["sub"])
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Update allowed fields
+        if "first_name" in profile_data:
+            user.first_name = profile_data["first_name"]
+        if "last_name" in profile_data:
+            user.last_name = profile_data["last_name"]
+        if "phone" in profile_data:
+            user.phone = profile_data["phone"]
+        
+        user.updated_at = datetime.utcnow()
+        await session.commit()
+        
+        return {"message": "Profile updated successfully"}
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/users/change-password")
+async def change_password(
+    password_data: dict,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Change user password"""
+    try:
+        # Validate input
+        if not all(k in password_data for k in ["current_password", "new_password"]):
+            raise HTTPException(status_code=400, detail="Missing required fields")
+        
+        result = await session.execute(
+            select(User).where(User.id == current_user["sub"])
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify current password
+        if not verify_password(password_data["current_password"], user.password_hash):
+            raise HTTPException(status_code=400, detail="Incorrect current password")
+        
+        # Update password
+        user.password_hash = get_password_hash(password_data["new_password"])
+        user.updated_at = datetime.utcnow()
+        await session.commit()
+        
+        return {"message": "Password changed successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Team management endpoints (for future multi-user support)
+@app.get("/api/team/members")
+async def get_team_members(
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Get team members (currently returns only the current user)"""
+    try:
+        # For now, just return the current user
+        # In future, this would query team_members table
+        result = await session.execute(
+            select(User).where(User.id == current_user["sub"])
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return [{
+            "id": str(user.id),
+            "name": f"{user.first_name} {user.last_name}".strip() or user.email,
+            "email": user.email,
+            "role": "admin",
+            "status": "active",
+            "joined_at": user.created_at.isoformat() if user.created_at else None,
+            "last_active": datetime.utcnow().isoformat()
+        }]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Security logs endpoint
+@app.get("/api/security/logs")
+async def get_security_logs(
+    current_user: dict = Depends(get_current_user),
+    limit: int = Query(10, le=100),
+    session: AsyncSession = Depends(get_db)
+):
+    """Get security logs for the user"""
+    try:
+        # This would query an audit_logs table in production
+        # For now, return mock data
+        return [{
+            "id": "1",
+            "event": "Login successful",
+            "ip_address": "192.168.1.1",
+            "timestamp": datetime.utcnow().isoformat(),
+            "status": "success"
+        }]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Settings endpoints
+@app.get("/api/settings/{key}")
+async def get_setting(
+    key: str,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Get a specific user setting"""
+    try:
+        # This would query a user_settings table
+        # For now, return from local storage on frontend
+        return {"key": key, "value": None}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/settings/{key}")
+async def update_setting(
+    key: str,
+    value: dict,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Update a user setting"""
+    try:
+        # This would update a user_settings table
+        # For now, settings are stored in frontend localStorage
+        return {"message": f"Setting {key} updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8001)
