@@ -131,8 +131,13 @@ class TokenOut(BaseModel):
 class UserOut(BaseModel):
     id: str
     email: EmailStr
+    first_name: str = None
+    last_name: str = None
+    company: str = None
+    phone: str = None
     credits: int
     created_at: datetime
+    is_active: bool = True
 
     @field_validator('id', mode='before')
     @classmethod
@@ -547,27 +552,21 @@ async def generate_extension_token():
 # User profile endpoints
 @app.get("/api/users/profile")
 async def get_user_profile(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
     """Get current user's profile"""
     try:
-        result = await session.execute(
-            select(User).where(User.id == current_user["sub"])
-        )
-        user = result.scalar_one_or_none()
-        
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
+        # current_user is already a User object from get_current_user
         return {
-            "id": str(user.id),
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "phone": user.phone,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "is_active": user.is_active
+            "id": str(current_user.id),
+            "email": current_user.email,
+            "first_name": current_user.first_name,
+            "last_name": current_user.last_name,
+            "phone": current_user.phone,
+            "company": current_user.company,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+            "is_active": current_user.is_active
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -575,28 +574,23 @@ async def get_user_profile(
 @app.put("/api/users/profile")
 async def update_user_profile(
     profile_data: dict,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
     """Update user profile"""
     try:
-        result = await session.execute(
-            select(User).where(User.id == current_user["sub"])
-        )
-        user = result.scalar_one_or_none()
-        
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Update allowed fields
+        # Update allowed fields directly on the current_user object
         if "first_name" in profile_data:
-            user.first_name = profile_data["first_name"]
+            current_user.first_name = profile_data["first_name"]
         if "last_name" in profile_data:
-            user.last_name = profile_data["last_name"]
+            current_user.last_name = profile_data["last_name"]
         if "phone" in profile_data:
-            user.phone = profile_data["phone"]
+            current_user.phone = profile_data["phone"]
+        if "company" in profile_data:
+            current_user.company = profile_data["company"]
         
-        user.updated_at = datetime.utcnow()
+        current_user.updated_at = datetime.utcnow()
+        session.add(current_user)
         await session.commit()
         
         return {"message": "Profile updated successfully"}
@@ -607,7 +601,7 @@ async def update_user_profile(
 @app.post("/api/users/change-password")
 async def change_password(
     password_data: dict,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
     """Change user password"""
@@ -616,21 +610,14 @@ async def change_password(
         if not all(k in password_data for k in ["current_password", "new_password"]):
             raise HTTPException(status_code=400, detail="Missing required fields")
         
-        result = await session.execute(
-            select(User).where(User.id == current_user["sub"])
-        )
-        user = result.scalar_one_or_none()
-        
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
         # Verify current password
-        if not verify_password(password_data["current_password"], user.password_hash):
+        if not verify_password(password_data["current_password"], current_user.password_hash):
             raise HTTPException(status_code=400, detail="Incorrect current password")
         
         # Update password
-        user.password_hash = get_password_hash(password_data["new_password"])
-        user.updated_at = datetime.utcnow()
+        current_user.password_hash = get_password_hash(password_data["new_password"])
+        current_user.updated_at = datetime.utcnow()
+        session.add(current_user)
         await session.commit()
         
         return {"message": "Password changed successfully"}
@@ -643,28 +630,19 @@ async def change_password(
 # Team management endpoints (for future multi-user support)
 @app.get("/api/team/members")
 async def get_team_members(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
     """Get team members (currently returns only the current user)"""
     try:
         # For now, just return the current user
-        # In future, this would query team_members table
-        result = await session.execute(
-            select(User).where(User.id == current_user["sub"])
-        )
-        user = result.scalar_one_or_none()
-        
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
         return [{
-            "id": str(user.id),
-            "name": f"{user.first_name} {user.last_name}".strip() or user.email,
-            "email": user.email,
+            "id": str(current_user.id),
+            "name": f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email,
+            "email": current_user.email,
             "role": "admin",
             "status": "active",
-            "joined_at": user.created_at.isoformat() if user.created_at else None,
+            "joined_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "last_active": datetime.utcnow().isoformat()
         }]
     except Exception as e:
@@ -673,7 +651,7 @@ async def get_team_members(
 # Security logs endpoint
 @app.get("/api/security/logs")
 async def get_security_logs(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     limit: int = Query(10, le=100),
     session: AsyncSession = Depends(get_db)
 ):
@@ -695,7 +673,7 @@ async def get_security_logs(
 @app.get("/api/settings/{key}")
 async def get_setting(
     key: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
     """Get a specific user setting"""
@@ -710,7 +688,7 @@ async def get_setting(
 async def update_setting(
     key: str,
     value: dict,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
     """Update a user setting"""
