@@ -43,6 +43,15 @@ interface CreditUsage {
     remaining: number;
     expires_at: string;
   }>;
+  email_hit_rate: number;
+  phone_hit_rate: number;
+  success_stats: {
+    total_enrichments: number;
+    successful_enrichments: number;
+    emails_found: number;
+    phones_found: number;
+    success_rate: number;
+  };
 }
 
 interface EnrichmentHistoryItem {
@@ -174,13 +183,12 @@ const BillingPage: React.FC = () => {
 
   const fetchBillingDashboard = async () => {
     try {
-      const response = await fetch('http://localhost:8006/api/billing/dashboard');
+      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/api/billing/dashboard`);
       if (!response.ok) throw new Error('Failed to fetch billing dashboard');
       
       const data = await response.json();
       setCurrentPlan(data.current_plan);
       setSubscription(data.subscription);
-      setCreditUsage(data.credit_usage);
       setPaymentMethods(data.payment_methods || []);
       setTransactions(data.recent_transactions || []);
     } catch (error) {
@@ -191,7 +199,7 @@ const BillingPage: React.FC = () => {
   const fetchPackages = async () => {
     try {
       // Fetch all packages
-      const packagesResponse = await fetch('http://localhost:8006/api/packages');
+      const packagesResponse = await fetch(`${import.meta.env.VITE_BILLING_URL}/api/packages`);
       if (!packagesResponse.ok) throw new Error('Failed to fetch packages');
       
       const packagesData = await packagesResponse.json();
@@ -201,13 +209,54 @@ const BillingPage: React.FC = () => {
     }
   };
 
-  const fetchEnrichmentHistory = async () => {
+  const fetchCreditUsage = async () => {
     try {
-      const response = await fetch('http://localhost:8006/api/enrichment/history');
-      if (!response.ok) throw new Error('Failed to fetch enrichment history');
+      const response = await fetch(`${import.meta.env.VITE_IMPORT_URL}/api/user/credits`);
+      if (!response.ok) throw new Error('Failed to fetch credit usage');
       
       const data = await response.json();
-      setEnrichmentHistory(data);
+      
+      // Update credit usage data with real values
+      setCreditUsage({
+        total_credits: data.limit_monthly || 5000,
+        used_credits: data.used_this_month || 0,  // Use actual used credits, not calculated
+        remaining_credits: data.balance || 0,     // Use actual balance from API
+        expired_credits: 0,
+        credits_by_month: [
+          {
+            month: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            allocated: data.limit_monthly || 5000,
+            remaining: data.balance || 0,        // Use actual balance
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ],
+        email_hit_rate: data.statistics?.email_hit_rate || 0,
+        phone_hit_rate: data.statistics?.phone_hit_rate || 0,  
+        success_stats: {
+          total_enrichments: data.statistics?.total_enriched || 0,
+          successful_enrichments: data.statistics?.total_enriched || 0,
+          emails_found: data.statistics?.emails_found || 0,
+          phones_found: data.statistics?.phones_found || 0,
+          success_rate: data.statistics?.success_rate || 0
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching credit usage:', error);
+    }
+  };
+
+  const fetchEnrichmentHistory = async () => {
+    try {
+      // Fetch real enrichment history from analytics service
+      const response = await fetch(`${import.meta.env.VITE_ANALYTICS_URL}/api/analytics/enrichment-history`);
+      if (!response.ok) {
+        // Fallback to mock data if analytics service isn't available
+        console.warn('Analytics service unavailable, using enrichment data from billing service');
+        return;
+      }
+      
+      const data = await response.json();
+      setEnrichmentHistory(data.enrichments || []);
     } catch (error) {
       console.error('Error fetching enrichment history:', error);
     }
@@ -215,7 +264,7 @@ const BillingPage: React.FC = () => {
 
   const fetchBillingHistory = async () => {
     try {
-      const response = await fetch('http://localhost:8006/api/billing/history');
+      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/api/billing/history`);
       if (!response.ok) throw new Error('Failed to fetch billing history');
       
       const data = await response.json();
@@ -231,6 +280,7 @@ const BillingPage: React.FC = () => {
       await Promise.all([
         fetchBillingDashboard(),
         fetchPackages(),
+        fetchCreditUsage(),
         fetchEnrichmentHistory(),
         fetchBillingHistory()
       ]);
@@ -638,32 +688,58 @@ const BillingPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Credits Used</span>
-                <span className="text-lg font-bold text-gray-900">
-                  {creditUsage?.used_credits?.toLocaleString()} / {creditUsage?.total_credits?.toLocaleString()}
-                </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-900">
+                  {creditUsage ? Math.round((creditUsage.used_credits / creditUsage.total_credits * 100) || 0) : 0}%
+                </div>
+                <div className="text-sm text-gray-500">Credits Used</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {creditUsage ? `${creditUsage.used_credits.toLocaleString()} / ${creditUsage.total_credits.toLocaleString()}` : '0 / 0'}
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${((creditUsage?.used_credits || 0) / (creditUsage?.total_credits || 1)) * 100}%` }}
-                />
+              
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">
+                  {creditUsage ? creditUsage.email_hit_rate : 0}%
+                </div>
+                <div className="text-sm text-gray-500">Email Hit Rate</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {creditUsage ? creditUsage.success_stats.emails_found : 0} emails found
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {Math.round(((creditUsage?.used_credits || 0) / (creditUsage?.total_credits || 1)) * 100)}% used
-              </p>
+              
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">
+                  {creditUsage ? creditUsage.phone_hit_rate : 0}%
+                </div>
+                <div className="text-sm text-gray-500">Phone Hit Rate</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {creditUsage ? creditUsage.success_stats.phones_found : 0} phones found
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{creditUsage?.remaining_credits?.toLocaleString()}</p>
-                <p className="text-xs text-gray-600">Remaining</p>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-2xl font-semibold text-gray-900">
+                  {creditUsage ? creditUsage.total_credits.toLocaleString() : '0'}
+                </div>
+                <div className="text-sm text-gray-600">TOTAL</div>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{creditUsage?.expired_credits?.toLocaleString()}</p>
-                <p className="text-xs text-gray-600">Expired</p>
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="text-2xl font-semibold text-blue-600">
+                  {creditUsage ? creditUsage.used_credits.toLocaleString() : '0'}
+                </div>
+                <div className="text-sm text-gray-600">USED</div>
+              </div>
+              
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="text-2xl font-semibold text-green-600">
+                  {creditUsage ? creditUsage.remaining_credits.toLocaleString() : '0'}
+                </div>
+                <div className="text-sm text-gray-600">LEFT</div>
               </div>
             </div>
           </div>
@@ -904,7 +980,14 @@ const BillingPage: React.FC = () => {
                 </ul>
 
                 <button
-                  onClick={() => handlePlanUpgrade(plan.id, billingType)}
+                  onClick={() => {
+                    if (plan.plan_type === 'pro') {
+                      // Scroll to pro plans section
+                      document.getElementById('pro-plans')?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      handlePlanUpgrade(plan.id, billingType);
+                    }
+                  }}
                   disabled={isCurrentPlan || loading}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
                     isCurrentPlan
@@ -914,7 +997,7 @@ const BillingPage: React.FC = () => {
                       : 'bg-gray-900 hover:bg-gray-800 text-white'
                   }`}
                 >
-                  {isCurrentPlan ? 'Current Plan' : plan.plan_type === 'enterprise' ? 'Contact Sales' : 'Upgrade'}
+                  {isCurrentPlan ? 'Current Plan' : plan.plan_type === 'enterprise' ? 'Contact Sales' : plan.plan_type === 'pro' ? 'View Options' : 'Select Plan'}
                 </button>
               </div>
             </motion.div>
@@ -925,6 +1008,7 @@ const BillingPage: React.FC = () => {
       {/* Pro Plans Expansion */}
       {proPlans.length > 0 && (
         <motion.div
+          id="pro-plans"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8"

@@ -1,10 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Mail, Phone, Clock, TrendingUp, AlertCircle } from 'lucide-react';
-import { useDashboardStats, useUserProfile } from '../../hooks/useApi';
+
+interface StatsData {
+  total_contacts: number;
+  email_hit_rate: number;
+  phone_hit_rate: number;
+  success_rate: number;
+  avg_confidence: number;
+  emails_found: number;
+  phones_found: number;
+  processing_time_avg: number;
+  credits_used: number;
+}
 
 const EnrichmentStats: React.FC = () => {
-  const { profile } = useUserProfile();
-  const { stats, loading, error } = useDashboardStats(profile?.id || '');
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_ANALYTICS_URL}/api/analytics/dashboard`);
+        if (!response.ok) throw new Error('Failed to fetch stats');
+        
+        const data = await response.json();
+        setStats({
+          total_contacts: data.total_contacts || 0,
+          email_hit_rate: data.email_hit_rate || 0,
+          phone_hit_rate: data.phone_hit_rate || 0,
+          success_rate: data.success_rate || 0,
+          avg_confidence: data.avg_confidence || 0,
+          emails_found: data.emails_found || 0,
+          phones_found: data.phones_found || 0,
+          processing_time_avg: data.processing_time_avg || 0,
+          credits_used: data.credits_used || 0
+        });
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load stats');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchStats, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) {
     return (
@@ -39,14 +83,14 @@ const EnrichmentStats: React.FC = () => {
     );
   }
 
-  if (!stats || !stats.overview) {
+  if (!stats) {
     return null;
   }
 
   const statsData = [
     {
       name: 'Total Contacts',
-      value: (stats.overview.total_contacts || 0).toLocaleString(),
+      value: stats.total_contacts.toLocaleString(),
       change: '+12.5%', // Could calculate from historical data
       trend: 'up' as const,
       icon: <Users className="h-6 w-6 text-blue-600" />,
@@ -56,7 +100,7 @@ const EnrichmentStats: React.FC = () => {
     },
     {
       name: 'Email Hit Rate',
-      value: `${Math.round(stats.overview.success_rate || 0)}%`,
+      value: `${Math.round(stats.email_hit_rate)}%`,
       change: '+3.2%', // Could calculate from historical data
       trend: 'up' as const,
       icon: <Mail className="h-6 w-6 text-green-600" />,
@@ -66,7 +110,7 @@ const EnrichmentStats: React.FC = () => {
     },
     {
       name: 'Phone Hit Rate',
-      value: `${Math.round(((stats.overview.phones_found || 0) / (stats.overview.total_contacts || 1)) * 100)}%`,
+      value: `${Math.round(stats.phone_hit_rate)}%`,
       change: '+5.1%', // Could calculate from historical data
       trend: 'up' as const,
       icon: <Phone className="h-6 w-6 text-purple-600" />,
@@ -76,8 +120,8 @@ const EnrichmentStats: React.FC = () => {
     },
     {
       name: 'Credits Remaining',
-      value: (stats.overview.credits_remaining || 0).toLocaleString(),
-      change: `-${stats.overview.credits_used || 0}`,
+      value: (stats.credits_used).toLocaleString(),
+      change: `-${stats.credits_used}`,
       trend: 'down' as const,
       icon: <Clock className="h-6 w-6 text-orange-600" />,
       bgColor: 'from-orange-50 to-orange-100',

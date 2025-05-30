@@ -263,6 +263,49 @@ async def update_job_status(session: AsyncSession, job_id: str, status: str):
     await session.execute(stmt)
     await session.commit()
 
+async def consume_credits(session: AsyncSession, user_id: str, contact_id: int, email_found: bool, phone_found: bool, provider: str):
+    """Consume credits based on successful enrichment results."""
+    try:
+        credits_used = 0
+        
+        # Calculate credits based on results
+        if email_found:
+            credits_used += 1  # 1 credit for email
+        if phone_found:
+            credits_used += 10  # 10 credits for phone
+        
+        if credits_used > 0:
+            # Update user credits
+            user_update = text("UPDATE users SET credits = credits - :credits WHERE id = :user_id")
+            await session.execute(user_update, {"credits": credits_used, "user_id": user_id})
+            
+            # Log the credit consumption
+            credit_log = text("""
+                INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at) 
+                VALUES (:user_id, :operation_type, :cost, :change, :reason, CURRENT_TIMESTAMP)
+            """)
+            await session.execute(credit_log, {
+                "user_id": user_id,
+                "operation_type": "enrichment",
+                "cost": credits_used,
+                "change": -credits_used,
+                "reason": f"Enrichment via {provider} - Email: {email_found}, Phone: {phone_found}"
+            })
+            
+            # Update contact with credits consumed
+            contact_update = text("UPDATE contacts SET credits_consumed = :credits WHERE id = :contact_id")
+            await session.execute(contact_update, {"credits": credits_used, "contact_id": contact_id})
+            
+            await session.commit()
+            logger.info(f"Consumed {credits_used} credits for contact {contact_id} via {provider}")
+            
+        return credits_used
+        
+    except Exception as e:
+        logger.error(f"Error consuming credits: {e}")
+        await session.rollback()
+        return 0
+
 # ----- API Service Integration ----- #
 
 @retry_with_backoff(max_retries=2)
@@ -939,6 +982,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             
             async def update_contact_async():
                 async with AsyncSessionLocal() as session:
+                    # Update the contact
                     await update_contact(
                         session, 
                         contact_id, 
@@ -946,10 +990,22 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                         phone=best_result.get('phone'),
                         enrichment_data=enrichment_data
                     )
+                    
+                    # Consume credits based on results
+                    credits_consumed = await consume_credits(
+                        session,
+                        user_id,
+                        contact_id,
+                        email_found=bool(best_result.get('email')),
+                        phone_found=bool(best_result.get('phone')),
+                        provider=best_result.get('source')
+                    )
+                    
+                    return credits_consumed
             
-            run_async(update_contact_async())
+            credits_used = run_async(update_contact_async())
             
-            logger.info(f"✅ Contact enriched successfully! Email: {best_result.get('email')}, Provider: {best_result.get('source')}, Confidence: {best_confidence:.2%}")
+            logger.info(f"✅ Contact enriched successfully! Email: {best_result.get('email')}, Provider: {best_result.get('source')}, Confidence: {best_confidence:.2%}, Credits Used: {credits_used}")
         else:
             # No good results, mark as failed
             async def update_failed_async():

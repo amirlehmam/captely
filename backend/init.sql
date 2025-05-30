@@ -6,6 +6,11 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    company VARCHAR(255),
+    phone VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
     credits INTEGER DEFAULT 100,
     total_spent FLOAT DEFAULT 0,
     daily_limit INTEGER DEFAULT NULL,
@@ -283,6 +288,11 @@ INSERT INTO users (
     id, 
     email, 
     password_hash,
+    first_name,
+    last_name,
+    company,
+    phone,
+    is_active,
     created_at, 
     updated_at, 
     credits,
@@ -293,6 +303,11 @@ INSERT INTO users (
     '00000000-0000-0000-0002-000000000001',
     'test@captely.com',
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyNiGGS6oKgo7K',
+    'Test',
+    'User',
+    'Test Company',
+    '+1234567890',
+    true,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP,
     20000,
@@ -300,6 +315,11 @@ INSERT INTO users (
     'Test Company',
     '00000000-0000-0000-0003-000000000001'
 ) ON CONFLICT (email) DO UPDATE SET
+    first_name = 'Test',
+    last_name = 'User',
+    company = 'Test Company',
+    phone = '+1234567890',
+    is_active = true,
     credits = 20000,
     onboarding_completed = true,
     current_subscription_id = '00000000-0000-0000-0003-000000000001';
@@ -337,11 +357,15 @@ WHERE id = '00000000-0000-0000-0002-000000000001';
 -- Log initial credits
 INSERT INTO credit_logs (
     user_id,
+    operation_type,
+    cost,
     change,
     reason,
     created_at
 ) VALUES (
     '00000000-0000-0000-0002-000000000001',
+    'topup',
+    0,
     20000,
     'Initial enterprise package credits',
     CURRENT_TIMESTAMP

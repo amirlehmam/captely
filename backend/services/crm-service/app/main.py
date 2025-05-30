@@ -4,15 +4,18 @@ import uuid
 import enum
 from datetime import datetime
 from contextlib import asynccontextmanager
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, String, DateTime, Text, Enum, Boolean, Integer, ForeignKey, select, update
+from sqlalchemy import Column, String, DateTime, Text, Enum, Boolean, Integer, ForeignKey, select, update, text, func, and_, or_
 from sqlalchemy.dialects.postgresql import UUID
 from pydantic import BaseModel
+from common.config import get_settings
+from common.db import get_session
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgrespw@captely-db:5432/postgres")
@@ -223,8 +226,8 @@ async def lifespan(app: FastAPI):
 
 # FastAPI app
 app = FastAPI(
-    title="CAPTELY CRM Service",
-    description="CRM service for managing contacts, activities, and campaigns",
+    title="Captely CRM Service",
+    description="Contact relationship management and enriched contact data",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -244,41 +247,277 @@ async def health_check():
     return {"status": "healthy", "service": "crm-service"}
 
 # Contact endpoints
-@app.get("/api/contacts", response_model=List[ContactResponse])
+@app.get("/api/contacts")
 async def get_contacts(
-    limit: int = Query(50, le=100),
-    skip: int = Query(0, ge=0),
-    session: AsyncSession = Depends(get_db_session)
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=1000),
+    search: Optional[str] = Query(None),
+    enriched_only: bool = Query(False),
+    job_id: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session)
 ):
-    """Get all contacts with pagination"""
+    """Get paginated list of enriched contacts"""
     try:
-        result = await session.execute(
-            select(CrmContact)
-            .order_by(CrmContact.created_at.desc())
-            .limit(limit)
-            .offset(skip)
-        )
-        contacts = result.scalars().all()
+        offset = (page - 1) * limit
         
-        return [
-            ContactResponse(
-                id=str(contact.id),
-                first_name=contact.first_name,
-                last_name=contact.last_name,
-                email=contact.email,
-                phone=contact.phone,
-                company=contact.company,
-                position=contact.position,
-                status=contact.status,
-                lead_score=contact.lead_score,
-                tags=contact.tags.split(',') if contact.tags else [],
-                last_contacted_at=contact.last_contacted_at,
-                created_at=contact.created_at
-            )
-            for contact in contacts
-        ]
+        # Build base query
+        where_conditions = []
+        params = {}
+        
+        if search:
+            where_conditions.append("""
+                (LOWER(first_name) LIKE LOWER(:search) OR 
+                 LOWER(last_name) LIKE LOWER(:search) OR 
+                 LOWER(company) LIKE LOWER(:search) OR
+                 LOWER(email) LIKE LOWER(:search))
+            """)
+            params["search"] = f"%{search}%"
+        
+        if enriched_only:
+            where_conditions.append("enriched = true")
+        
+        if job_id:
+            where_conditions.append("job_id = :job_id")
+            params["job_id"] = job_id
+        
+        where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+        
+        # Get total count
+        count_query = f"""
+            SELECT COUNT(*) 
+            FROM contacts 
+            {where_clause}
+        """
+        count_result = await session.execute(text(count_query), params)
+        total = count_result.scalar()
+        
+        # Get contacts
+        contacts_query = f"""
+            SELECT 
+                id, first_name, last_name, company, position, email, phone,
+                linkedin_url, location, industry, enriched, enrichment_status,
+                enrichment_provider, enrichment_score, credits_consumed,
+                email_verified, phone_verified, created_at, updated_at, job_id
+            FROM contacts 
+            {where_clause}
+            ORDER BY created_at DESC
+            LIMIT :limit OFFSET :offset
+        """
+        params.update({"limit": limit, "offset": offset})
+        
+        contacts_result = await session.execute(text(contacts_query), params)
+        contacts = []
+        
+        for row in contacts_result.fetchall():
+            contact = dict(row._mapping)
+            # Format dates
+            if contact['created_at']:
+                contact['created_at'] = contact['created_at'].isoformat()
+            if contact['updated_at']:
+                contact['updated_at'] = contact['updated_at'].isoformat()
+            contacts.append(contact)
+        
+        return JSONResponse(content={
+            "contacts": contacts,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "pages": (total + limit - 1) // limit,
+                "has_next": offset + limit < total,
+                "has_prev": page > 1
+            }
+        })
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch contacts: {str(e)}")
+        print(f"Error fetching contacts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/contacts/{contact_id}")
+async def get_contact(contact_id: int, session: AsyncSession = Depends(get_session)):
+    """Get detailed contact information"""
+    try:
+        query = """
+            SELECT 
+                id, first_name, last_name, company, position, email, phone,
+                linkedin_url, location, industry, enriched, enrichment_status,
+                enrichment_provider, enrichment_score, credits_consumed,
+                email_verified, phone_verified, created_at, updated_at, job_id
+            FROM contacts 
+            WHERE id = :contact_id
+        """
+        result = await session.execute(text(query), {"contact_id": contact_id})
+        contact = result.first()
+        
+        if not contact:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        
+        contact_data = dict(contact._mapping)
+        if contact_data['created_at']:
+            contact_data['created_at'] = contact_data['created_at'].isoformat()
+        if contact_data['updated_at']:
+            contact_data['updated_at'] = contact_data['updated_at'].isoformat()
+        
+        return JSONResponse(content=contact_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching contact: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/contacts/stats/enrichment")
+async def get_enrichment_stats(session: AsyncSession = Depends(get_session)):
+    """Get enrichment statistics across all contacts"""
+    try:
+        stats_query = """
+            SELECT 
+                COUNT(*) as total_contacts,
+                COUNT(CASE WHEN enriched = true THEN 1 END) as enriched_contacts,
+                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
+                COUNT(CASE WHEN email_verified = true THEN 1 END) as emails_verified,
+                COUNT(CASE WHEN phone_verified = true THEN 1 END) as phones_verified,
+                SUM(credits_consumed) as total_credits_used,
+                AVG(CASE WHEN enrichment_score IS NOT NULL THEN enrichment_score END) as avg_confidence
+            FROM contacts
+        """
+        
+        result = await session.execute(text(stats_query))
+        stats = result.first()
+        
+        # Provider breakdown
+        provider_query = """
+            SELECT 
+                enrichment_provider,
+                COUNT(*) as contacts,
+                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
+                AVG(enrichment_score) as avg_confidence
+            FROM contacts 
+            WHERE enrichment_provider IS NOT NULL
+            GROUP BY enrichment_provider
+            ORDER BY contacts DESC
+        """
+        
+        provider_result = await session.execute(text(provider_query))
+        providers = []
+        
+        for row in provider_result.fetchall():
+            provider_data = dict(row._mapping)
+            provider_data['success_rate'] = ((provider_data['emails_found'] + provider_data['phones_found']) / provider_data['contacts'] * 100) if provider_data['contacts'] > 0 else 0
+            provider_data['avg_confidence'] = round(float(provider_data['avg_confidence'] or 0), 2)
+            providers.append(provider_data)
+        
+        total_contacts = stats.total_contacts or 0
+        enriched_contacts = stats.enriched_contacts or 0
+        emails_found = stats.emails_found or 0
+        phones_found = stats.phones_found or 0
+        
+        return JSONResponse(content={
+            "overview": {
+                "total_contacts": total_contacts,
+                "enriched_contacts": enriched_contacts,
+                "enrichment_rate": (enriched_contacts / total_contacts * 100) if total_contacts > 0 else 0,
+                "emails_found": emails_found,
+                "phones_found": phones_found,
+                "email_hit_rate": (emails_found / total_contacts * 100) if total_contacts > 0 else 0,
+                "phone_hit_rate": (phones_found / total_contacts * 100) if total_contacts > 0 else 0,
+                "emails_verified": stats.emails_verified or 0,
+                "phones_verified": stats.phones_verified or 0,
+                "total_credits_used": stats.total_credits_used or 0,
+                "avg_confidence": round(float(stats.avg_confidence or 0), 2)
+            },
+            "providers": providers
+        })
+        
+    except Exception as e:
+        print(f"Error fetching enrichment stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/contacts/recent")
+async def get_recent_contacts(
+    limit: int = Query(10, ge=1, le=50),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get recently enriched contacts"""
+    try:
+        query = """
+            SELECT 
+                id, first_name, last_name, company, position, email, phone,
+                enrichment_provider, enrichment_score, credits_consumed, created_at
+            FROM contacts 
+            WHERE enriched = true
+            ORDER BY created_at DESC
+            LIMIT :limit
+        """
+        
+        result = await session.execute(text(query), {"limit": limit})
+        contacts = []
+        
+        for row in result.fetchall():
+            contact = dict(row._mapping)
+            if contact['created_at']:
+                contact['created_at'] = contact['created_at'].isoformat()
+            contacts.append(contact)
+        
+        return JSONResponse(content={"contacts": contacts})
+        
+    except Exception as e:
+        print(f"Error fetching recent contacts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/contacts/export/{job_id}")
+async def export_contacts(job_id: str, session: AsyncSession = Depends(get_session)):
+    """Export enriched contacts for a specific job"""
+    try:
+        query = """
+            SELECT 
+                first_name, last_name, company, position, email, phone,
+                linkedin_url, location, industry, enrichment_provider, 
+                enrichment_score, credits_consumed
+            FROM contacts 
+            WHERE job_id = :job_id
+            ORDER BY id
+        """
+        
+        result = await session.execute(text(query), {"job_id": job_id})
+        contacts = [dict(row._mapping) for row in result.fetchall()]
+        
+        return JSONResponse(content={
+            "job_id": job_id,
+            "total_contacts": len(contacts),
+            "contacts": contacts
+        })
+        
+    except Exception as e:
+        print(f"Error exporting contacts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/contacts/{contact_id}")
+async def delete_contact(contact_id: int, session: AsyncSession = Depends(get_session)):
+    """Delete a contact"""
+    try:
+        # Check if contact exists
+        check_query = "SELECT id FROM contacts WHERE id = :contact_id"
+        check_result = await session.execute(text(check_query), {"contact_id": contact_id})
+        
+        if not check_result.first():
+            raise HTTPException(status_code=404, detail="Contact not found")
+        
+        # Delete the contact
+        delete_query = "DELETE FROM contacts WHERE id = :contact_id"
+        await session.execute(text(delete_query), {"contact_id": contact_id})
+        await session.commit()
+        
+        return JSONResponse(content={"message": "Contact deleted successfully"})
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting contact: {e}")
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Activity endpoints
 @app.get("/api/activities", response_model=List[ActivityResponse])

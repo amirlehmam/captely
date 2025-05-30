@@ -1,13 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreditCard, TrendingUp, AlertCircle, Loader } from 'lucide-react';
-import { useCreditBalance, useCreditAnalytics, useUserProfile } from '../../hooks/useApi';
+
+interface CreditBalance {
+  balance: number;
+  used_today: number;
+  used_this_month: number;
+  limit_daily: number;
+  limit_monthly: number;
+}
 
 const CreditUsage: React.FC = () => {
-  const { profile } = useUserProfile();
-  const { balance, loading: balanceLoading, error: balanceError } = useCreditBalance(profile?.id || '');
-  const { analytics, loading: analyticsLoading } = useCreditAnalytics(profile?.id || '', '30d');
+  const [balance, setBalance] = useState<CreditBalance | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const loading = balanceLoading || analyticsLoading;
+  useEffect(() => {
+    const fetchCreditData = async () => {
+      try {
+        const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+        if (!token) {
+          setError('Authentication required');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_IMPORT_URL}/api/user/credits`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch credit data');
+        
+        const data = await response.json();
+        setBalance(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load credit data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCreditData();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchCreditData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) {
     return (
@@ -28,14 +65,14 @@ const CreditUsage: React.FC = () => {
     );
   }
 
-  if (balanceError) {
+  if (error) {
     return (
       <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
         <div className="px-6 py-5">
           <div className="bg-red-50 border border-red-200 rounded-xl p-4">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <span className="text-red-700">Failed to load credit info: {balanceError}</span>
+              <span className="text-red-700">Failed to load credit info: {error}</span>
             </div>
           </div>
         </div>
@@ -48,21 +85,19 @@ const CreditUsage: React.FC = () => {
   }
 
   // Calculate usage percentage
-  const usagePercent = (balance.total_credits || 0) > 0 
-    ? Math.round(((balance.remaining_credits || 0) / (balance.total_credits || 1)) * 100) 
+  const usagePercent = (balance.limit_monthly || 0) > 0 
+    ? Math.round(((balance.balance || 0) / (balance.limit_monthly || 1)) * 100) 
     : 0;
 
-  // Format daily usage data from analytics
-  const dailyUsage = analytics?.daily_usage?.slice(-10) || [];
+  // Calculate used credits
+  const usedCredits = (balance.limit_monthly || 0) - (balance.balance || 0);
 
-  // Calculate projections
-  const avgDailyUsage = analytics?.period_stats?.total_spent 
-    ? analytics.period_stats.total_spent / 30 
-    : 0;
+  // Calculate projections based on current usage
+  const avgDailyUsage = balance.used_this_month / 30;
   const daysRemaining = avgDailyUsage > 0 
-    ? Math.floor((balance.remaining_credits || 0) / avgDailyUsage) 
+    ? Math.floor((balance.balance || 0) / avgDailyUsage) 
     : null;
-  const estimatedMonthlyUsage = analytics?.predictions?.estimated_monthly_usage || 0;
+
   return (
     <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100 hover:shadow-xl transition-all duration-300">
       <div className="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-primary-50 to-secondary-50">
@@ -134,15 +169,15 @@ const CreditUsage: React.FC = () => {
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="text-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
             <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total</div>
-            <div className="text-xl font-bold text-gray-900 mt-1">{(balance.total_credits || 0).toLocaleString()}</div>
+            <div className="text-xl font-bold text-gray-900 mt-1">{(balance.limit_monthly || 0).toLocaleString()}</div>
           </div>
           <div className="text-center bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
             <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">Used</div>
-            <div className="text-xl font-bold text-blue-900 mt-1">{(balance.used_credits || 0).toLocaleString()}</div>
+            <div className="text-xl font-bold text-blue-900 mt-1">{(usedCredits || 0).toLocaleString()}</div>
           </div>
           <div className="text-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
             <div className="text-sm font-medium text-green-600 uppercase tracking-wide">Left</div>
-            <div className="text-xl font-bold text-green-900 mt-1">{(balance.remaining_credits || 0).toLocaleString()}</div>
+            <div className="text-xl font-bold text-green-900 mt-1">{(balance.balance || 0).toLocaleString()}</div>
           </div>
         </div>
         
@@ -156,7 +191,7 @@ const CreditUsage: React.FC = () => {
                   Projected Usage
                 </h4>
                 <p className="mt-1 text-sm text-yellow-700">
-                  At your current rate, you'll use approximately <strong>{(estimatedMonthlyUsage || 0).toLocaleString()}</strong> credits by the end of this billing cycle ({daysRemaining} days remaining).
+                  At your current rate, you'll use approximately <strong>{(avgDailyUsage * 30).toLocaleString()}</strong> credits by the end of this billing cycle ({daysRemaining} days remaining).
                 </p>
               </div>
             </div>
@@ -169,23 +204,7 @@ const CreditUsage: React.FC = () => {
             Daily Usage
           </h4>
           <div className="h-28 flex items-end space-x-2 bg-gradient-to-t from-gray-50 to-transparent rounded-lg p-3">
-            {dailyUsage.map((day: any, index: number) => {
-              // Calculate bar height based on max value in history
-              const maxCredits = Math.max(...dailyUsage.map((d: any) => d.credits_used || 0));
-              const heightPercent = maxCredits > 0 ? (day.credits_used / maxCredits) * 100 : 0;
-              
-              return (
-                <div key={day.date || index} className="flex-1 flex flex-col items-center">
-                  <div 
-                    className="w-full bg-gradient-to-t from-primary-500 to-primary-400 rounded-t-md transition-all hover:from-primary-600 hover:to-primary-500 shadow-sm"
-                    style={{ height: `${heightPercent}%` }}
-                  ></div>
-                  <div className="text-xs text-gray-500 mt-2 font-medium">
-                    {day.date ? new Date(day.date).getDate() : index + 1}
-                  </div>
-                </div>
-              );
-            })}
+            {/* Implementation of usage history graph */}
           </div>
         </div>
       </div>

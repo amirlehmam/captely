@@ -13,9 +13,10 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt, JWTError
 from pydantic import BaseModel
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, text
 import pandas as pd
 import uuid, io, boto3, httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.config import get_settings
 from common.db import get_session, async_engine
@@ -270,3 +271,333 @@ async def list_jobs(
         }
         for j in jobs
     ]
+
+@app.get("/api/jobs/{job_id}")
+async def get_job_status(
+    job_id: str,
+    session: AsyncSession = Depends(get_session)
+):
+    """Get detailed status of an import job"""
+    try:
+        # Get job details
+        job_query = text("""
+            SELECT ij.*, 
+                   COUNT(c.id) as total_processed,
+                   COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_count,
+                   COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+                   COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                   SUM(c.credits_consumed) as total_credits_used,
+                   AVG(c.enrichment_score) as avg_confidence
+            FROM import_jobs ij
+            LEFT JOIN contacts c ON ij.id = c.job_id
+            WHERE ij.id = :job_id
+            GROUP BY ij.id
+        """)
+        
+        result = await session.execute(job_query, {"job_id": job_id})
+        job_data = await result.first()
+        
+        if not job_data:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Calculate progress and success rate
+        total_processed = job_data.total_processed or 0
+        enriched_count = job_data.enriched_count or 0
+        emails_found = job_data.emails_found or 0
+        phones_found = job_data.phones_found or 0
+        total_credits_used = job_data.total_credits_used or 0
+        
+        progress = (total_processed / job_data.total * 100) if job_data.total > 0 else 0
+        success_rate = (enriched_count / total_processed * 100) if total_processed > 0 else 0
+        email_hit_rate = (emails_found / total_processed * 100) if total_processed > 0 else 0
+        phone_hit_rate = (phones_found / total_processed * 100) if total_processed > 0 else 0
+        
+        return {
+            "id": job_data.id,
+            "user_id": job_data.user_id,
+            "status": job_data.status,
+            "file_name": job_data.file_name,
+            "total": job_data.total,
+            "completed": total_processed,
+            "progress": round(progress, 1),
+            "success_rate": round(success_rate, 1),
+            "email_hit_rate": round(email_hit_rate, 1),
+            "phone_hit_rate": round(phone_hit_rate, 1),
+            "emails_found": emails_found,
+            "phones_found": phones_found,
+            "credits_used": total_credits_used,
+            "avg_confidence": round(float(job_data.avg_confidence or 0), 2),
+            "created_at": job_data.created_at.isoformat() if job_data.created_at else None,
+            "updated_at": job_data.updated_at.isoformat() if job_data.updated_at else None
+        }
+        
+    except Exception as e:
+        print(f"Error fetching job status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/jobs")
+async def get_user_jobs(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get all jobs for a user with their current status"""
+    try:
+        jobs_query = text("""
+            SELECT ij.*, 
+                   COUNT(c.id) as total_processed,
+                   COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_count,
+                   SUM(c.credits_consumed) as total_credits_used
+            FROM import_jobs ij
+            LEFT JOIN contacts c ON ij.id = c.job_id
+            WHERE ij.user_id = :user_id
+            GROUP BY ij.id
+            ORDER BY ij.created_at DESC
+        """)
+        
+        result = await session.execute(jobs_query, {"user_id": user_id})
+        jobs_data = await result.fetchall()
+        
+        jobs = []
+        for job in jobs_data:
+            total_processed = job.total_processed or 0
+            enriched_count = job.enriched_count or 0
+            total_credits_used = job.total_credits_used or 0
+            
+            progress = (total_processed / job.total * 100) if job.total > 0 else 0
+            success_rate = (enriched_count / total_processed * 100) if total_processed > 0 else 0
+            
+            jobs.append({
+                "id": job.id,
+                "status": job.status,
+                "file_name": job.file_name,
+                "total": job.total,
+                "completed": total_processed,
+                "progress": round(progress, 1),
+                "success_rate": round(success_rate, 1),
+                "credits_used": total_credits_used,
+                "created_at": job.created_at.isoformat() if job.created_at else None
+            })
+        
+        return {"jobs": jobs}
+        
+    except Exception as e:
+        print(f"Error fetching user jobs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/user/credits")
+async def get_user_credits(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get detailed credit information for the authenticated user"""
+    try:
+        # Get user's current credit balance
+        user_query = text("SELECT credits, current_subscription_id FROM users WHERE id = :user_id")
+        user_result = await session.execute(user_query, {"user_id": user_id})
+        user_row = await user_result.fetchone()
+        
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        current_credits = user_row[0]
+        subscription_id = user_row[1]
+        
+        # Get subscription details if available
+        subscription_data = None
+        if subscription_id:
+            sub_query = text("""
+                SELECT p.credits_monthly, p.display_name, p.price_monthly 
+                FROM packages p 
+                JOIN user_subscriptions us ON p.id = us.package_id 
+                WHERE us.user_id = :user_id AND us.status = 'active'
+                ORDER BY us.created_at DESC 
+                LIMIT 1
+            """)
+            sub_result = await session.execute(sub_query, {"user_id": user_id})
+            sub_row = await sub_result.fetchone()
+            
+            if sub_row:
+                subscription_data = {
+                    "monthly_limit": sub_row[0],
+                    "package_name": sub_row[1],
+                    "monthly_price": sub_row[2]
+                }
+        
+        # Get usage statistics for current month
+        usage_query = text("""
+            SELECT 
+                SUM(CASE WHEN cl.operation_type = 'enrichment' THEN ABS(cl.change) ELSE 0 END) as used_this_month,
+                COUNT(CASE WHEN cl.operation_type = 'enrichment' AND cl.created_at > CURRENT_DATE THEN 1 END) as used_today
+            FROM credit_logs cl
+            WHERE cl.user_id = :user_id 
+            AND cl.created_at >= DATE_TRUNC('month', CURRENT_DATE)
+        """)
+        usage_result = await session.execute(usage_query, {"user_id": user_id})
+        usage_row = await usage_result.fetchone()
+        
+        used_this_month = usage_row[0] if usage_row[0] else 0
+        used_today = usage_row[1] if usage_row[1] else 0
+        
+        # Get enrichment statistics
+        stats_query = text("""
+            SELECT 
+                COUNT(c.id) as total_enriched,
+                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                AVG(c.enrichment_score) as avg_confidence,
+                SUM(c.credits_consumed) as total_credits_used
+            FROM contacts c
+            WHERE c.user_id = :user_id AND c.enriched = true
+        """)
+        stats_result = await session.execute(stats_query, {"user_id": user_id})
+        stats_row = await stats_result.fetchone()
+        
+        total_enriched = stats_row[0] if stats_row[0] else 0
+        emails_found = stats_row[1] if stats_row[1] else 0
+        phones_found = stats_row[2] if stats_row[2] else 0
+        avg_confidence = float(stats_row[3]) if stats_row[3] else 0.0
+        total_credits_used = stats_row[4] if stats_row[4] else 0
+        
+        # Calculate success rates
+        email_hit_rate = (emails_found / total_enriched * 100) if total_enriched > 0 else 0
+        phone_hit_rate = (phones_found / total_enriched * 100) if total_enriched > 0 else 0
+        
+        return {
+            "balance": current_credits,
+            "used_today": used_today,
+            "used_this_month": used_this_month,
+            "limit_daily": None,  # Can be implemented later
+            "limit_monthly": subscription_data["monthly_limit"] if subscription_data else 5000,
+            "subscription": subscription_data,
+            "statistics": {
+                "total_enriched": total_enriched,
+                "email_hit_rate": round(email_hit_rate, 1),
+                "phone_hit_rate": round(phone_hit_rate, 1),
+                "avg_confidence": round(avg_confidence, 2),
+                "total_credits_used": total_credits_used,
+                "success_rate": round((email_hit_rate + phone_hit_rate) / 2, 1) if total_enriched > 0 else 0
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error fetching user credits: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching credits: {str(e)}")
+
+@app.post("/api/credits/deduct")
+async def deduct_credits(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_session)
+):
+    """Deduct credits from user balance for enrichment operations"""
+    try:
+        credits_to_deduct = request.get("credits", 0)
+        operation_type = request.get("operation_type", "enrichment")
+        reason = request.get("reason", "Enrichment operation")
+        
+        if credits_to_deduct <= 0:
+            raise HTTPException(status_code=400, detail="Credits to deduct must be positive")
+        
+        # Check user's current balance
+        balance_query = text("SELECT credits FROM users WHERE id = :user_id")
+        balance_result = await session.execute(balance_query, {"user_id": user_id})
+        current_balance = await balance_result.scalar()
+        
+        if current_balance is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if current_balance < credits_to_deduct:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient credits. Balance: {current_balance}, Required: {credits_to_deduct}"
+            )
+        
+        # Deduct credits
+        update_query = text("UPDATE users SET credits = credits - :credits WHERE id = :user_id")
+        await session.execute(update_query, {"credits": credits_to_deduct, "user_id": user_id})
+        
+        # Log the transaction
+        log_query = text("""
+            INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
+            VALUES (:user_id, :operation_type, :cost, :change, :reason, CURRENT_TIMESTAMP)
+        """)
+        await session.execute(log_query, {
+            "user_id": user_id,
+            "operation_type": operation_type,
+            "cost": credits_to_deduct,
+            "change": -credits_to_deduct,
+            "reason": reason
+        })
+        
+        await session.commit()
+        
+        new_balance = current_balance - credits_to_deduct
+        print(f"Deducted {credits_to_deduct} credits from user {user_id}. New balance: {new_balance}")
+        
+        return {
+            "success": True,
+            "credits_deducted": credits_to_deduct,
+            "new_balance": new_balance,
+            "reason": reason
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deducting credits: {e}")
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deducting credits: {str(e)}")
+
+@app.post("/api/credits/refund")
+async def refund_credits(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_session)
+):
+    """Refund credits to user balance (e.g., if enrichment fails)"""
+    try:
+        credits_to_refund = request.get("credits", 0)
+        reason = request.get("reason", "Enrichment refund")
+        
+        if credits_to_refund <= 0:
+            raise HTTPException(status_code=400, detail="Credits to refund must be positive")
+        
+        # Add credits back
+        update_query = text("UPDATE users SET credits = credits + :credits WHERE id = :user_id")
+        await session.execute(update_query, {"credits": credits_to_refund, "user_id": user_id})
+        
+        # Log the transaction
+        log_query = text("""
+            INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
+            VALUES (:user_id, :operation_type, :cost, :change, :reason, CURRENT_TIMESTAMP)
+        """)
+        await session.execute(log_query, {
+            "user_id": user_id,
+            "operation_type": "refund",
+            "cost": 0,
+            "change": credits_to_refund,
+            "reason": reason
+        })
+        
+        await session.commit()
+        
+        # Get new balance
+        balance_query = text("SELECT credits FROM users WHERE id = :user_id")
+        balance_result = await session.execute(balance_query, {"user_id": user_id})
+        new_balance = await balance_result.scalar()
+        
+        print(f"Refunded {credits_to_refund} credits to user {user_id}. New balance: {new_balance}")
+        
+        return {
+            "success": True,
+            "credits_refunded": credits_to_refund,
+            "new_balance": new_balance,
+            "reason": reason
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error refunding credits: {e}")
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error refunding credits: {str(e)}")

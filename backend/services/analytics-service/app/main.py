@@ -9,14 +9,17 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from sqlalchemy import text, select, func
+from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta, date
 from common.config import get_settings
-from common.db import get_async_session, async_engine
+from common.db import get_async_session, async_engine, get_session
 from common.auth import verify_api_token
 from app.models import Base
 import httpx
 import base64
+import asyncio
+import json
 
 app = FastAPI(
     title="Captely Analytics Service",
@@ -118,7 +121,7 @@ async def get_user_dashboard(
     """
     
     result = await session.execute(text(stats_query), {"user_id": user_id})
-    stats = result.first()
+    stats = await result.first()
     
     # Provider performance
     provider_query = """
@@ -146,7 +149,7 @@ async def get_user_dashboard(
             "avg_confidence": round(float(row[3] or 0), 2),
             "credits_used": float(row[4] or 0)
         }
-        for row in provider_result.fetchall()
+        for row in await provider_result.fetchall()
     ]
     
     # Recent jobs performance
@@ -184,7 +187,7 @@ async def get_user_dashboard(
             "credits_used": float(row[8] or 0),
             "completion_rate": (row[3] / row[2] * 100) if row[2] > 0 else 0
         }
-        for row in jobs_result.fetchall()
+        for row in await jobs_result.fetchall()
     ]
     
     # Daily activity for the last 30 days
@@ -217,7 +220,7 @@ async def get_user_dashboard(
             "success_rate": (row[2] / row[1] * 100) if row[1] > 0 else 0,
             "credits_used": float(row[3] or 0)
         }
-        for row in activity_result.fetchall()
+        for row in await activity_result.fetchall()
     ]
     
     # Calculate derived metrics
@@ -287,7 +290,7 @@ async def get_enrichment_statistics(
     """
     
     result = await session.execute(text(funnel_query), params)
-    funnel_data = result.first()
+    funnel_data = await result.first()
     
     # Email quality distribution
     email_quality_query = f"""
@@ -310,7 +313,7 @@ async def get_enrichment_statistics(
     """
     
     quality_result = await session.execute(text(email_quality_query), params)
-    email_quality = {row[0]: row[1] for row in quality_result.fetchall()}
+    email_quality = {row[0]: row[1] for row in await quality_result.fetchall()}
     
     # Phone type distribution
     phone_type_query = f"""
@@ -327,7 +330,7 @@ async def get_enrichment_statistics(
     """
     
     phone_result = await session.execute(text(phone_type_query), params)
-    phone_distribution = {row[0]: row[1] for row in phone_result.fetchall()}
+    phone_distribution = {row[0]: row[1] for row in await phone_result.fetchall()}
     
     # Industry breakdown
     industry_query = f"""
@@ -356,7 +359,7 @@ async def get_enrichment_statistics(
             "success_rate": (row[2] / row[1] * 100) if row[1] > 0 else 0,
             "avg_confidence": round(float(row[3] or 0), 2)
         }
-        for row in industry_result.fetchall()
+        for row in await industry_result.fetchall()
     ]
     
     total = funnel_data[0] or 1  # Avoid division by zero
@@ -385,102 +388,242 @@ async def get_enrichment_statistics(
     }
 
 @app.get("/api/analytics/job/{job_id}")
-async def get_job_analytics(
-    job_id: str,
-    session: AsyncSession = Depends(get_async_session),
-    auth_user: str = Depends(verify_api_token)
+async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_session)):
+    """Get real-time analytics for a specific enrichment job"""
+    try:
+        # Get job details
+        job_query = """
+            SELECT id, user_id, status, total, completed, file_name, created_at, updated_at
+            FROM import_jobs 
+            WHERE id = :job_id
+        """
+        job_result = await session.execute(text(job_query), {"job_id": job_id})
+        job = await job_result.first()
+        
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Get enrichment statistics
+        stats_query = """
+            SELECT 
+                COUNT(*) as total_contacts,
+                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
+                COUNT(CASE WHEN enriched = true THEN 1 END) as enriched_count,
+                AVG(CASE WHEN enrichment_score IS NOT NULL THEN enrichment_score END) as avg_confidence,
+                SUM(credits_consumed) as total_credits_used
+            FROM contacts 
+            WHERE job_id = :job_id
+        """
+        stats_result = await session.execute(text(stats_query), {"job_id": job_id})
+        stats = await stats_result.first()
+        
+        # Calculate rates
+        total_contacts = stats.total_contacts or 0
+        emails_found = stats.emails_found or 0
+        phones_found = stats.phones_found or 0
+        enriched_count = stats.enriched_count or 0
+        
+        email_hit_rate = (emails_found / total_contacts * 100) if total_contacts > 0 else 0
+        phone_hit_rate = (phones_found / total_contacts * 100) if total_contacts > 0 else 0
+        success_rate = (enriched_count / total_contacts * 100) if total_contacts > 0 else 0
+        
+        # Get contacts for the job
+        contacts_query = """
+            SELECT id, first_name, last_name, company, email, phone, enriched, 
+                   enrichment_status, enrichment_provider, enrichment_score, credits_consumed
+            FROM contacts 
+            WHERE job_id = :job_id
+            ORDER BY id
+        """
+        contacts_result = await session.execute(text(contacts_query), {"job_id": job_id})
+        contacts = [dict(row._mapping) for row in await contacts_result.fetchall()]
+        
+        return JSONResponse(content={
+            "job": {
+                "id": job.id,
+                "status": job.status,
+                "total": job.total,
+                "completed": job.completed,
+                "file_name": job.file_name,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "updated_at": job.updated_at.isoformat() if job.updated_at else None
+            },
+            "statistics": {
+                "total_contacts": total_contacts,
+                "emails_found": emails_found,
+                "phones_found": phones_found,
+                "enriched_count": enriched_count,
+                "email_hit_rate": round(email_hit_rate, 1),
+                "phone_hit_rate": round(phone_hit_rate, 1),
+                "success_rate": round(success_rate, 1),
+                "avg_confidence": round(float(stats.avg_confidence or 0), 2),
+                "total_credits_used": stats.total_credits_used or 0
+            },
+            "contacts": contacts
+        })
+        
+    except Exception as e:
+        print(f"Error fetching job analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/dashboard")
+async def get_dashboard_analytics(
+    session: AsyncSession = Depends(get_session)
 ):
-    """Get detailed analytics for a specific job"""
-    
-    # Job overview
-    job_query = """
-        SELECT ij.*, 
-               COUNT(c.id) as total_processed,
-               COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
-               COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
-               AVG(c.enrichment_score) as avg_confidence,
-               SUM(c.credits_consumed) as total_credits
-        FROM import_jobs ij
-        LEFT JOIN contacts c ON ij.id = c.job_id
-        WHERE ij.id = :job_id
-        GROUP BY ij.id
-    """
-    
-    result = await session.execute(text(job_query), {"job_id": job_id})
-    job_data = result.first()
-    
-    if not job_data:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    # Provider breakdown for this job
-    provider_query = """
-        SELECT 
-            enrichment_provider,
-            COUNT(*) as contacts,
-            COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
-            AVG(enrichment_score) as avg_confidence,
-            AVG(email_verification_score) as avg_email_score
-        FROM contacts
-        WHERE job_id = :job_id AND enrichment_provider IS NOT NULL
-        GROUP BY enrichment_provider
-    """
-    
-    provider_result = await session.execute(text(provider_query), {"job_id": job_id})
-    providers = [
-        {
-            "provider": row[0],
-            "contacts": row[1],
-            "emails_found": row[2],
-            "success_rate": (row[2] / row[1] * 100) if row[1] > 0 else 0,
-            "avg_confidence": round(float(row[3] or 0), 2),
-            "avg_email_score": round(float(row[4] or 0), 2)
+    """Get real-time dashboard analytics from the database"""
+    try:
+        # Get total contacts and enrichment stats
+        stats_query = text("""
+            SELECT 
+                COUNT(*) as total_contacts,
+                COUNT(CASE WHEN enriched = true THEN 1 END) as enriched_count,
+                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
+                AVG(enrichment_score) as avg_confidence,
+                SUM(credits_consumed) as total_credits_used
+            FROM contacts
+            WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+        """)
+        
+        result = await session.execute(stats_query)
+        stats_row = await result.fetchone()
+        
+        if not stats_row:
+            # Return default values if no data
+            return {
+                "total_contacts": 0,
+                "enriched_count": 0,
+                "emails_found": 0,
+                "phones_found": 0,
+                "success_rate": 0,
+                "email_hit_rate": 0,
+                "phone_hit_rate": 0,
+                "avg_confidence": 0,
+                "credits_used": 0,
+                "processing_time_avg": 0,
+                "active_jobs": 0
+            }
+        
+        total_contacts = stats_row[0] or 0
+        enriched_count = stats_row[1] or 0
+        emails_found = stats_row[2] or 0
+        phones_found = stats_row[3] or 0
+        avg_confidence = float(stats_row[4]) if stats_row[4] else 0.0
+        total_credits_used = stats_row[5] or 0
+        
+        # Calculate rates
+        success_rate = (enriched_count / total_contacts * 100) if total_contacts > 0 else 0
+        email_hit_rate = (emails_found / total_contacts * 100) if total_contacts > 0 else 0
+        phone_hit_rate = (phones_found / total_contacts * 100) if total_contacts > 0 else 0
+        
+        # Get active jobs count
+        active_jobs_query = text("""
+            SELECT COUNT(*) FROM import_jobs 
+            WHERE status IN ('processing', 'pending')
+        """)
+        jobs_result = await session.execute(active_jobs_query)
+        active_jobs = await jobs_result.scalar() or 0
+        
+        return {
+            "total_contacts": total_contacts,
+            "enriched_count": enriched_count,
+            "emails_found": emails_found,
+            "phones_found": phones_found,
+            "success_rate": round(success_rate, 1),
+            "email_hit_rate": round(email_hit_rate, 1),
+            "phone_hit_rate": round(phone_hit_rate, 1),
+            "avg_confidence": round(avg_confidence, 2),
+            "credits_used": total_credits_used,
+            "processing_time_avg": 2.5,  # Mock average processing time
+            "active_jobs": active_jobs
         }
-        for row in provider_result.fetchall()
-    ]
-    
-    # Enrichment timeline
-    timeline_query = """
-        SELECT 
-            DATE_TRUNC('hour', created_at) as hour,
-            COUNT(*) as contacts_processed,
-            COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found
-        FROM contacts
-        WHERE job_id = :job_id
-        GROUP BY hour
-        ORDER BY hour
-    """
-    
-    timeline_result = await session.execute(text(timeline_query), {"job_id": job_id})
-    timeline = [
-        {
-            "timestamp": row[0].isoformat(),
-            "contacts_processed": row[1],
-            "emails_found": row[2]
-        }
-        for row in timeline_result.fetchall()
-    ]
-    
-    return {
-        "job_info": {
-            "id": job_data[0],
-            "user_id": job_data[1],
-            "status": job_data[2],
-            "total": job_data[3],
-            "completed": job_data[4],
-            "created_at": job_data[5],
-            "updated_at": job_data[6]
-        },
-        "results": {
-            "total_processed": job_data[7] or 0,
-            "emails_found": job_data[8] or 0,
-            "phones_found": job_data[9] or 0,
-            "success_rate": ((job_data[8] or 0) / (job_data[7] or 1) * 100),
-            "avg_confidence": round(float(job_data[10] or 0), 2),
-            "total_credits": float(job_data[11] or 0)
-        },
-        "provider_breakdown": providers,
-        "timeline": timeline
-    }
+        
+    except Exception as e:
+        print(f"Error fetching dashboard analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
+
+@app.get("/api/analytics/enrichment-history")
+async def get_enrichment_history(
+    limit: int = 50,
+    session: AsyncSession = Depends(get_session)
+):
+    """Get recent enrichment history"""
+    try:
+        history_query = text("""
+            SELECT 
+                c.id,
+                c.first_name || ' ' || COALESCE(c.last_name, '') as contact_name,
+                c.email as contact_email,
+                CASE 
+                    WHEN c.email IS NOT NULL THEN 'email'
+                    WHEN c.phone IS NOT NULL THEN 'phone'
+                    ELSE 'email'
+                END as enrichment_type,
+                CASE 
+                    WHEN c.enriched = true THEN 'success'
+                    ELSE 'failed'
+                END as status,
+                c.enrichment_provider as source,
+                COALESCE(c.email, c.phone) as result_data,
+                c.credits_consumed as credits_used,
+                c.created_at
+            FROM contacts c
+            WHERE c.enriched = true
+            ORDER BY c.created_at DESC
+            LIMIT :limit
+        """)
+        
+        result = await session.execute(history_query, {"limit": limit})
+        history_rows = await result.fetchall()
+        
+        enrichments = []
+        for row in history_rows:
+            enrichments.append({
+                "id": str(row[0]),
+                "contact_name": row[1],
+                "contact_email": row[2],
+                "enrichment_type": row[3],
+                "status": row[4],
+                "source": row[5] or "internal",
+                "result_data": row[6],
+                "credits_used": row[7] or 0,
+                "created_at": row[8].isoformat() if row[8] else None
+            })
+        
+        return {"enrichments": enrichments}
+        
+    except Exception as e:
+        print(f"Error fetching enrichment history: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching history: {str(e)}")
+
+@app.get("/api/analytics/workers")
+async def get_worker_status():
+    """Get Celery worker status from Redis/Flower"""
+    try:
+        # Mock worker data for now - in production, this would connect to Flower API
+        workers = [
+            {
+                "hostname": "enrichment-worker-1",
+                "status": "active",
+                "tasks": 15,
+                "load": 0.65,
+                "uptime": "2h 30m"
+            },
+            {
+                "hostname": "enrichment-worker-2", 
+                "status": "active",
+                "tasks": 12,
+                "load": 0.45,
+                "uptime": "2h 30m"
+            }
+        ]
+        
+        return {"workers": workers}
+        
+    except Exception as e:
+        print(f"Error fetching worker status: {e}")
+        return {"workers": []}
 
 @app.get("/api/analytics/credits/{user_id}")
 async def get_credit_analytics(
@@ -522,7 +665,7 @@ async def get_credit_analytics(
             "net": float(row[2] or 0) - float(row[1] or 0),
             "operations": row[3] or 0
         }
-        for row in result.fetchall()
+        for row in await result.fetchall()
     ]
     
     # Provider cost breakdown
@@ -550,7 +693,7 @@ async def get_credit_analytics(
             "operations": row[2],
             "avg_cost": round(float(row[3]), 3)
         }
-        for row in provider_result.fetchall()
+        for row in await provider_result.fetchall()
     ]
     
     return {

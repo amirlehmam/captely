@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Upload, ArrowDownUp, 
@@ -72,15 +72,50 @@ const otherItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const [crmExpanded, setCrmExpanded] = useState(true);
+  const [userCredits, setUserCredits] = useState({ balance: 5000, used_this_month: 0, limit_monthly: 5000 });
+  const [userInfo, setUserInfo] = useState({ name: 'Test User Pro', plan: 'Professional' });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+        if (!token) return;
+
+        // Fetch user credits
+        const creditsResponse = await fetch(`${import.meta.env.VITE_IMPORT_URL}/api/user/credits`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (creditsResponse.ok) {
+          const creditsData = await creditsResponse.json();
+          setUserCredits(creditsData);
+        }
+
+        // For now, use static user info - could fetch from auth service
+        setUserInfo({ name: 'Test User Pro', plan: 'Professional' });
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUserData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const creditPercentage = userCredits.limit_monthly > 0 
+    ? ((userCredits.balance / userCredits.limit_monthly) * 100) 
+    : 100;
 
   return (
     <div className="hidden md:flex w-64 flex-shrink-0 flex-col bg-white border-r border-gray-200 fixed h-full">
       <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-        <div className="flex items-center justify-center h-16 px-4">
+        <div className="flex items-center justify-center h-24 px-4 mb-6">
           <img 
             src="/logo.png" 
             alt="Captely" 
-            className="h-10 w-auto object-contain"
+            className="h-20 w-auto object-contain"
           />
         </div>
         
@@ -91,17 +126,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
               Credits
             </span>
             <span className="text-sm font-bold text-primary-600">
-              20,000
+              {userCredits.balance.toLocaleString()}
             </span>
           </div>
           <div className="w-full bg-white rounded-full h-2 overflow-hidden">
             <div 
               className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full transition-all duration-500"
-              style={{ width: '100%' }}
+              style={{ width: `${Math.min(creditPercentage, 100)}%` }}
             ></div>
           </div>
           <div className="mt-2 text-xs text-right text-gray-600">
-            100% remaining
+            {Math.round(creditPercentage)}% remaining
           </div>
         </div>
         
@@ -201,10 +236,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-900">
-              Test User
+              {userInfo.name}
             </p>
             <p className="text-xs font-medium text-gray-500">
-              Enterprise Plan
+              {userInfo.plan} Plan
             </p>
           </div>
           <button 

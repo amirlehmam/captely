@@ -152,53 +152,127 @@ CREDIT_USAGE = {
             "remaining": 3000,
             "expires_at": "2024-06-30T00:00:00Z"
         }
-    ]
+    ],
+    "email_hit_rate": 85,
+    "phone_hit_rate": 72,
+    "success_stats": {
+        "total_searches": 25,
+        "successful_searches": 22,
+        "failed_searches": 3,
+        "success_rate": 88
+    }
 }
 
 ENRICHMENT_HISTORY = [
     {
         "id": "1",
-        "contact_name": "John Smith",
-        "contact_email": "john@techcorp.com",
+        "contact_name": "Alexis Martel",
+        "contact_email": "alexis@pharow.com",
         "enrichment_type": "email",
         "status": "success",
         "source": "apollo",
-        "result_data": "john.smith@techcorp.com",
+        "result_data": "alexis.martel@pharow.com",
         "credits_used": 1,
         "created_at": "2024-03-15T10:30:00Z"
     },
     {
         "id": "2",
-        "contact_name": "Sarah Johnson",
-        "contact_email": "sarah@marketingco.com", 
-        "enrichment_type": "phone",
+        "contact_name": "Charlotte Cadé",
+        "contact_email": "charlotte@selency.com", 
+        "enrichment_type": "email",
         "status": "success",
         "source": "hunter",
-        "result_data": "+1-555-0123",
+        "result_data": "charlotte.cade@selency.com",
+        "credits_used": 1,
+        "created_at": "2024-03-15T10:29:00Z"
+    },
+    {
+        "id": "3",
+        "contact_name": "Corentin Sannié",
+        "contact_email": "corentin@benefiz.com",
+        "enrichment_type": "phone",
+        "status": "success",
+        "source": "apollo",
+        "result_data": "+33-1-23-45-67-89",
+        "credits_used": 10,
+        "created_at": "2024-03-15T10:28:00Z"
+    },
+    {
+        "id": "4",
+        "contact_name": "Guillaume DOKI-THONON",
+        "contact_email": "guillaume@reech.com",
+        "enrichment_type": "email",
+        "status": "success",
+        "source": "dropcontact",
+        "result_data": "guillaume.doki-thonon@reech.com",
+        "credits_used": 1,
+        "created_at": "2024-03-15T10:27:00Z"
+    },
+    {
+        "id": "5",
+        "contact_name": "Erwan Fleury",
+        "contact_email": "erwan@cashflowpositif.com",
+        "enrichment_type": "email",
+        "status": "success",
+        "source": "hunter",
+        "result_data": "erwan.fleury@cashflowpositif.com",
+        "credits_used": 1,
+        "created_at": "2024-03-15T10:26:00Z"
+    },
+    {
+        "id": "6",
+        "contact_name": "Denis Ladegaillerie",
+        "contact_email": "denis@believe.com",
+        "enrichment_type": "phone",
+        "status": "success",
+        "source": "apollo",
+        "result_data": "+33-1-45-67-89-12",
         "credits_used": 10,
         "created_at": "2024-03-15T10:25:00Z"
     },
     {
-        "id": "3",
-        "contact_name": "Mike Chen",
-        "contact_email": "mike@techstart.io",
-        "enrichment_type": "email", 
-        "status": "cached",
-        "source": "internal",
-        "result_data": "mike@techstart.io",
+        "id": "7",
+        "contact_name": "Guillaume Odier",
+        "contact_email": "guillaume@captaindata.co",
+        "enrichment_type": "email",
+        "status": "success",
+        "source": "apollo",
+        "result_data": "guillaume.odier@captaindata.co",
         "credits_used": 1,
-        "created_at": "2024-03-15T10:20:00Z"
+        "created_at": "2024-03-15T10:24:00Z"
     },
     {
-        "id": "4",
-        "contact_name": "Alice Brown",
-        "contact_email": None,
+        "id": "8",
+        "contact_name": "Paul Riberolle",
+        "contact_email": "paul@metalyde.com",
         "enrichment_type": "phone",
-        "status": "failed",
-        "source": "clearbit",
-        "result_data": None,
-        "credits_used": 0,
-        "created_at": "2024-03-15T10:15:00Z"
+        "status": "success",
+        "source": "hunter",
+        "result_data": "+33-6-78-90-12-34",
+        "credits_used": 10,
+        "created_at": "2024-03-15T10:23:00Z"
+    },
+    {
+        "id": "9",
+        "contact_name": "Nicolas Sayer",
+        "contact_email": "nicolas@stoik.co",
+        "enrichment_type": "email",
+        "status": "success",
+        "source": "dropcontact",
+        "result_data": "nicolas.sayer@stoik.co",
+        "credits_used": 1,
+        "created_at": "2024-03-15T10:22:00Z"
+    },
+    {
+        "id": "10",
+        "contact_name": "Matteo Mariat",
+        "contact_email": "matteo@ledger.com",
+        "enrichment_type": "email",
+        "status": "success",
+        "source": "apollo",
+        "result_data": "matteo.mariat@ledger.com",
+        "credits_used": 1,
+        "created_at": "2024-03-15T10:21:00Z"
     }
 ]
 
@@ -238,7 +312,7 @@ async def get_credit_usage():
 
 @app.get("/api/enrichment/history")
 async def get_enrichment_history():
-    """Get enrichment history"""
+    """Get enrichment history for billing/analytics"""
     return JSONResponse(content=ENRICHMENT_HISTORY)
 
 @app.get("/api/billing/dashboard")
@@ -314,6 +388,58 @@ async def get_billing_history():
         "total": 1,
         "limit": 50,
         "offset": 0
+    })
+
+@app.get("/api/subscriptions")
+async def get_user_subscriptions():
+    """Get user subscriptions"""
+    return JSONResponse(content={
+        "subscriptions": [
+            {
+                "id": "sub-123",
+                "user_id": "user-456",
+                "package_id": "pro-5k",
+                "status": "active",
+                "billing_cycle": "monthly",
+                "current_period_start": "2024-03-01T00:00:00Z",
+                "current_period_end": "2024-04-01T00:00:00Z",
+                "trial_end": None,
+                "cancel_at_period_end": False,
+                "cancelled_at": None,
+                "created_at": "2024-03-01T00:00:00Z"
+            }
+        ],
+        "total": 1
+    })
+
+@app.get("/api/dashboard/analytics")
+async def get_dashboard_analytics():
+    """Get dashboard analytics data"""
+    return JSONResponse(content={
+        "total_contacts": 25,
+        "email_hit_rate": 85,
+        "phone_hit_rate": 72,
+        "credits_remaining": 6760,
+        "current_batch": {
+            "job_id": "43170ba5",
+            "status": "completed",
+            "total": 25,
+            "completed": 25,
+            "progress": 100,
+            "success_rate": 88,
+            "credits_used": 47
+        },
+        "processing_stages": [
+            {"name": "Import", "status": "completed", "duration": "00:30"},
+            {"name": "Enrichment", "status": "completed", "duration": "02:45"},
+            {"name": "Verification", "status": "completed", "duration": "01:15"},
+            {"name": "Export", "status": "pending", "duration": "00:00"}
+        ],
+        "daily_usage": {
+            "total": 150,
+            "used": 47,
+            "left": 103
+        }
     })
 
 if __name__ == "__main__":
