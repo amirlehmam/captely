@@ -215,13 +215,13 @@ const Dashboard: React.FC = () => {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center space-x-3">
-                    <motion.div
+                    <motion.img
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.5 }}
-                      className="w-10 h-10 bg-gradient-to-br from-teal-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"
-                    >
-                      <Zap className="w-6 h-6 text-white" />
-                    </motion.div>
+                      src="/logo.png"
+                      alt="Captely Logo"
+                      className="w-10 h-10 rounded-xl shadow-lg object-contain"
+                    />
                     <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                       Captely
                     </span>
@@ -277,13 +277,13 @@ const Dashboard: React.FC = () => {
                   <Menu className="w-5 h-5" />
                 </button>
                 <div className="hidden lg:flex items-center space-x-3">
-                  <motion.div
+                  <motion.img
                     whileHover={{ rotate: 360 }}
                     transition={{ duration: 0.5 }}
-                    className="w-10 h-10 bg-gradient-to-br from-teal-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"
-                  >
-                    <Zap className="w-6 h-6 text-white" />
-                  </motion.div>
+                    src="/logo.png"
+                    alt="Captely Logo"
+                    className="w-10 h-10 rounded-xl shadow-lg object-contain"
+                  />
                   <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     Captely
                   </span>

@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "canvas-confetti": "^1.9.2",
-    "framer-motion": "^11.0.8",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^11.18.2",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
+    "react-countup": "^6.5.3",
     "react-dom": "^18.3.1",
-    "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^6.30.0"
+    "react-hot-toast": "^2.5.2",
+    "react-router-dom": "^6.30.0",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
