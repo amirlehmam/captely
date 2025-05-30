@@ -732,7 +732,7 @@ const BillingPage: React.FC = () => {
                   ? 'border-teal-500 shadow-xl scale-105' 
                   : isCurrentPlan
                   ? 'border-green-500'
-                  : 'border-gray-200 hover:border-teal-300 hover:shadow-xl'
+                  : 'border-gray-200 hover:border-teal-300'
               }`}
             >
               {plan.popular && (

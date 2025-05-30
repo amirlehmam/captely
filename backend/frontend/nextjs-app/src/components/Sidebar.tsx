@@ -77,9 +77,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     <div className="hidden md:flex w-64 flex-shrink-0 flex-col bg-white border-r border-gray-200 fixed h-full">
       <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
         <div className="flex items-center justify-center h-16 px-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-            Captely Pro
-          </h1>
+          <img 
+            src="/logo.png" 
+            alt="Captely" 
+            className="h-10 w-auto object-contain"
+          />
         </div>
         
         {/* Credits remaining */}
