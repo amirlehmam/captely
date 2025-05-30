@@ -64,6 +64,9 @@ const BatchesPage: React.FC = () => {
   
   useEffect(() => {
     fetchJobs();
+  }, []);
+  
+  useEffect(() => {
     // Set up auto-refresh for processing jobs
     const interval = setInterval(() => {
       const hasProcessingJobs = jobs.some(job => job.status === 'processing' || job.status === 'pending');
@@ -73,7 +76,7 @@ const BatchesPage: React.FC = () => {
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [jobs]);
+  }, []); // Empty dependency array to create interval only once
   
   const fetchJobs = async (silent = false) => {
     try {

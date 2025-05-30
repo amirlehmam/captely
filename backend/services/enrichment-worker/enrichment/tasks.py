@@ -119,12 +119,46 @@ async def save_contact(session: AsyncSession, job_id: str, lead: dict) -> int:
     
     return contact_id
 
+async def save_to_crm(contact_data: Dict[str, Any]):
+    """Save enriched contact to CRM service."""
+    try:
+        # Prepare CRM contact data
+        crm_contact = {
+            "first_name": contact_data.get("first_name", ""),
+            "last_name": contact_data.get("last_name", ""),
+            "email": contact_data.get("email"),
+            "phone": contact_data.get("phone"),
+            "company": contact_data.get("company"),
+            "position": contact_data.get("position"),
+            "status": "new",
+            "lead_score": contact_data.get("confidence", 50),
+            "user_id": contact_data.get("user_id")
+        }
+        
+        # Call CRM service API
+        headers = {"Content-Type": "application/json"}
+        response = httpx.post(
+            "http://crm-service:8008/api/contacts",
+            json=crm_contact,
+            headers=headers,
+            timeout=10
+        )
+        
+        if response.status_code == 201:
+            logger.info(f"Contact saved to CRM: {contact_data.get('email', 'Unknown')}")
+        else:
+            logger.warning(f"Failed to save contact to CRM: {response.status_code}")
+            
+    except Exception as e:
+        logger.error(f"Error saving contact to CRM: {str(e)}")
+
 async def update_contact(
     session: AsyncSession, 
     contact_id: int, 
     email: Optional[str] = None, 
     phone: Optional[str] = None,
-    enrichment_data: Optional[Dict[str, Any]] = None
+    enrichment_data: Optional[Dict[str, Any]] = None,
+    user_id: Optional[str] = None
 ):
     """Update contact with enrichment results."""
     # Build dynamic SET clause based on provided parameters
@@ -171,6 +205,18 @@ async def update_contact(
         query = sa.text(f"UPDATE {CONTACTS_TABLE} SET {set_clause} WHERE id = :contact_id")
         await session.execute(query, params)
         await session.commit()
+        
+        # Get the updated contact data to save to CRM
+        contact_query = sa.text(f"SELECT * FROM {CONTACTS_TABLE} WHERE id = :contact_id")
+        result = await session.execute(contact_query, {"contact_id": contact_id})
+        contact = result.fetchone()
+        
+        if contact and (email or phone):
+            # Save to CRM if we have email or phone
+            contact_dict = dict(contact)
+            contact_dict["confidence"] = enrichment_data.get("confidence", 50) if enrichment_data else 50
+            contact_dict["user_id"] = user_id  # Pass user_id
+            await save_to_crm(contact_dict)
 
 async def save_enrichment_result(
     session: AsyncSession, 
@@ -829,7 +875,8 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 contact_id, 
                 email=verified_email,  # Only save if it passed verification
                 phone=verified_phone,  # Use formatted phone number
-                enrichment_data=enrichment_data
+                enrichment_data=enrichment_data,
+                user_id=user_id
             ))
             
             logger.info(f"Contact updated with best result from {best_result.get('source')}")
@@ -843,7 +890,8 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                     'confidence': 0,
                     'email_verified': False,
                     'phone_verified': False
-                }
+                },
+                user_id=user_id
             ))
             
             logger.info(f"No valid results found for {lead.get('first_name')} {lead.get('last_name')}")
