@@ -8,6 +8,7 @@ import pandas as pd
 import uuid, io, boto3
 from sqlalchemy import insert, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt, JWTError
 
 from common.config import get_settings
 from common.db import get_session, SessionLocal
@@ -169,3 +170,76 @@ async def check_and_decrement(data: dict, session: AsyncSession = Depends(get_se
     return {"ok": True, "remaining": user.credits}
 
 app.include_router(router)
+
+@app.get("/api/credits/info")
+async def get_credit_info(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get credit information for the authenticated user"""
+    try:
+        # Extract user_id from token
+        token = credentials.credentials
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        
+        # Get user's current credit balance
+        user_query = text("SELECT credits, current_subscription_id FROM users WHERE id = :user_id")
+        user_result = await session.execute(user_query, {"user_id": user_id})
+        user_row = user_result.fetchone()
+        
+        if not user_row:
+            # Create default user entry if doesn't exist
+            await session.execute(
+                text("INSERT INTO users (id, credits) VALUES (:user_id, 100) ON CONFLICT (id) DO NOTHING"),
+                {"user_id": user_id}
+            )
+            await session.commit()
+            current_credits = 100
+            subscription_id = None
+        else:
+            current_credits = user_row[0] if user_row[0] is not None else 0
+            subscription_id = user_row[1]
+        
+        # Get usage statistics for current month
+        usage_query = text("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN operation_type = 'enrichment' AND change < 0 THEN ABS(change) ELSE 0 END), 0) as used_this_month,
+                COUNT(CASE WHEN operation_type = 'enrichment' AND created_at::date = CURRENT_DATE THEN 1 END) as used_today
+            FROM credit_logs 
+            WHERE user_id = :user_id 
+            AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
+        """)
+        usage_result = await session.execute(usage_query, {"user_id": user_id})
+        usage_row = usage_result.fetchone()
+        
+        used_this_month = int(usage_row[0]) if usage_row else 0
+        used_today = int(usage_row[1]) if usage_row else 0
+        
+        return {
+            "balance": current_credits,
+            "used_today": used_today,
+            "used_this_month": used_this_month,
+            "limit_daily": None,
+            "limit_monthly": 5000,
+            "subscription": None
+        }
+        
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}"
+        )
+    except Exception as e:
+        print(f"Error fetching credit info: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching credit info: {str(e)}")
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "service": "credit-service"}

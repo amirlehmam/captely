@@ -7,6 +7,9 @@ import {
 } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
+// Credit Context Provider - PRODUCTION READY
+import { CreditProvider } from './contexts/CreditContext';
+
 // Components & pages
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -60,61 +63,63 @@ function App() {
   console.log('📄 Rendering App with authentication:', isAuthenticated);
 
   return (
-    <Router>
-      <Toaster position="top-right" />
+    <CreditProvider>
+      <Router>
+        <Toaster position="top-right" />
 
-      <Routes>
-        {/* Public */}
-        {!isAuthenticated && (
-          <>
-            <Route
-              path="/login"
-              element={<LoginPage onLogin={handleLogin} />}
-            />
-            <Route path="/signup" element={<SignupPage onLogin={handleLogin} />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </>
-        )}
+        <Routes>
+          {/* Public */}
+          {!isAuthenticated && (
+            <>
+              <Route
+                path="/login"
+                element={<LoginPage onLogin={handleLogin} />}
+              />
+              <Route path="/signup" element={<SignupPage onLogin={handleLogin} />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </>
+          )}
 
-        {/* Protected */}
-        {isAuthenticated && (
-          <>
-            <Route element={<Layout onLogout={handleLogout} />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/batches" element={<BatchesPage />} />
-              <Route path="/import" element={<ImportPage />} />
-              <Route path="/integrations" element={<IntegrationsPage />} />
-              <Route path="/api-tokens" element={<ApiTokensPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/billing" element={<BillingPage />} />
-              
-              {/* CRM Routes */}
-              <Route path="/crm/contacts" element={
-                <React.Suspense fallback={<div>Loading...</div>}>
-                  <ContactsPage />
-                </React.Suspense>
-              } />
-              <Route path="/crm/activities" element={
-                <React.Suspense fallback={<div>Loading...</div>}>
-                  <ActivitiesPage />
-                </React.Suspense>
-              } />
-              <Route path="/crm/campaigns" element={
-                <React.Suspense fallback={<div>Loading...</div>}>
-                  <CampaignsPage />
-                </React.Suspense>
-              } />
-              
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/signup" element={<Navigate to="/" replace />} />
-            <Route path="/forgot-password" element={<Navigate to="/" replace />} />
-          </>
-        )}
-      </Routes>
-    </Router>
+          {/* Protected */}
+          {isAuthenticated && (
+            <>
+              <Route element={<Layout onLogout={handleLogout} />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/batches" element={<BatchesPage />} />
+                <Route path="/import" element={<ImportPage />} />
+                <Route path="/integrations" element={<IntegrationsPage />} />
+                <Route path="/api-tokens" element={<ApiTokensPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/billing" element={<BillingPage />} />
+                
+                {/* CRM Routes */}
+                <Route path="/crm/contacts" element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <ContactsPage />
+                  </React.Suspense>
+                } />
+                <Route path="/crm/activities" element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <ActivitiesPage />
+                  </React.Suspense>
+                } />
+                <Route path="/crm/campaigns" element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <CampaignsPage />
+                  </React.Suspense>
+                } />
+                
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/signup" element={<Navigate to="/" replace />} />
+              <Route path="/forgot-password" element={<Navigate to="/" replace />} />
+            </>
+          )}
+        </Routes>
+      </Router>
+    </CreditProvider>
   );
 }
 

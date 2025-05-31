@@ -137,6 +137,64 @@ const SettingsPage: React.FC = () => {
     permissions: ['read', 'write']
   });
 
+  // Sidebar navigation items - production ready
+  const sidebarItems = [
+    {
+      id: 'account',
+      label: 'Account',
+      icon: <User className="w-5 h-5" />,
+      description: 'Profile and personal settings'
+    },
+    {
+      id: 'security',
+      label: 'Security',
+      icon: <Shield className="w-5 h-5" />,
+      description: 'Password and security settings'
+    },
+    {
+      id: 'billing',
+      label: 'Billing',
+      icon: <CreditCard className="w-5 h-5" />,
+      description: 'Subscription and payment'
+    },
+    {
+      id: 'api',
+      label: 'API Keys',
+      icon: <Key className="w-5 h-5" />,
+      description: 'Manage API access'
+    },
+    {
+      id: 'enrichment',
+      label: 'Enrichment',
+      icon: <Zap className="w-5 h-5" />,
+      description: 'Data enrichment settings'
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: <Bell className="w-5 h-5" />,
+      description: 'Email and alert preferences'
+    },
+    {
+      id: 'team',
+      label: 'Team',
+      icon: <Users className="w-5 h-5" />,
+      description: 'Team members and roles'
+    },
+    {
+      id: 'integrations',
+      label: 'Integrations',
+      icon: <Webhook className="w-5 h-5" />,
+      description: 'Third-party connections'
+    },
+    {
+      id: 'export',
+      label: 'Data Export',
+      icon: <Download className="w-5 h-5" />,
+      description: 'Export and backup options'
+    }
+  ];
+
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -506,18 +564,6 @@ const SettingsPage: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const sidebarItems = [
-    { id: 'account', label: 'Account Settings', icon: <User className="w-5 h-5" /> },
-    { id: 'billing', label: 'Billing & Plans', icon: <CreditCard className="w-5 h-5" /> },
-    { id: 'api', label: 'API & Keys', icon: <Key className="w-5 h-5" /> },
-    { id: 'enrichment', label: 'Enrichment Settings', icon: <Database className="w-5 h-5" /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
-    { id: 'team', label: 'Team & Access', icon: <Users className="w-5 h-5" /> },
-    { id: 'security', label: 'Security', icon: <Shield className="w-5 h-5" /> },
-    { id: 'integrations', label: 'Integration Settings', icon: <Globe className="w-5 h-5" /> },
-    { id: 'export', label: 'Data Export', icon: <Download className="w-5 h-5" /> }
-  ];
 
   const renderAccountSettings = () => (
     <div className="space-y-8">

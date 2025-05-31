@@ -121,7 +121,7 @@ async def get_user_dashboard(
     """
     
     result = await session.execute(text(stats_query), {"user_id": user_id})
-    stats = await result.first()
+    stats = result.first()
     
     # Provider performance
     provider_query = """
@@ -149,7 +149,7 @@ async def get_user_dashboard(
             "avg_confidence": round(float(row[3] or 0), 2),
             "credits_used": float(row[4] or 0)
         }
-        for row in await provider_result.fetchall()
+        for row in provider_result.fetchall()
     ]
     
     # Recent jobs performance
@@ -187,7 +187,7 @@ async def get_user_dashboard(
             "credits_used": float(row[8] or 0),
             "completion_rate": (row[3] / row[2] * 100) if row[2] > 0 else 0
         }
-        for row in await jobs_result.fetchall()
+        for row in jobs_result.fetchall()
     ]
     
     # Daily activity for the last 30 days
@@ -220,7 +220,7 @@ async def get_user_dashboard(
             "success_rate": (row[2] / row[1] * 100) if row[1] > 0 else 0,
             "credits_used": float(row[3] or 0)
         }
-        for row in await activity_result.fetchall()
+        for row in activity_result.fetchall()
     ]
     
     # Calculate derived metrics
@@ -290,7 +290,7 @@ async def get_enrichment_statistics(
     """
     
     result = await session.execute(text(funnel_query), params)
-    funnel_data = await result.first()
+    funnel_data = result.first()
     
     # Email quality distribution
     email_quality_query = f"""
@@ -313,7 +313,7 @@ async def get_enrichment_statistics(
     """
     
     quality_result = await session.execute(text(email_quality_query), params)
-    email_quality = {row[0]: row[1] for row in await quality_result.fetchall()}
+    email_quality = {row[0]: row[1] for row in quality_result.fetchall()}
     
     # Phone type distribution
     phone_type_query = f"""
@@ -330,7 +330,7 @@ async def get_enrichment_statistics(
     """
     
     phone_result = await session.execute(text(phone_type_query), params)
-    phone_distribution = {row[0]: row[1] for row in await phone_result.fetchall()}
+    phone_distribution = {row[0]: row[1] for row in phone_result.fetchall()}
     
     # Industry breakdown
     industry_query = f"""
@@ -359,7 +359,7 @@ async def get_enrichment_statistics(
             "success_rate": (row[2] / row[1] * 100) if row[1] > 0 else 0,
             "avg_confidence": round(float(row[3] or 0), 2)
         }
-        for row in await industry_result.fetchall()
+        for row in industry_result.fetchall()
     ]
     
     total = funnel_data[0] or 1  # Avoid division by zero
@@ -388,7 +388,7 @@ async def get_enrichment_statistics(
     }
 
 @app.get("/api/analytics/job/{job_id}")
-async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_session)):
+async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_async_session)):
     """Get real-time analytics for a specific enrichment job"""
     try:
         # Get job details
@@ -398,7 +398,7 @@ async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_ses
             WHERE id = :job_id
         """
         job_result = await session.execute(text(job_query), {"job_id": job_id})
-        job = await job_result.first()
+        job = job_result.first()
         
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
@@ -416,7 +416,7 @@ async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_ses
             WHERE job_id = :job_id
         """
         stats_result = await session.execute(text(stats_query), {"job_id": job_id})
-        stats = await stats_result.first()
+        stats = stats_result.first()
         
         # Calculate rates
         total_contacts = stats.total_contacts or 0
@@ -437,7 +437,7 @@ async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_ses
             ORDER BY id
         """
         contacts_result = await session.execute(text(contacts_query), {"job_id": job_id})
-        contacts = [dict(row._mapping) for row in await contacts_result.fetchall()]
+        contacts = [dict(row._mapping) for row in contacts_result.fetchall()]
         
         return JSONResponse(content={
             "job": {
@@ -469,7 +469,7 @@ async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_ses
 
 @app.get("/api/analytics/dashboard")
 async def get_dashboard_analytics(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get real-time dashboard analytics from the database"""
     try:
@@ -487,7 +487,7 @@ async def get_dashboard_analytics(
         """)
         
         result = await session.execute(stats_query)
-        stats_row = await result.fetchone()
+        stats_row = result.fetchone()
         
         if not stats_row:
             # Return default values if no data
@@ -523,7 +523,7 @@ async def get_dashboard_analytics(
             WHERE status IN ('processing', 'pending')
         """)
         jobs_result = await session.execute(active_jobs_query)
-        active_jobs = await jobs_result.scalar() or 0
+        active_jobs = jobs_result.scalar() or 0
         
         return {
             "total_contacts": total_contacts,
@@ -546,7 +546,7 @@ async def get_dashboard_analytics(
 @app.get("/api/analytics/enrichment-history")
 async def get_enrichment_history(
     limit: int = 50,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get recent enrichment history"""
     try:
@@ -575,7 +575,7 @@ async def get_enrichment_history(
         """)
         
         result = await session.execute(history_query, {"limit": limit})
-        history_rows = await result.fetchall()
+        history_rows = result.fetchall()
         
         enrichments = []
         for row in history_rows:
@@ -665,7 +665,7 @@ async def get_credit_analytics(
             "net": float(row[2] or 0) - float(row[1] or 0),
             "operations": row[3] or 0
         }
-        for row in await result.fetchall()
+        for row in result.fetchall()
     ]
     
     # Provider cost breakdown
@@ -693,7 +693,7 @@ async def get_credit_analytics(
             "operations": row[2],
             "avg_cost": round(float(row[3]), 3)
         }
-        for row in await provider_result.fetchall()
+        for row in provider_result.fetchall()
     ]
     
     return {
@@ -710,3 +710,4 @@ async def get_credit_analytics(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
+ 

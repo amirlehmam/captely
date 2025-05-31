@@ -9,20 +9,18 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, String, DateTime, Text, Enum, Boolean, Integer, ForeignKey, select, update, text, func, and_, or_
 from sqlalchemy.dialects.postgresql import UUID
 from pydantic import BaseModel
 from common.config import get_settings
-from common.db import get_session
+from common.db import async_engine, AsyncSessionLocal, get_async_session
 
-# Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgrespw@captely-db:5432/postgres")
+# Get settings
+settings = get_settings()
 
 # SQLAlchemy setup
-engine = create_async_engine(DATABASE_URL, echo=False)
-async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
 # Enums
@@ -202,14 +200,6 @@ class CampaignResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Database session dependency
-async def get_db_session():
-    async with async_session_maker() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
-
 # Application lifecycle
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -222,7 +212,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    await engine.dispose()
+    await async_engine.dispose()
 
 # FastAPI app
 app = FastAPI(
@@ -254,7 +244,7 @@ async def get_contacts(
     search: Optional[str] = Query(None),
     enriched_only: bool = Query(False),
     job_id: Optional[str] = Query(None),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get paginated list of enriched contacts"""
     try:
@@ -334,7 +324,7 @@ async def get_contacts(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/contacts/{contact_id}")
-async def get_contact(contact_id: int, session: AsyncSession = Depends(get_session)):
+async def get_contact(contact_id: int, session: AsyncSession = Depends(get_async_session)):
     """Get detailed contact information"""
     try:
         query = """
@@ -367,7 +357,7 @@ async def get_contact(contact_id: int, session: AsyncSession = Depends(get_sessi
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/contacts/stats/enrichment")
-async def get_enrichment_stats(session: AsyncSession = Depends(get_session)):
+async def get_enrichment_stats(session: AsyncSession = Depends(get_async_session)):
     """Get enrichment statistics across all contacts"""
     try:
         stats_query = """
@@ -438,7 +428,7 @@ async def get_enrichment_stats(session: AsyncSession = Depends(get_session)):
 @app.get("/api/contacts/recent")
 async def get_recent_contacts(
     limit: int = Query(10, ge=1, le=50),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get recently enriched contacts"""
     try:
@@ -468,7 +458,7 @@ async def get_recent_contacts(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/contacts/export/{job_id}")
-async def export_contacts(job_id: str, session: AsyncSession = Depends(get_session)):
+async def export_contacts(job_id: str, session: AsyncSession = Depends(get_async_session)):
     """Export enriched contacts for a specific job"""
     try:
         query = """
@@ -495,7 +485,7 @@ async def export_contacts(job_id: str, session: AsyncSession = Depends(get_sessi
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/contacts/{contact_id}")
-async def delete_contact(contact_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_contact(contact_id: int, session: AsyncSession = Depends(get_async_session)):
     """Delete a contact"""
     try:
         # Check if contact exists
@@ -527,7 +517,7 @@ async def get_activities(
     type_filter: Optional[str] = Query(None, alias="type"),
     status_filter: Optional[str] = Query(None, alias="status"),
     priority_filter: Optional[str] = Query(None, alias="priority"),
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get all activities with filtering and pagination"""
     try:
@@ -574,7 +564,7 @@ async def get_activities(
 @app.post("/api/activities", response_model=ActivityResponse)
 async def create_activity(
     activity: ActivityCreate,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new activity"""
     try:
@@ -639,7 +629,7 @@ async def create_activity(
 async def get_campaigns(
     limit: int = Query(50, le=100),
     skip: int = Query(0, ge=0),
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get all campaigns with pagination"""
     try:
@@ -675,7 +665,7 @@ async def get_campaigns(
 @app.post("/api/campaigns", response_model=CampaignResponse)
 async def create_campaign(
     campaign: CampaignCreate,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new campaign"""
     try:
@@ -714,7 +704,7 @@ async def create_campaign(
 async def update_campaign_status(
     campaign_id: str,
     status_update: dict,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Update campaign status"""
     try:
@@ -755,7 +745,7 @@ async def update_campaign_status(
 async def update_activity_status(
     activity_id: str,
     status_update: dict,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Update activity status"""
     try:

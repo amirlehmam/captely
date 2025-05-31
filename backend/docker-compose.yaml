@@ -236,8 +236,11 @@ services:
         condition: service_healthy
     ports:
       - "8008:8000"
+    volumes:
+      - ./services/common:/app/common
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - PYTHONPATH=/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: on-failure
