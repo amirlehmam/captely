@@ -1,7 +1,7 @@
 import asyncio
 import secrets
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 
 import jwt
 from jwt import ExpiredSignatureError, PyJWTError
@@ -119,10 +119,10 @@ async def get_current_user(
 class SignupIn(BaseModel):
     email: EmailStr
     password: str
-    first_name: str = None
-    last_name: str = None
-    company: str = None
-    phone: str = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    company: Optional[str] = None
+    phone: Optional[str] = None
 
 class TokenOut(BaseModel):
     access_token: str
@@ -131,10 +131,10 @@ class TokenOut(BaseModel):
 class UserOut(BaseModel):
     id: str
     email: EmailStr
-    first_name: str = None
-    last_name: str = None
-    company: str = None
-    phone: str = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    company: Optional[str] = None
+    phone: Optional[str] = None
     credits: int
     created_at: datetime
     is_active: bool = True
@@ -293,7 +293,7 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
             last_name=data.last_name,
             company=data.company,
             phone=data.phone,
-            credits=100,
+            credits=5000,  # Professional plan: 5000 credits for new users
             total_spent=0
         )
         db.add(user)
@@ -309,6 +309,17 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         print(f"Unexpected error in signup: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+# Add the missing /api/auth/register/ endpoint as an alias
+@app.options("/api/auth/register/", include_in_schema=False)
+async def options_register():
+    """Handle preflight CORS for registration"""
+    return {}
+
+@app.post("/api/auth/register/", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
+async def register(data: SignupIn, db: AsyncSession = Depends(get_db)):
+    """Registration endpoint alias for /auth/signup"""
+    return await signup(data, db)
 
 @app.post("/auth/login", response_model=TokenOut)
 async def login(data: SignupIn, db: AsyncSession = Depends(get_db)):

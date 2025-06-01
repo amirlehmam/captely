@@ -412,6 +412,27 @@ async def get_user_subscriptions():
         "total": 1
     })
 
+@app.get("/api/subscription")
+async def get_current_subscription():
+    """Get current user subscription (singular)"""
+    return JSONResponse(content={
+        "id": "sub-123",
+        "user_id": "user-456",
+        "package_id": "pro-5k",
+        "status": "active",
+        "plan": "Professional",
+        "credits_monthly": 5000,
+        "price_monthly": 186.00,
+        "billing_cycle": "monthly",
+        "current_period_start": "2024-03-01T00:00:00Z",
+        "current_period_end": "2024-04-01T00:00:00Z",
+        "trial_end": None,
+        "cancel_at_period_end": False,
+        "cancelled_at": None,
+        "created_at": "2024-03-01T00:00:00Z",
+        "next_billing": "2024-04-01T00:00:00Z"
+    })
+
 @app.get("/api/dashboard/analytics")
 async def get_dashboard_analytics():
     """Get dashboard analytics data"""

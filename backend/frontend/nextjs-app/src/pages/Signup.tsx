@@ -201,7 +201,15 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(3)) return;
+    console.log('Form data:', formData);
+    console.log('Validation step 3 result:', validateStep(3));
+    
+    if (!validateStep(3)) {
+      console.log('Validation failed, errors:', errors);
+      // Show a toast to indicate validation failed
+      toast.error('Please fill in all required fields and agree to the terms');
+      return;
+    }
 
     setLoading(true);
 
@@ -488,9 +496,17 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                   type="checkbox"
                   checked={formData.agreeToTerms}
                   onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                  className={`w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 ${
+                    errors.agreeToTerms && touched.agreeToTerms
+                      ? 'border-red-500 ring-2 ring-red-200'
+                      : ''
+                  }`}
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className={`ml-2 text-sm ${
+                  errors.agreeToTerms && touched.agreeToTerms
+                    ? 'text-red-700'
+                    : 'text-gray-700'
+                }`}>
                   I agree to the{' '}
                   <a href="/terms" className="text-blue-600 hover:text-blue-700">Terms of Service</a>
                   {' '}and{' '}
@@ -498,7 +514,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                 </span>
               </label>
               {errors.agreeToTerms && touched.agreeToTerms && (
-                <p className="ml-6 text-sm text-red-600">{errors.agreeToTerms}</p>
+                <p className="ml-6 text-sm text-red-600 font-medium">{errors.agreeToTerms}</p>
               )}
 
               <label className="flex items-start">

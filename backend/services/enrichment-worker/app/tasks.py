@@ -39,6 +39,13 @@ settings = get_settings()
 engine = create_async_engine(settings.database_url)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+# Also create a synchronous engine for Celery tasks
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker as sync_sessionmaker
+
+sync_engine = create_engine(settings.database_url.replace('+asyncpg', ''))
+SyncSessionLocal = sync_sessionmaker(bind=sync_engine)
+
 # Define metadata and tables
 metadata = MetaData()
 
