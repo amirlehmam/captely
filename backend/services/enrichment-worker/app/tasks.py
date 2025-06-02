@@ -834,6 +834,16 @@ def call_apollo(lead: Dict[str, Any]) -> Dict[str, Any]:
         "raw_data": person
     }
 
+def enrich_with_clearbit(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Placeholder for Clearbit enrichment."""
+    logger.info("Clearbit enrichment not implemented yet")
+    return {"email": None, "phone": None, "confidence": 0, "source": "clearbit"}
+
+def enrich_with_pdl(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Placeholder for PDL enrichment."""
+    logger.info("PDL enrichment not implemented yet")
+    return {"email": None, "phone": None, "confidence": 0, "source": "pdl"}
+
 # ----- Celery Tasks ----- #
 
 class EnrichmentTask(Task):
@@ -927,8 +937,8 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     credits_needed = 1  # 1 credit per enrichment
     
     try:
-        # Check and deduct credits BEFORE enrichment
-        with AsyncSessionLocal() as session:
+        # Check and deduct credits BEFORE enrichment - using SYNC session
+        with SyncSessionLocal() as session:
             # Check user credits
             user_result = session.execute(
                 text("SELECT credits FROM users WHERE id = :user_id"), 
@@ -1052,9 +1062,9 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             "updated_at": datetime.utcnow()
         })
         
-        # Refund credits if enrichment completely failed
+        # Refund credits if enrichment completely failed - using SYNC session
         try:
-            with AsyncSessionLocal() as session:
+            with SyncSessionLocal() as session:
                 session.execute(
                     text("UPDATE users SET credits = credits + :credits WHERE id = :user_id"),
                     {"user_id": user_id, "credits": credits_needed}
@@ -1077,19 +1087,58 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         except Exception as e:
             print(f"❌ Credit refund failed: {e}")
     
-    # Save to database
-    async def save_contact_async():
-        async with AsyncSessionLocal() as session:
-            return await save_contact(session, job_id, contact_data)
-    
-    contact_id = run_async(save_contact_async())
-    
-    # Update job progress
-    async def increment_progress_async():
-        async with AsyncSessionLocal() as session:
-            await increment_job_progress(session, job_id)
-    
-    run_async(increment_progress_async())
+    # Save to database using SYNC operations
+    try:
+        with SyncSessionLocal() as session:
+            # Insert contact record
+            contact_insert = text("""
+                INSERT INTO contacts (
+                    job_id, first_name, last_name, company, position, location, 
+                    industry, profile_url, email, phone, enriched, enrichment_status,
+                    enrichment_provider, enrichment_score, email_verified, phone_verified,
+                    credits_consumed, created_at, updated_at
+                ) VALUES (
+                    :job_id, :first_name, :last_name, :company, :position, :location,
+                    :industry, :profile_url, :email, :phone, :enriched, :enrichment_status,
+                    :enrichment_provider, :enrichment_score, :email_verified, :phone_verified,
+                    :credits_consumed, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                ) RETURNING id
+            """)
+            
+            result = session.execute(contact_insert, {
+                "job_id": job_id,
+                "first_name": contact_data["first_name"],
+                "last_name": contact_data["last_name"],
+                "company": contact_data["company"],
+                "position": contact_data["position"],
+                "location": contact_data["location"],
+                "industry": contact_data["industry"],
+                "profile_url": contact_data["profile_url"],
+                "email": contact_data.get("email"),
+                "phone": contact_data.get("phone"),
+                "enriched": contact_data["enriched"],
+                "enrichment_status": contact_data["enrichment_status"],
+                "enrichment_provider": contact_data.get("enrichment_provider"),
+                "enrichment_score": contact_data.get("enrichment_score"),
+                "email_verified": contact_data.get("email_verified", False),
+                "phone_verified": contact_data.get("phone_verified", False),
+                "credits_consumed": contact_data["credits_consumed"]
+            })
+            
+            contact_id = result.scalar()
+            
+            # Update job progress
+            session.execute(
+                text("UPDATE import_jobs SET completed = completed + 1, updated_at = CURRENT_TIMESTAMP WHERE id = :job_id"),
+                {"job_id": job_id}
+            )
+            
+            session.commit()
+            print(f"📝 Saved contact {contact_id} and updated job progress")
+            
+    except Exception as e:
+        print(f"❌ Database save failed: {e}")
+        contact_id = None
     
     # Return the enrichment result
     return {
