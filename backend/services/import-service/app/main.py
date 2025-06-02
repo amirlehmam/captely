@@ -18,6 +18,7 @@ import pandas as pd
 import uuid, io, boto3, httpx, csv
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+import os
 
 from common.config import get_settings
 from common.db import get_session, async_engine
@@ -56,7 +57,13 @@ app.add_middleware(
 )
 
 # mount static files (e.g. your extension UI under /static)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Create static directory if it doesn't exist
+static_dir = "static"
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir)
+    print(f"Created static directory: {static_dir}")
+
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Jinja2 templates
 templates = Jinja2Templates(directory="templates")
