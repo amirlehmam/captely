@@ -469,24 +469,26 @@ async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_asy
 
 @app.get("/api/analytics/dashboard")
 async def get_dashboard_analytics(
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Get real-time dashboard analytics from the database"""
+    """Get real-time dashboard analytics from the database for the authenticated user"""
     try:
-        # Get total contacts and enrichment stats
+        # Get total contacts and enrichment stats for this user
         stats_query = text("""
             SELECT 
                 COUNT(*) as total_contacts,
-                COUNT(CASE WHEN enriched = true THEN 1 END) as enriched_count,
-                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
-                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
-                AVG(enrichment_score) as avg_confidence,
-                SUM(credits_consumed) as total_credits_used
-            FROM contacts
-            WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+                COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_count,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as phones_found,
+                AVG(c.enrichment_score) as avg_confidence,
+                SUM(c.credits_consumed) as total_credits_used
+            FROM contacts c
+            INNER JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE ij.user_id = :user_id
         """)
         
-        result = await session.execute(stats_query)
+        result = await session.execute(stats_query, {"user_id": user_id})
         stats_row = result.fetchone()
         
         if not stats_row:
@@ -502,7 +504,8 @@ async def get_dashboard_analytics(
                 "avg_confidence": 0,
                 "credits_used": 0,
                 "processing_time_avg": 0,
-                "active_jobs": 0
+                "active_jobs": 0,
+                "completed_jobs": 0
             }
         
         total_contacts = stats_row[0] or 0
@@ -517,13 +520,18 @@ async def get_dashboard_analytics(
         email_hit_rate = (emails_found / total_contacts * 100) if total_contacts > 0 else 0
         phone_hit_rate = (phones_found / total_contacts * 100) if total_contacts > 0 else 0
         
-        # Get active jobs count
-        active_jobs_query = text("""
-            SELECT COUNT(*) FROM import_jobs 
-            WHERE status IN ('processing', 'pending')
+        # Get active and completed jobs count for this user
+        jobs_query = text("""
+            SELECT 
+                COUNT(CASE WHEN status IN ('processing', 'pending') THEN 1 END) as active_jobs,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_jobs
+            FROM import_jobs 
+            WHERE user_id = :user_id
         """)
-        jobs_result = await session.execute(active_jobs_query)
-        active_jobs = jobs_result.scalar() or 0
+        jobs_result = await session.execute(jobs_query, {"user_id": user_id})
+        jobs_row = jobs_result.fetchone()
+        active_jobs = jobs_row[0] or 0
+        completed_jobs = jobs_row[1] or 0
         
         return {
             "total_contacts": total_contacts,
@@ -536,7 +544,8 @@ async def get_dashboard_analytics(
             "avg_confidence": round(avg_confidence, 2),
             "credits_used": total_credits_used,
             "processing_time_avg": 2.5,  # Mock average processing time
-            "active_jobs": active_jobs
+            "active_jobs": active_jobs,
+            "completed_jobs": completed_jobs
         }
         
     except Exception as e:

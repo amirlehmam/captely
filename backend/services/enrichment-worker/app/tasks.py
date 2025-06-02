@@ -947,13 +947,10 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             user_row = user_result.first()
             
             if not user_row:
-                # Create user with default credits
-                session.execute(
-                    text("INSERT INTO users (id, credits) VALUES (:user_id, 1000)"),
-                    {"user_id": user_id}
-                )
-                session.commit()
-                current_credits = 1000
+                # User doesn't exist - this is an error condition
+                # Users should be created during registration, not here
+                print(f"❌ User {user_id} does not exist in database")
+                return {"status": "failed", "reason": "user_not_found"}
             else:
                 current_credits = user_row[0] if user_row[0] is not None else 0
             
@@ -1135,6 +1132,59 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             
             session.commit()
             print(f"📝 Saved contact {contact_id} and updated job progress")
+            
+            # Check if job is complete
+            job_status_query = text("""
+                SELECT total, completed FROM import_jobs WHERE id = :job_id
+            """)
+            job_result = session.execute(job_status_query, {"job_id": job_id})
+            job_data = job_result.first()
+            
+            if job_data and job_data[1] >= job_data[0]:  # completed >= total
+                # Job is complete, update status
+                session.execute(
+                    text("UPDATE import_jobs SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE id = :job_id"),
+                    {"job_id": job_id}
+                )
+                session.commit()
+                print(f"✅ Job {job_id} completed! All {job_data[0]} contacts processed")
+                
+                # Get job statistics for notification
+                stats_query = text("""
+                    SELECT 
+                        COUNT(*) as total_contacts,
+                        COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+                        COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
+                        SUM(credits_consumed) as credits_used
+                    FROM contacts
+                    WHERE job_id = :job_id
+                """)
+                stats_result = session.execute(stats_query, {"job_id": job_id})
+                stats = stats_result.first()
+                
+                # Send completion notification
+                try:
+                    notification_data = {
+                        "user_id": user_id,
+                        "job_id": job_id,
+                        "job_status": "completed",
+                        "results_summary": {
+                            "total_contacts": stats[0] or 0,
+                            "emails_found": stats[1] or 0,
+                            "phones_found": stats[2] or 0,
+                            "success_rate": ((stats[1] or 0) / (stats[0] or 1) * 100) if stats[0] else 0,
+                            "credits_used": float(stats[3] or 0)
+                        }
+                    }
+                    
+                    httpx.post(
+                        "http://notification-service:8000/api/notifications/job-completion",
+                        json=notification_data,
+                        timeout=5.0
+                    )
+                    print(f"📧 Job completion notification sent for job {job_id}")
+                except Exception as e:
+                    print(f"❌ Failed to send notification: {e}")
             
     except Exception as e:
         print(f"❌ Database save failed: {e}")

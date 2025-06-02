@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, CheckCircle, AlertCircle, Clock, Loader } from 'lucide-react';
+import api from '../../services/api';
 
 const BatchProgress: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -8,9 +9,7 @@ const BatchProgress: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_ANALYTICS_URL}/api/analytics/dashboard`);
-      if (!response.ok) throw new Error('Failed to fetch dashboard data');
-      const data = await response.json();
+      const data = await api.getDashboardStats();
       setDashboardData(data);
       setError(null);
     } catch (err) {

@@ -556,15 +556,9 @@ async def get_user_credits(
         user_data = user_result.first()
         
         if not user_data:
-            # Create user with default credits if not exists
-            create_user_query = text("""
-                INSERT INTO users (id, credits, created_at, updated_at) 
-                VALUES (:user_id, 5000, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT (id) DO NOTHING
-            """)
-            session.execute(create_user_query, {"user_id": user_id})
-            session.commit()
-            current_credits = 5000
+            # User doesn't exist - this shouldn't happen as they should be created during auth
+            print(f"❌ User {user_id} not found in database")
+            raise HTTPException(status_code=404, detail="User not found. Please ensure you are properly authenticated.")
         else:
             current_credits = user_data.credits or 5000
 
@@ -679,13 +673,9 @@ async def deduct_credits(
         balance_data = balance_result.first()
         
         if not balance_data:
-            # Create user with default credits if not exists
-            create_user_query = text("""
-                INSERT INTO users (id, credits, created_at, updated_at) 
-                VALUES (:user_id, 5000, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            """)
-            session.execute(create_user_query, {"user_id": user_id})
-            current_balance = 5000
+            # User doesn't exist - this shouldn't happen as they should be created during auth
+            print(f"❌ User {user_id} not found in database")
+            raise HTTPException(status_code=404, detail="User not found. Please ensure you are properly authenticated.")
         else:
             current_balance = balance_data.credits or 0
         
@@ -740,13 +730,9 @@ async def refund_credits(
         balance_data = balance_result.first()
         
         if not balance_data:
-            # Create user with default credits if not exists
-            create_user_query = text("""
-                INSERT INTO users (id, credits, created_at, updated_at) 
-                VALUES (:user_id, 5000, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            """)
-            session.execute(create_user_query, {"user_id": user_id})
-            current_balance = 5000
+            # User doesn't exist - this shouldn't happen as they should be created during auth
+            print(f"❌ User {user_id} not found in database")
+            raise HTTPException(status_code=404, detail="User not found. Please ensure you are properly authenticated.")
         else:
             current_balance = balance_data.credits or 0
         

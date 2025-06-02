@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Mail, Phone, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import api from '../../services/api';
 
 interface StatsData {
   total_contacts: number;
@@ -21,20 +22,17 @@ const EnrichmentStats: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_ANALYTICS_URL}/api/analytics/dashboard`);
-        if (!response.ok) throw new Error('Failed to fetch stats');
-        
-        const data = await response.json();
+        const data = await api.getDashboardStats();
         setStats({
-          total_contacts: data.total_contacts || 0,
-          email_hit_rate: data.email_hit_rate || 0,
-          phone_hit_rate: data.phone_hit_rate || 0,
-          success_rate: data.success_rate || 0,
-          avg_confidence: data.avg_confidence || 0,
-          emails_found: data.emails_found || 0,
-          phones_found: data.phones_found || 0,
-          processing_time_avg: data.processing_time_avg || 0,
-          credits_used: data.credits_used || 0
+          total_contacts: data.overview?.total_contacts || 0,
+          email_hit_rate: data.overview?.email_hit_rate || 0,
+          phone_hit_rate: data.overview?.phone_hit_rate || 0,
+          success_rate: data.overview?.success_rate || 0,
+          avg_confidence: data.overview?.avg_confidence || 0,
+          emails_found: data.overview?.emails_found || 0,
+          phones_found: data.overview?.phones_found || 0,
+          processing_time_avg: 2.5, // Mock value since not in API response
+          credits_used: data.overview?.credits_used_today || 0
         });
         setError(null);
       } catch (err) {
