@@ -4,7 +4,7 @@ from fastapi import (
     FastAPI, Request,
     UploadFile, File,
     Depends, HTTPException, status,
-    Form, Query
+    Form, Query, Response
 )
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -15,7 +15,7 @@ from jose import jwt, JWTError
 from pydantic import BaseModel
 from sqlalchemy import insert, select, text
 import pandas as pd
-import uuid, io, boto3, httpx
+import uuid, io, boto3, httpx, csv
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -763,6 +763,97 @@ async def refund_credits(
     except Exception as e:
         print(f"Error refunding credits: {e}")
         raise HTTPException(status_code=500, detail=f"Error refunding credits: {str(e)}")
+
+@app.get("/api/jobs/{job_id}/export")
+async def export_job_data(
+    job_id: str,
+    format: str = Query("csv", regex="^(csv|excel|json)$"),
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Export job contacts in various formats"""
+    try:
+        # Verify job belongs to user
+        job_check = text("SELECT id FROM import_jobs WHERE id = :job_id AND user_id = :user_id")
+        job_result = session.execute(job_check, {"job_id": job_id, "user_id": user_id})
+        if not job_result.first():
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Get all contacts for the job
+        contacts_query = text("""
+            SELECT 
+                first_name, last_name, email, phone, company, position,
+                location, industry, profile_url, enriched, enrichment_status,
+                enrichment_provider, enrichment_score, email_verified, phone_verified,
+                credits_consumed, created_at
+            FROM contacts 
+            WHERE job_id = :job_id
+            ORDER BY created_at DESC
+        """)
+        
+        contacts_result = session.execute(contacts_query, {"job_id": job_id})
+        contacts = []
+        
+        for row in contacts_result:
+            contacts.append({
+                "first_name": row[0],
+                "last_name": row[1],
+                "email": row[2] or "",
+                "phone": row[3] or "",
+                "company": row[4] or "",
+                "position": row[5] or "",
+                "location": row[6] or "",
+                "industry": row[7] or "",
+                "profile_url": row[8] or "",
+                "enriched": row[9],
+                "enrichment_status": row[10],
+                "enrichment_provider": row[11] or "",
+                "enrichment_score": row[12] or 0,
+                "email_verified": row[13],
+                "phone_verified": row[14],
+                "credits_consumed": row[15] or 0,
+                "created_at": row[16].isoformat() if row[16] else ""
+            })
+        
+        if format == "csv":
+            # Create CSV response
+            output = io.StringIO()
+            if contacts:
+                writer = csv.DictWriter(output, fieldnames=contacts[0].keys())
+                writer.writeheader()
+                writer.writerows(contacts)
+            
+            return Response(
+                content=output.getvalue(),
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=export_{job_id}.csv"
+                }
+            )
+            
+        elif format == "excel":
+            # Create Excel response
+            df = pd.DataFrame(contacts)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name='Contacts', index=False)
+            
+            return Response(
+                content=output.getvalue(),
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={
+                    "Content-Disposition": f"attachment; filename=export_{job_id}.xlsx"
+                }
+            )
+            
+        else:  # json
+            return JSONResponse(content={"contacts": contacts})
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error exporting job data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 async def health_check():

@@ -2,11 +2,12 @@
 import os
 import uuid
 import enum
+import httpx
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -200,6 +201,34 @@ class CampaignResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# Authentication dependency
+async def get_current_user_id(authorization: str = Header(...)) -> str:
+    """Extract user ID from JWT token via auth service"""
+    try:
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid authorization header")
+        
+        token = authorization.replace("Bearer ", "")
+        
+        # Validate token with auth service
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"http://auth-service:8000/auth/validate-token",
+                json={"token": token},
+                timeout=5.0
+            )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        
+        token_data = response.json()
+        return token_data["user_id"]
+        
+    except httpx.RequestError:
+        raise HTTPException(status_code=503, detail="Authentication service unavailable")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
 # Application lifecycle
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -244,53 +273,58 @@ async def get_contacts(
     search: Optional[str] = Query(None),
     enriched_only: bool = Query(False),
     job_id: Optional[str] = Query(None),
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Get paginated list of enriched contacts"""
+    """Get paginated list of enriched contacts for the authenticated user"""
     try:
         offset = (page - 1) * limit
         
-        # Build base query
-        where_conditions = []
-        params = {}
+        # Build base query with user filtering
+        where_conditions = ["c.user_id = :user_id"]  # Always filter by user
+        params = {"user_id": user_id}
         
         if search:
             where_conditions.append("""
-                (LOWER(first_name) LIKE LOWER(:search) OR 
-                 LOWER(last_name) LIKE LOWER(:search) OR 
-                 LOWER(company) LIKE LOWER(:search) OR
-                 LOWER(email) LIKE LOWER(:search))
+                (LOWER(c.first_name) LIKE LOWER(:search) OR 
+                 LOWER(c.last_name) LIKE LOWER(:search) OR 
+                 LOWER(c.company) LIKE LOWER(:search) OR
+                 LOWER(c.email) LIKE LOWER(:search))
             """)
             params["search"] = f"%{search}%"
         
         if enriched_only:
-            where_conditions.append("enriched = true")
+            where_conditions.append("c.enriched = true")
         
         if job_id:
-            where_conditions.append("job_id = :job_id")
+            where_conditions.append("c.job_id = :job_id")
             params["job_id"] = job_id
         
-        where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+        where_clause = "WHERE " + " AND ".join(where_conditions)
         
         # Get total count
         count_query = f"""
             SELECT COUNT(*) 
-            FROM contacts 
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id 
             {where_clause}
         """
         count_result = await session.execute(text(count_query), params)
         total = count_result.scalar()
         
-        # Get contacts
+        # Get contacts with job info
         contacts_query = f"""
             SELECT 
-                id, first_name, last_name, company, position, email, phone,
-                linkedin_url, location, industry, enriched, enrichment_status,
-                enrichment_provider, enrichment_score, credits_consumed,
-                email_verified, phone_verified, created_at, updated_at, job_id
-            FROM contacts 
+                c.id, c.first_name, c.last_name, c.company, c.position, 
+                c.email, c.phone, c.profile_url as linkedin_url, c.location, 
+                c.industry, c.enriched, c.enrichment_status,
+                c.enrichment_provider, c.enrichment_score, c.credits_consumed,
+                c.email_verified, c.phone_verified, c.created_at, c.updated_at, 
+                c.job_id, j.status as job_status
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id 
             {where_clause}
-            ORDER BY created_at DESC
+            ORDER BY c.created_at DESC
             LIMIT :limit OFFSET :offset
         """
         params.update({"limit": limit, "offset": offset})
@@ -324,19 +358,29 @@ async def get_contacts(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/contacts/{contact_id}")
-async def get_contact(contact_id: int, session: AsyncSession = Depends(get_async_session)):
-    """Get detailed contact information"""
+async def get_contact(
+    contact_id: int, 
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get detailed contact information for the authenticated user"""
     try:
         query = """
             SELECT 
-                id, first_name, last_name, company, position, email, phone,
-                linkedin_url, location, industry, enriched, enrichment_status,
-                enrichment_provider, enrichment_score, credits_consumed,
-                email_verified, phone_verified, created_at, updated_at, job_id
-            FROM contacts 
-            WHERE id = :contact_id
+                c.id, c.first_name, c.last_name, c.company, c.position, 
+                c.email, c.phone, c.profile_url as linkedin_url, c.location, 
+                c.industry, c.enriched, c.enrichment_status,
+                c.enrichment_provider, c.enrichment_score, c.credits_consumed,
+                c.email_verified, c.phone_verified, c.created_at, c.updated_at, 
+                c.job_id, j.status as job_status
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id 
+            WHERE c.id = :contact_id AND j.user_id = :user_id
         """
-        result = await session.execute(text(query), {"contact_id": contact_id})
+        result = await session.execute(text(query), {
+            "contact_id": contact_id, 
+            "user_id": user_id
+        })
         contact = result.first()
         
         if not contact:
@@ -357,40 +401,46 @@ async def get_contact(contact_id: int, session: AsyncSession = Depends(get_async
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/contacts/stats/enrichment")
-async def get_enrichment_stats(session: AsyncSession = Depends(get_async_session)):
-    """Get enrichment statistics across all contacts"""
+async def get_enrichment_stats(
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get enrichment statistics for the authenticated user"""
     try:
         stats_query = """
             SELECT 
                 COUNT(*) as total_contacts,
-                COUNT(CASE WHEN enriched = true THEN 1 END) as enriched_contacts,
-                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
-                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
-                COUNT(CASE WHEN email_verified = true THEN 1 END) as emails_verified,
-                COUNT(CASE WHEN phone_verified = true THEN 1 END) as phones_verified,
-                SUM(credits_consumed) as total_credits_used,
-                AVG(CASE WHEN enrichment_score IS NOT NULL THEN enrichment_score END) as avg_confidence
-            FROM contacts
+                COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_contacts,
+                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                COUNT(CASE WHEN c.email_verified = true THEN 1 END) as emails_verified,
+                COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as phones_verified,
+                SUM(c.credits_consumed) as total_credits_used,
+                AVG(CASE WHEN c.enrichment_score IS NOT NULL THEN c.enrichment_score END) as avg_confidence
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id
+            WHERE j.user_id = :user_id
         """
         
-        result = await session.execute(text(stats_query))
+        result = await session.execute(text(stats_query), {"user_id": user_id})
         stats = result.first()
         
-        # Provider breakdown
+        # Provider breakdown for user
         provider_query = """
             SELECT 
-                enrichment_provider,
+                c.enrichment_provider,
                 COUNT(*) as contacts,
-                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
-                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
-                AVG(enrichment_score) as avg_confidence
-            FROM contacts 
-            WHERE enrichment_provider IS NOT NULL
-            GROUP BY enrichment_provider
+                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                AVG(c.enrichment_score) as avg_confidence
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id
+            WHERE c.enrichment_provider IS NOT NULL AND j.user_id = :user_id
+            GROUP BY c.enrichment_provider
             ORDER BY contacts DESC
         """
         
-        provider_result = await session.execute(text(provider_query))
+        provider_result = await session.execute(text(provider_query), {"user_id": user_id})
         providers = []
         
         for row in provider_result.fetchall():
@@ -428,21 +478,27 @@ async def get_enrichment_stats(session: AsyncSession = Depends(get_async_session
 @app.get("/api/contacts/recent")
 async def get_recent_contacts(
     limit: int = Query(10, ge=1, le=50),
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Get recently enriched contacts"""
+    """Get recently enriched contacts for the authenticated user"""
     try:
         query = """
             SELECT 
-                id, first_name, last_name, company, position, email, phone,
-                enrichment_provider, enrichment_score, credits_consumed, created_at
-            FROM contacts 
-            WHERE enriched = true
-            ORDER BY created_at DESC
+                c.id, c.first_name, c.last_name, c.company, c.position, 
+                c.email, c.phone, c.enrichment_provider, c.enrichment_score, 
+                c.credits_consumed, c.created_at
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id
+            WHERE c.enriched = true AND j.user_id = :user_id
+            ORDER BY c.created_at DESC
             LIMIT :limit
         """
         
-        result = await session.execute(text(query), {"limit": limit})
+        result = await session.execute(text(query), {
+            "user_id": user_id, 
+            "limit": limit
+        })
         contacts = []
         
         for row in result.fetchall():
@@ -458,17 +514,33 @@ async def get_recent_contacts(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/contacts/export/{job_id}")
-async def export_contacts(job_id: str, session: AsyncSession = Depends(get_async_session)):
-    """Export enriched contacts for a specific job"""
+async def export_contacts(
+    job_id: str, 
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Export enriched contacts for a specific job owned by the authenticated user"""
     try:
+        # Verify job belongs to user
+        job_check = """
+            SELECT id FROM import_jobs WHERE id = :job_id AND user_id = :user_id
+        """
+        job_result = await session.execute(text(job_check), {
+            "job_id": job_id, 
+            "user_id": user_id
+        })
+        
+        if not job_result.first():
+            raise HTTPException(status_code=404, detail="Job not found")
+        
         query = """
             SELECT 
-                first_name, last_name, company, position, email, phone,
-                linkedin_url, location, industry, enrichment_provider, 
-                enrichment_score, credits_consumed
-            FROM contacts 
-            WHERE job_id = :job_id
-            ORDER BY id
+                c.first_name, c.last_name, c.company, c.position, c.email, c.phone,
+                c.profile_url as linkedin_url, c.location, c.industry, c.enrichment_provider, 
+                c.enrichment_score, c.credits_consumed
+            FROM contacts c
+            WHERE c.job_id = :job_id
+            ORDER BY c.id
         """
         
         result = await session.execute(text(query), {"job_id": job_id})
@@ -485,12 +557,23 @@ async def export_contacts(job_id: str, session: AsyncSession = Depends(get_async
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/contacts/{contact_id}")
-async def delete_contact(contact_id: int, session: AsyncSession = Depends(get_async_session)):
-    """Delete a contact"""
+async def delete_contact(
+    contact_id: int, 
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Delete a contact owned by the authenticated user"""
     try:
-        # Check if contact exists
-        check_query = "SELECT id FROM contacts WHERE id = :contact_id"
-        check_result = await session.execute(text(check_query), {"contact_id": contact_id})
+        # Check if contact exists and belongs to user
+        check_query = """
+            SELECT c.id FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id
+            WHERE c.id = :contact_id AND j.user_id = :user_id
+        """
+        check_result = await session.execute(text(check_query), {
+            "contact_id": contact_id, 
+            "user_id": user_id
+        })
         
         if not check_result.first():
             raise HTTPException(status_code=404, detail="Contact not found")
@@ -506,7 +589,6 @@ async def delete_contact(contact_id: int, session: AsyncSession = Depends(get_as
         raise
     except Exception as e:
         print(f"Error deleting contact: {e}")
-        await session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 # Activity endpoints
