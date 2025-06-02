@@ -14,7 +14,6 @@ import { Link } from 'react-router-dom';
 import { useDashboardStats, useJobs, useServiceHealth } from '../hooks/useApi';
 
 // Components
-import EnrichmentStats from '../components/dashboard/EnrichmentStats';
 import BatchProgress from '../components/dashboard/BatchProgress';
 import RecentBatches from '../components/dashboard/RecentBatches';
 import ProviderStatus from '../components/dashboard/ProviderStatus';
@@ -301,15 +300,6 @@ const Dashboard: React.FC = () => {
 
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Enrichment Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <EnrichmentStats />
-        </motion.div>
-
         {/* Recent batches */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

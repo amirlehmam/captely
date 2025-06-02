@@ -1,0 +1,228 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - JWT_EXPIRE_HOURS=${JWT_EXPIRE_HOURS}
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  import-service:
+    build:
+      context: ./services/import-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  credit-service:
+    build:
+      context: ./services/credit-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  enrichment-worker:
+    build:
+      context: ./services/enrichment-worker
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - CELERY_BROKER_URL=${REDIS_URL}
+      - CELERY_RESULT_BACKEND=${REDIS_URL}
+      - PYTHONPATH=/app
+      - ICYPEAS_API=${ICYPEAS_API}
+      - DROPCONTACT_API=${DROPCONTACT_API}
+      - HUNTER_API=${HUNTER_API}
+      - APOLLO_API=${APOLLO_API}
+    volumes:
+      - ./services/common:/app/common
+      - ./csv:/app/csv
+    command: ["celery", "-A", "app.tasks", "worker", "--loglevel=info", "-E", "-Q", "contact_enrichment,enrichment_batch,cascade_enrichment,db_operations"]
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+
+  flower:
+    image: mher/flower:2.0.1
+    environment:
+      - CELERY_BROKER_URL=${REDIS_URL}
+      - CELERY_RESULT_BACKEND=${REDIS_URL}
+      - FLOWER_BASIC_AUTH=${FLOWER_AUTH}
+      - FLOWER_PORT=5555
+    ports:
+      - "5555:5555"
+    command: ["celery", "--broker=${REDIS_URL}", "flower", "--port=5555", "--basic-auth=${FLOWER_AUTH}"]
+    restart: unless-stopped
+
+  export-service:
+    build:
+      context: ./services/export-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "8004:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "8005:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "8006:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  billing-service:
+    build:
+      context: ./services/billing-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+    ports:
+      - "8007:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  crm-service:
+    build:
+      context: ./services/crm-service
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - PYTHONPATH=/app
+    ports:
+      - "8008:8000"
+    volumes:
+      - ./services/common:/app/common
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend/nextjs-app
+      dockerfile: Dockerfile.prod
+    environment:
+      - VITE_AUTH_URL=${VITE_AUTH_URL}
+      - VITE_IMPORT_URL=${VITE_IMPORT_URL}
+      - VITE_CREDIT_URL=${VITE_CREDIT_URL}
+      - VITE_EXPORT_URL=${VITE_EXPORT_URL}
+      - VITE_ANALYTICS_URL=${VITE_ANALYTICS_URL}
+      - VITE_NOTIFICATION_URL=${VITE_NOTIFICATION_URL}
+      - VITE_BILLING_URL=${VITE_BILLING_URL}
+      - VITE_CRM_URL=${VITE_CRM_URL}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - auth-service
+      - import-service
+      - credit-service
+      - export-service
+      - analytics-service
+      - notification-service
+      - billing-service
+      - crm-service
+    restart: unless-stopped 

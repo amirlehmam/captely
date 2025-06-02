@@ -994,70 +994,11 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
 @celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.cascade_enrich')
 def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     """
-    Cascade enrichment with multiple providers and credit tracking
+    Cascade enrichment with multiple providers and result-based credit tracking
     """
     print(f"🔄 Starting cascade enrichment for {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}")
     
-    # CREDIT DEDUCTION - PRODUCTION READY
-    credits_needed = 1  # 1 credit per enrichment
-    
-    try:
-        # Check and deduct credits BEFORE enrichment - using SYNC session
-        with SyncSessionLocal() as session:
-            # Check user credits
-            user_result = session.execute(
-                text("SELECT credits FROM users WHERE id = :user_id"), 
-                {"user_id": user_id}
-            )
-            user_row = user_result.first()
-            
-            if not user_row:
-                # User doesn't exist - this is an error condition
-                # Users should be created during registration, not here
-                print(f"❌ User {user_id} does not exist in database")
-                return {"status": "failed", "reason": "user_not_found"}
-            else:
-                current_credits = user_row[0] if user_row[0] is not None else 0
-            
-            if current_credits < credits_needed:
-                print(f"❌ Insufficient credits for user {user_id}. Has {current_credits}, needs {credits_needed}")
-                # Update job status to reflect credit issue
-                session.execute(
-                    text("UPDATE import_jobs SET status = 'credit_insufficient' WHERE id = :job_id"),
-                    {"job_id": job_id}
-                )
-                session.commit()
-                return {"status": "failed", "reason": "insufficient_credits"}
-            
-            # Deduct credits
-            session.execute(
-                text("UPDATE users SET credits = credits - :credits WHERE id = :user_id"),
-                {"user_id": user_id, "credits": credits_needed}
-            )
-            
-            # Log credit transaction
-            session.execute(
-                text("""
-                    INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
-                    VALUES (:user_id, 'enrichment', :cost, :change, :reason, CURRENT_TIMESTAMP)
-                """),
-                {
-                    "user_id": user_id,
-                    "operation_type": "enrichment", 
-                    "cost": credits_needed,
-                    "change": -credits_needed,
-                    "reason": f"Enrichment for {lead.get('company', 'unknown')}"
-                }
-            )
-            session.commit()
-            
-            print(f"💳 Deducted {credits_needed} credits from user {user_id}. Remaining: {current_credits - credits_needed}")
-    
-    except Exception as e:
-        print(f"❌ Credit deduction failed: {e}")
-        return {"status": "failed", "reason": "credit_deduction_error"}
-    
-    # Proceed with enrichment
+    # Proceed with enrichment first (no upfront charge)
     contact_data = {
         "id": str(uuid.uuid4()),
         "job_id": job_id,
@@ -1071,7 +1012,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         "profile_url": lead.get("profile_url", ""),
         "enriched": False,
         "enrichment_status": "processing",
-        "credits_consumed": credits_needed,  # Track credits used
+        "credits_consumed": 0,  # Will be calculated based on results
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
@@ -1156,6 +1097,93 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             print(f"❌ {provider} enrichment failed: {e}")
             continue
     
+    # Calculate credits based on actual results found
+    credits_to_charge = 0
+    email_found = bool(contact_data.get("email"))
+    phone_found = bool(contact_data.get("phone"))
+    
+    # CORRECT CREDIT PRICING MODEL
+    if email_found:
+        credits_to_charge += 1  # 1 credit per email
+        print(f"📧 Email found: +1 credit")
+    
+    if phone_found:
+        credits_to_charge += 10  # 10 credits per phone
+        print(f"📱 Phone found: +10 credits")
+    
+    if credits_to_charge == 0:
+        print(f"💸 No results found: 0 credits charged")
+    else:
+        print(f"💳 Total credits to charge: {credits_to_charge}")
+    
+    # Update credits_consumed in contact data
+    contact_data["credits_consumed"] = credits_to_charge
+    
+    # CHARGE CREDITS BASED ON RESULTS (only if we found something)
+    if credits_to_charge > 0:
+        try:
+            with SyncSessionLocal() as session:
+                # Check user credits
+                user_result = session.execute(
+                    text("SELECT credits FROM users WHERE id = :user_id"), 
+                    {"user_id": user_id}
+                )
+                user_row = user_result.first()
+                
+                if not user_row:
+                    print(f"❌ User {user_id} does not exist in database")
+                    return {"status": "failed", "reason": "user_not_found"}
+                else:
+                    current_credits = user_row[0] if user_row[0] is not None else 0
+                
+                if current_credits < credits_to_charge:
+                    print(f"❌ Insufficient credits for user {user_id}. Has {current_credits}, needs {credits_to_charge}")
+                    print(f"⚠️  Results found but not enough credits to charge - marking as credit_insufficient")
+                    
+                    # Update job status to reflect credit issue
+                    session.execute(
+                        text("UPDATE import_jobs SET status = 'credit_insufficient' WHERE id = :job_id"),
+                        {"job_id": job_id}
+                    )
+                    session.commit()
+                    return {"status": "failed", "reason": "insufficient_credits"}
+                
+                # Deduct the calculated credits
+                session.execute(
+                    text("UPDATE users SET credits = credits - :credits WHERE id = :user_id"),
+                    {"user_id": user_id, "credits": credits_to_charge}
+                )
+                
+                # Log credit transaction with detailed breakdown
+                reason_parts = []
+                if email_found:
+                    reason_parts.append("1 email (+1 credit)")
+                if phone_found:
+                    reason_parts.append("1 phone (+10 credits)")
+                
+                reason = f"Enrichment results: {', '.join(reason_parts)} for {lead.get('company', 'unknown')}"
+                
+                session.execute(
+                    text("""
+                        INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
+                        VALUES (:user_id, 'enrichment', :cost, :change, :reason, CURRENT_TIMESTAMP)
+                    """),
+                    {
+                        "user_id": user_id,
+                        "operation_type": "enrichment", 
+                        "cost": credits_to_charge,
+                        "change": -credits_to_charge,
+                        "reason": reason
+                    }
+                )
+                session.commit()
+                
+                print(f"💳 Charged {credits_to_charge} credits from user {user_id}. Remaining: {current_credits - credits_to_charge}")
+        
+        except Exception as e:
+            print(f"❌ Credit charging failed: {e}")
+            return {"status": "failed", "reason": "credit_charge_error"}
+    
     if not enrichment_successful:
         print(f"❌ All enrichment providers failed for {contact_data['first_name']} {contact_data['last_name']}")
         contact_data.update({
@@ -1163,31 +1191,6 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             "enrichment_provider": "none",
             "updated_at": datetime.utcnow()
         })
-        
-        # Refund credits if enrichment completely failed - using SYNC session
-        try:
-            with SyncSessionLocal() as session:
-                session.execute(
-                    text("UPDATE users SET credits = credits + :credits WHERE id = :user_id"),
-                    {"user_id": user_id, "credits": credits_needed}
-                )
-                
-                # Log refund
-                session.execute(
-                    text("""
-                        INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
-                        VALUES (:user_id, 'refund', 0, :change, :reason, CURRENT_TIMESTAMP)
-                    """),
-                    {
-                        "user_id": user_id,
-                        "change": credits_needed,
-                        "reason": "Enrichment failed - credit refund"
-                    }
-                )
-                session.commit()
-                print(f"💰 Refunded {credits_needed} credits to user {user_id}")
-        except Exception as e:
-            print(f"❌ Credit refund failed: {e}")
     
     # Save to database using SYNC operations
     try:
@@ -1299,7 +1302,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     return {
         "status": "completed" if enrichment_successful else "failed",
         "contact_id": contact_id,
-        "credits_consumed": credits_needed,
+        "credits_consumed": credits_to_charge,
         "provider_used": contact_data.get("enrichment_provider", "none")
     }
 
