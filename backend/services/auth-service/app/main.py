@@ -176,6 +176,16 @@ origins = [
     "http://localhost:8001",
     "http://localhost:8002",
     "http://localhost:8003",
+    # Add server IP addresses for DigitalOcean deployment
+    "http://164.90.232.146:3000",
+    "http://164.90.232.146:8001",
+    "http://164.90.232.146:8002",
+    "http://164.90.232.146:8003",
+    "http://164.90.232.146:8004",
+    "http://164.90.232.146:8005",
+    "http://164.90.232.146:8006",
+    "http://164.90.232.146:8007",
+    "http://164.90.232.146:8008",
     # Add any chrome extension origins if needed
     # "chrome-extension://your-extension-id"
 ]
