@@ -262,14 +262,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_AUTH_URL=http://localhost:8001
-      - VITE_IMPORT_URL=http://localhost:8002
-      - VITE_CREDIT_URL=http://localhost:8003
-      - VITE_EXPORT_URL=http://localhost:8004
-      - VITE_ANALYTICS_URL=http://localhost:8005
-      - VITE_NOTIFICATION_URL=http://localhost:8006
-      - VITE_BILLING_URL=http://localhost:8007
-      - VITE_CRM_URL=http://localhost:8008
+      - VITE_AUTH_URL=http://164.90.232.146:8001
+      - VITE_IMPORT_URL=http://164.90.232.146:8002
+      - VITE_CREDIT_URL=http://164.90.232.146:8003
+      - VITE_EXPORT_URL=http://164.90.232.146:8004
+      - VITE_ANALYTICS_URL=http://164.90.232.146:8005
+      - VITE_NOTIFICATION_URL=http://164.90.232.146:8006
+      - VITE_BILLING_URL=http://164.90.232.146:8007
+      - VITE_CRM_URL=http://164.90.232.146:8008
     restart: unless-stopped
 
 volumes:
