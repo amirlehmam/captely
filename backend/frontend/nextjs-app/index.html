@@ -22,8 +22,8 @@
             delete window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
           }
           
-          // In production, disable React DevTools entirely
-          if (process?.env?.NODE_ENV === 'production') {
+          // In production (detected by minified code), disable React DevTools entirely
+          if (!window.location.hostname.includes('localhost')) {
             window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { 
               isDisabled: true,
               supportsFiber: true,
