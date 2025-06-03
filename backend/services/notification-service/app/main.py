@@ -282,7 +282,7 @@ async def notify_job_completion(
         SELECT email, notification_preferences FROM users WHERE id = :user_id
     """
     result = await session.execute(text(user_query), {"user_id": notification.user_id})
-    user_data = result.first()
+    user_data = result.fetchone()
     
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -329,7 +329,7 @@ async def notify_credit_alert(
         SELECT email, notification_preferences FROM users WHERE id = :user_id
     """
     result = await session.execute(text(user_query), {"user_id": notification.user_id})
-    user_data = result.first()
+    user_data = result.fetchone()
     
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -459,7 +459,7 @@ async def send_weekly_summaries(
             "user_id": user_id,
             "one_week_ago": one_week_ago
         })
-        stats = stats_result.first()
+        stats = stats_result.fetchone()
         
         # Skip if no activity
         if not stats or stats[0] == 0:

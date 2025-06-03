@@ -13,6 +13,7 @@ from datetime import datetime
 import uuid
 import random
 import string
+import concurrent.futures
 
 # Celery imports
 from celery import Task, chain, group
@@ -101,12 +102,18 @@ enrichment_results = Table(
     Column('created_at', TIMESTAMP)
 )
 
-# Initialize rate limiters for each service
+# OPTIMIZED: Connection pool for better performance
+httpx_client = httpx.Client(
+    timeout=httpx.Timeout(timeout=20.0),
+    limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
+)
+
+# Initialize rate limiters for each service - OPTIMIZED rates
 rate_limiters = {
-    'icypeas': RateLimiter(calls_per_minute=60),
-    'dropcontact': RateLimiter(calls_per_minute=10),
-    'hunter': RateLimiter(calls_per_minute=20),
-    'apollo': RateLimiter(calls_per_minute=30)
+    'icypeas': RateLimiter(calls_per_minute=120),  # Increased from 60
+    'dropcontact': RateLimiter(calls_per_minute=20),  # Increased from 10  
+    'hunter': RateLimiter(calls_per_minute=40),  # Increased from 20
+    'apollo': RateLimiter(calls_per_minute=60)  # Increased from 30
 }
 
 # ----- Asyncio Helper ----- #
@@ -399,7 +406,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # Poll for results
     poll_url = "https://app.icypeas.com/api/bulk-single-searchs/read"
-    wait_times = [3, 5, 8, 12, 20, 30]  # Progressive waiting
+    wait_times = [2, 3, 4, 6]  # Progressive waiting
     
     for i, wait_time in enumerate(wait_times):
         # Wait before checking results
@@ -562,7 +569,7 @@ def call_dropcontact(lead: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"Dropcontact request started with ID: {request_id}")
     
     # Poll for results with faster intervals
-    wait_times = [3, 5, 8, 12, 15]  # Shorter polling as per docs recommendation
+    wait_times = [2, 3, 4, 3]  # Shorter polling as per docs recommendation
     
     for i, wait_time in enumerate(wait_times):
         # Wait before checking results
@@ -909,6 +916,60 @@ def enrich_with_pdl(lead: Dict[str, Any]) -> Dict[str, Any]:
         }
     }
 
+def parallel_enrich_fast(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """OPTIMIZED: Try multiple providers in parallel for faster results."""
+    
+    def try_provider(provider_name):
+        try:
+            if provider_name == "icypeas":
+                return call_icypeas(lead)
+            elif provider_name == "dropcontact": 
+                return call_dropcontact(lead)
+            elif provider_name == "apollo":
+                return call_apollo(lead)
+            elif provider_name == "hunter":
+                return call_hunter(lead)
+            return {"email": None, "phone": None, "confidence": 0, "source": provider_name}
+        except Exception as e:
+            logger.error(f"Provider {provider_name} failed: {e}")
+            return {"email": None, "phone": None, "confidence": 0, "source": provider_name}
+    
+    # Check available providers
+    available_providers = []
+    for provider in ["icypeas", "dropcontact", "apollo", "hunter"]:
+        if service_status.is_available(provider):
+            available_providers.append(provider)
+    
+    if not available_providers:
+        # Fallback to mock PDL
+        return enrich_with_pdl(lead)
+    
+    # OPTIMIZED: Run top 2 providers in parallel for speed
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future_to_provider = {
+            executor.submit(try_provider, provider): provider 
+            for provider in available_providers[:2]  # Top 2 for speed
+        }
+        
+        # Return first successful result
+        for future in concurrent.futures.as_completed(future_to_provider, timeout=25):
+            try:
+                result = future.result()
+                if result and (result.get("email") or result.get("phone")):
+                    # Cancel remaining futures for efficiency
+                    for f in future_to_provider:
+                        if f != future:
+                            f.cancel()
+                    logger.info(f"✅ Parallel enrichment success with {result.get('source')}")
+                    return result
+            except Exception as e:
+                logger.error(f"Parallel provider failed: {e}")
+                continue
+    
+    # If parallel attempts failed, use fallback
+    logger.info("🔄 Parallel providers failed, using PDL fallback")
+    return enrich_with_pdl(lead)
+
 # ----- Celery Tasks ----- #
 
 class EnrichmentTask(Task):
@@ -994,11 +1055,11 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
 @celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.cascade_enrich')
 def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     """
-    Cascade enrichment with multiple providers and result-based credit tracking
+    COST-OPTIMIZED sequential enrichment: cheapest first, expensive only if no email found
     """
-    print(f"🔄 Starting cascade enrichment for {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}")
+    print(f"💰 Starting COST-OPTIMIZED enrichment for {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}")
     
-    # Proceed with enrichment first (no upfront charge)
+    # Initialize contact data structure
     contact_data = {
         "id": str(uuid.uuid4()),
         "job_id": job_id,
@@ -1012,69 +1073,43 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         "profile_url": lead.get("profile_url", ""),
         "enriched": False,
         "enrichment_status": "processing",
-        "credits_consumed": 0,  # Will be calculated based on results
+        "credits_consumed": 0,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
     
-    # Try enrichment providers in order - CHEAPEST FIRST for cost optimization
-    # Icypeas (cheapest) -> Dropcontact -> Apollo -> Hunter -> PDL (fallback)
-    providers = ["icypeas", "dropcontact", "apollo", "hunter", "pdl"]
+    # COST-OPTIMIZED STRATEGY: Sequential cheapest-first approach
     enrichment_successful = False
+    provider_used = "none"
+    start_time = time.time()
     
-    # Check service availability and reorder if needed
-    available_providers = []
-    unavailable_providers = []
+    # Phase 1: CHEAPEST providers first (for cost optimization)
+    cheap_providers = ["icypeas", "dropcontact"]
+    print(f"💸 Phase 1: Trying CHEAP providers {cheap_providers}")
     
-    for provider in providers:
-        if provider == "pdl":
-            # PDL (mock) is always available as fallback
-            available_providers.append(provider)
-        elif provider == "clearbit":
-            # Clearbit is not implemented - skip
-            unavailable_providers.append(provider)
-        elif service_status.is_available(provider):
-            available_providers.append(provider)
-        else:
-            unavailable_providers.append(provider)
-    
-    # Try available providers first, then PDL as fallback
-    providers_to_try = available_providers
-    
-    # Always ensure PDL is at the end as fallback
-    if "pdl" in providers_to_try:
-        providers_to_try.remove("pdl")
-        providers_to_try.append("pdl")
-    
-    for provider in providers_to_try:
+    for provider in cheap_providers:
+        if not service_status.is_available(provider):
+            print(f"⚠️ {provider} not available, skipping")
+            continue
+            
         try:
-            print(f"🔍 Trying enrichment with {provider} (cost-optimized order)")
+            print(f"🔍 Trying {provider} (cost-optimized)")
             
             if provider == "icypeas":
                 result = call_icypeas(lead)
             elif provider == "dropcontact":
                 result = call_dropcontact(lead)
-            elif provider == "apollo":
-                result = call_apollo(lead)
-            elif provider == "hunter":
-                result = call_hunter(lead)  
-            elif provider == "clearbit":
-                result = enrich_with_clearbit(lead)
-            elif provider == "pdl":
-                result = enrich_with_pdl(lead)
             else:
                 continue
                 
             if result and (result.get("email") or result.get("phone")):
-                # Successful enrichment - extract email string if it's a dict
+                # Found results with cheap provider - STOP HERE!
                 email = result.get("email")
                 phone = result.get("phone")
                 
-                # Ensure email is a string, not a dict
+                # Clean results
                 if isinstance(email, dict):
                     email = email.get("email") if email else None
-                
-                # Ensure phone is a string, not a dict  
                 if isinstance(phone, dict):
                     phone = phone.get("phone") or phone.get("number") if phone else None
                 
@@ -1089,13 +1124,108 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                     "phone_verified": result.get("phone_verified", False),
                     "updated_at": datetime.utcnow()
                 })
+                
                 enrichment_successful = True
-                print(f"✅ Enrichment successful with {provider} - email: {email}, phone: {phone}")
+                provider_used = provider
+                processing_time = time.time() - start_time
+                print(f"✅ SUCCESS with CHEAP provider {provider} in {processing_time:.2f}s - email: {email}, phone: {phone}")
                 break
                 
         except Exception as e:
-            print(f"❌ {provider} enrichment failed: {e}")
+            print(f"❌ {provider} failed: {e}")
             continue
+    
+    # Phase 2: EXPENSIVE providers ONLY if no email found in Phase 1
+    if not enrichment_successful or not contact_data.get("email"):
+        expensive_providers = ["apollo", "hunter"]
+        
+        # Only try expensive providers if we haven't found an email yet
+        email_found = bool(contact_data.get("email"))
+        if not email_found:
+            print(f"💳 Phase 2: No email found, trying EXPENSIVE providers {expensive_providers}")
+            
+            for provider in expensive_providers:
+                if not service_status.is_available(provider):
+                    print(f"⚠️ {provider} not available, skipping")
+                    continue
+                    
+                try:
+                    print(f"🔍 Trying EXPENSIVE {provider} (last resort)")
+                    
+                    if provider == "apollo":
+                        result = call_apollo(lead)
+                    elif provider == "hunter":
+                        result = call_hunter(lead)
+                    else:
+                        continue
+                        
+                    if result and (result.get("email") or result.get("phone")):
+                        # Found results with expensive provider
+                        email = result.get("email")
+                        phone = result.get("phone")
+                        
+                        # Clean results
+                        if isinstance(email, dict):
+                            email = email.get("email") if email else None
+                        if isinstance(phone, dict):
+                            phone = phone.get("phone") or phone.get("number") if phone else None
+                        
+                        # Merge results (keep existing phone if we only found email, etc.)
+                        if email:
+                            contact_data["email"] = email
+                        if phone:
+                            contact_data["phone"] = phone
+                            
+                        contact_data.update({
+                            "enriched": True,
+                            "enrichment_status": "completed",
+                            "enrichment_provider": provider,
+                            "enrichment_score": result.get("confidence", 85),
+                            "email_verified": result.get("email_verified", False),
+                            "phone_verified": result.get("phone_verified", False),
+                            "updated_at": datetime.utcnow()
+                        })
+                        
+                        enrichment_successful = True
+                        provider_used = provider
+                        processing_time = time.time() - start_time
+                        print(f"✅ SUCCESS with EXPENSIVE provider {provider} in {processing_time:.2f}s - email: {email}, phone: {phone}")
+                        break
+                        
+                except Exception as e:
+                    print(f"❌ {provider} failed: {e}")
+                    continue
+        else:
+            print(f"💰 Email already found with cheap provider, skipping expensive providers for cost optimization")
+    
+    # Phase 3: Fallback to mock PDL if everything failed
+    if not enrichment_successful:
+        print(f"🔄 All providers failed, using PDL fallback")
+        try:
+            result = enrich_with_pdl(lead)
+            if result and (result.get("email") or result.get("phone")):
+                email = result.get("email")
+                phone = result.get("phone")
+                
+                contact_data.update({
+                    "email": email,
+                    "phone": phone,
+                    "enriched": True,
+                    "enrichment_status": "completed",
+                    "enrichment_provider": "pdl_fallback",
+                    "enrichment_score": result.get("confidence", 70),
+                    "email_verified": result.get("email_verified", False),
+                    "phone_verified": result.get("phone_verified", False),
+                    "updated_at": datetime.utcnow()
+                })
+                
+                enrichment_successful = True
+                provider_used = "pdl_fallback"
+                processing_time = time.time() - start_time
+                print(f"✅ Fallback PDL success in {processing_time:.2f}s")
+        except Exception as e:
+            print(f"❌ PDL fallback failed: {e}")
+            processing_time = time.time() - start_time
     
     # Calculate credits based on actual results found
     credits_to_charge = 0
@@ -1185,7 +1315,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
             return {"status": "failed", "reason": "credit_charge_error"}
     
     if not enrichment_successful:
-        print(f"❌ All enrichment providers failed for {contact_data['first_name']} {contact_data['last_name']}")
+        print(f"❌ All enrichment providers failed for {lead['first_name']} {lead['last_name']}")
         contact_data.update({
             "enrichment_status": "failed",
             "enrichment_provider": "none",
@@ -1303,7 +1433,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         "status": "completed" if enrichment_successful else "failed",
         "contact_id": contact_id,
         "credits_consumed": credits_to_charge,
-        "provider_used": contact_data.get("enrichment_provider", "none")
+        "provider_used": provider_used
     }
 
 @celery_app.task(name='app.tasks.process_csv_file')
