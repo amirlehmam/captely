@@ -1151,15 +1151,15 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                     
                 try:
                     print(f"🔍 Trying EXPENSIVE {provider} (last resort)")
-                    
-                    if provider == "apollo":
-                        result = call_apollo(lead)
-                    elif provider == "hunter":
-                        result = call_hunter(lead)
-                    else:
-                        continue
-                        
-                    if result and (result.get("email") or result.get("phone")):
+            
+            if provider == "apollo":
+                result = call_apollo(lead)
+            elif provider == "hunter":
+                result = call_hunter(lead)  
+            else:
+                continue
+                
+            if result and (result.get("email") or result.get("phone")):
                         # Found results with expensive provider
                         email = result.get("email")
                         phone = result.get("phone")
@@ -1176,25 +1176,25 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                         if phone:
                             contact_data["phone"] = phone
                             
-                        contact_data.update({
-                            "enriched": True,
-                            "enrichment_status": "completed",
-                            "enrichment_provider": provider,
-                            "enrichment_score": result.get("confidence", 85),
-                            "email_verified": result.get("email_verified", False),
-                            "phone_verified": result.get("phone_verified", False),
-                            "updated_at": datetime.utcnow()
-                        })
+                contact_data.update({
+                    "enriched": True,
+                    "enrichment_status": "completed",
+                    "enrichment_provider": provider,
+                    "enrichment_score": result.get("confidence", 85),
+                    "email_verified": result.get("email_verified", False),
+                    "phone_verified": result.get("phone_verified", False),
+                    "updated_at": datetime.utcnow()
+                })
                         
-                        enrichment_successful = True
+                enrichment_successful = True
                         provider_used = provider
                         processing_time = time.time() - start_time
                         print(f"✅ SUCCESS with EXPENSIVE provider {provider} in {processing_time:.2f}s - email: {email}, phone: {phone}")
-                        break
-                        
-                except Exception as e:
+                break
+                
+        except Exception as e:
                     print(f"❌ {provider} failed: {e}")
-                    continue
+            continue
         else:
             print(f"💰 Email already found with cheap provider, skipping expensive providers for cost optimization")
     
@@ -1207,7 +1207,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 email = result.get("email")
                 phone = result.get("phone")
                 
-                contact_data.update({
+        contact_data.update({
                     "email": email,
                     "phone": phone,
                     "enriched": True,
@@ -1216,9 +1216,9 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                     "enrichment_score": result.get("confidence", 70),
                     "email_verified": result.get("email_verified", False),
                     "phone_verified": result.get("phone_verified", False),
-                    "updated_at": datetime.utcnow()
-                })
-                
+            "updated_at": datetime.utcnow()
+        })
+        
                 enrichment_successful = True
                 provider_used = "pdl_fallback"
                 processing_time = time.time() - start_time
@@ -1271,7 +1271,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                     print(f"⚠️  Results found but not enough credits to charge - marking as credit_insufficient")
                     
                     # Update job status to reflect credit issue
-                    session.execute(
+                session.execute(
                         text("UPDATE import_jobs SET status = 'credit_insufficient' WHERE id = :job_id"),
                         {"job_id": job_id}
                     )

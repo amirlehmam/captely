@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let isEnrichingActive = false;
   let currentJobId = null;
   
+  // Define production API base
+  const API_BASE = 'https://captely.com/api';
+  
   // Toggle settings section
   settingsToggle.addEventListener('click', () => {
     const isHidden = settingsSection.style.display === 'none' || !settingsSection.style.display;
@@ -110,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Try direct validation with the auth service - ensuring correct JSON format
       try {
-        const authResponse = await fetch('http://localhost:8001/auth/validate-token', {
+        const authResponse = await fetch(`${API_BASE}/auth/validate-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -144,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Fallback: Try with the import service
       console.log('Trying fallback validation with import service');
-      const response = await fetch('http://localhost:8002/api/jobs', {
+      const response = await fetch(`${API_BASE}/jobs`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -171,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function createNewApiToken() {
     try {
       // Use the direct endpoint for extension tokens
-      const response = await fetch('http://localhost:8001/extension/get-token');
+      const response = await fetch(`${API_BASE}/extension/get-token`);
       
       if (!response.ok) {
         console.error('Failed to generate extension token:', await response.text());
