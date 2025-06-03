@@ -8,10 +8,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Captely - Lead Enrichment Platform</title>
     <script>
-      // Suppress React DevTools download message in development
-      if (typeof window !== 'undefined') {
-        window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
-      }
+      // Fix React DevTools hook to prevent Fast Refresh from being disabled
+      // This handles cases where browser extensions or third-party code
+      // have shimmed the React DevTools global hook
+      (function() {
+        if (typeof window !== 'undefined') {
+          // If hook exists but is incomplete/shimmed, reset it
+          if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__ && 
+              (!window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers ||
+               typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers !== 'object')) {
+            
+            // Clear the shimmed hook
+            delete window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+          }
+          
+          // In production, disable React DevTools entirely
+          if (process?.env?.NODE_ENV === 'production') {
+            window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { 
+              isDisabled: true,
+              supportsFiber: true,
+              inject: function() {},
+              onCommitFiberRoot: function() {},
+              onCommitFiberUnmount: function() {}
+            };
+          }
+        }
+      })();
     </script>
   </head>
   <body>

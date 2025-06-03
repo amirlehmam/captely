@@ -48,7 +48,12 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   import-service:
     build:
@@ -69,7 +74,12 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   credit-service:
     build:
@@ -90,7 +100,12 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   enrichment-worker:
     build:
@@ -113,7 +128,9 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     command: ["celery", "-A", "app.tasks", "worker", "--loglevel=info", "-E", "-Q", "contact_enrichment,enrichment_batch,cascade_enrichment,db_operations"]
-    restart: on-failure
+    restart: unless-stopped
+    deploy:
+      replicas: 2
 
   flower:
     image: mher/flower:2.0.1
@@ -134,7 +151,7 @@ services:
       - FLOWER_URL_PREFIX=
       - FLOWER_CORS_ALLOWED_ORIGINS=*
     command: ["sh", "-c", "sleep 15 && celery --broker=redis://redis:6379/0 flower --port=5555 --basic-auth=admin:flowerpassword --url-prefix= --cors-allowed-origins='*' --auto-refresh=true"]
-    restart: on-failure
+    restart: unless-stopped
 
   export-service:
     build:
@@ -155,7 +172,12 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   analytics-service:
     build:
@@ -176,7 +198,12 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   notification-service:
     build:
@@ -198,7 +225,12 @@ services:
       - REDIS_URL=redis://redis:6379/0
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   billing-service:
     build:
@@ -221,7 +253,12 @@ services:
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   crm-service:
     build:
@@ -243,14 +280,18 @@ services:
       - PYTHONPATH=/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend/nextjs-app
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     container_name: captely-frontend
-    env_file: .env
     depends_on:
       - auth-service
       - import-service
@@ -260,17 +301,39 @@ services:
       - billing-service
       - crm-service
     ports:
-      - "3000:3000"
-    environment:
-      - VITE_AUTH_URL=http://164.90.232.146:8001
-      - VITE_IMPORT_URL=http://164.90.232.146:8002
-      - VITE_CREDIT_URL=http://164.90.232.146:8003
-      - VITE_EXPORT_URL=http://164.90.232.146:8004
-      - VITE_ANALYTICS_URL=http://164.90.232.146:8005
-      - VITE_NOTIFICATION_URL=http://164.90.232.146:8006
-      - VITE_BILLING_URL=http://164.90.232.146:8007
-      - VITE_CRM_URL=http://164.90.232.146:8008
+      - "3000:80"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: captely-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - auth-service
+      - import-service
+      - credit-service
+      - export-service
+      - analytics-service
+      - notification-service
+      - billing-service
+      - crm-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   captely_db-data: 

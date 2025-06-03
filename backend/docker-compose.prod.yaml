@@ -189,20 +189,11 @@ services:
     build:
       context: ./frontend/nextjs-app
       dockerfile: Dockerfile.prod
-    environment:
-      - VITE_AUTH_URL=${VITE_AUTH_URL}
-      - VITE_IMPORT_URL=${VITE_IMPORT_URL}
-      - VITE_CREDIT_URL=${VITE_CREDIT_URL}
-      - VITE_EXPORT_URL=${VITE_EXPORT_URL}
-      - VITE_ANALYTICS_URL=${VITE_ANALYTICS_URL}
-      - VITE_NOTIFICATION_URL=${VITE_NOTIFICATION_URL}
-      - VITE_BILLING_URL=${VITE_BILLING_URL}
-      - VITE_CRM_URL=${VITE_CRM_URL}
     ports:
-      - "3000:3000"
+      - "3000:80"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
