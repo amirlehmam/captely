@@ -21,25 +21,46 @@ const getApiConfig = (): ApiConfig => {
     const runtimeConfig = (window as any).__RUNTIME_CONFIG__;
     if (runtimeConfig) {
       return {
-        authUrl: runtimeConfig.VITE_AUTH_URL || 'http://localhost:8001',
-        importUrl: runtimeConfig.VITE_IMPORT_URL || 'http://localhost:8002',
-        analyticsUrl: runtimeConfig.VITE_ANALYTICS_URL || 'http://localhost:8003',
-        crmUrl: runtimeConfig.VITE_CRM_URL || 'http://localhost:8004',
-        exportUrl: runtimeConfig.VITE_EXPORT_URL || 'http://localhost:8005',
-        billingUrl: runtimeConfig.VITE_BILLING_URL || 'http://localhost:8006'
+        authUrl: runtimeConfig.VITE_AUTH_URL || getDefaultUrl('auth'),
+        importUrl: runtimeConfig.VITE_IMPORT_URL || getDefaultUrl('import'),
+        analyticsUrl: runtimeConfig.VITE_ANALYTICS_URL || getDefaultUrl('analytics'),
+        crmUrl: runtimeConfig.VITE_CRM_URL || getDefaultUrl('crm'),
+        exportUrl: runtimeConfig.VITE_EXPORT_URL || getDefaultUrl('export'),
+        billingUrl: runtimeConfig.VITE_BILLING_URL || getDefaultUrl('billing')
       };
     }
   }
 
   // Fallback to import.meta.env for development
   return {
-    authUrl: import.meta.env?.VITE_AUTH_URL || 'http://localhost:8001',
-    importUrl: import.meta.env?.VITE_IMPORT_URL || 'http://localhost:8002',
-    analyticsUrl: import.meta.env?.VITE_ANALYTICS_URL || 'http://localhost:8003',
-    crmUrl: import.meta.env?.VITE_CRM_URL || 'http://localhost:8004',
-    exportUrl: import.meta.env?.VITE_EXPORT_URL || 'http://localhost:8005',
-    billingUrl: import.meta.env?.VITE_BILLING_URL || 'http://localhost:8006'
+    authUrl: import.meta.env?.VITE_AUTH_URL || getDefaultUrl('auth'),
+    importUrl: import.meta.env?.VITE_IMPORT_URL || getDefaultUrl('import'),
+    analyticsUrl: import.meta.env?.VITE_ANALYTICS_URL || getDefaultUrl('analytics'),
+    crmUrl: import.meta.env?.VITE_CRM_URL || getDefaultUrl('crm'),
+    exportUrl: import.meta.env?.VITE_EXPORT_URL || getDefaultUrl('export'),
+    billingUrl: import.meta.env?.VITE_BILLING_URL || getDefaultUrl('billing')
   };
+};
+
+// Get default URL based on environment
+const getDefaultUrl = (service: string): string => {
+  const isProduction = import.meta.env?.PROD || window.location.protocol === 'https:';
+  
+  if (isProduction) {
+    // Production URLs using HTTPS and domain
+    return `https://captely.com/api/${service}`;
+  } else {
+    // Development URLs
+    const portMap: Record<string, number> = {
+      auth: 8001,
+      import: 8002,
+      analytics: 8003,
+      crm: 8004,
+      export: 8005,
+      billing: 8006
+    };
+    return `http://localhost:${portMap[service]}`;
+  }
 };
 
 const API_CONFIG = getApiConfig();
