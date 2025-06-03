@@ -1,18 +1,54 @@
--- Fix CRM Enum Types
+-- Fix CRM Enum Types - Compatible with older PostgreSQL versions
 -- The CRM service expects PostgreSQL enum types that don't exist yet
 
--- 1. Create the missing enum types
-CREATE TYPE IF NOT EXISTS activitytype AS ENUM ('call', 'email', 'meeting', 'task', 'note', 'follow_up');
-CREATE TYPE IF NOT EXISTS activitystatus AS ENUM ('pending', 'completed', 'cancelled', 'overdue');
-CREATE TYPE IF NOT EXISTS activitypriority AS ENUM ('low', 'medium', 'high', 'urgent');
-CREATE TYPE IF NOT EXISTS campaignstatus AS ENUM ('draft', 'active', 'paused', 'completed');
-CREATE TYPE IF NOT EXISTS contactstatus AS ENUM ('new', 'contacted', 'qualified', 'customer', 'lost');
+-- 1. Drop existing types if they exist (ignore errors)
+DO $$
+BEGIN
+    DROP TYPE IF EXISTS activitytype CASCADE;
+EXCEPTION
+    WHEN undefined_object THEN NULL;
+END $$;
 
--- 2. Drop existing CRM tables (they have wrong column types)
+DO $$
+BEGIN
+    DROP TYPE IF EXISTS activitystatus CASCADE;
+EXCEPTION
+    WHEN undefined_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    DROP TYPE IF EXISTS activitypriority CASCADE;
+EXCEPTION
+    WHEN undefined_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    DROP TYPE IF EXISTS campaignstatus CASCADE;
+EXCEPTION
+    WHEN undefined_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    DROP TYPE IF EXISTS contactstatus CASCADE;
+EXCEPTION
+    WHEN undefined_object THEN NULL;
+END $$;
+
+-- 2. Create the enum types
+CREATE TYPE activitytype AS ENUM ('call', 'email', 'meeting', 'task', 'note', 'follow_up');
+CREATE TYPE activitystatus AS ENUM ('pending', 'completed', 'cancelled', 'overdue');
+CREATE TYPE activitypriority AS ENUM ('low', 'medium', 'high', 'urgent');
+CREATE TYPE campaignstatus AS ENUM ('draft', 'active', 'paused', 'completed');
+CREATE TYPE contactstatus AS ENUM ('new', 'contacted', 'qualified', 'customer', 'lost');
+
+-- 3. Drop existing CRM tables (they have wrong column types)
 DROP TABLE IF EXISTS crm_activities CASCADE;
 DROP TABLE IF EXISTS crm_campaigns CASCADE;
 
--- 3. Recreate CRM Activities table with proper enum types
+-- 4. Recreate CRM Activities table with proper enum types
 CREATE TABLE crm_activities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     type activitytype NOT NULL,
@@ -29,7 +65,7 @@ CREATE TABLE crm_activities (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 4. Recreate CRM Campaigns table with proper enum types
+-- 5. Recreate CRM Campaigns table with proper enum types
 CREATE TABLE crm_campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -46,21 +82,21 @@ CREATE TABLE crm_campaigns (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 5. Update crm_contacts table to use proper enum type
+-- 6. Update crm_contacts table to use proper enum type
 ALTER TABLE crm_contacts ALTER COLUMN status TYPE contactstatus USING status::contactstatus;
 
--- 6. Create indexes
-CREATE INDEX IF NOT EXISTS idx_crm_activities_contact_id ON crm_activities(contact_id);
-CREATE INDEX IF NOT EXISTS idx_crm_activities_type ON crm_activities(type);
-CREATE INDEX IF NOT EXISTS idx_crm_activities_status ON crm_activities(status);
-CREATE INDEX IF NOT EXISTS idx_crm_activities_due_date ON crm_activities(due_date);
-CREATE INDEX IF NOT EXISTS idx_crm_activities_created_at ON crm_activities(created_at DESC);
+-- 7. Create indexes
+CREATE INDEX idx_crm_activities_contact_id ON crm_activities(contact_id);
+CREATE INDEX idx_crm_activities_type ON crm_activities(type);
+CREATE INDEX idx_crm_activities_status ON crm_activities(status);
+CREATE INDEX idx_crm_activities_due_date ON crm_activities(due_date);
+CREATE INDEX idx_crm_activities_created_at ON crm_activities(created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_crm_campaigns_status ON crm_campaigns(status);
-CREATE INDEX IF NOT EXISTS idx_crm_campaigns_type ON crm_campaigns(type);
-CREATE INDEX IF NOT EXISTS idx_crm_campaigns_created_at ON crm_campaigns(created_at DESC);
+CREATE INDEX idx_crm_campaigns_status ON crm_campaigns(status);
+CREATE INDEX idx_crm_campaigns_type ON crm_campaigns(type);
+CREATE INDEX idx_crm_campaigns_created_at ON crm_campaigns(created_at DESC);
 
--- 7. Insert sample data with proper enum values
+-- 8. Insert sample data with proper enum values
 INSERT INTO crm_campaigns (id, name, type, status, from_email, from_name, total_contacts, sent_count, open_count, click_count, reply_count) VALUES
     ('00000000-0000-0000-0006-000000000001', 'Q2 Product Launch Campaign', 'email', 'active', 'marketing@captely.com', 'Captely Marketing', 1500, 1200, 420, 85, 24),
     ('00000000-0000-0000-0006-000000000002', 'Enterprise Outreach', 'email', 'active', 'sales@captely.com', 'Captely Sales', 300, 280, 145, 32, 8),
@@ -68,7 +104,7 @@ INSERT INTO crm_campaigns (id, name, type, status, from_email, from_name, total_
     ('00000000-0000-0000-0006-000000000004', 'New Feature Announcement', 'email', 'draft', 'product@captely.com', 'Captely Product', 0, 0, 0, 0, 0)
 ON CONFLICT (id) DO NOTHING;
 
--- 8. Insert sample activities with proper enum values
+-- 9. Insert sample activities with proper enum values
 INSERT INTO crm_activities (id, type, title, description, status, priority, due_date, created_by, assigned_to) VALUES
     (uuid_generate_v4(), 'task', 'Review quarterly sales reports', 'Analyze Q4 performance and prepare for Q1 planning', 'pending', 'high', NOW() + INTERVAL '1 day', 'system', 'sales_team'),
     (uuid_generate_v4(), 'meeting', 'Team standup meeting', 'Daily team sync and progress updates', 'completed', 'low', NOW() - INTERVAL '1 day', 'system', 'sales_team'),
@@ -78,7 +114,7 @@ INSERT INTO crm_activities (id, type, title, description, status, priority, due_
     (uuid_generate_v4(), 'note', 'Client feedback on latest features', 'Positive response to new dashboard, requested mobile app', 'completed', 'medium', NULL, 'system', 'product_team')
 ON CONFLICT (id) DO NOTHING;
 
--- 9. Verify everything is working
+-- 10. Verify everything is working
 SELECT 'Fixed CRM tables with proper enum types' as status;
 SELECT 'Total activities: ' || COUNT(*) as result FROM crm_activities;
 SELECT 'Total campaigns: ' || COUNT(*) as result FROM crm_campaigns;
