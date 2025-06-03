@@ -604,9 +604,10 @@ async def get_activities(
 ):
     """Get all activities with filtering and pagination for authenticated user"""
     try:
+        # Start with a simple query for activities first, then optionally join contacts
         query = select(CrmActivity, CrmContact).outerjoin(
             CrmContact, CrmActivity.contact_id == CrmContact.id
-        ).where(CrmContact.user_id == user_id).order_by(CrmActivity.created_at.desc())
+        ).order_by(CrmActivity.created_at.desc())
         
         # Apply filters
         if type_filter:
@@ -628,7 +629,7 @@ async def get_activities(
                 title=activity.title,
                 description=activity.description,
                 contact_id=str(activity.contact_id) if activity.contact_id else None,
-                contact_name=f"{contact.first_name} {contact.last_name}" if contact else None,
+                contact_name=f"{contact.first_name} {contact.last_name}" if contact and contact.first_name else None,
                 contact_email=contact.email if contact else None,
                 status=activity.status.value,
                 priority=activity.priority.value,
@@ -656,12 +657,12 @@ async def create_activity(
         if activity.contact_id:
             try:
                 contact_uuid = uuid.UUID(activity.contact_id)
-                # Verify contact belongs to user
+                # Verify contact belongs to user if contact_id is provided
                 contact_check = await session.execute(
                     select(CrmContact).where(CrmContact.id == contact_uuid, CrmContact.user_id == user_id)
                 )
                 if not contact_check.scalar_one_or_none():
-                    raise HTTPException(status_code=404, detail="Contact not found")
+                    raise HTTPException(status_code=404, detail="Contact not found or doesn't belong to user")
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid contact_id format")
         
@@ -713,6 +714,61 @@ async def create_activity(
     except Exception as e:
         await session.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to create activity: {str(e)}")
+
+@app.put("/api/activities/{activity_id}/status")
+async def update_activity_status(
+    activity_id: str,
+    status_update: dict,
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Update activity status for authenticated user"""
+    try:
+        # Validate activity_id
+        try:
+            activity_uuid = uuid.UUID(activity_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid activity ID format")
+        
+        # Validate status
+        new_status = status_update.get('status')
+        if not new_status or new_status not in ['pending', 'completed', 'cancelled', 'overdue']:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        
+        # Get activity - first try with contact join, then without
+        result = await session.execute(
+            select(CrmActivity).where(CrmActivity.id == activity_uuid)
+        )
+        activity = result.scalar_one_or_none()
+        
+        if not activity:
+            raise HTTPException(status_code=404, detail="Activity not found")
+        
+        # If activity has a contact, verify user ownership
+        if activity.contact_id:
+            contact_result = await session.execute(
+                select(CrmContact).where(CrmContact.id == activity.contact_id)
+            )
+            contact = contact_result.scalar_one_or_none()
+            if contact and contact.user_id != uuid.UUID(user_id):
+                raise HTTPException(status_code=403, detail="Not authorized to update this activity")
+        
+        # Update status
+        activity.status = ActivityStatus[new_status]
+        activity.updated_at = datetime.utcnow()
+        
+        # Set completed_at if completing
+        if new_status == 'completed':
+            activity.completed_at = datetime.utcnow()
+        
+        await session.commit()
+        
+        return {"message": f"Activity status updated to {new_status}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update activity status: {str(e)}")
 
 # Campaign endpoints
 @app.get("/api/campaigns", response_model=List[CampaignResponse])
@@ -833,56 +889,6 @@ async def update_campaign_status(
     except Exception as e:
         await session.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to update campaign status: {str(e)}")
-
-@app.put("/api/activities/{activity_id}/status")
-async def update_activity_status(
-    activity_id: str,
-    status_update: dict,
-    user_id: str = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_async_session)
-):
-    """Update activity status for authenticated user"""
-    try:
-        # Validate activity_id
-        try:
-            activity_uuid = uuid.UUID(activity_id)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid activity ID format")
-        
-        # Validate status
-        new_status = status_update.get('status')
-        if not new_status or new_status not in ['pending', 'completed', 'cancelled', 'overdue']:
-            raise HTTPException(status_code=400, detail="Invalid status")
-        
-        # Get activity and verify ownership through contact
-        result = await session.execute(
-            select(CrmActivity, CrmContact).join(
-                CrmContact, CrmActivity.contact_id == CrmContact.id
-            ).where(CrmActivity.id == activity_uuid, CrmContact.user_id == user_id)
-        )
-        activity_contact = result.first()
-        
-        if not activity_contact:
-            raise HTTPException(status_code=404, detail="Activity not found")
-        
-        activity = activity_contact[0]
-        
-        # Update status
-        activity.status = ActivityStatus[new_status]
-        activity.updated_at = datetime.utcnow()
-        
-        # Set completed_at if completing
-        if new_status == 'completed':
-            activity.completed_at = datetime.utcnow()
-        
-        await session.commit()
-        
-        return {"message": f"Activity status updated to {new_status}"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        await session.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to update activity status: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

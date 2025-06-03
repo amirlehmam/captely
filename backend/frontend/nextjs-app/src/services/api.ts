@@ -520,11 +520,17 @@ class ApiService {
   }> {
     try {
       // Connect to real CRM service instead of using mock data
-      const response = await client.get<any[]>(`${API_CONFIG.crmUrl}/api/activities`, {
+      const queryParams: Record<string, any> = {
         limit: params.limit || 50,
-        skip: ((params.page || 1) - 1) * (params.limit || 50),
-        type: params.type
-      });
+        skip: ((params.page || 1) - 1) * (params.limit || 50)
+      };
+      
+      // Only add type parameter if it's defined and not 'undefined'
+      if (params.type && params.type !== 'undefined' && params.type !== 'all') {
+        queryParams.type = params.type;
+      }
+      
+      const response = await client.get<any[]>(`${API_CONFIG.crmUrl}/api/activities`, queryParams);
 
       const activities = Array.isArray(response) ? response : [];
       const total = activities.length;
