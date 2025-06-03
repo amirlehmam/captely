@@ -12,4 +12,7 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
   },
+  define: {
+    'process.env': {}
+  }
 });
