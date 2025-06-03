@@ -111,7 +111,6 @@ services:
     build:
       context: ./services/enrichment-worker
       dockerfile: Dockerfile
-    container_name: captely-enrichment-worker
     env_file: .env
     depends_on:
       db:
@@ -129,8 +128,6 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     command: ["celery", "-A", "app.tasks", "worker", "--loglevel=info", "-E", "-Q", "contact_enrichment,enrichment_batch,cascade_enrichment,db_operations"]
     restart: unless-stopped
-    deploy:
-      replicas: 2
 
   flower:
     image: mher/flower:2.0.1
