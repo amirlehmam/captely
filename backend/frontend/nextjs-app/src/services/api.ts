@@ -58,29 +58,71 @@ class ApiClient {
     const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
     return {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
+      ...(token && { Authorization: `Bearer ${token}` })
     };
+  }
+
+  private handleUnauthorized(): void {
+    // Token expired or invalid, clear and redirect to login
+    localStorage.removeItem('captely_jwt');
+    sessionStorage.removeItem('captely_jwt');
+    window.location.href = '/login';
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}`;
+      let errorMessage = `Request failed with status ${response.status}`;
+      let errorData: any = null;
+      
       try {
-        const errorData = await response.json();
-        errorMessage = errorData.detail || errorData.message || errorMessage;
-      } catch {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          errorData = await response.json();
+          
+          // Handle 422 validation errors with detailed messages
+          if (response.status === 422 && errorData) {
+            if (errorData.detail) {
+              // Handle FastAPI validation errors
+              if (Array.isArray(errorData.detail)) {
+                const validationErrors = errorData.detail.map((err: any) => {
+                  if (err.loc && err.msg) {
+                    return `${err.loc.join('.')}: ${err.msg}`;
+                  }
+                  return err.msg || JSON.stringify(err);
+                }).join(', ');
+                errorMessage = `Validation failed: ${validationErrors}`;
+              } else if (typeof errorData.detail === 'string') {
+                errorMessage = `Validation failed: ${errorData.detail}`;
+              } else {
+                errorMessage = `Validation failed: ${JSON.stringify(errorData.detail)}`;
+              }
+            } else if (errorData.errors) {
+              // Handle other validation error formats
+              errorMessage = `Validation failed: ${JSON.stringify(errorData.errors)}`;
+            } else {
+              errorMessage = `Validation failed: ${JSON.stringify(errorData)}`;
+            }
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } else {
+          errorMessage = await response.text();
+        }
+      } catch (e) {
+        // If parsing fails, use status text
         errorMessage = response.statusText || errorMessage;
       }
 
       if (response.status === 401) {
-        // Token expired, redirect to login
-        localStorage.removeItem('captely_jwt');
-        sessionStorage.removeItem('captely_jwt');
-        window.location.href = '/login';
+        this.handleUnauthorized();
         throw new ApiError(401, 'Authentication required');
       }
 
-      throw new ApiError(response.status, errorMessage);
+      throw new ApiError(response.status, errorMessage, errorData);
     }
 
     if (response.headers.get('content-type')?.includes('application/json')) {
@@ -562,15 +604,33 @@ class ApiService {
     status?: string;
     priority?: string;
     due_date?: string;
-    created_by: string;
+    created_by?: string;
     assigned_to?: string;
   }): Promise<any> {
     try {
-      const response = await client.post(`${API_CONFIG.crmUrl}/api/activities`, activityData);
+      // Ensure required fields have default values
+      const completeActivityData = {
+        type: activityData.type,
+        title: activityData.title,
+        description: activityData.description || '',
+        contact_id: activityData.contact_id || null,
+        status: activityData.status || 'pending',
+        priority: activityData.priority || 'medium',
+        due_date: activityData.due_date || null,
+        created_by: activityData.created_by || 'web_user',
+        assigned_to: activityData.assigned_to || 'web_user'
+      };
+
+      const response = await client.post(`${API_CONFIG.crmUrl}/api/activities`, completeActivityData);
       toast.success('Activity created successfully!');
       return response;
-    } catch (error) {
-      toast.error('Failed to create activity');
+    } catch (error: any) {
+      // Enhanced error handling for 422 validation errors
+      if (error.status === 422) {
+        toast.error(`Failed to create activity: ${error.message}`);
+      } else {
+        toast.error('Failed to create activity');
+      }
       throw error;
     }
   }
