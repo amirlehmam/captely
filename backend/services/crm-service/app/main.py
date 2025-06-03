@@ -599,13 +599,14 @@ async def get_activities(
     type_filter: Optional[str] = Query(None, alias="type"),
     status_filter: Optional[str] = Query(None, alias="status"),
     priority_filter: Optional[str] = Query(None, alias="priority"),
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Get all activities with filtering and pagination"""
+    """Get all activities with filtering and pagination for authenticated user"""
     try:
         query = select(CrmActivity, CrmContact).outerjoin(
             CrmContact, CrmActivity.contact_id == CrmContact.id
-        ).order_by(CrmActivity.created_at.desc())
+        ).where(CrmContact.user_id == user_id).order_by(CrmActivity.created_at.desc())
         
         # Apply filters
         if type_filter:
@@ -646,14 +647,21 @@ async def get_activities(
 @app.post("/api/activities", response_model=ActivityResponse)
 async def create_activity(
     activity: ActivityCreate,
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Create a new activity"""
+    """Create a new activity for authenticated user"""
     try:
         contact_uuid = None
         if activity.contact_id:
             try:
                 contact_uuid = uuid.UUID(activity.contact_id)
+                # Verify contact belongs to user
+                contact_check = await session.execute(
+                    select(CrmContact).where(CrmContact.id == contact_uuid, CrmContact.user_id == user_id)
+                )
+                if not contact_check.scalar_one_or_none():
+                    raise HTTPException(status_code=404, detail="Contact not found")
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid contact_id format")
         
@@ -711,9 +719,10 @@ async def create_activity(
 async def get_campaigns(
     limit: int = Query(50, le=100),
     skip: int = Query(0, ge=0),
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Get all campaigns with pagination"""
+    """Get all campaigns with pagination for authenticated user"""
     try:
         result = await session.execute(
             select(CrmCampaign)
@@ -747,9 +756,10 @@ async def get_campaigns(
 @app.post("/api/campaigns", response_model=CampaignResponse)
 async def create_campaign(
     campaign: CampaignCreate,
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Create a new campaign"""
+    """Create a new campaign for authenticated user"""
     try:
         db_campaign = CrmCampaign(
             name=campaign.name,
@@ -786,9 +796,10 @@ async def create_campaign(
 async def update_campaign_status(
     campaign_id: str,
     status_update: dict,
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Update campaign status"""
+    """Update campaign status for authenticated user"""
     try:
         # Validate campaign_id
         try:
@@ -801,7 +812,7 @@ async def update_campaign_status(
         if not new_status or new_status not in ['draft', 'active', 'paused', 'completed']:
             raise HTTPException(status_code=400, detail="Invalid status")
         
-        # Get campaign
+        # Get campaign and verify ownership
         result = await session.execute(
             select(CrmCampaign).where(CrmCampaign.id == campaign_uuid)
         )
@@ -827,9 +838,10 @@ async def update_campaign_status(
 async def update_activity_status(
     activity_id: str,
     status_update: dict,
+    user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Update activity status"""
+    """Update activity status for authenticated user"""
     try:
         # Validate activity_id
         try:
@@ -842,14 +854,18 @@ async def update_activity_status(
         if not new_status or new_status not in ['pending', 'completed', 'cancelled', 'overdue']:
             raise HTTPException(status_code=400, detail="Invalid status")
         
-        # Get activity
+        # Get activity and verify ownership through contact
         result = await session.execute(
-            select(CrmActivity).where(CrmActivity.id == activity_uuid)
+            select(CrmActivity, CrmContact).join(
+                CrmContact, CrmActivity.contact_id == CrmContact.id
+            ).where(CrmActivity.id == activity_uuid, CrmContact.user_id == user_id)
         )
-        activity = result.scalar_one_or_none()
+        activity_contact = result.first()
         
-        if not activity:
+        if not activity_contact:
             raise HTTPException(status_code=404, detail="Activity not found")
+        
+        activity = activity_contact[0]
         
         # Update status
         activity.status = ActivityStatus[new_status]

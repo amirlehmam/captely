@@ -519,55 +519,23 @@ class ApiService {
     total_pages: number;
   }> {
     try {
-      // Mock activities for now - in production this would come from a real CRM service
-      const mockActivities = [
-        {
-          id: '1',
-          type: 'enrichment',
-          title: 'Contact enriched',
-          description: 'Email found for John Doe at Acme Corp',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-          contact_id: 'contact_1',
-          contact_name: 'John Doe',
-          status: 'completed'
-        },
-        {
-          id: '2', 
-          type: 'upload',
-          title: 'File uploaded',
-          description: 'New CSV file with 50 contacts uploaded',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-          job_id: 'job_1',
-          status: 'completed'
-        },
-        {
-          id: '3',
-          type: 'verification',
-          title: 'Email verified',
-          description: 'jane.smith@company.com verified successfully',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-          contact_id: 'contact_2',
-          contact_name: 'Jane Smith',
-          status: 'completed'
-        }
-      ];
+      // Connect to real CRM service instead of using mock data
+      const response = await client.get<any[]>(`${API_CONFIG.crmUrl}/api/activities`, {
+        limit: params.limit || 50,
+        skip: ((params.page || 1) - 1) * (params.limit || 50),
+        type: params.type
+      });
 
-      // Apply filtering and pagination
-      let filteredActivities = mockActivities;
-      if (params.type) {
-        filteredActivities = mockActivities.filter(activity => activity.type === params.type);
-      }
-
+      const activities = Array.isArray(response) ? response : [];
+      const total = activities.length;
       const page = params.page || 1;
       const limit = params.limit || 10;
-      const startIndex = (page - 1) * limit;
-      const paginatedActivities = filteredActivities.slice(startIndex, startIndex + limit);
 
       return {
-        activities: paginatedActivities,
-        total: filteredActivities.length,
+        activities: activities,
+        total: total,
         page: page,
-        total_pages: Math.ceil(filteredActivities.length / limit)
+        total_pages: Math.ceil(total / limit)
       };
     } catch (error) {
       console.error('Error fetching CRM activities:', error);
@@ -577,6 +545,40 @@ class ApiService {
         page: 1,
         total_pages: 0
       };
+    }
+  }
+
+  async createCrmActivity(activityData: {
+    type: string;
+    title: string;
+    description?: string;
+    contact_id?: string;
+    status?: string;
+    priority?: string;
+    due_date?: string;
+    created_by: string;
+    assigned_to?: string;
+  }): Promise<any> {
+    try {
+      const response = await client.post(`${API_CONFIG.crmUrl}/api/activities`, activityData);
+      toast.success('Activity created successfully!');
+      return response;
+    } catch (error) {
+      toast.error('Failed to create activity');
+      throw error;
+    }
+  }
+
+  async updateActivityStatus(activityId: string, status: string): Promise<any> {
+    try {
+      const response = await client.put(`${API_CONFIG.crmUrl}/api/activities/${activityId}/status`, {
+        status: status
+      });
+      toast.success('Activity status updated!');
+      return response;
+    } catch (error) {
+      toast.error('Failed to update activity status');
+      throw error;
     }
   }
 
@@ -848,6 +850,51 @@ class ApiService {
     } catch {}
 
     return services;
+  }
+
+  async getCrmCampaigns(params: {
+    page?: number;
+    limit?: number;
+  } = {}): Promise<any[]> {
+    try {
+      const response = await client.get<any[]>(`${API_CONFIG.crmUrl}/api/campaigns`, {
+        limit: params.limit || 50,
+        skip: ((params.page || 1) - 1) * (params.limit || 50)
+      });
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error('Error fetching CRM campaigns:', error);
+      return [];
+    }
+  }
+
+  async createCampaign(campaignData: {
+    name: string;
+    type: string;
+    from_email?: string;
+    from_name?: string;
+  }): Promise<any> {
+    try {
+      const response = await client.post(`${API_CONFIG.crmUrl}/api/campaigns`, campaignData);
+      toast.success('Campaign created successfully!');
+      return response;
+    } catch (error) {
+      toast.error('Failed to create campaign');
+      throw error;
+    }
+  }
+
+  async updateCampaignStatus(campaignId: string, status: string): Promise<any> {
+    try {
+      const response = await client.put(`${API_CONFIG.crmUrl}/api/campaigns/${campaignId}/status`, {
+        status: status
+      });
+      toast.success('Campaign status updated!');
+      return response;
+    } catch (error) {
+      toast.error('Failed to update campaign status');
+      throw error;
+    }
   }
 }
 
