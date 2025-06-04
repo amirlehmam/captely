@@ -262,60 +262,6 @@ const BatchProgress: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          {/* Enhanced Processing Stages */}
-          {currentBatch.status === 'processing' && (
-            <div className="mt-8 bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Cog className="h-5 w-5 mr-2 text-blue-600" />
-                Processing Stages
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-gray-700">✅ Contact extraction</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-gray-700">🔍 Email enrichment cascade (Enrow → Icypeas → Apollo → Datagma...)</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                  <span className="text-gray-700">📧 Email verification & scoring</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                  <span className="text-gray-700">📞 Phone number enrichment & verification</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                  <span className="text-gray-400">⚡ Final data consolidation</span>
-                </div>
-              </div>
-              
-              {/* Real-time stats during processing */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Emails Found:</span>
-                    <span className="ml-2 font-medium text-green-600">{Math.round((currentBatch.emails_found || 0) / (currentBatch.total || 1) * 100)}%</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Phones Found:</span>
-                    <span className="ml-2 font-medium text-blue-600">{Math.round((currentBatch.phones_found || 0) / (currentBatch.total || 1) * 100)}%</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Avg Confidence:</span>
-                    <span className="ml-2 font-medium text-purple-600">{Math.round(currentBatch.avg_confidence || 0)}%</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Credits Used:</span>
-                    <span className="ml-2 font-medium text-orange-600">{currentBatch.credits_used || 0}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
