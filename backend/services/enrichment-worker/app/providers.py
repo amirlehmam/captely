@@ -527,12 +527,531 @@ def enrich_with_clearbit(lead: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"{service_name} enrichment not implemented yet")
     return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
+# === NEW PROVIDERS IN PRICE ORDER ===
+
+# --- Enrow - cheapest (0.008/mail) ---
+@retry_with_backoff(max_retries=2)
+def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call the Enrow API to enrich a contact."""
+    service_name = 'enrow'
+    if not service_status.is_available(service_name):
+        logger.warning(f"{service_name} is marked unavailable, skipping.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    rate_limiters[service_name].wait()
+    
+    headers = {
+        "Authorization": f"Bearer {settings.enrow_api}",
+        "Content-Type": "application/json"
+    }
+    
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            first_name = name_parts[0] if not first_name else first_name
+            last_name = name_parts[1] if not last_name else last_name
+        elif len(name_parts) == 1 and not last_name:
+            last_name = name_parts[0]
+
+    company_domain = lead.get("company_domain", "")
+    if not company_domain and lead.get("company"):
+        company_clean = lead.get("company", "").lower().strip()
+        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
+            if company_clean.endswith(suffix):
+                company_clean = company_clean[:-len(suffix)].strip()
+        if company_clean:
+            company_domain = f"{company_clean.replace(' ', '')}.com"
+
+    payload = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "domain": company_domain,
+        "company": lead.get("company", "")
+    }
+
+    if linkedin_url := lead.get("profile_url", ""):
+        if "linkedin.com" in linkedin_url:
+            payload["linkedin_url"] = linkedin_url
+
+    logger.info(f"{service_name} payload: {payload}")
+
+    try:
+        response = httpx.post(
+            f"{settings.api_urls[service_name]}/find-email",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        if response.status_code == 401 or response.status_code == 403:
+            logger.error(f"{service_name} authentication failed.")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+        response.raise_for_status()
+        
+        data = response.json()
+        email = data.get("email")
+        confidence_score = data.get("confidence", 0)
+        phone = data.get("phone")  # If available
+        
+        if email:
+            logger.info(f"{service_name} found: email={email}, confidence={confidence_score}")
+        
+        return {
+            "email": email,
+            "phone": phone,
+            "confidence": confidence_score,
+            "source": service_name,
+            "raw_data": data
+        }
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
+    except httpx.RequestError as e:
+        logger.error(f"Request error calling {service_name}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in {service_name}: {e}")
+
+    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+
+# --- Datagma (0.016/mail) ---
+@retry_with_backoff(max_retries=2)
+def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call the Datagma API to enrich a contact."""
+    service_name = 'datagma'
+    if not service_status.is_available(service_name):
+        logger.warning(f"{service_name} is marked unavailable, skipping.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    rate_limiters[service_name].wait()
+    
+    headers = {
+        "X-API-Key": settings.datagma_api,
+        "Content-Type": "application/json"
+    }
+    
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            first_name = name_parts[0] if not first_name else first_name
+            last_name = name_parts[1] if not last_name else last_name
+
+    payload = {
+        "firstName": first_name,
+        "lastName": last_name,
+        "company": lead.get("company", ""),
+        "domain": lead.get("company_domain", "")
+    }
+
+    if linkedin_url := lead.get("profile_url", ""):
+        if "linkedin.com" in linkedin_url:
+            payload["linkedInUrl"] = linkedin_url
+
+    logger.info(f"{service_name} payload: {payload}")
+
+    try:
+        response = httpx.post(
+            f"{settings.api_urls[service_name]}/contacts/enrich",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        if response.status_code == 401 or response.status_code == 403:
+            logger.error(f"{service_name} authentication failed.")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+        response.raise_for_status()
+        
+        data = response.json()
+        contact_data = data.get("contact", {})
+        email = contact_data.get("email")
+        phone = contact_data.get("phone")
+        confidence_score = data.get("confidence", 75) if email else 0
+        
+        if email:
+            logger.info(f"{service_name} found: email={email}, phone={phone}")
+        
+        return {
+            "email": email,
+            "phone": phone,
+            "confidence": confidence_score,
+            "source": service_name,
+            "raw_data": data
+        }
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
+    except httpx.RequestError as e:
+        logger.error(f"Request error calling {service_name}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in {service_name}: {e}")
+
+    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+
+# --- Anymailfinder (0.021/mail) ---
+@retry_with_backoff(max_retries=2)
+def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call the Anymailfinder API to enrich a contact."""
+    service_name = 'anymailfinder'
+    if not service_status.is_available(service_name):
+        logger.warning(f"{service_name} is marked unavailable, skipping.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    rate_limiters[service_name].wait()
+    
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            first_name = name_parts[0] if not first_name else first_name
+            last_name = name_parts[1] if not last_name else last_name
+
+    company_domain = lead.get("company_domain", "")
+    if not company_domain and lead.get("company"):
+        company_clean = lead.get("company", "").lower().strip()
+        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
+            if company_clean.endswith(suffix):
+                company_clean = company_clean[:-len(suffix)].strip()
+        if company_clean:
+            company_domain = f"{company_clean.replace(' ', '')}.com"
+
+    if not company_domain:
+        logger.warning(f"{service_name}: No domain for contact.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    params = {
+        "apikey": settings.anymailfinder_api,
+        "first_name": first_name,
+        "last_name": last_name,
+        "domain": company_domain
+    }
+
+    logger.info(f"{service_name} params: {params}")
+
+    try:
+        response = httpx.get(
+            f"{settings.api_urls[service_name]}/find-email",
+            params=params,
+            timeout=30
+        )
+        
+        if response.status_code == 401 or response.status_code == 403:
+            logger.error(f"{service_name} authentication failed.")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+        response.raise_for_status()
+        
+        data = response.json()
+        email = data.get("email")
+        confidence_score = data.get("confidence", 75) if email else 0
+        
+        if email:
+            logger.info(f"{service_name} found: email={email}")
+        
+        return {
+            "email": email,
+            "phone": None,  # Anymailfinder typically doesn't return phone
+            "confidence": confidence_score,
+            "source": service_name,
+            "raw_data": data
+        }
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
+    except httpx.RequestError as e:
+        logger.error(f"Request error calling {service_name}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in {service_name}: {e}")
+
+    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+
+# --- Snov.io (0.024/mail) ---
+@retry_with_backoff(max_retries=2)
+def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call the Snov.io API to enrich a contact."""
+    service_name = 'snov'
+    if not service_status.is_available(service_name):
+        logger.warning(f"{service_name} is marked unavailable, skipping.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    rate_limiters[service_name].wait()
+    
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            first_name = name_parts[0] if not first_name else first_name
+            last_name = name_parts[1] if not last_name else last_name
+
+    company_domain = lead.get("company_domain", "")
+    if not company_domain and lead.get("company"):
+        company_clean = lead.get("company", "").lower().strip()
+        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
+            if company_clean.endswith(suffix):
+                company_clean = company_clean[:-len(suffix)].strip()
+        if company_clean:
+            company_domain = f"{company_clean.replace(' ', '')}.com"
+
+    payload = {
+        "user_id": settings.snov_api_id,
+        "secret": settings.snov_api_secret,
+        "firstName": first_name,
+        "lastName": last_name,
+        "domain": company_domain
+    }
+
+    logger.info(f"{service_name} payload: {payload}")
+
+    try:
+        response = httpx.post(
+            f"{settings.api_urls[service_name]}/v1/get-emails-from-names",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        if response.status_code == 401 or response.status_code == 403:
+            logger.error(f"{service_name} authentication failed.")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+        response.raise_for_status()
+        
+        data = response.json()
+        success = data.get("success", False)
+        
+        if success and data.get("data"):
+            emails = data["data"].get("emails", [])
+            if emails:
+                best_email = emails[0]
+                email = best_email.get("email")
+                confidence_score = best_email.get("probability", 75)
+                
+                if email:
+                    logger.info(f"{service_name} found: email={email}, confidence={confidence_score}")
+                
+                return {
+                    "email": email,
+                    "phone": None,
+                    "confidence": confidence_score,
+                    "source": service_name,
+                    "raw_data": data
+                }
+        
+        logger.info(f"{service_name}: No results found")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": data}
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
+    except httpx.RequestError as e:
+        logger.error(f"Request error calling {service_name}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in {service_name}: {e}")
+
+    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+
+# --- Findymail (0.024/mail) ---
+@retry_with_backoff(max_retries=2)
+def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call the Findymail API to enrich a contact."""
+    service_name = 'findymail'
+    if not service_status.is_available(service_name):
+        logger.warning(f"{service_name} is marked unavailable, skipping.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    rate_limiters[service_name].wait()
+    
+    headers = {
+        "Authorization": f"Bearer {settings.findymail_api}",
+        "Content-Type": "application/json"
+    }
+    
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            first_name = name_parts[0] if not first_name else first_name
+            last_name = name_parts[1] if not last_name else last_name
+
+    company_domain = lead.get("company_domain", "")
+    if not company_domain and lead.get("company"):
+        company_clean = lead.get("company", "").lower().strip()
+        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
+            if company_clean.endswith(suffix):
+                company_clean = company_clean[:-len(suffix)].strip()
+        if company_clean:
+            company_domain = f"{company_clean.replace(' ', '')}.com"
+
+    payload = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "domain": company_domain
+    }
+
+    if linkedin_url := lead.get("profile_url", ""):
+        if "linkedin.com" in linkedin_url:
+            payload["linkedin_url"] = linkedin_url
+
+    logger.info(f"{service_name} payload: {payload}")
+
+    try:
+        response = httpx.post(
+            f"{settings.api_urls[service_name]}/v1/contact/find",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        if response.status_code == 401 or response.status_code == 403:
+            logger.error(f"{service_name} authentication failed.")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+        response.raise_for_status()
+        
+        data = response.json()
+        contact = data.get("contact", {})
+        email = contact.get("email")
+        phone = contact.get("phone")
+        confidence_score = contact.get("confidence", 75) if email else 0
+        
+        if email:
+            logger.info(f"{service_name} found: email={email}, phone={phone}")
+        
+        return {
+            "email": email,
+            "phone": phone,
+            "confidence": confidence_score,
+            "source": service_name,
+            "raw_data": data
+        }
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
+    except httpx.RequestError as e:
+        logger.error(f"Request error calling {service_name}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in {service_name}: {e}")
+
+    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+
+# --- Kaspr - most expensive (0.071/mail) ---
+@retry_with_backoff(max_retries=2)
+def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call the Kaspr API to enrich a contact."""
+    service_name = 'kaspr'
+    if not service_status.is_available(service_name):
+        logger.warning(f"{service_name} is marked unavailable, skipping.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    rate_limiters[service_name].wait()
+    
+    headers = {
+        "X-API-KEY": settings.kaspr_api,
+        "Content-Type": "application/json"
+    }
+    
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    
+    if (not first_name or not last_name) and lead.get("full_name"):
+        name_parts = lead.get("full_name", "").split(" ", 1)
+        if len(name_parts) >= 2:
+            first_name = name_parts[0] if not first_name else first_name
+            last_name = name_parts[1] if not last_name else last_name
+
+    linkedin_url = lead.get("profile_url", "")
+    if not linkedin_url or "linkedin.com" not in linkedin_url:
+        logger.warning(f"{service_name}: LinkedIn URL required but not provided.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    payload = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "linkedin_url": linkedin_url
+    }
+
+    logger.info(f"{service_name} payload: {payload}")
+
+    try:
+        response = httpx.post(
+            f"{settings.api_urls[service_name]}/enrich",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        if response.status_code == 401 or response.status_code == 403:
+            logger.error(f"{service_name} authentication failed.")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+        response.raise_for_status()
+        
+        data = response.json()
+        person_data = data.get("person", {})
+        email = person_data.get("email")
+        phone = person_data.get("phone")
+        confidence_score = data.get("confidence", 80) if email else 0
+        
+        if email or phone:
+            logger.info(f"{service_name} found: email={email}, phone={phone}")
+        
+        return {
+            "email": email,
+            "phone": phone,
+            "confidence": confidence_score,
+            "source": service_name,
+            "raw_data": data
+        }
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
+    except httpx.RequestError as e:
+        logger.error(f"Request error calling {service_name}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in {service_name}: {e}")
+
+    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+
 # Mapping of service names to functions
 PROVIDER_FUNCTIONS = {
-    "icypeas": call_icypeas,
-    "dropcontact": call_dropcontact,
-    "hunter": call_hunter,
-    "apollo": call_apollo,
+    "enrow": call_enrow,           # 1st - cheapest
+    "icypeas": call_icypeas,       # 2nd
+    "apollo": call_apollo,         # 3rd
+    "datagma": call_datagma,       # 4th
+    "anymailfinder": call_anymailfinder,  # 5th
+    "snov": call_snov,             # 6th
+    "findymail": call_findymail,   # 7th
+    "dropcontact": call_dropcontact,  # 8th
+    "hunter": call_hunter,         # 9th
+    "kaspr": call_kaspr,           # 10th - most expensive
     "pdl": enrich_with_pdl,
     "clearbit": enrich_with_clearbit,
 }

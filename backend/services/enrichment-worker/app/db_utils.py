@@ -2,7 +2,7 @@
 import json
 import httpx
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker as sync_sessionmaker
@@ -444,3 +444,176 @@ def get_contact_details_sync(session, contact_id: int) -> Optional[Dict[str, Any
         # Convert row to dict
         return dict(zip(result.keys(), contact_row))
     return None
+
+async def get_job_status(session: AsyncSession, job_id: str) -> Optional[Dict[str, Any]]:
+    """Get job status and progress."""
+    try:
+        stmt = text("""
+            SELECT 
+                id,
+                user_id,
+                status,
+                total,
+                completed,
+                progress,
+                created_at,
+                updated_at
+            FROM import_jobs
+            WHERE id = :job_id
+        """)
+        
+        result = await session.execute(stmt, {"job_id": job_id})
+        job = result.first()
+        
+        if job:
+            return {
+                "id": job.id,
+                "user_id": job.user_id,
+                "status": job.status,
+                "total": job.total,
+                "completed": job.completed,
+                "progress": (job.completed / job.total * 100) if job.total > 0 else 0,
+                "created_at": job.created_at,
+                "updated_at": job.updated_at
+            }
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error getting job status for {job_id}: {str(e)}")
+        return None
+
+async def get_contact_results(session: AsyncSession, job_id: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    """Get enrichment results for contacts in a job."""
+    try:
+        stmt = text("""
+            SELECT 
+                c.*,
+                er.provider as result_provider,
+                er.confidence_score as result_confidence,
+                er.email_verified,
+                er.phone_verified,
+                er.raw_data
+            FROM contacts c
+            LEFT JOIN enrichment_results er ON c.id = er.contact_id
+            WHERE c.job_id = :job_id
+            ORDER BY c.id
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        result = await session.execute(stmt, {
+            "job_id": job_id,
+            "limit": limit,
+            "offset": offset
+        })
+        
+        contacts = []
+        for row in result.fetchall():
+            contact_dict = dict(row._asdict())
+            
+            # Parse raw_data if available
+            if contact_dict.get("raw_data"):
+                try:
+                    contact_dict["raw_data"] = json.loads(contact_dict["raw_data"])
+                except:
+                    contact_dict["raw_data"] = {}
+            
+            contacts.append(contact_dict)
+        
+        return contacts
+        
+    except Exception as e:
+        logger.error(f"Error getting contact results for job {job_id}: {str(e)}")
+        return []
+
+async def get_enrichment_statistics(session: AsyncSession, user_id: Optional[str] = None) -> Dict[str, Any]:
+    """Get enrichment statistics for a user or globally."""
+    try:
+        # Base query conditions
+        conditions = []
+        params = {}
+        
+        if user_id:
+            conditions.append("ij.user_id = :user_id")
+            params["user_id"] = user_id
+        
+        where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+        
+        # Get overall stats
+        stats_query = text(f"""
+            SELECT 
+                COUNT(DISTINCT ij.id) as total_jobs,
+                COUNT(c.id) as total_contacts,
+                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                COUNT(CASE WHEN c.email_verified = true THEN 1 END) as emails_verified,
+                COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as phones_verified,
+                AVG(c.enrichment_score) as avg_confidence,
+                SUM(c.credits_consumed) as total_credits_consumed
+            FROM import_jobs ij
+            LEFT JOIN contacts c ON ij.id = c.job_id
+            {where_clause}
+        """)
+        
+        stats_result = await session.execute(stats_query, params)
+        stats = dict(stats_result.first()._asdict())
+        
+        # Get provider stats
+        provider_query = text(f"""
+            SELECT 
+                c.enrichment_provider,
+                COUNT(*) as count,
+                AVG(c.enrichment_score) as avg_score,
+                SUM(c.credits_consumed) as credits_used
+            FROM import_jobs ij
+            JOIN contacts c ON ij.id = c.job_id
+            {where_clause} AND c.enrichment_provider IS NOT NULL
+            GROUP BY c.enrichment_provider
+            ORDER BY count DESC
+        """)
+        
+        provider_result = await session.execute(provider_query, params)
+        providers = [
+            {
+                "provider": row[0],
+                "count": row[1],
+                "avg_score": float(row[2]) if row[2] else 0,
+                "credits_used": row[3] or 0
+            }
+            for row in provider_result.fetchall()
+        ]
+        
+        # Calculate success rates
+        total_contacts = stats.get("total_contacts", 0)
+        emails_found = stats.get("emails_found", 0)
+        phones_found = stats.get("phones_found", 0)
+        
+        return {
+            "total_jobs": stats.get("total_jobs", 0),
+            "total_contacts": total_contacts,
+            "emails_found": emails_found,
+            "phones_found": phones_found,
+            "emails_verified": stats.get("emails_verified", 0),
+            "phones_verified": stats.get("phones_verified", 0),
+            "email_success_rate": (emails_found / total_contacts * 100) if total_contacts > 0 else 0,
+            "phone_success_rate": (phones_found / total_contacts * 100) if total_contacts > 0 else 0,
+            "avg_confidence": float(stats.get("avg_confidence", 0)) if stats.get("avg_confidence") else 0,
+            "total_credits_consumed": stats.get("total_credits_consumed", 0),
+            "provider_stats": providers
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting enrichment statistics: {str(e)}")
+        return {
+            "total_jobs": 0,
+            "total_contacts": 0,
+            "emails_found": 0,
+            "phones_found": 0,
+            "emails_verified": 0,
+            "phones_verified": 0,
+            "email_success_rate": 0,
+            "phone_success_rate": 0,
+            "avg_confidence": 0,
+            "total_credits_consumed": 0,
+            "provider_stats": []
+        }

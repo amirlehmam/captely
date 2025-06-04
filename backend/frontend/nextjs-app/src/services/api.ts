@@ -502,27 +502,131 @@ class ApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`Export failed: ${response.statusText}`);
+        throw new Error(`Export failed with status ${response.status}`);
       }
 
-      const blob = await response.blob();
-      
-      // Trigger download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `export_${jobId}.${format === 'excel' ? 'xlsx' : format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success('Export completed successfully!');
-      return blob;
+      toast.success('Data exported successfully!');
+      return response.blob();
     } catch (error) {
       toast.error('Export failed. Please try again.');
       throw error;
     }
+  }
+
+  // ==========================================
+  // VERIFICATION & ENRICHMENT ENGINE
+  // ==========================================
+
+  async verifyEmail(email: string): Promise<{
+    email: string;
+    is_valid: boolean;
+    verification_level: number;
+    is_catchall: boolean;
+    is_disposable: boolean;
+    is_role_based: boolean;
+    deliverable: boolean;
+    score: number;
+    reason: string;
+  }> {
+    return client.post(`${API_CONFIG.importUrl}/api/verification/email`, { email });
+  }
+
+  async verifyPhone(phone: string, country_hint?: string): Promise<{
+    phone: string;
+    is_valid: boolean;
+    is_mobile: boolean;
+    is_landline: boolean;
+    is_voip: boolean;
+    country: string;
+    carrier_name: string;
+    region: string;
+    formatted_international: string;
+    score: number;
+    reason: string;
+  }> {
+    return client.post(`${API_CONFIG.importUrl}/api/verification/phone`, { 
+      phone, 
+      country_hint 
+    });
+  }
+
+  async enrichSingleContact(contactData: {
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+    company?: string;
+    company_domain?: string;
+    profile_url?: string;
+  }): Promise<{
+    email?: string;
+    phone?: string;
+    confidence: number;
+    source: string;
+    email_verified: boolean;
+    phone_verified: boolean;
+    email_verification_score: number;
+    phone_verification_score: number;
+    email_verification_details: any;
+    phone_verification_details: any;
+    providers_tried: string[];
+    total_cost: number;
+    processing_time: number;
+  }> {
+    return client.post(`${API_CONFIG.importUrl}/api/enrichment/single`, contactData);
+  }
+
+  async getEnrichmentProviderStats(): Promise<{
+    provider_stats: Array<{
+      provider: string;
+      success_rate: number;
+      avg_confidence: number;
+      total_requests: number;
+      avg_cost: number;
+      status: 'active' | 'inactive' | 'error';
+    }>;
+    cascade_stats: {
+      avg_providers_per_contact: number;
+      early_stop_rate: number;
+      total_cost_saved: number;
+    };
+  }> {
+    return client.get(`${API_CONFIG.importUrl}/api/enrichment/provider-stats`);
+  }
+
+  async verifyExistingContacts(jobId: string): Promise<{
+    success: boolean;
+    job_id: string;
+    verified_count: number;
+  }> {
+    return client.post(`${API_CONFIG.importUrl}/api/verification/job/${jobId}/verify`);
+  }
+
+  async getVerificationStats(jobId?: string): Promise<{
+    total_emails: number;
+    verified_emails: number;
+    invalid_emails: number;
+    total_phones: number;
+    verified_phones: number;
+    invalid_phones: number;
+    verification_scores: {
+      email: {
+        excellent: number;
+        good: number;
+        fair: number;
+        poor: number;
+      };
+      phone: {
+        mobile: number;
+        landline: number;
+        voip: number;
+        invalid: number;
+      };
+    };
+  }> {
+    const endpoint = jobId 
+      ? `${API_CONFIG.importUrl}/api/verification/stats/${jobId}`
+      : `${API_CONFIG.importUrl}/api/verification/stats`;
+    return client.get(endpoint);
   }
 
   // ==========================================
