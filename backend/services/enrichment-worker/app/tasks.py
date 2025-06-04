@@ -36,6 +36,23 @@ from app.common import (
     service_status
 )
 
+# MODERN ADDITIONS: Import all provider functions from providers.py
+from app.providers import (
+    call_icypeas,
+    call_dropcontact, 
+    call_hunter,
+    call_apollo,
+    call_enrow,
+    call_datagma,
+    call_anymailfinder,
+    call_snov,
+    call_findymail,
+    call_kaspr,
+    enrich_with_pdl,
+    enrich_with_clearbit,
+    PROVIDER_FUNCTIONS
+)
+
 # MODERN ADDITIONS: Import verification modules
 try:
     from enrichment import email_verifier, phone_verifier, VERIFICATION_AVAILABLE
@@ -132,12 +149,10 @@ httpx_client = httpx.Client(
     limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
 )
 
-# Initialize rate limiters for each service - OPTIMIZED rates
+# Initialize rate limiters for each service - Use settings from config
 rate_limiters = {
-    'icypeas': RateLimiter(calls_per_minute=120),  # Increased from 60
-    'dropcontact': RateLimiter(calls_per_minute=20),  # Increased from 10  
-    'hunter': RateLimiter(calls_per_minute=40),  # Increased from 20
-    'apollo': RateLimiter(calls_per_minute=60)  # Increased from 30
+    name: RateLimiter(calls_per_minute=limit)
+    for name, limit in settings.rate_limits.items()
 }
 
 # ----- Asyncio Helper ----- #
@@ -1157,7 +1172,7 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
 @celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.cascade_enrich')
 def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     """
-    COST-OPTIMIZED sequential enrichment: cheapest first, expensive only if no email found
+    UPDATED: Cost-optimized cascade enrichment using corrected provider functions
     """
     print(f"💰 Starting COST-OPTIMIZED enrichment for {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}")
     
@@ -1180,39 +1195,40 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
         "updated_at": datetime.utcnow()
     }
     
-    # COST-OPTIMIZED STRATEGY: 10-Provider cascade from cheapest to most expensive
+    # UPDATED: Use the correct service order from settings and provider functions from providers.py
     enrichment_successful = False
     provider_used = "none"
     start_time = time.time()
     total_cost = 0.0
     
-    # Define the CORRECT 10 providers in cost order (cheapest to most expensive)
-    cost_ordered_providers = [
-        ("enrow", 0.008, call_enrow),                    # 1st - Cheapest
-        ("icypeas", 0.009, call_icypeas),                # 2nd 
-        ("apollo", 0.012, call_apollo),                  # 3rd
-        ("datagma", 0.012, call_datagma),                # 4th
-        ("anymailfinder", 0.015, call_anymailfinder),    # 5th
-        ("snov", 0.02, call_snov),                       # 6th
-        ("findymail", 0.025, call_findymail),            # 7th
-        ("dropcontact", 0.034, call_dropcontact),        # 8th
-        ("hunter", 0.036, call_hunter),                  # 9th
-        ("kaspr", 0.071, call_kaspr)                     # 10th - Most expensive
-    ]
+    # Use the service order from settings (cheapest to most expensive)
+    service_order = settings.service_order
+    service_costs = settings.service_costs
     
-    # Phase 1: Try CHEAPEST providers first (Tier 1: $0.008-$0.025)
-    tier1_providers = cost_ordered_providers[:7]  # First 7 cheapest
-    print(f"💸 Phase 1: Trying CHEAPEST providers (${tier1_providers[0][1]}-${tier1_providers[-1][1]})")
+    print(f"💸 Starting cascade with {len(service_order)} providers in cost order")
     
-    for provider_name, cost, provider_func in tier1_providers:
+    # Phase 1: Try cheapest providers first (Tier 1: ~$0.008-$0.025)
+    tier1_providers = service_order[:5]  # First 5 cheapest
+    print(f"💸 Phase 1: Trying CHEAPEST providers")
+    
+    for provider_name in tier1_providers:
         if not service_status.is_available(provider_name):
             print(f"⚠️ {provider_name} not available, skipping")
             continue
             
+        # Get the cost for this provider
+        cost = service_costs.get(provider_name, 0)
+        
         try:
             print(f"🔍 Trying {provider_name} (${cost}/email)")
             
-            result = provider_func(lead)
+            # UPDATED: Use provider functions from providers.py
+            if provider_name in PROVIDER_FUNCTIONS:
+                provider_func = PROVIDER_FUNCTIONS[provider_name]
+                result = provider_func(lead)
+            else:
+                print(f"❌ Provider function not found for {provider_name}")
+                continue
                 
             if result and (result.get("email") or result.get("phone")):
                 # Found results with cheap provider - STOP HERE for cost optimization!
@@ -1243,27 +1259,34 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 provider_used = provider_name
                 processing_time = time.time() - start_time
                 print(f"✅ SUCCESS with CHEAPEST tier {provider_name} (${cost}) in {processing_time:.2f}s")
-                print(f"💰 Cost savings: Used ${cost} instead of up to $0.071 (Kaspr)")
+                print(f"💰 Cost savings: Used ${cost} instead of up to ${max(service_costs.values())}")
                 break
                 
         except Exception as e:
             print(f"❌ {provider_name} failed: {e}")
             continue
     
-    # Phase 2: MID-TIER providers if no results yet (Tier 2: $0.03-$0.04) 
-    if not enrichment_successful:
-        tier2_providers = cost_ordered_providers[7:9]  # Mid-tier
-        print(f"💳 Phase 2: No results, trying MID-TIER providers (${tier2_providers[0][1]}-${tier2_providers[-1][1]})")
+    # Phase 2: MID-TIER providers if no results yet
+    if not enrichment_successful and len(service_order) > 5:
+        tier2_providers = service_order[5:8]  # Mid-tier providers
+        print(f"💳 Phase 2: No results, trying MID-TIER providers")
         
-        for provider_name, cost, provider_func in tier2_providers:
+        for provider_name in tier2_providers:
             if not service_status.is_available(provider_name):
                 print(f"⚠️ {provider_name} not available, skipping")
                 continue
                 
+            cost = service_costs.get(provider_name, 0)
+            
             try:
                 print(f"🔍 Trying {provider_name} (${cost}/email)")
                 
-                result = provider_func(lead)
+                # UPDATED: Use provider functions from providers.py
+                if provider_name in PROVIDER_FUNCTIONS:
+                    provider_func = PROVIDER_FUNCTIONS[provider_name]
+                    result = provider_func(lead)
+                else:
+                    continue
                     
                 if result and (result.get("email") or result.get("phone")):
                     email = result.get("email")
@@ -1299,20 +1322,27 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 print(f"❌ {provider_name} failed: {e}")
                 continue
     
-    # Phase 3: EXPENSIVE providers ONLY if still no email (Tier 3: $0.05-$0.071)
-    if not enrichment_successful:
-        tier3_providers = cost_ordered_providers[9:]  # Most expensive
-        print(f"💎 Phase 3: Last resort - EXPENSIVE providers (${tier3_providers[0][1]}-${tier3_providers[-1][1]})")
+    # Phase 3: EXPENSIVE providers ONLY if still no email
+    if not enrichment_successful and len(service_order) > 8:
+        tier3_providers = service_order[8:]  # Most expensive providers
+        print(f"💎 Phase 3: Last resort - EXPENSIVE providers")
         
-        for provider_name, cost, provider_func in tier3_providers:
+        for provider_name in tier3_providers:
             if not service_status.is_available(provider_name):
                 print(f"⚠️ {provider_name} not available, skipping")
                 continue
                 
+            cost = service_costs.get(provider_name, 0)
+            
             try:
                 print(f"🔍 Trying EXPENSIVE {provider_name} (${cost}/email) - LAST RESORT")
                 
-                result = provider_func(lead)
+                # UPDATED: Use provider functions from providers.py
+                if provider_name in PROVIDER_FUNCTIONS:
+                    provider_func = PROVIDER_FUNCTIONS[provider_name]
+                    result = provider_func(lead)
+                else:
+                    continue
                     
                 if result and (result.get("email") or result.get("phone")):
                     email = result.get("email")
@@ -1934,439 +1964,6 @@ def enrich_single_contact_modern(self, lead_data: Dict[str, Any], contact_id: Op
             "source": "error"
         }
 
-# ----- NEW 10-PROVIDER CASCADE SYSTEM (Cheapest to Most Expensive) ----- #
-
-@retry_with_backoff(max_retries=2)
-def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Enrow API - CHEAPEST at $0.008/email"""
-    try:
-        # Extract name components
-        first_name = lead.get("first_name", "")
-        last_name = lead.get("last_name", "")
-        company = lead.get("company", "")
-        
-        if not first_name or not last_name or not company:
-            return {"email": None, "phone": None, "confidence": 0, "source": "enrow"}
-        
-        headers = {
-            "Authorization": f"Bearer {settings.enrow_api}",
-            "Content-Type": "application/json"
-        }
-        
-        # FIXED: Use correct Enrow API format based on official documentation
-        payload = {
-            "full_name": f"{first_name} {last_name}",
-            "domain": extract_domain(company)
-        }
-        
-        print(f"🔍 Enrow API call for {first_name} {last_name} at {company}")
-        
-        # CORRECT ENDPOINT: https://api.enrow.io/single-email-find
-        response = requests.post(
-            "https://api.enrow.io/single-email-find",
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
-        
-        print(f"📡 Enrow response status: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✅ Enrow data: {data}")
-            
-            # Extract email and confidence from response
-            email = data.get("email") or data.get("result", {}).get("email")
-            confidence = 85 if email else 0
-            
-            return {
-                "email": email,
-                "phone": None,  # Enrow primarily focuses on emails
-                "confidence": confidence,
-                "source": "enrow"
-            }
-        else:
-            print(f"❌ Enrow API error: {response.status_code} - {response.text}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "enrow"}
-            
-    except Exception as e:
-        print(f"❌ Enrow exception: {str(e)}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "enrow"}
-
-@retry_with_backoff(max_retries=2)
-def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Snov.io API - $0.02/email with async workflow"""
-    try:
-        first_name = lead.get("first_name", "")
-        last_name = lead.get("last_name", "")
-        company = lead.get("company", "")
-        
-        if not first_name or not last_name or not company:
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        # STEP 1: Get OAuth2 access token
-        token_payload = {
-            'grant_type': 'client_credentials',
-            'client_id': settings.snov_api_id,
-            'client_secret': settings.snov_api_secret
-        }
-        
-        token_response = requests.post(
-            'https://api.snov.io/v1/oauth/access_token',
-            data=token_payload,
-            timeout=30
-        )
-        
-        if token_response.status_code != 200:
-            print(f"❌ Snov.io token error: {token_response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        access_token = token_response.json().get('access_token')
-        
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
-        }
-        
-        # STEP 2: Start email search
-        search_payload = {
-            'rows': [
-                {
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'domain': extract_domain(company)
-                }
-            ]
-        }
-        
-        print(f"🔍 Snov.io API call for {first_name} {last_name} at {company}")
-        
-        start_response = requests.post(
-            'https://api.snov.io/v2/emails-by-domain-by-name/start',
-            json=search_payload,
-            headers=headers,
-            timeout=30
-        )
-        
-        if start_response.status_code != 200:
-            print(f"❌ Snov.io start error: {start_response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        task_hash = start_response.json().get('data', {}).get('task_hash')
-        
-        if not task_hash:
-            print("❌ Snov.io: No task hash received")
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        # STEP 3: Poll for results (with retries)
-        for attempt in range(5):  # Try up to 5 times
-            time.sleep(2)  # Wait 2 seconds between polls
-            
-            result_response = requests.get(
-                f'https://api.snov.io/v2/emails-by-domain-by-name/result',
-                params={'task_hash': task_hash},
-                headers=headers,
-                timeout=30
-            )
-            
-            if result_response.status_code == 200:
-                result_data = result_response.json()
-                
-                if result_data.get('status') == 'completed':
-                    data = result_data.get('data', [])
-                    if data and len(data) > 0:
-                        result = data[0].get('result', [])
-                        if result and len(result) > 0:
-                            email = result[0].get('email')
-                            smtp_status = result[0].get('smtp_status')
-                            
-                            confidence = 90 if smtp_status == 'valid' else 70 if email else 0
-                            
-                            return {
-                                "email": email,
-                                "phone": None,
-                                "confidence": confidence,
-                                "source": "snov"
-                            }
-                elif result_data.get('status') == 'in_progress':
-                    continue  # Keep polling
-                else:
-                    break  # Failed or unknown status
-        
-        print("⏰ Snov.io: Task didn't complete in time")
-        return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-    except Exception as e:
-        print(f"❌ Snov.io exception: {str(e)}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-
-@retry_with_backoff(max_retries=2)
-def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Anymailfinder API - $0.015/email"""
-    try:
-        first_name = lead.get("first_name", "")
-        last_name = lead.get("last_name", "")
-        company = lead.get("company", "")
-        
-        if not first_name or not last_name or not company:
-            return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
-        
-        headers = {
-            "Authorization": f"Bearer {settings.anymailfinder_api}",
-            "Content-Type": "application/json"
-        }
-        
-        # FIXED: Use correct Anymailfinder API format based on official documentation
-        payload = {
-            "domain": extract_domain(company),
-            "first_name": first_name,
-            "last_name": last_name
-        }
-        
-        print(f"🔍 Anymailfinder API call for {first_name} {last_name} at {company}")
-        
-        # CORRECT ENDPOINT: https://api.anymailfinder.com/v5.0/search/person.json
-        response = requests.post(
-            "https://api.anymailfinder.com/v5.0/search/person.json",
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
-        
-        print(f"📡 Anymailfinder response status: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✅ Anymailfinder data: {data}")
-            
-            # Extract email and confidence from response
-            email = data.get("email") or data.get("result", {}).get("email")
-            confidence_score = data.get("confidence", 0)
-            state = data.get("state", "")
-            
-            # Map confidence based on response
-            if state == "high" or confidence_score > 80:
-                confidence = 85
-            elif email:
-                confidence = 70
-            else:
-                confidence = 0
-            
-            return {
-                "email": email,
-                "phone": None,
-                "confidence": confidence,
-                "source": "anymailfinder"
-            }
-        else:
-            print(f"❌ Anymailfinder API error: {response.status_code} - {response.text}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
-            
-    except Exception as e:
-        print(f"❌ Anymailfinder exception: {str(e)}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
-
-@retry_with_backoff(max_retries=2)
-def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Findymail API - $0.025/email"""
-    try:
-        first_name = lead.get("first_name", "")
-        last_name = lead.get("last_name", "")
-        company = lead.get("company", "")
-        
-        if not first_name or not last_name or not company:
-            return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
-        
-        headers = {
-            "Authorization": f"Bearer {settings.findymail_api}",
-            "Content-Type": "application/json"
-        }
-        
-        # Based on common API patterns for Findymail
-        payload = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "domain": extract_domain(company)
-        }
-        
-        print(f"🔍 Findymail API call for {first_name} {last_name} at {company}")
-        
-        # Use the most likely endpoint based on documentation patterns
-        response = requests.post(
-            "https://api.findymail.com/v1/email/find",
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
-        
-        print(f"📡 Findymail response status: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✅ Findymail data: {data}")
-            
-            # Extract email and confidence from response
-            email = data.get("email") or data.get("result", {}).get("email")
-            confidence_score = data.get("confidence", 0) or data.get("score", 0)
-            verified = data.get("verified", False)
-            
-            # Map confidence based on response
-            if verified and confidence_score > 80:
-                confidence = 90
-            elif email:
-                confidence = 75
-            else:
-                confidence = 0
-            
-            return {
-                "email": email,
-                "phone": None,
-                "confidence": confidence,
-                "source": "findymail"
-            }
-        else:
-            print(f"❌ Findymail API error: {response.status_code} - {response.text}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
-            
-    except Exception as e:
-        print(f"❌ Findymail exception: {str(e)}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
-
-@retry_with_backoff(max_retries=2)
-def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Datagma API - $0.012/email"""
-    try:
-        headers = {
-            "X-API-Key": settings.datagma_api,
-            "Content-Type": "application/json"
-        }
-        
-        # FIXED: Use correct Datagma API format - they accept fullname + company OR email/linkedin
-        first_name = lead.get("first_name", "")
-        last_name = lead.get("last_name", "")
-        company = lead.get("company", "")
-        
-        payload = {
-            "fullname": f"{first_name} {last_name}",
-            "company": company
-        }
-        
-        # Add domain if available
-        if lead.get("company_domain"):
-            payload["website"] = lead.get("company_domain")
-        
-        # FIXED: Use correct Datagma endpoint
-        response = httpx.get(
-            "https://gateway.datagma.net/api/ingress/v2/full",
-            params=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"Datagma API error: {response.status_code} - {response.text}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "datagma"}
-        
-        data = response.json()
-        # Datagma returns nested data structure
-        person_data = data.get("person", {})
-        contact_data = person_data.get("contact", {})
-        
-        email = contact_data.get("email")
-        phone = contact_data.get("phone")
-        
-        return {
-            "email": email,
-            "phone": phone,
-            "confidence": 88 if email else 0,
-            "source": "datagma",
-            "cost": 0.012 if email else 0,
-            "raw_data": data
-        }
-        
-    except Exception as e:
-        logger.error(f"Datagma error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "datagma"}
-
-@retry_with_backoff(max_retries=2)
-def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Kaspr API - MOST EXPENSIVE at $0.071/email"""
-    try:
-        headers = {
-            "Authorization": f"Bearer {settings.kaspr_api}",
-            "Content-Type": "application/json"
-        }
-        
-        # Kaspr works best with LinkedIn URLs
-        linkedin_url = lead.get("profile_url", "")
-        
-        if linkedin_url and "linkedin.com" in linkedin_url:
-            payload = {"linkedin_url": linkedin_url}
-        else:
-            payload = {
-                "first_name": lead.get("first_name", ""),
-                "last_name": lead.get("last_name", ""),
-                "company_name": lead.get("company", ""),
-                "company_domain": lead.get("company_domain", "")
-            }
-        
-        response = httpx.post(
-            "https://api.kaspr.io/api/v1/enrich",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"Kaspr API error: {response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "kaspr"}
-        
-        data = response.json()
-        contact = data.get("contact", {})
-        email = contact.get("email")
-        phone = contact.get("phone")
-        
-        return {
-            "email": email,
-            "phone": phone,
-            "confidence": contact.get("confidence", 90) if email else 0,
-            "source": "kaspr",
-            "cost": 0.071 if email else 0,  # Most expensive
-            "raw_data": data
-        }
-        
-    except Exception as e:
-        logger.error(f"Kaspr error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "kaspr"}
-
-def extract_domain(company: str) -> str:
-    """Extract domain from company name or URL"""
-    if not company:
-        return ""
-    
-    # Remove common protocols
-    company = company.replace("https://", "").replace("http://", "").replace("www.", "")
-    
-    # If it already looks like a domain, use it
-    if "." in company and not " " in company:
-        return company.split("/")[0]  # Remove any path components
-    
-    # Otherwise, create a domain from company name
-    domain = company.lower()
-    # Remove common company suffixes
-    suffixes = [" inc", " llc", " corp", " corporation", " company", " co", " ltd", " limited"]
-    for suffix in suffixes:
-        domain = domain.replace(suffix, "")
-    
-    # Remove special characters and spaces
-    domain = "".join(c for c in domain if c.isalnum() or c in ".-")
-    domain = domain.replace(" ", "").replace("-", "")
-    
-    # Add .com if no TLD present
-    if "." not in domain:
-        domain += ".com"
-    
-    return domain
 
 @celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.verify_all_existing_contacts')
 def verify_all_existing_contacts(self, user_id: Optional[str] = None):
@@ -2496,4 +2093,297 @@ def verify_all_existing_contacts(self, user_id: Optional[str] = None):
             "success": False,
             "error": str(e),
             "verified_count": 0
+        }
+
+# ----- MODERN ADDITIONS: Additional tasks from tasks_v2.py ----- #
+
+@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.enrich_single_contact_task')
+def enrich_single_contact_task(self, lead_data: Dict[str, Any], contact_id: Optional[int] = None, job_id: Optional[str] = None, user_id: Optional[str] = None):
+    """
+    Enrich a single contact using the modern cascade engine (backported from tasks_v2.py)
+    """
+    try:
+        logger.info(f"Starting enrichment task for contact: {lead_data.get('full_name', 'Unknown')}")
+        
+        # Use the cascade enrichment
+        result = cascade_enrich(lead_data, job_id or f"temp_{int(time.time())}", user_id or "system")
+        
+        if result.get("status") == "completed":
+            logger.info(f"✓ Enrichment success via {result.get('provider_used', 'unknown')}")
+        else:
+            logger.info(f"✗ No email found for contact")
+        
+        return {
+            "success": result.get("status") == "completed",
+            "contact_id": result.get("contact_id"),
+            "credits_consumed": result.get("credits_consumed", 0),
+            "provider_used": result.get("provider_used", "none"),
+            "status": result.get("status", "failed")
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in enrich_single_contact_task: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "contact_id": contact_id,
+            "credits_consumed": 0,
+            "provider_used": "error",
+            "status": "failed"
+        }
+
+
+@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.process_csv_batch_modern')
+def process_csv_batch_modern(self, file_path: str, job_id: str, user_id: str, batch_size: int = 50):
+    """
+    Process a CSV file in batches using the modern enrichment (backported from tasks_v2.py)
+    """
+    try:
+        logger.info(f"Starting modern CSV batch processing: {file_path}")
+        
+        # Verify file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"CSV file not found: {file_path}")
+        
+        # Read CSV and create contacts
+        async def process_csv():
+            async with AsyncSessionLocal() as session:
+                # Read CSV file
+                contacts_data = []
+                with open(file_path, 'r', encoding='utf-8-sig') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for row in reader:
+                        # Normalize column names
+                        normalized_row = {}
+                        for key, value in row.items():
+                            # Handle common CSV column variations
+                            if key.lower() in ['full name', 'name', 'fullname']:
+                                normalized_row['full_name'] = value
+                            elif key.lower() in ['first name', 'firstname']:
+                                normalized_row['first_name'] = value
+                            elif key.lower() in ['last name', 'lastname']:
+                                normalized_row['last_name'] = value
+                            elif key.lower() in ['company', 'company name']:
+                                normalized_row['company'] = value
+                            elif key.lower() in ['company domain', 'domain', 'website']:
+                                normalized_row['company_domain'] = value
+                            elif key.lower() in ['linkedin', 'linkedin url', 'profile url']:
+                                normalized_row['profile_url'] = value
+                            elif key.lower() in ['position', 'title', 'job title']:
+                                normalized_row['position'] = value
+                            elif key.lower() in ['location', 'city', 'country']:
+                                normalized_row['location'] = value
+                            elif key.lower() in ['industry', 'sector']:
+                                normalized_row['industry'] = value
+                            else:
+                                normalized_row[key.lower().replace(' ', '_')] = value
+                        
+                        contacts_data.append(normalized_row)
+                
+                total_contacts = len(contacts_data)
+                logger.info(f"Found {total_contacts} contacts in CSV")
+                
+                # Create or update job
+                await get_or_create_job(session, job_id, user_id, total_contacts)
+                
+                # Save contacts to database and get their IDs
+                contact_ids = []
+                for lead_data in contacts_data:
+                    contact_id = await save_contact(session, job_id, lead_data)
+                    contact_ids.append((contact_id, lead_data))
+                
+                logger.info(f"Saved {len(contact_ids)} contacts to database")
+                
+                return contact_ids, total_contacts
+        
+        contact_ids, total_contacts = run_async(process_csv())
+        
+        # Create enrichment tasks in batches
+        batch_tasks = []
+        for i in range(0, len(contact_ids), batch_size):
+            batch = contact_ids[i:i + batch_size]
+            
+            # Create tasks for this batch
+            for contact_id, lead_data in batch:
+                task = enrich_single_contact_task.delay(
+                    lead_data=lead_data,
+                    contact_id=contact_id,
+                    job_id=job_id,
+                    user_id=user_id
+                )
+                batch_tasks.append(task)
+            
+            logger.info(f"Created batch {i//batch_size + 1} with {len(batch)} enrichment tasks")
+        
+        logger.info(f"Created {len(batch_tasks)} total enrichment tasks for job {job_id}")
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "total_contacts": total_contacts,
+            "tasks_created": len(batch_tasks),
+            "task_ids": [task.id for task in batch_tasks]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in process_csv_batch_modern: {str(e)}")
+        
+        # Update job status to failed
+        async def mark_job_failed():
+            async with AsyncSessionLocal() as session:
+                await update_job_status(session, job_id, "failed")
+        
+        run_async(mark_job_failed())
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "job_id": job_id
+        }
+
+
+@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.bulk_enrich_contacts')
+def bulk_enrich_contacts(self, leads: List[Dict[str, Any]], job_id: Optional[str] = None, user_id: Optional[str] = None):
+    """
+    Bulk enrich multiple contacts using parallel processing (backported from tasks_v2.py)
+    """
+    try:
+        logger.info(f"Starting bulk enrichment for {len(leads)} contacts")
+        
+        # Process leads in parallel using cascade_enrich
+        results = []
+        successful_count = 0
+        total_cost = 0.0
+        
+        for lead in leads:
+            try:
+                result = cascade_enrich(lead, job_id or f"bulk_{int(time.time())}", user_id or "system")
+                results.append(result)
+                
+                if result.get("status") == "completed":
+                    successful_count += 1
+                    
+                total_cost += result.get("total_cost", 0)
+                
+            except Exception as e:
+                logger.error(f"Error enriching lead {lead.get('full_name', 'Unknown')}: {e}")
+                results.append({
+                    "status": "failed",
+                    "error": str(e),
+                    "contact_id": None,
+                    "credits_consumed": 0,
+                    "provider_used": "error"
+                })
+        
+        logger.info(f"Bulk enrichment complete: {successful_count}/{len(results)} contacts enriched")
+        logger.info(f"Total cost: ${total_cost:.4f}")
+        
+        return {
+            "success": True,
+            "total_processed": len(results),
+            "successful_count": successful_count,
+            "success_rate": (successful_count / len(results)) * 100 if results else 0,
+            "total_cost": total_cost,
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in bulk_enrich_contacts: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "total_processed": 0,
+            "successful_count": 0,
+            "success_rate": 0,
+            "total_cost": 0
+        }
+
+
+# ----- MODERN INTEGRATION: Ensure proper provider integration ----- #
+
+def get_available_providers():
+    """Get list of available enrichment providers from the updated config"""
+    available = []
+    for provider in settings.service_order:
+        if service_status.is_available(provider):
+            available.append({
+                "name": provider,
+                "cost": settings.service_costs.get(provider, 0),
+                "rate_limit": settings.rate_limits.get(provider, 60)
+            })
+    return available
+
+
+def get_enrichment_system_status():
+    """Get comprehensive system status"""
+    return {
+        "providers_available": len(get_available_providers()),
+        "total_providers": len(settings.service_order),
+        "verification_available": VERIFICATION_AVAILABLE,
+        "modern_engine_available": MODERN_ENGINE_AVAILABLE,
+        "service_order": settings.service_order,
+        "cheapest_provider": settings.service_order[0] if settings.service_order else None,
+        "most_expensive_provider": settings.service_order[-1] if settings.service_order else None,
+        "cost_range": {
+            "min": min(settings.service_costs.values()) if settings.service_costs else 0,
+            "max": max(settings.service_costs.values()) if settings.service_costs else 0
+        }
+    }
+
+
+@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.system_health_check')
+def system_health_check(self):
+    """
+    Comprehensive system health check for the enrichment system
+    """
+    try:
+        logger.info("Starting enrichment system health check")
+        
+        # Test database connectivity
+        db_status = "healthy"
+        try:
+            with SyncSessionLocal() as session:
+                session.execute(text("SELECT 1"))
+        except Exception as e:
+            db_status = f"error: {e}"
+        
+        # Test provider availability
+        provider_status = {}
+        for provider in settings.service_order[:3]:  # Test top 3 cheapest
+            try:
+                if provider in PROVIDER_FUNCTIONS:
+                    provider_status[provider] = "available"
+                else:
+                    provider_status[provider] = "function_missing"
+            except Exception as e:
+                provider_status[provider] = f"error: {e}"
+        
+        # Get system stats
+        system_status = get_enrichment_system_status()
+        
+        health_report = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "database_status": db_status,
+            "provider_status": provider_status,
+            "system_status": system_status,
+            "overall_health": "healthy" if db_status == "healthy" and len(provider_status) > 0 else "degraded"
+        }
+        
+        logger.info(f"Health check complete: {health_report['overall_health']}")
+        
+        return {
+            "success": True,
+            "health_report": health_report
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in system health check: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "health_report": {
+                "timestamp": datetime.utcnow().isoformat(),
+                "overall_health": "critical",
+                "error": str(e)
+            }
         }

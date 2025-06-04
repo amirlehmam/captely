@@ -545,42 +545,42 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         "Content-Type": "application/json"
     }
     
-    first_name = lead.get("first_name", "")
-    last_name = lead.get("last_name", "")
+    # Get full name from available data
+    full_name = lead.get("full_name", "")
+    if not full_name:
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
+        if first_name and last_name:
+            full_name = f"{first_name} {last_name}".strip()
+        elif first_name or last_name:
+            full_name = (first_name or last_name).strip()
     
-    if (not first_name or not last_name) and lead.get("full_name"):
-        name_parts = lead.get("full_name", "").split(" ", 1)
-        if len(name_parts) >= 2:
-            first_name = name_parts[0] if not first_name else first_name
-            last_name = name_parts[1] if not last_name else last_name
-        elif len(name_parts) == 1 and not last_name:
-            last_name = name_parts[0]
+    if not full_name:
+        logger.warning(f"{service_name}: No full name available for contact.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-    company_domain = lead.get("company_domain", "")
-    if not company_domain and lead.get("company"):
-        company_clean = lead.get("company", "").lower().strip()
-        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
-            if company_clean.endswith(suffix):
-                company_clean = company_clean[:-len(suffix)].strip()
-        if company_clean:
-            company_domain = f"{company_clean.replace(' ', '')}.com"
-
+    # Build payload according to current Enrow API documentation
     payload = {
-        "first_name": first_name,
-        "last_name": last_name,
-        "domain": company_domain,
-        "company": lead.get("company", "")
+        "fullname": full_name
     }
-
-    if linkedin_url := lead.get("profile_url", ""):
-        if "linkedin.com" in linkedin_url:
-            payload["linkedin_url"] = linkedin_url
+    
+    # Add company information - prefer company_name over domain
+    company_name = lead.get("company", "")
+    company_domain = lead.get("company_domain", "")
+    
+    if company_name:
+        payload["company_name"] = company_name
+    elif company_domain:
+        payload["company_domain"] = company_domain
+    else:
+        logger.warning(f"{service_name}: No company information for contact.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     logger.info(f"{service_name} payload: {payload}")
 
     try:
         response = httpx.post(
-            f"{settings.api_urls[service_name]}/find-email",
+            f"{settings.api_urls[service_name]}/email/find/single",
             json=payload,
             headers=headers,
             timeout=30
@@ -595,15 +595,24 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         data = response.json()
         email = data.get("email")
-        confidence_score = data.get("confidence", 0)
-        phone = data.get("phone")  # If available
+        qualification = data.get("qualification", "")
+        
+        # Map qualification to confidence score
+        confidence_score = 0
+        if email:
+            if qualification == "valid":
+                confidence_score = 90
+            elif qualification in ["unknown", "unverifiable"]:
+                confidence_score = 60
+            else:
+                confidence_score = 75
         
         if email:
-            logger.info(f"{service_name} found: email={email}, confidence={confidence_score}")
+            logger.info(f"{service_name} found: email={email}, qualification={qualification}, confidence={confidence_score}")
         
         return {
             "email": email,
-            "phone": phone,
+            "phone": None,  # Enrow typically focuses on email
             "confidence": confidence_score,
             "source": service_name,
             "raw_data": data
@@ -791,7 +800,15 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
 
     rate_limiters[service_name].wait()
     
+    # First, get OAuth access token
+    access_token = get_snov_access_token()
+    if not access_token:
+        logger.error(f"{service_name} failed to get access token.")
+        service_status.mark_unavailable(service_name)
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+    
     headers = {
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
     
@@ -804,6 +821,10 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
             first_name = name_parts[0] if not first_name else first_name
             last_name = name_parts[1] if not last_name else last_name
 
+    if not first_name or not last_name:
+        logger.warning(f"{service_name}: Need both first and last name for search.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
     company_domain = lead.get("company_domain", "")
     if not company_domain and lead.get("company"):
         company_clean = lead.get("company", "").lower().strip()
@@ -813,19 +834,27 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
         if company_clean:
             company_domain = f"{company_clean.replace(' ', '')}.com"
 
+    if not company_domain:
+        logger.warning(f"{service_name}: No domain available for search.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+    # Use current Snov.io API v2 format
     payload = {
-        "user_id": settings.snov_api_id,
-        "secret": settings.snov_api_secret,
-        "firstName": first_name,
-        "lastName": last_name,
-        "domain": company_domain
+        "rows": [
+            {
+                "first_name": first_name,
+                "last_name": last_name,
+                "domain": company_domain
+            }
+        ]
     }
 
     logger.info(f"{service_name} payload: {payload}")
 
     try:
+        # Step 1: Start the async search
         response = httpx.post(
-            f"{settings.api_urls[service_name]}/v1/get-emails-from-names",
+            f"{settings.api_urls[service_name]}/v2/emails-by-domain-by-name/start",
             json=payload,
             headers=headers,
             timeout=30
@@ -838,29 +867,79 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
 
         response.raise_for_status()
         
-        data = response.json()
-        success = data.get("success", False)
+        start_data = response.json()
+        task_hash = start_data.get("data", {}).get("task_hash")
         
-        if success and data.get("data"):
-            emails = data["data"].get("emails", [])
-            if emails:
-                best_email = emails[0]
-                email = best_email.get("email")
-                confidence_score = best_email.get("probability", 75)
-                
-                if email:
-                    logger.info(f"{service_name} found: email={email}, confidence={confidence_score}")
-                
-                return {
-                    "email": email,
-                    "phone": None,
-                    "confidence": confidence_score,
-                    "source": service_name,
-                    "raw_data": data
-                }
+        if not task_hash:
+            logger.warning(f"{service_name} did not return task_hash. Response: {start_data}")
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": start_data}
+            
+        logger.info(f"{service_name} search started with task_hash: {task_hash}")
         
-        logger.info(f"{service_name}: No results found")
-        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": data}
+        # Step 2: Poll for results
+        wait_times = [3, 5, 8, 12, 20]
+        
+        for i, wait_time in enumerate(wait_times):
+            time.sleep(wait_time)
+            
+            poll_response = httpx.get(
+                f"{settings.api_urls[service_name]}/v2/emails-by-domain-by-name/result",
+                params={"task_hash": task_hash},
+                headers=headers,
+                timeout=20
+            )
+            
+            if poll_response.status_code != 200:
+                logger.warning(f"{service_name} polling attempt {i+1}: HTTP {poll_response.status_code}")
+                continue
+            
+            poll_data = poll_response.json()
+            status = poll_data.get("status")
+            
+            if status == "in_progress":
+                logger.info(f"{service_name} polling {i+1}: still in progress")
+                continue
+            elif status == "completed":
+                data_results = poll_data.get("data", [])
+                if data_results:
+                    result = data_results[0]
+                    people_name = result.get("people", "")
+                    result_list = result.get("result", [])
+                    
+                    if result_list:
+                        email_result = result_list[0]
+                        email = email_result.get("email")
+                        smtp_status = email_result.get("smtp_status", "")
+                        
+                        # Map SMTP status to confidence
+                        confidence_score = 0
+                        if email:
+                            if smtp_status == "valid":
+                                confidence_score = 90
+                            elif smtp_status == "unknown":
+                                confidence_score = 60
+                            else:
+                                confidence_score = 75
+                        
+                        if email:
+                            logger.info(f"{service_name} found: email={email}, smtp_status={smtp_status}, confidence={confidence_score}")
+                        
+                        return {
+                            "email": email,
+                            "phone": None,
+                            "confidence": confidence_score,
+                            "source": service_name,
+                            "raw_data": poll_data
+                        }
+                
+                logger.info(f"{service_name}: No results found")
+                return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": poll_data}
+            else:
+                logger.warning(f"{service_name} unexpected status: {status}")
+                break
+        
+        logger.warning(f"{service_name} polling timeout for task_hash {task_hash}")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
@@ -870,6 +949,30 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Unexpected error in {service_name}: {e}")
 
     return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+
+
+def get_snov_access_token() -> str:
+    """Get OAuth access token for Snov.io API."""
+    try:
+        params = {
+            'grant_type': 'client_credentials',
+            'client_id': settings.snov_client_id,
+            'client_secret': settings.snov_client_secret
+        }
+        
+        response = httpx.post(
+            f"{settings.api_urls['snov']}/v1/oauth/access_token",
+            data=params,
+            timeout=15
+        )
+        
+        response.raise_for_status()
+        token_data = response.json()
+        return token_data.get('access_token', '')
+        
+    except Exception as e:
+        logger.error(f"Failed to get Snov.io access token: {e}")
+        return ""
 
 
 # --- Findymail (0.024/mail) ---

@@ -31,9 +31,9 @@ class Settings:
         # 5. Anymailfinder (0.021/mail)
         self.anymailfinder_api = os.environ.get('ANYMAILFINDER_API_KEY', 'q3Bieg36rItIk4SgfCjai5D5')
         
-        # 6. Snov.io (0.024/mail)
-        self.snov_api_id = os.environ.get('SNOV_API_ID', '5ff5f14d00590735ac54cc464af065aa')
-        self.snov_api_secret = os.environ.get('SNOV_API_SECRET', '38f1e154a16ad161aa8af02265ad56be')
+        # 6. Snov.io (0.024/mail) - Updated to OAuth
+        self.snov_client_id = os.environ.get('SNOV_CLIENT_ID', '5ff5f14d00590735ac54cc464af065aa')
+        self.snov_client_secret = os.environ.get('SNOV_CLIENT_SECRET', '38f1e154a16ad161aa8af02265ad56be')
         
         # 7. Findymail (0.024/mail)
         self.findymail_api = os.environ.get('FINDYMAIL_API_KEY', 'U7elGjh9pJ02kWl01cWXX1VJQ821HtZ4hhIYaXlq1739192e')
@@ -53,14 +53,14 @@ class Settings:
         self.prospeo_api = os.environ.get('PROSPEO_API_KEY', 'b64e92cd66725c2f7019a0e0c04411af')
         self.enrich_so_api = os.environ.get('ENRICH_SO_API_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Mzg0MDNiMzljYmJlODIyMDU1YTQ3NiIsInR5cGUiOiJhcGkiLCJyb3RhdGlvbiI6IjNkZmNiOGQ0LTE1NWQtNDQyZS1iM2IyLTc0M2U4NzNmYWZlMyIsImlhdCI6MTc0ODUxNjkyOH0.miPUx568OiSFwqukVFMah8q3U9a-BL1KWD60ZzPeWc8')
         
-        # API base URLs
+        # API base URLs - Updated to current endpoints
         self.api_urls = {
-            'enrow': 'https://enrow.io/api',
+            'enrow': 'https://api.enrow.io',  # Updated from https://enrow.io/api
             'icypeas': 'https://icypeas.com/api',
             'apollo': 'https://api.apollo.io/v1',
             'datagma': 'https://api.datagma.com',
             'anymailfinder': 'https://api.anymailfinder.com/v1',
-            'snov': 'https://app.snov.io/restapi',
+            'snov': 'https://api.snov.io',  # Updated from https://app.snov.io/restapi
             'findymail': 'https://app.findymail.com/api',
             'dropcontact': 'https://api.dropcontact.com',
             'hunter': 'https://api.hunter.io/v2',
