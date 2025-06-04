@@ -173,3 +173,26 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 /backend/frontend/node_modules
+
+# OAuth and API Credentials (SECURITY)
+credentials.json
+**/credentials.json
+client_secret.json
+**/client_secret.json
+.env*
+**/.env*
+*.pem
+*.p12
+*.key
+api-keys.json
+
+# Additional sensitive files
+config/secrets.yml
+config/production.yml
+.secrets/
+temp_env.txt
+auth_logs.txt
+
+# Docker and production
+docker-compose.override.yml
+.dockerignore
