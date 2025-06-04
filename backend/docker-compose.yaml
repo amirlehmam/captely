@@ -46,8 +46,8 @@ services:
       - ./services/common:/app/common
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
-      - GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-622304968200-bu1m53eqbgit3q0kmk35jd4c2260p3hn.apps.googleusercontent.com}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-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}
+      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-placeholder-google-client-id}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-placeholder-google-client-secret}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
@@ -291,12 +291,12 @@ services:
       context: ./frontend/nextjs-app
       dockerfile: Dockerfile.prod
       args:
-        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-112233445566-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-placeholder-google-client-id}
         - VITE_APPLE_CLIENT_ID=${VITE_APPLE_CLIENT_ID:-com.captely.signin}
     container_name: captely-frontend
     env_file: .env
     environment:
-      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-112233445566-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com}
+      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-placeholder-google-client-id}
       - VITE_APPLE_CLIENT_ID=${VITE_APPLE_CLIENT_ID:-com.captely.signin}
     depends_on:
       - auth-service

@@ -40,8 +40,9 @@ class Settings(BaseSettings):
     jwt_secret: str = "devsecret"
     jwt_algorithm: str = "HS256"
     jwt_exp_minutes: int = 60
-    google_client_id: str = "622304968200-bu1m53eqbgit3q0kmk35jd4c2260p3hn.apps.googleusercontent.com"
-    google_client_secret: str = "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"
+    # OAuth settings - these will read from VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
+    vite_google_client_id: str = "placeholder-google-client-id"
+    google_client_secret: str = "placeholder-google-client-secret"
     cors_origins: List[str] = ["http://localhost:5173",
                                "http://localhost:3000",
                                "http://localhost:8000",
@@ -53,6 +54,11 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        
+    @property
+    def google_client_id(self) -> str:
+        """Get Google Client ID from VITE_GOOGLE_CLIENT_ID env var"""
+        return self.vite_google_client_id
 
 settings = Settings()
 

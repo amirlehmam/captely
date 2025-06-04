@@ -100,7 +100,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const initializeGoogleOAuth = () => {
     if (window.google) {
       window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '622304968200-bu1m53eqbgit3q0kmk35jd4c2260p3hn.apps.googleusercontent.com',
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder-google-client-id',
         callback: handleGoogleSignIn,
         auto_select: false,
         cancel_on_tap_outside: true
