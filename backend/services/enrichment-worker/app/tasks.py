@@ -121,9 +121,10 @@ contacts = Table(
     Column('enrichment_score', Float, nullable=True),
     Column('email_verified', Boolean, default=False),
     Column('phone_verified', Boolean, default=False),
-    # MODERN ADDITIONS: Verification scores
+    # MODERN ADDITIONS: Verification scores and notes
     Column('email_verification_score', Float, nullable=True),
     Column('phone_verification_score', Float, nullable=True),
+    Column('notes', String, nullable=True),  # Added notes field
     Column('credits_consumed', Integer, default=0),
     Column('created_at', TIMESTAMP),
     Column('updated_at', TIMESTAMP)
@@ -1681,13 +1682,13 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                     industry, profile_url, email, phone, enriched, enrichment_status,
                     enrichment_provider, enrichment_score, email_verified, phone_verified,
                     email_verification_score, phone_verification_score,
-                    credits_consumed, created_at, updated_at
+                    notes, credits_consumed, created_at, updated_at
                 ) VALUES (
                     :job_id, :first_name, :last_name, :company, :position, :location,
                     :industry, :profile_url, :email, :phone, :enriched, :enrichment_status,
                     :enrichment_provider, :enrichment_score, :email_verified, :phone_verified,
                     :email_verification_score, :phone_verification_score,
-                    :credits_consumed, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    :notes, :credits_consumed, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 ) RETURNING id
             """)
             
@@ -1710,6 +1711,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                 "phone_verified": contact_data.get("phone_verified", False),
                 "email_verification_score": contact_data.get("email_verification_score"),
                 "phone_verification_score": contact_data.get("phone_verification_score"),
+                "notes": contact_data.get("notes"),
                 "credits_consumed": contact_data["credits_consumed"]
             })
             

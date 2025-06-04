@@ -14,6 +14,7 @@ import { CreditProvider } from './contexts/CreditContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import BatchesPage from './pages/Batches';
+import BatchDetailPage from './pages/BatchDetail';
 import ImportPage from './pages/Import';
 import IntegrationsPage from './pages/Integrations';
 import ApiTokensPage from './pages/ApiTokens';
@@ -87,6 +88,7 @@ function App() {
               <Route element={<Layout onLogout={handleLogout} />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/batches" element={<BatchesPage />} />
+                <Route path="/batches/:jobId" element={<BatchDetailPage />} />
                 <Route path="/import" element={<ImportPage />} />
                 <Route path="/integrations" element={<IntegrationsPage />} />
                 <Route path="/api-tokens" element={<ApiTokensPage />} />

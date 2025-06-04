@@ -289,6 +289,9 @@ export interface Contact {
   enrichment_score?: number;
   email_verified: boolean;
   phone_verified: boolean;
+  email_verification_score?: number;
+  phone_verification_score?: number;
+  notes?: string;
   credits_consumed?: number;
   created_at: string;
   updated_at?: string;
@@ -552,6 +555,7 @@ class ApiService {
     contacts: Contact[];
     total: number;
     page: number;
+    limit: number;
     total_pages: number;
   }> {
     return client.get(`${API_CONFIG.importUrl}/api/jobs/${jobId}/contacts`, {
@@ -583,6 +587,106 @@ class ApiService {
       toast.error('Export failed. Please try again.');
       throw error;
     }
+  }
+
+  // ==========================================
+  // BATCH MANAGEMENT & CONTACT OPERATIONS
+  // ==========================================
+
+  async getContact(contactId: string): Promise<Contact> {
+    return client.get<Contact>(`${API_CONFIG.importUrl}/api/contacts/${contactId}`);
+  }
+
+  async updateContact(contactId: string, data: {
+    position?: string;
+    notes?: string;
+    first_name?: string;
+    last_name?: string;
+    company?: string;
+    location?: string;
+    industry?: string;
+  }): Promise<Contact> {
+    const response = await client.put<Contact>(`${API_CONFIG.importUrl}/api/contacts/${contactId}`, data);
+    toast.success('Contact updated successfully!');
+    return response;
+  }
+
+  async exportContactToHubSpot(contactId: string): Promise<{
+    success: boolean;
+    platform: string;
+    platform_contact_id: string;
+    contact_data: any;
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        platform: string;
+        platform_contact_id: string;
+        contact_data: any;
+        message: string;
+      }>(`${API_CONFIG.importUrl}/api/contacts/${contactId}/export/hubspot`);
+      toast.success('Contact exported to HubSpot successfully!');
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to export contact to HubSpot');
+      throw error;
+    }
+  }
+
+  async exportJobToHubSpot(jobId: string): Promise<{
+    success: boolean;
+    job_id: string;
+    total_contacts: number;
+    exported_count: number;
+    failed_count: number;
+    exported_contacts: any[];
+    failed_contacts: any[];
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        job_id: string;
+        total_contacts: number;
+        exported_count: number;
+        failed_count: number;
+        exported_contacts: any[];
+        failed_contacts: any[];
+        message: string;
+      }>(`${API_CONFIG.importUrl}/api/jobs/${jobId}/export/hubspot`);
+      toast.success('Batch exported to HubSpot successfully!');
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to export batch to HubSpot');
+      throw error;
+    }
+  }
+
+  async getExportLogs(page: number = 1, limit: number = 50): Promise<{
+    logs: Array<{
+      id: string;
+      contact_id: string | null;
+      platform: string;
+      platform_contact_id: string;
+      status: string;
+      created_at: string;
+      contact: {
+        first_name: string;
+        last_name: string;
+        email: string;
+        company: string;
+      } | null;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  }> {
+    return client.get(`${API_CONFIG.importUrl}/api/export/logs`, {
+      page,
+      limit
+    });
   }
 
   // ==========================================
@@ -894,12 +998,6 @@ class ApiService {
       phone_verified: false,
       created_at: new Date().toISOString()
     } as Contact;
-  }
-
-  async updateContact(contactId: string, data: Partial<Contact>): Promise<Contact> {
-    // This would update a contact in the CRM
-    toast.success('Contact updated successfully!');
-    throw new Error('Not implemented yet');
   }
 
   async deleteContact(contactId: string): Promise<void> {

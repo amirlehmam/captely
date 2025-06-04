@@ -527,13 +527,13 @@ const BatchesPage: React.FC = () => {
                   <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
                       {/* View Details */}
-                      <button
-                        onClick={() => setShowJobDetails(job.id)}
-                        className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200"
-                        title="View Details"
+                      <Link
+                        to={`/batches/${job.id}`}
+                        className="p-2 text-blue-600 hover:text-blue-700 rounded-lg hover:bg-blue-50 transition-all duration-200"
+                        title="View Batch Details"
                       >
                         <Eye className="h-4 w-4" />
-                      </button>
+                      </Link>
 
                       {/* Export Actions */}
                       {job.status === 'completed' && (
