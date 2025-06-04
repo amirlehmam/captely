@@ -25,10 +25,8 @@ import SignupPage from './pages/Signup';
 import ForgotPasswordPage from './pages/ForgotPassword';
 import NotFoundPage from './pages/NotFound';
 
-// CRM Pages - We'll create placeholder components for now
-const ContactsPage = React.lazy(() => import('./pages/crm/Contacts'));
-const ActivitiesPage = React.lazy(() => import('./pages/crm/Activities'));
-const CampaignsPage = React.lazy(() => import('./pages/crm/Campaigns'));
+// CRM Pages - New unified CRM system
+import CRMPage from './pages/CRM';
 
 function App() {
   console.log('🚀 App component is loading...');
@@ -96,21 +94,7 @@ function App() {
                 <Route path="/billing" element={<BillingPage />} />
                 
                 {/* CRM Routes */}
-                <Route path="/crm/contacts" element={
-                  <React.Suspense fallback={<div>Loading...</div>}>
-                    <ContactsPage />
-                  </React.Suspense>
-                } />
-                <Route path="/crm/activities" element={
-                  <React.Suspense fallback={<div>Loading...</div>}>
-                    <ActivitiesPage />
-                  </React.Suspense>
-                } />
-                <Route path="/crm/campaigns" element={
-                  <React.Suspense fallback={<div>Loading...</div>}>
-                    <CampaignsPage />
-                  </React.Suspense>
-                } />
+                <Route path="/crm" element={<CRMPage />} />
                 
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
