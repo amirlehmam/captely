@@ -651,15 +651,15 @@ const BillingPage: React.FC = () => {
                   )}
                   See / Download Invoices
                 </button>
-              </div>
+            </div>
               
               {subscription?.status === 'active' && (
-                <button
+            <button 
                   onClick={handleCancelSubscription}
                   className="text-sm text-red-600 hover:text-red-700 font-medium"
-                >
+            >
                   Cancel subscription
-                </button>
+            </button>
               )}
             </div>
           </div>
@@ -789,44 +789,44 @@ const BillingPage: React.FC = () => {
             const totalPrice = billingType === 'annual' ? pack.price_annual : pack.price_monthly;
             const savings = billingType === 'annual' ? (pack.price_monthly * 12) - pack.price_annual : 0;
             const isCurrentPack = currentPlan?.credits_monthly === pack.credits;
-            
-            return (
-              <motion.div
+          
+          return (
+            <motion.div
                 key={pack.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className={`relative bg-white rounded-xl shadow-lg border-2 transition-all duration-300 ${
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className={`relative bg-white rounded-xl shadow-lg border-2 transition-all duration-300 ${
                   pack.popular 
-                    ? 'border-teal-500 shadow-xl scale-105' 
+                  ? 'border-teal-500 shadow-xl scale-105' 
                     : isCurrentPack
-                    ? 'border-green-500'
-                    : 'border-gray-200 hover:border-teal-300'
-                }`}
-              >
+                  ? 'border-green-500'
+                  : 'border-gray-200 hover:border-teal-300'
+              }`}
+            >
                 {pack.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold">
-                      MOST POPULAR
-                    </span>
-                  </div>
-                )}
-                
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold">
+                    MOST POPULAR
+                  </span>
+                </div>
+              )}
+              
                 {isCurrentPack && (
-                  <div className="absolute -top-3 right-4">
-                    <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                      CURRENT
-                    </span>
-                  </div>
-                )}
+                <div className="absolute -top-3 right-4">
+                  <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                    CURRENT
+                  </span>
+                </div>
+              )}
 
-                <div className="p-6">
-                  <div className="text-center mb-6">
+              <div className="p-6">
+                <div className="text-center mb-6">
                     <h3 className="text-xl font-bold text-gray-900">{pack.name}</h3>
-                    <div className="mt-4">
-                      <span className="text-3xl font-bold text-gray-900">
+                  <div className="mt-4">
+                        <span className="text-3xl font-bold text-gray-900">
                         €{monthlyPrice.toFixed(0)}
-                      </span>
+                        </span>
                       <span className="text-gray-600">/month</span>
                       
                       {billingType === 'annual' && savings > 0 && (
@@ -837,15 +837,15 @@ const BillingPage: React.FC = () => {
                           <p className="text-xs text-green-500">
                             2 months offered!
                           </p>
-                        </div>
-                      )}
-                    </div>
-                    
+                      </div>
+                    )}
+                  </div>
+                  
                     <p className="text-sm text-gray-600 mt-2">
                       {billingType === 'annual' ? (pack.credits * 12).toLocaleString() : pack.credits.toLocaleString()} 
                       {billingType === 'annual' ? ' credits/year' : ' credits/month'}
                     </p>
-                  </div>
+                </div>
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center text-sm text-gray-600">
@@ -870,25 +870,25 @@ const BillingPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
+                <button
                     onClick={() => handlePlanUpgrade(pack.id, billingType)}
                     disabled={isCurrentPack || loading}
-                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
                       isCurrentPack
-                        ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+                      ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
                         : pack.popular
-                        ? 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
-                        : 'bg-gray-900 hover:bg-gray-800 text-white'
-                    }`}
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                      ? 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
+                      : 'bg-gray-900 hover:bg-gray-800 text-white'
+                  }`}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                     ) : isCurrentPack ? (
                       'Current Pack'
-                    ) : (
+                ) : (
                       'Buy This Pack'
-                    )}
-                  </button>
+                )}
+              </button>
                   
                   {billingType === 'annual' && (
                     <p className="text-xs text-center text-gray-500 mt-2">
@@ -899,8 +899,8 @@ const BillingPage: React.FC = () => {
               </motion.div>
             );
           })}
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
 
       {/* Enrichment History */}
       <AnimatePresence>

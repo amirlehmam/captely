@@ -146,20 +146,20 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
       }
       
       if (formData.authMethod === 'email') {
-        if (!formData.password) {
-          newErrors.password = 'Password is required';
-          isValid = false;
-        } else if (formData.password.length < 8) {
-          newErrors.password = 'Password must be at least 8 characters';
-          isValid = false;
-        }
-        if (!formData.confirmPassword) {
-          newErrors.confirmPassword = 'Please confirm your password';
-          isValid = false;
-        } else if (formData.password !== formData.confirmPassword) {
-          newErrors.confirmPassword = 'Passwords do not match';
-          isValid = false;
-        }
+      if (!formData.password) {
+        newErrors.password = 'Password is required';
+        isValid = false;
+      } else if (formData.password.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+        isValid = false;
+      }
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+        isValid = false;
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+        isValid = false;
+      }
       }
       
       if (!formData.agreeToTerms) {
@@ -333,9 +333,9 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
     try {
       if (formData.authMethod === 'email') {
-        await apiService.signup({
-          email: formData.email,
-          password: formData.password,
+      await apiService.signup({
+        email: formData.email,
+        password: formData.password,
           first_name: formData.firstName,
           last_name: formData.lastName,
           company: formData.company
@@ -343,12 +343,12 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
       } else {
         // Complete OAuth signup with additional info
         await apiService.completeOAuthSignup({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          company: formData.company,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        company: formData.company,
           phone: formData.phone,
           authMethod: formData.authMethod
-        });
+      });
       }
       
       triggerConfetti();
@@ -366,11 +366,11 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
   };
 
   const renderStep1 = () => (
-    <motion.div
-      key="step1"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
       className="space-y-6"
     >
       <div className="text-center mb-6">
@@ -523,76 +523,76 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
       </div>
 
       {/* Name fields */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
             First Name <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange('firstName', e.target.value)}
-              className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                errors.firstName && touched.firstName
-                  ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                  : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
-              }`}
-              placeholder="John"
-            />
-            <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          </div>
-          {errors.firstName && touched.firstName && (
-            <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
-          )}
-        </div>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                      errors.firstName && touched.firstName
+                        ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
+                        : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                    }`}
+                    placeholder="John"
+                  />
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+                {errors.firstName && touched.firstName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                )}
+              </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
             Last Name <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange('lastName', e.target.value)}
-              className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                errors.lastName && touched.lastName
-                  ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                  : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
-              }`}
-              placeholder="Doe"
-            />
-          </div>
-          {errors.lastName && touched.lastName && (
-            <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
-          )}
-        </div>
-      </div>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                      errors.lastName && touched.lastName
+                        ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
+                        : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                    }`}
+                    placeholder="Doe"
+                  />
+                </div>
+                {errors.lastName && touched.lastName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                )}
+              </div>
+            </div>
 
       {/* Company field */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
           Company Name <span className="text-red-500">*</span>
-        </label>
-        <div className="relative">
-          <input
+              </label>
+              <div className="relative">
+                <input
             type="text"
             value={formData.company}
             onChange={(e) => handleInputChange('company', e.target.value)}
-            className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
               errors.company && touched.company
-                ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
-            }`}
+                      ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
+                      : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                  }`}
             placeholder="Acme Inc."
           />
           <Building2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
         </div>
         {errors.company && touched.company && (
           <p className="mt-1 text-sm text-red-600">{errors.company}</p>
-        )}
-      </div>
+                )}
+              </div>
 
       {/* Phone field */}
       <div>
@@ -615,120 +615,120 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
         </div>
         {errors.phone && touched.phone && (
           <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-        )}
-      </div>
+              )}
+            </div>
 
       {/* Password fields (only for email signup) */}
       {formData.authMethod === 'email' && (
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
               Password <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                  errors.password && touched.password
-                    ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                    : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
-                }`}
-                placeholder="••••••••"
-              />
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    errors.password && touched.password
+                      ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
+                      : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                  }`}
+                  placeholder="••••••••"
+                />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.password && touched.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
             </div>
-            {errors.password && touched.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
               Confirm Password <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                  errors.confirmPassword && touched.confirmPassword
-                    ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                    : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
-                }`}
-                placeholder="••••••••"
-              />
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    errors.confirmPassword && touched.confirmPassword
+                      ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
+                      : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                  }`}
+                  placeholder="••••••••"
+                />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.confirmPassword && touched.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
             </div>
-            {errors.confirmPassword && touched.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
-            )}
-          </div>
-        </div>
+              </div>
       )}
 
       {/* Terms and conditions */}
-      <div className="space-y-3">
-        <label className="flex items-start">
-          <input
-            type="checkbox"
-            checked={formData.agreeToTerms}
-            onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
-            className={`w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 ${
-              errors.agreeToTerms && touched.agreeToTerms
-                ? 'border-red-500 ring-2 ring-red-200'
-                : ''
-            }`}
-          />
-          <span className={`ml-2 text-sm ${
-            errors.agreeToTerms && touched.agreeToTerms
-              ? 'text-red-700'
-              : 'text-gray-700'
-          }`}>
-            I agree to the{' '}
+            <div className="space-y-3">
+              <label className="flex items-start">
+                <input
+                  type="checkbox"
+                  checked={formData.agreeToTerms}
+                  onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
+                  className={`w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 ${
+                    errors.agreeToTerms && touched.agreeToTerms
+                      ? 'border-red-500 ring-2 ring-red-200'
+                      : ''
+                  }`}
+                />
+                <span className={`ml-2 text-sm ${
+                  errors.agreeToTerms && touched.agreeToTerms
+                    ? 'text-red-700'
+                    : 'text-gray-700'
+                }`}>
+                  I agree to the{' '}
             <a href="/terms" target="_blank" className="text-blue-600 hover:text-blue-700">
               Terms of Service
             </a>
-            {' '}and{' '}
+                  {' '}and{' '}
             <a href="/privacy" target="_blank" className="text-blue-600 hover:text-blue-700">
               Privacy Policy
             </a>
-          </span>
-        </label>
-        {errors.agreeToTerms && touched.agreeToTerms && (
-          <p className="ml-6 text-sm text-red-600 font-medium">{errors.agreeToTerms}</p>
-        )}
+                </span>
+              </label>
+              {errors.agreeToTerms && touched.agreeToTerms && (
+                <p className="ml-6 text-sm text-red-600 font-medium">{errors.agreeToTerms}</p>
+              )}
 
-        <label className="flex items-start">
-          <input
-            type="checkbox"
-            checked={formData.marketingEmails}
-            onChange={(e) => handleInputChange('marketingEmails', e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
-          />
-          <span className="ml-2 text-sm text-gray-700">
-            Send me tips, product updates and special offers
-          </span>
-        </label>
-      </div>
-    </motion.div>
-  );
+              <label className="flex items-start">
+                <input
+                  type="checkbox"
+                  checked={formData.marketingEmails}
+                  onChange={(e) => handleInputChange('marketingEmails', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                />
+                <span className="ml-2 text-sm text-gray-700">
+                  Send me tips, product updates and special offers
+                </span>
+              </label>
+            </div>
+          </motion.div>
+        );
 
   return (
     <div className="min-h-screen bg-gray-50 relative overflow-hidden">
@@ -817,7 +817,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
             {/* Navigation buttons */}
             {currentStep === 2 && (
-              <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center justify-between mt-6">
                 <motion.button
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -828,28 +828,28 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                   <ChevronLeft className="w-5 h-5 mr-1" />
                   Back
                 </motion.button>
-                
-                <motion.button
-                  type="button"
+              
+              <motion.button
+                type="button"
                   onClick={handleSubmit}
-                  disabled={loading}
+                disabled={loading}
                   className="py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Creating account...</span>
-                    </>
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Creating account...</span>
+                  </>
                   ) : (
-                    <>
-                      <span>Complete signup</span>
-                      <CheckCircle className="w-5 h-5" />
-                    </>
-                  )}
-                </motion.button>
-              </div>
+                  <>
+                    <span>Complete signup</span>
+                    <CheckCircle className="w-5 h-5" />
+                  </>
+                )}
+              </motion.button>
+            </div>
             )}
           </motion.div>
 
