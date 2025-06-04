@@ -81,539 +81,425 @@ sync_engine = create_engine(sync_db_url)
 SyncSessionLocal = sync_sessionmaker(bind=sync_engine)
 
 
-async def get_or_create_job_async(session: AsyncSession, job_id: str, user_id: str, total_contacts: int) -> str:
-    """Get or create an import job record (async)."""
-    stmt = text("SELECT id FROM import_jobs WHERE id = :job_id")
-    result = await session.execute(stmt, {"job_id": job_id})
-    job = result.first()
-    
-    if not job:
-        stmt_insert = insert(import_jobs).values(
-            id=job_id,
-            user_id=user_id,
-            status="processing",
-            total=total_contacts,
-            completed=0,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-        await session.execute(stmt_insert)
-        await session.commit()
-    return job_id
-
-def get_or_create_job_sync(session, job_id: str, user_id: str, total_contacts: int) -> str:
-    """Get or create an import job record (sync)."""
-    stmt = text("SELECT id FROM import_jobs WHERE id = :job_id")
-    result = session.execute(stmt, {"job_id": job_id})
-    job = result.first()
-
-    if not job:
-        stmt_insert = insert(import_jobs).values(
-            id=job_id,
-            user_id=user_id,
-            status="processing",
-            total=total_contacts,
-            completed=0,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-        session.execute(stmt_insert)
-        session.commit()
-    return job_id
-
-
-async def save_contact_async(session: AsyncSession, job_id: str, user_id: str, lead: dict) -> int:
-    """Save a contact to the database and return its ID (async)."""
-    def clean_value(value):
-        import math
-        if isinstance(value, float) and math.isnan(value): return ""
-        return value if value is not None else ""
-
-    stmt = insert(contacts).values(
-        job_id=job_id,
-        user_id=user_id,
-        first_name=clean_value(lead.get("first_name", "")),
-        last_name=clean_value(lead.get("last_name", "")),
-        position=clean_value(lead.get("position", "")),
-        company=clean_value(lead.get("company", "")),
-        company_domain=clean_value(lead.get("company_domain", "")),
-        profile_url=clean_value(lead.get("profile_url", "")),
-        location=clean_value(lead.get("location", "")),
-        industry=clean_value(lead.get("industry", "")),
-        enriched=False,
-        enrichment_status="pending",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
-    ).returning(contacts.c.id)
-    
-    result = await session.execute(stmt)
-    contact_id = result.scalar_one()
-    await session.commit()
-    return contact_id
-
-def save_contact_sync(session, job_id: str, user_id: str, lead: dict, enrichment_data: Optional[Dict[str, Any]] = None) -> int:
-    """Save a contact to the database and return its ID (sync)."""
-    def clean_value(value):
-        import math
-        if isinstance(value, float) and math.isnan(value): return ""
-        return value if value is not None else ""
-
-    values_to_insert = {
-        "job_id": job_id,
-        "user_id": user_id,
-        "first_name": clean_value(lead.get("first_name", "")),
-        "last_name": clean_value(lead.get("last_name", "")),
-        "position": clean_value(lead.get("position", "")),
-        "company": clean_value(lead.get("company", "")),
-        "company_domain": clean_value(lead.get("company_domain", "")),
-        "profile_url": clean_value(lead.get("profile_url", "")),
-        "location": clean_value(lead.get("location", "")),
-        "industry": clean_value(lead.get("industry", "")),
-        "enriched": False,
-        "enrichment_status": "pending",
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    }
-    if enrichment_data:
-        values_to_insert.update({
-            "email": enrichment_data.get("email"),
-            "phone": enrichment_data.get("phone"),
-            "enriched": True,
-            "enrichment_status": "completed",
-            "enrichment_provider": enrichment_data.get("provider"),
-            "enrichment_score": enrichment_data.get("confidence"),
-            "email_verified": enrichment_data.get("email_verified", False),
-            "phone_verified": enrichment_data.get("phone_verified", False),
-            "credits_consumed": enrichment_data.get("credits_consumed", 0)
-        })
-    else: # if no enrichment data, explicitly set to pending/false
-        values_to_insert.update({
-            "enriched": False,
-            "enrichment_status": "failed", # Or "pending" if it's pre-enrichment save
-            "enrichment_provider": None,
-            "credits_consumed": 0
-        })
-
-
-    stmt = insert(contacts).values(**values_to_insert).returning(contacts.c.id)
-    result = session.execute(stmt)
-    contact_id = result.scalar_one()
-    session.commit() # Commit after insert
-    return contact_id
-
-
-async def update_contact_enrichment_async(
-    session: AsyncSession, 
-    contact_id: int, 
-    enrichment_data: Dict[str, Any]
-):
-    """Update contact with enrichment results (async)."""
-    values_to_update = {
-        "enriched": True,
-        "enrichment_status": "completed",
-        "updated_at": datetime.utcnow()
-    }
-    if "email" in enrichment_data: values_to_update["email"] = enrichment_data["email"]
-    if "phone" in enrichment_data: values_to_update["phone"] = enrichment_data["phone"]
-    if "provider" in enrichment_data: values_to_update["enrichment_provider"] = enrichment_data["provider"]
-    if "confidence" in enrichment_data: values_to_update["enrichment_score"] = enrichment_data["confidence"]
-    if "email_verified" in enrichment_data: values_to_update["email_verified"] = enrichment_data["email_verified"]
-    if "phone_verified" in enrichment_data: values_to_update["phone_verified"] = enrichment_data["phone_verified"]
-    if "credits_consumed" in enrichment_data: values_to_update["credits_consumed"] = enrichment_data["credits_consumed"]
-
-    stmt = update(contacts).where(contacts.c.id == contact_id).values(**values_to_update)
-    await session.execute(stmt)
-    await session.commit()
-
-def update_contact_enrichment_sync(
-    session, 
-    contact_id: int, 
-    enrichment_data: Dict[str, Any]
-):
-    """Update contact with enrichment results (sync)."""
-    values_to_update = {
-        "enriched": True,
-        "enrichment_status": "completed",
-        "updated_at": datetime.utcnow()
-    }
-    if "email" in enrichment_data: values_to_update["email"] = enrichment_data["email"]
-    if "phone" in enrichment_data: values_to_update["phone"] = enrichment_data["phone"]
-    if "provider" in enrichment_data: values_to_update["enrichment_provider"] = enrichment_data["provider"]
-    if "confidence" in enrichment_data: values_to_update["enrichment_score"] = enrichment_data["confidence"]
-    if "email_verified" in enrichment_data: values_to_update["email_verified"] = enrichment_data["email_verified"]
-    if "phone_verified" in enrichment_data: values_to_update["phone_verified"] = enrichment_data["phone_verified"]
-    if "credits_consumed" in enrichment_data: values_to_update["credits_consumed"] = enrichment_data["credits_consumed"]
-    
-    stmt = update(contacts).where(contacts.c.id == contact_id).values(**values_to_update)
-    session.execute(stmt)
-    session.commit()
-
-
-async def save_enrichment_result_async(
-    session: AsyncSession, 
-    contact_id: int, 
-    provider: str, 
-    result_data: Dict[str, Any]
-):
-    """Save enrichment result to the database (async)."""
-    stmt = insert(enrichment_results).values(
-        contact_id=contact_id,
-        provider=provider,
-        email=result_data.get("email"),
-        phone=result_data.get("phone"),
-        confidence_score=result_data.get("confidence", 0),
-        email_verified=result_data.get("email_verified", False),
-        phone_verified=result_data.get("phone_verified", False),
-        raw_data=json.dumps(result_data.get("raw_data", {})), # Ensure raw_data is JSON serialized
-        created_at=datetime.utcnow()
-    )
-    await session.execute(stmt)
-    await session.commit()
-
-def save_enrichment_result_sync(
-    session, 
-    contact_id: int, 
-    provider: str, 
-    result_data: Dict[str, Any]
-):
-    """Save enrichment result to the database (sync)."""
-    stmt = insert(enrichment_results).values(
-        contact_id=contact_id,
-        provider=provider,
-        email=result_data.get("email"),
-        phone=result_data.get("phone"),
-        confidence_score=result_data.get("confidence", 0),
-        email_verified=result_data.get("email_verified", False),
-        phone_verified=result_data.get("phone_verified", False),
-        raw_data=json.dumps(result_data.get("raw_data", {})),
-        created_at=datetime.utcnow()
-    )
-    session.execute(stmt)
-    session.commit()
-
-
-async def increment_job_progress_async(session: AsyncSession, job_id: str):
-    """Increment the completed count for a job (async)."""
-    stmt = update(import_jobs).where(import_jobs.c.id == job_id).values(
-        completed=import_jobs.c.completed + 1,
-        updated_at=datetime.utcnow()
-    )
-    await session.execute(stmt)
-    await session.commit()
-
-def increment_job_progress_sync(session, job_id: str):
-    """Increment the completed count for a job (sync)."""
-    stmt = update(import_jobs).where(import_jobs.c.id == job_id).values(
-        completed=import_jobs.c.completed + 1,
-        updated_at=datetime.utcnow()
-    )
-    session.execute(stmt)
-    session.commit()
-
-
-async def update_job_status_async(session: AsyncSession, job_id: str, status: str):
-    """Update the status of a job (async)."""
-    stmt = update(import_jobs).where(import_jobs.c.id == job_id).values(
-        status=status,
-        updated_at=datetime.utcnow()
-    )
-    await session.execute(stmt)
-    await session.commit()
-
-def update_job_status_sync(session, job_id: str, status: str):
-    """Update the status of a job (sync)."""
-    stmt = update(import_jobs).where(import_jobs.c.id == job_id).values(
-        status=status,
-        updated_at=datetime.utcnow()
-    )
-    session.execute(stmt)
-    session.commit()
-
-def charge_credits_sync(session, user_id: str, credits_to_charge: int, reason: str) -> bool:
-    """Charge credits from a user and log the transaction (sync). Returns True if successful."""
+async def get_or_create_job(session: AsyncSession, job_id: str, user_id: str, total_contacts: int) -> str:
+    """Get or create an import job record."""
     try:
-        user_result = session.execute(
-            text("SELECT credits FROM users WHERE id = :user_id FOR UPDATE"),
-            {"user_id": user_id}
-        )
-        user_row = user_result.first()
-
-        if not user_row:
-            logger.error(f"User {user_id} not found for credit charging.")
-            return False
-        
-        current_credits = user_row[0] if user_row[0] is not None else 0
-
-        if current_credits < credits_to_charge:
-            logger.warning(f"Insufficient credits for user {user_id}. Has {current_credits}, needs {credits_to_charge}")
-            return False
-
-        session.execute(
-            text("UPDATE users SET credits = credits - :credits WHERE id = :user_id"),
-            {"user_id": user_id, "credits": credits_to_charge}
-        )
-        
-        session.execute(
-            text("""
-                INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
-                VALUES (:user_id, 'enrichment', :cost, :change, :reason, CURRENT_TIMESTAMP)
-            """),
-            {
-                "user_id": user_id,
-                "cost": credits_to_charge,
-                "change": -credits_to_charge,
-                "reason": reason
-            }
-        )
-        session.commit()
-        logger.info(f"Charged {credits_to_charge} credits from user {user_id}. Reason: {reason}. Remaining: {current_credits - credits_to_charge}")
-        return True
-    except Exception as e:
-        logger.error(f"Credit charging failed for user {user_id}: {e}")
-        session.rollback()
-        return False
-
-def get_job_stats_sync(session, job_id: str) -> Dict[str, Any]:
-    """Get statistics for a completed job (sync)."""
-    stats_query = text("""
-        SELECT 
-            COUNT(*) as total_contacts,
-            COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
-            COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
-            SUM(credits_consumed) as total_credits_used
-        FROM contacts
-        WHERE job_id = :job_id
-    """)
-    stats_result = session.execute(stats_query, {"job_id": job_id})
-    stats = stats_result.first()
-    if stats:
-        return {
-            "total_contacts": stats[0] or 0,
-            "emails_found": stats[1] or 0,
-            "phones_found": stats[2] or 0,
-            "total_credits_used": float(stats[3] or 0)
-        }
-    return {
-        "total_contacts": 0, "emails_found": 0, 
-        "phones_found": 0, "total_credits_used": 0
-    }
-
-async def save_to_crm(contact_data: Dict[str, Any]):
-    """Save enriched contact to CRM service (async)."""
-    # This function remains largely the same as it calls an external service.
-    # Ensure it's using httpx for async calls if called from async context,
-    # or requests if called from sync. For simplicity, using httpx.
-    try:
-        crm_contact = {
-            "first_name": contact_data.get("first_name", ""),
-            "last_name": contact_data.get("last_name", ""),
-            "email": contact_data.get("email"),
-            "phone": contact_data.get("phone"),
-            "company": contact_data.get("company"),
-            "position": contact_data.get("position"),
-            "status": "new", # Or determine based on enrichment
-            "lead_score": contact_data.get("enrichment_score", 50), # Use enrichment_score
-            "user_id": contact_data.get("user_id") # Ensure user_id is passed
-        }
-        
-        # Assuming CRM service is available at this address
-        # TODO: Move CRM service URL to config
-        crm_service_url = os.environ.get("CRM_SERVICE_URL", "http://crm-service:8008/api/contacts")
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                crm_service_url,
-                json=crm_contact,
-                timeout=10
-            )
-        
-        if response.status_code == 201: # Created
-            logger.info(f"Contact {crm_contact.get('email')} saved to CRM.")
-        else:
-            logger.warning(f"Failed to save contact {crm_contact.get('email')} to CRM: {response.status_code} - {response.text}")
-            
-    except Exception as e:
-        logger.error(f"Error saving contact to CRM: {str(e)}")
-
-def get_contact_details_sync(session, contact_id: int) -> Optional[Dict[str, Any]]:
-    """Fetch contact details by ID (sync)."""
-    stmt = text("SELECT * FROM contacts WHERE id = :contact_id")
-    result = session.execute(stmt, {"contact_id": contact_id})
-    contact_row = result.first()
-    if contact_row:
-        # Convert row to dict
-        return dict(zip(result.keys(), contact_row))
-    return None
-
-async def get_job_status(session: AsyncSession, job_id: str) -> Optional[Dict[str, Any]]:
-    """Get job status and progress."""
-    try:
-        stmt = text("""
-            SELECT 
-                id,
-                user_id,
-                status,
-                total,
-                completed,
-                progress,
-                created_at,
-                updated_at
-            FROM import_jobs
-            WHERE id = :job_id
-        """)
-        
+        # Check if job exists
+        stmt = text("SELECT id FROM import_jobs WHERE id = :job_id LIMIT 1")
         result = await session.execute(stmt, {"job_id": job_id})
         job = result.first()
         
-        if job:
-            return {
-                "id": job.id,
-                "user_id": job.user_id,
-                "status": job.status,
-                "total": job.total,
-                "completed": job.completed,
-                "progress": (job.completed / job.total * 100) if job.total > 0 else 0,
-                "created_at": job.created_at,
-                "updated_at": job.updated_at
-            }
+        if not job:
+            # Create new job
+            stmt = text("""
+                INSERT INTO import_jobs (id, user_id, status, total, completed, created_at, updated_at) 
+                VALUES (:job_id, :user_id, :status, :total, :completed, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """)
+            await session.execute(stmt, {
+                "job_id": job_id,
+                "user_id": user_id,
+                "status": "processing",
+                "total": total_contacts,
+                "completed": 0
+            })
+            await session.commit()
+            logger.info(f"Created new job {job_id} with {total_contacts} contacts")
         
-        return None
+        return job_id
         
     except Exception as e:
-        logger.error(f"Error getting job status for {job_id}: {str(e)}")
-        return None
+        logger.error(f"Error creating/getting job {job_id}: {e}")
+        await session.rollback()
+        raise
 
-async def get_contact_results(session: AsyncSession, job_id: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
-    """Get enrichment results for contacts in a job."""
+
+async def save_contact(session: AsyncSession, job_id: str, lead: Dict[str, Any]) -> int:
+    """Save a contact to the database and return its ID."""
     try:
+        # Clean NaN values from lead data
+        def clean_value(value):
+            import math
+            if isinstance(value, float) and math.isnan(value):
+                return ""
+            return value if value is not None else ""
+        
+        # Handle name fields properly
+        first_name = clean_value(lead.get("first_name", ""))
+        last_name = clean_value(lead.get("last_name", ""))
+        full_name = clean_value(lead.get("full_name", ""))
+        
+        # If we have full_name but no first/last, try to split
+        if full_name and (not first_name or not last_name):
+            name_parts = full_name.split(" ", 1)
+            if len(name_parts) >= 2:
+                if not first_name:
+                    first_name = name_parts[0]
+                if not last_name:
+                    last_name = name_parts[1]
+            elif len(name_parts) == 1 and not last_name:
+                last_name = name_parts[0]
+        
         stmt = text("""
-            SELECT 
-                c.*,
-                er.provider as result_provider,
-                er.confidence_score as result_confidence,
-                er.email_verified,
-                er.phone_verified,
-                er.raw_data
-            FROM contacts c
-            LEFT JOIN enrichment_results er ON c.id = er.contact_id
-            WHERE c.job_id = :job_id
-            ORDER BY c.id
-            LIMIT :limit OFFSET :offset
+            INSERT INTO contacts (
+                job_id, first_name, last_name, company, position, location, 
+                industry, profile_url, company_domain, enriched, enrichment_status,
+                email_verified, phone_verified, created_at, updated_at
+            ) VALUES (
+                :job_id, :first_name, :last_name, :company, :position, :location,
+                :industry, :profile_url, :company_domain, false, 'pending',
+                false, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ) RETURNING id
         """)
         
         result = await session.execute(stmt, {
             "job_id": job_id,
-            "limit": limit,
-            "offset": offset
+            "first_name": first_name,
+            "last_name": last_name,
+            "company": clean_value(lead.get("company", "")),
+            "position": clean_value(lead.get("position", "")),
+            "location": clean_value(lead.get("location", "")),
+            "industry": clean_value(lead.get("industry", "")),
+            "profile_url": clean_value(lead.get("profile_url", "")),
+            "company_domain": clean_value(lead.get("company_domain", ""))
         })
         
-        contacts = []
-        for row in result.fetchall():
-            contact_dict = dict(row._asdict())
-            
-            # Parse raw_data if available
-            if contact_dict.get("raw_data"):
-                try:
-                    contact_dict["raw_data"] = json.loads(contact_dict["raw_data"])
-                except:
-                    contact_dict["raw_data"] = {}
-            
-            contacts.append(contact_dict)
+        contact_id = result.scalar_one()
+        await session.commit()
         
-        return contacts
+        logger.debug(f"Saved contact {contact_id}: {first_name} {last_name} at {lead.get('company', '')}")
+        return contact_id
         
     except Exception as e:
-        logger.error(f"Error getting contact results for job {job_id}: {str(e)}")
-        return []
+        logger.error(f"Error saving contact: {e}")
+        await session.rollback()
+        raise
 
-async def get_enrichment_statistics(session: AsyncSession, user_id: Optional[str] = None) -> Dict[str, Any]:
-    """Get enrichment statistics for a user or globally."""
+
+async def update_contact(
+    session: AsyncSession, 
+    contact_id: int, 
+    email: Optional[str] = None, 
+    phone: Optional[str] = None,
+    enrichment_data: Optional[Dict[str, Any]] = None
+):
+    """Update contact with enrichment results and verification data."""
     try:
-        # Base query conditions
-        conditions = []
-        params = {}
+        # Build dynamic SET clause based on provided parameters
+        set_clauses = []
+        params = {"contact_id": contact_id}
         
-        if user_id:
-            conditions.append("ij.user_id = :user_id")
-            params["user_id"] = user_id
+        # Add email and phone if provided
+        if email is not None:
+            set_clauses.append("email = :email")
+            params["email"] = email
+            
+        if phone is not None:
+            set_clauses.append("phone = :phone")
+            params["phone"] = phone
         
-        where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+        # Add enrichment data if provided
+        if enrichment_data:
+            if email is not None or phone is not None:
+                set_clauses.append("enriched = true")
+                set_clauses.append("enrichment_status = 'completed'")
+            
+            if "provider" in enrichment_data:
+                set_clauses.append("enrichment_provider = :enrichment_provider")
+                params["enrichment_provider"] = enrichment_data["provider"]
+                
+            if "confidence" in enrichment_data:
+                set_clauses.append("enrichment_score = :enrichment_score")
+                params["enrichment_score"] = enrichment_data["confidence"]
+                
+            if "email_verified" in enrichment_data:
+                set_clauses.append("email_verified = :email_verified")
+                params["email_verified"] = enrichment_data["email_verified"]
+                
+            if "phone_verified" in enrichment_data:
+                set_clauses.append("phone_verified = :phone_verified")
+                params["phone_verified"] = enrichment_data["phone_verified"]
+                
+            if "email_verification_score" in enrichment_data:
+                set_clauses.append("email_verification_score = :email_verification_score")
+                params["email_verification_score"] = enrichment_data["email_verification_score"]
+                
+            if "phone_verification_score" in enrichment_data:
+                set_clauses.append("phone_verification_score = :phone_verification_score")
+                params["phone_verification_score"] = enrichment_data["phone_verification_score"]
         
-        # Get overall stats
-        stats_query = text(f"""
+        # Add updated_at always
+        set_clauses.append("updated_at = CURRENT_TIMESTAMP")
+        
+        # Build and execute the query
+        if set_clauses:
+            set_clause = ", ".join(set_clauses)
+            stmt = text(f"UPDATE contacts SET {set_clause} WHERE id = :contact_id")
+            await session.execute(stmt, params)
+            await session.commit()
+            
+            logger.debug(f"Updated contact {contact_id} with enrichment data")
+        
+    except Exception as e:
+        logger.error(f"Error updating contact {contact_id}: {e}")
+        await session.rollback()
+        raise
+
+
+async def save_enrichment_result(
+    session: AsyncSession, 
+    contact_id: int, 
+    provider: str, 
+    result: Dict[str, Any]
+):
+    """Save enrichment result to the database."""
+    try:
+        stmt = text("""
+            INSERT INTO enrichment_results (
+                contact_id, provider, email, phone, confidence_score, 
+                email_verified, phone_verified, raw_data, created_at
+            ) VALUES (
+                :contact_id, :provider, :email, :phone, :confidence_score,
+                :email_verified, :phone_verified, :raw_data, CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Prepare raw_data as JSON string
+        raw_data = json.dumps(result.get("raw_data", {})) if result.get("raw_data") else None
+        
+        await session.execute(stmt, {
+            "contact_id": contact_id,
+            "provider": provider,
+            "email": result.get("email"),
+            "phone": result.get("phone"),
+            "confidence_score": result.get("confidence", 0),
+            "email_verified": result.get("email_verified", False),
+            "phone_verified": result.get("phone_verified", False),
+            "raw_data": raw_data
+        })
+        
+        await session.commit()
+        logger.debug(f"Saved enrichment result for contact {contact_id} from {provider}")
+        
+    except Exception as e:
+        logger.error(f"Error saving enrichment result for contact {contact_id}: {e}")
+        await session.rollback()
+        raise
+
+
+async def increment_job_progress(session: AsyncSession, job_id: str):
+    """Increment the completed count for a job."""
+    try:
+        stmt = text("""
+            UPDATE import_jobs 
+            SET completed = completed + 1, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = :job_id
+        """)
+        await session.execute(stmt, {"job_id": job_id})
+        await session.commit()
+        
+        # Check if job is complete
+        check_stmt = text("""
+            SELECT total, completed, status 
+            FROM import_jobs 
+            WHERE id = :job_id
+        """)
+        result = await session.execute(check_stmt, {"job_id": job_id})
+        job_data = result.first()
+        
+        if job_data and job_data[1] >= job_data[0] and job_data[2] != 'completed':
+            # Job is complete, update status
+            await update_job_status(session, job_id, "completed")
+            logger.info(f"Job {job_id} completed: {job_data[1]}/{job_data[0]} contacts processed")
+        
+    except Exception as e:
+        logger.error(f"Error incrementing job progress for {job_id}: {e}")
+        await session.rollback()
+        raise
+
+
+async def update_job_status(session: AsyncSession, job_id: str, status: str):
+    """Update the status of a job."""
+    try:
+        stmt = text("""
+            UPDATE import_jobs 
+            SET status = :status, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = :job_id
+        """)
+        
+        await session.execute(stmt, {"job_id": job_id, "status": status})
+        await session.commit()
+        
+        logger.info(f"Updated job {job_id} status to {status}")
+        
+    except Exception as e:
+        logger.error(f"Error updating job status for {job_id}: {e}")
+        await session.rollback()
+        raise
+
+
+async def consume_credits(
+    session: AsyncSession, 
+    user_id: str, 
+    contact_id: int, 
+    email_found: bool, 
+    phone_found: bool, 
+    provider: str
+):
+    """Consume credits based on successful enrichment results."""
+    try:
+        credits_used = 0
+        
+        # Calculate credits based on results
+        if email_found:
+            credits_used += 1  # 1 credit for email
+        if phone_found:
+            credits_used += 10  # 10 credits for phone
+        
+        if credits_used > 0:
+            # Check current credits
+            user_check = text("SELECT credits FROM users WHERE id = :user_id")
+            result = await session.execute(user_check, {"user_id": user_id})
+            user_row = result.first()
+            
+            if not user_row:
+                logger.error(f"User {user_id} not found for credit consumption")
+                return 0
+                
+            current_credits = user_row[0] if user_row[0] is not None else 0
+            
+            if current_credits < credits_used:
+                logger.warning(f"Insufficient credits for user {user_id}: has {current_credits}, needs {credits_used}")
+                return 0
+            
+            # Update user credits
+            user_update = text("UPDATE users SET credits = credits - :credits WHERE id = :user_id")
+            await session.execute(user_update, {"credits": credits_used, "user_id": user_id})
+            
+            # Log the credit consumption
+            credit_log = text("""
+                INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at) 
+                VALUES (:user_id, :operation_type, :cost, :change, :reason, CURRENT_TIMESTAMP)
+            """)
+            
+            reason_parts = []
+            if email_found:
+                reason_parts.append("email (+1)")
+            if phone_found:
+                reason_parts.append("phone (+10)")
+            
+            reason = f"Enrichment via {provider}: {', '.join(reason_parts)}"
+            
+            await session.execute(credit_log, {
+                "user_id": user_id,
+                "operation_type": "enrichment",
+                "cost": credits_used,
+                "change": -credits_used,
+                "reason": reason
+            })
+            
+            # Update contact with credits consumed
+            contact_update = text("UPDATE contacts SET credits_consumed = :credits WHERE id = :contact_id")
+            await session.execute(contact_update, {"credits": credits_used, "contact_id": contact_id})
+            
+            await session.commit()
+            logger.info(f"Consumed {credits_used} credits for contact {contact_id} via {provider}")
+            
+        return credits_used
+        
+    except Exception as e:
+        logger.error(f"Error consuming credits: {e}")
+        await session.rollback()
+        return 0
+
+
+async def get_job_stats(session: AsyncSession, job_id: str) -> Dict[str, Any]:
+    """Get statistics for a specific job."""
+    try:
+        stats_query = text("""
             SELECT 
-                COUNT(DISTINCT ij.id) as total_jobs,
-                COUNT(c.id) as total_contacts,
+                j.status,
+                j.total,
+                j.completed,
+                j.created_at,
+                j.updated_at,
+                COUNT(c.id) as contacts_count,
                 COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
                 COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
                 COUNT(CASE WHEN c.email_verified = true THEN 1 END) as emails_verified,
                 COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as phones_verified,
-                AVG(c.enrichment_score) as avg_confidence,
-                SUM(c.credits_consumed) as total_credits_consumed
-            FROM import_jobs ij
-            LEFT JOIN contacts c ON ij.id = c.job_id
-            {where_clause}
+                SUM(COALESCE(c.credits_consumed, 0)) as total_credits_used,
+                AVG(c.enrichment_score) as avg_confidence
+            FROM import_jobs j
+            LEFT JOIN contacts c ON j.id = c.job_id
+            WHERE j.id = :job_id
+            GROUP BY j.id, j.status, j.total, j.completed, j.created_at, j.updated_at
         """)
         
-        stats_result = await session.execute(stats_query, params)
-        stats = dict(stats_result.first()._asdict())
+        result = await session.execute(stats_query, {"job_id": job_id})
+        row = result.first()
         
-        # Get provider stats
-        provider_query = text(f"""
-            SELECT 
-                c.enrichment_provider,
-                COUNT(*) as count,
-                AVG(c.enrichment_score) as avg_score,
-                SUM(c.credits_consumed) as credits_used
-            FROM import_jobs ij
-            JOIN contacts c ON ij.id = c.job_id
-            {where_clause} AND c.enrichment_provider IS NOT NULL
-            GROUP BY c.enrichment_provider
-            ORDER BY count DESC
-        """)
-        
-        provider_result = await session.execute(provider_query, params)
-        providers = [
-            {
-                "provider": row[0],
-                "count": row[1],
-                "avg_score": float(row[2]) if row[2] else 0,
-                "credits_used": row[3] or 0
-            }
-            for row in provider_result.fetchall()
-        ]
-        
-        # Calculate success rates
-        total_contacts = stats.get("total_contacts", 0)
-        emails_found = stats.get("emails_found", 0)
-        phones_found = stats.get("phones_found", 0)
+        if not row:
+            return {"error": "Job not found"}
         
         return {
-            "total_jobs": stats.get("total_jobs", 0),
-            "total_contacts": total_contacts,
-            "emails_found": emails_found,
-            "phones_found": phones_found,
-            "emails_verified": stats.get("emails_verified", 0),
-            "phones_verified": stats.get("phones_verified", 0),
-            "email_success_rate": (emails_found / total_contacts * 100) if total_contacts > 0 else 0,
-            "phone_success_rate": (phones_found / total_contacts * 100) if total_contacts > 0 else 0,
-            "avg_confidence": float(stats.get("avg_confidence", 0)) if stats.get("avg_confidence") else 0,
-            "total_credits_consumed": stats.get("total_credits_consumed", 0),
-            "provider_stats": providers
+            "job_id": job_id,
+            "status": row[0],
+            "total": row[1],
+            "completed": row[2],
+            "created_at": row[3],
+            "updated_at": row[4],
+            "contacts_count": row[5],
+            "emails_found": row[6],
+            "phones_found": row[7],
+            "emails_verified": row[8],
+            "phones_verified": row[9],
+            "total_credits_used": float(row[10]) if row[10] else 0,
+            "avg_confidence": float(row[11]) if row[11] else 0,
+            "email_success_rate": (row[6] / row[5] * 100) if row[5] > 0 else 0,
+            "phone_success_rate": (row[7] / row[5] * 100) if row[5] > 0 else 0,
+            "progress_percentage": (row[2] / row[1] * 100) if row[1] > 0 else 0
         }
         
     except Exception as e:
-        logger.error(f"Error getting enrichment statistics: {str(e)}")
-        return {
-            "total_jobs": 0,
-            "total_contacts": 0,
-            "emails_found": 0,
-            "phones_found": 0,
-            "emails_verified": 0,
-            "phones_verified": 0,
-            "email_success_rate": 0,
-            "phone_success_rate": 0,
-            "avg_confidence": 0,
-            "total_credits_consumed": 0,
-            "provider_stats": []
-        }
+        logger.error(f"Error getting job stats for {job_id}: {e}")
+        return {"error": str(e)}
+
+
+async def get_enrichment_provider_stats(session: AsyncSession) -> Dict[str, Any]:
+    """Get statistics about enrichment provider performance."""
+    try:
+        provider_stats_query = text("""
+            SELECT 
+                enrichment_provider,
+                COUNT(*) as total_attempts,
+                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as email_successes,
+                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phone_successes,
+                AVG(enrichment_score) as avg_confidence,
+                SUM(COALESCE(credits_consumed, 0)) as total_credits
+            FROM contacts 
+            WHERE enrichment_provider IS NOT NULL
+            GROUP BY enrichment_provider
+            ORDER BY total_attempts DESC
+        """)
+        
+        result = await session.execute(provider_stats_query)
+        rows = result.fetchall()
+        
+        provider_stats = {}
+        for row in rows:
+            provider = row[0]
+            provider_stats[provider] = {
+                "total_attempts": row[1],
+                "email_successes": row[2],
+                "phone_successes": row[3],
+                "avg_confidence": float(row[4]) if row[4] else 0,
+                "total_credits": float(row[5]) if row[5] else 0,
+                "email_success_rate": (row[2] / row[1] * 100) if row[1] > 0 else 0,
+                "phone_success_rate": (row[3] / row[1] * 100) if row[1] > 0 else 0
+            }
+        
+        return provider_stats
+        
+    except Exception as e:
+        logger.error(f"Error getting provider stats: {e}")
+        return {"error": str(e)}

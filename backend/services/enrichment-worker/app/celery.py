@@ -25,9 +25,12 @@ celery_app.conf.update(
     task_send_sent_event=True,
     worker_send_task_events=True,
     task_routes={
-        'app.tasks.cascade_enrich': {'queue': 'cascade_enrichment'},
-        'app.tasks.process_csv_file': {'queue': 'enrichment_batch'},
         'app.tasks.process_enrichment_batch': {'queue': 'enrichment_batch'},
+        'app.tasks.cascade_enrich': {'queue': 'cascade_enrichment'},
+        'app.tasks.verify_existing_contacts': {'queue': 'contact_enrichment'},
+        'app.tasks.get_enrichment_stats': {'queue': 'db_operations'},
+        'app.tasks.enrich_single_contact_modern': {'queue': 'contact_enrichment'},
+        'app.tasks.process_csv_file': {'queue': 'enrichment_batch'},
     }
 )
 
