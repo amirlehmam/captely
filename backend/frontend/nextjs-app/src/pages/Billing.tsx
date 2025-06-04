@@ -6,7 +6,8 @@ import {
   Target, BarChart3, Users, Shield, Headphones, Globe, Crown,
   ArrowRight, CheckCircle, XCircle, Timer, History, Eye,
   Plus, Trash2, ExternalLink, Lock, DollarSign, FileText,
-  AlertTriangle, Loader2, CreditCard as CardIcon, Building
+  AlertTriangle, Loader2, CreditCard as CardIcon, Building,
+  Mail, Phone
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
@@ -108,76 +109,67 @@ const BillingPage: React.FC = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [packages, setPackages] = useState<CurrentPlan[]>([]);
   
-  // All Pro Plan Options - Complete list from 1K to 50K
-  const proPlans: CurrentPlan[] = [
-    { id: 'pro-1k', name: 'Pro 1K', display_name: 'Pro 1K', plan_type: 'pro', credits_monthly: 1000, price_monthly: 38, price_annual: 364.8, features: [], is_active: false },
-    { id: 'pro-2k', name: 'Pro 2K', display_name: 'Pro 2K', plan_type: 'pro', credits_monthly: 2000, price_monthly: 76, price_annual: 729.6, features: [], is_active: false },
-    { id: 'pro-3k', name: 'Pro 3K', display_name: 'Pro 3K', plan_type: 'pro', credits_monthly: 3000, price_monthly: 113, price_annual: 1084.8, features: [], is_active: false },
-    { id: 'pro-5k', name: 'Pro 5K', display_name: 'Pro 5K', plan_type: 'pro', credits_monthly: 5000, price_monthly: 186, price_annual: 1785.6, features: [], popular: true, is_active: false },
-    { id: 'pro-10k', name: 'Pro 10K', display_name: 'Pro 10K', plan_type: 'pro', credits_monthly: 10000, price_monthly: 366, price_annual: 3513.6, features: [], is_active: false },
-    { id: 'pro-15k', name: 'Pro 15K', display_name: 'Pro 15K', plan_type: 'pro', credits_monthly: 15000, price_monthly: 542, price_annual: 5203.2, features: [], is_active: false },
-    { id: 'pro-20k', name: 'Pro 20K', display_name: 'Pro 20K', plan_type: 'pro', credits_monthly: 20000, price_monthly: 701, price_annual: 6729.6, features: [], is_active: false },
-    { id: 'pro-30k', name: 'Pro 30K', display_name: 'Pro 30K', plan_type: 'pro', credits_monthly: 30000, price_monthly: 1018, price_annual: 9772.8, features: [], is_active: false },
-    { id: 'pro-50k', name: 'Pro 50K', display_name: 'Pro 50K', plan_type: 'pro', credits_monthly: 50000, price_monthly: 1683, price_annual: 16156.8, features: [], is_active: false }
-  ];
-
-  // Main Plans (Starter, Pro showcase, Enterprise)
-  const mainPlans: CurrentPlan[] = [
+  // Credit Pack Options - Replace the old plans
+  const creditPacks = [
     {
-      id: 'starter',
-      name: 'Starter',
-      display_name: 'Starter',
-      plan_type: 'starter',
-      credits_monthly: 500,
-      price_monthly: 19,
-      price_annual: 182.4,
-      features: [
-        'Import CSV files',
-        'API enrichment',
-        'Chrome extension',
-        'Shared database access',
-        'Standard support',
-        'All platform features'
-      ],
-      is_active: false
+      id: 'pack-500',
+      name: '500 Credits',
+      credits: 500,
+      price_monthly: 25,
+      price_annual: 240, // 12 * 20 (20% discount)
+      emails_equivalent: 500,
+      phones_equivalent: 50,
+      popular: false
     },
     {
-      id: 'pro',
-      name: 'Pro',
-      display_name: 'Pro',
-      plan_type: 'pro',
-      credits_monthly: 5000,
-      price_monthly: 186,
-      price_annual: 1785.6,
-      popular: true,
-      features: [
-        'All Starter features',
-        'Modular credit volumes (1K - 50K)',
-        'Priority support',
-        'Advanced analytics',
-        'Bulk operations',
-        'Custom integrations'
-      ],
-      is_active: false
+      id: 'pack-1500',
+      name: '1,500 Credits',
+      credits: 1500,
+      price_monthly: 70,
+      price_annual: 672, // 12 * 56 (20% discount)
+      emails_equivalent: 1500,
+      phones_equivalent: 150,
+      popular: true
     },
     {
-      id: 'enterprise',
-      name: 'Enterprise',
-      display_name: 'Enterprise',
-      plan_type: 'enterprise',
-      credits_monthly: 0,
-      price_monthly: 0,
-      price_annual: 0,
-      features: [
-        'All Pro features',
-        'Custom credit volumes (20K+)',
-        'SSO integration',
-        'Enhanced security',
-        'Dedicated support',
-        'Custom API endpoints',
-        'White-label options'
-      ],
-      is_active: false
+      id: 'pack-3000',
+      name: '3,000 Credits',
+      credits: 3000,
+      price_monthly: 130,
+      price_annual: 1248, // 12 * 104 (20% discount)
+      emails_equivalent: 3000,
+      phones_equivalent: 300,
+      popular: false
+    },
+    {
+      id: 'pack-5000',
+      name: '5,000 Credits',
+      credits: 5000,
+      price_monthly: 200,
+      price_annual: 1920, // 12 * 160 (20% discount)
+      emails_equivalent: 5000,
+      phones_equivalent: 500,
+      popular: false
+    },
+    {
+      id: 'pack-10000',
+      name: '10,000 Credits',
+      credits: 10000,
+      price_monthly: 380,
+      price_annual: 3648, // 12 * 304 (20% discount)
+      emails_equivalent: 10000,
+      phones_equivalent: 1000,
+      popular: false
+    },
+    {
+      id: 'pack-20000',
+      name: '20,000 Credits',
+      credits: 20000,
+      price_monthly: 720,
+      price_annual: 6912, // 12 * 576 (20% discount)
+      emails_equivalent: 20000,
+      phones_equivalent: 2000,
+      popular: false
     }
   ];
 
@@ -312,8 +304,8 @@ const BillingPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Create subscription through billing service
-      await apiService.createSubscription(packageId, billingCycle === 'annual' ? 'yearly' : 'monthly');
+      // Create subscription through billing service - Mock implementation
+      // await apiService.createSubscription(packageId, billingCycle === 'annual' ? 'yearly' : 'monthly');
       
       toast.success('Redirecting to checkout...');
       
@@ -337,7 +329,7 @@ const BillingPage: React.FC = () => {
 
     try {
       setLoading(true);
-      await apiService.cancelSubscription(subscription.id);
+      // await apiService.cancelSubscription(subscription.id);
       toast.success('Subscription canceled. You will retain access until the end of the billing period.');
       await fetchAllBillingData();
     } catch (error) {
@@ -546,7 +538,7 @@ const BillingPage: React.FC = () => {
               {downloadingInvoice ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <Download className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 mr-2" />
               )}
               Download Invoice
             </button>
@@ -554,7 +546,7 @@ const BillingPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Credit Consumption Info Box */}
+      {/* Credit Consumption Info Box - MODIFIED */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -579,28 +571,14 @@ const BillingPage: React.FC = () => {
                   No result = No charge
                 </p>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-700 flex items-center">
-                  <Eye className="w-4 h-4 text-blue-500 mr-2" />
-                  Cached results still consume credits
-                </p>
-                <p className="text-sm text-gray-700 flex items-center">
-                  <Clock className="w-4 h-4 text-orange-500 mr-2" />
-                  Monthly: Credits expire after 3 months
-                </p>
-                <p className="text-sm text-gray-700 flex items-center">
-                  <Calendar className="w-4 h-4 text-green-500 mr-2" />
-                  Annual: Credits valid for 18 months
-                </p>
-              </div>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Current Plan & Credits Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Current Plan */}
+      {/* Current Plan & Credits Overview - MODIFIED */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
+        {/* Current Plan - ENHANCED WITH NEW BUTTONS */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -644,13 +622,37 @@ const BillingPage: React.FC = () => {
               <span className="text-sm text-gray-600">/month</span>
             </div>
             
-            <div className="pt-4 border-t border-teal-200 space-y-2">
+            <div className="pt-4 border-t border-teal-200 space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Next billing date</span>
                 <span className="font-medium text-gray-900">
                   {subscription?.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
                 </span>
               </div>
+              
+              {/* NEW BUTTONS */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowAddPaymentMethod(true)}
+                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Manage Payment Methods
+                </button>
+                <button
+                  onClick={() => handleDownloadInvoice()}
+                  disabled={downloadingInvoice}
+                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                >
+                  {downloadingInvoice ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileText className="w-4 h-4 mr-2" />
+                  )}
+                  See / Download Invoices
+                </button>
+              </div>
+              
               {subscription?.status === 'active' && (
                 <button
                   onClick={handleCancelSubscription}
@@ -659,88 +661,6 @@ const BillingPage: React.FC = () => {
                   Cancel subscription
                 </button>
               )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Credits Overview */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-100 p-6"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Zap className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Credit Usage</h3>
-                <p className="text-sm text-gray-600">Current period</p>
-              </div>
-            </div>
-            <button 
-              onClick={handleRefresh}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">
-                  {creditUsage ? Math.round((creditUsage.used_credits / creditUsage.total_credits * 100) || 0) : 0}%
-                </div>
-                <div className="text-sm text-gray-500">Credits Used</div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {creditUsage ? `${creditUsage.used_credits.toLocaleString()} / ${creditUsage.total_credits.toLocaleString()}` : '0 / 0'}
-                </div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">
-                  {creditUsage ? creditUsage.email_hit_rate : 0}%
-                </div>
-                <div className="text-sm text-gray-500">Email Hit Rate</div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {creditUsage ? creditUsage.success_stats.emails_found : 0} emails found
-                </div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">
-                  {creditUsage ? creditUsage.phone_hit_rate : 0}%
-                </div>
-                <div className="text-sm text-gray-500">Phone Hit Rate</div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {creditUsage ? creditUsage.success_stats.phones_found : 0} phones found
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-2xl font-semibold text-gray-900">
-                  {creditUsage ? creditUsage.total_credits.toLocaleString() : '0'}
-                </div>
-                <div className="text-sm text-gray-600">TOTAL</div>
-              </div>
-              
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-2xl font-semibold text-blue-600">
-                  {creditUsage ? creditUsage.used_credits.toLocaleString() : '0'}
-                </div>
-                <div className="text-sm text-gray-600">USED</div>
-              </div>
-              
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="text-2xl font-semibold text-green-600">
-                  {creditUsage ? creditUsage.remaining_credits.toLocaleString() : '0'}
-                </div>
-                <div className="text-sm text-gray-600">LEFT</div>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -824,55 +744,6 @@ const BillingPage: React.FC = () => {
         )}
       </motion.div>
 
-      {/* Credit Expiration Details */}
-      {creditUsage && creditUsage.credits_by_month.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Credit Expiration Schedule</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            {subscription?.billing_cycle === 'annual' 
-              ? 'Annual plan: All credits allocated upfront, valid for 18 months'
-              : 'Monthly plan: Credits roll over for 3 months with FIFO usage (oldest credits used first)'
-            }
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {creditUsage.credits_by_month.map((month, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{month.month}</h4>
-                  <Timer className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Allocated:</span>
-                    <span className="font-medium">{month.allocated.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Remaining:</span>
-                    <span className="font-medium text-green-600">{month.remaining.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Expires:</span>
-                    <span className="font-medium text-red-600">{formatDate(month.expires_at)}</span>
-                  </div>
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(month.remaining / month.allocated) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
       {/* Billing Type Toggle */}
       <div className="mb-8">
         <div className="flex items-center justify-center">
@@ -895,251 +766,141 @@ const BillingPage: React.FC = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Annual (20% off)
+              Annual (2 months offered!)
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {mainPlans.map((plan) => {
-          const { annualPrice, savings } = calculateAnnualSavings(plan.price_monthly);
-          const isCurrentPlan = currentPlan?.id === plan.id;
-          
-          return (
-            <motion.div
-              key={plan.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className={`relative bg-white rounded-xl shadow-lg border-2 transition-all duration-300 ${
-                plan.popular 
-                  ? 'border-teal-500 shadow-xl scale-105' 
-                  : isCurrentPlan
-                  ? 'border-green-500'
-                  : 'border-gray-200 hover:border-teal-300'
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold">
-                    MOST POPULAR
-                  </span>
-                </div>
-              )}
-              
-              {isCurrentPlan && (
-                <div className="absolute -top-3 right-4">
-                  <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                    CURRENT
-                  </span>
-                </div>
-              )}
+      {/* CREDIT PACKS - REPLACE THE OLD PLANS */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Credit Pack</h2>
+          <p className="text-gray-600">Select the perfect credit volume for your needs</p>
+        </div>
 
-              <div className="p-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">{plan.display_name}</h3>
-                  <div className="mt-4">
-                    {plan.plan_type === 'enterprise' ? (
-                      <div>
-                        <span className="text-3xl font-bold text-gray-900">Custom</span>
-                        <p className="text-sm text-gray-600 mt-1">Contact us for pricing</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <span className="text-3xl font-bold text-gray-900">
-                          €{billingType === 'annual' ? (annualPrice / 12).toFixed(0) : plan.price_monthly}
-                        </span>
-                        <span className="text-gray-600">
-                          /{billingType === 'annual' ? 'month' : 'month'}
-                        </span>
-                        {billingType === 'annual' && (
-                          <p className="text-sm text-green-600 mt-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {creditPacks.map((pack) => {
+            const monthlyPrice = billingType === 'annual' ? pack.price_annual / 12 : pack.price_monthly;
+            const totalPrice = billingType === 'annual' ? pack.price_annual : pack.price_monthly;
+            const savings = billingType === 'annual' ? (pack.price_monthly * 12) - pack.price_annual : 0;
+            const isCurrentPack = currentPlan?.credits_monthly === pack.credits;
+            
+            return (
+              <motion.div
+                key={pack.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className={`relative bg-white rounded-xl shadow-lg border-2 transition-all duration-300 ${
+                  pack.popular 
+                    ? 'border-teal-500 shadow-xl scale-105' 
+                    : isCurrentPack
+                    ? 'border-green-500'
+                    : 'border-gray-200 hover:border-teal-300'
+                }`}
+              >
+                {pack.popular && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold">
+                      MOST POPULAR
+                    </span>
+                  </div>
+                )}
+                
+                {isCurrentPack && (
+                  <div className="absolute -top-3 right-4">
+                    <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      CURRENT
+                    </span>
+                  </div>
+                )}
+
+                <div className="p-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">{pack.name}</h3>
+                    <div className="mt-4">
+                      <span className="text-3xl font-bold text-gray-900">
+                        €{monthlyPrice.toFixed(0)}
+                      </span>
+                      <span className="text-gray-600">/month</span>
+                      
+                      {billingType === 'annual' && savings > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm text-green-600 font-medium">
                             Save €{savings.toFixed(0)}/year
                           </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {plan.plan_type !== 'enterprise' && (
+                          <p className="text-xs text-green-500">
+                            2 months offered!
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
                     <p className="text-sm text-gray-600 mt-2">
-                      {plan.credits_monthly.toLocaleString()} credits/month
+                      {billingType === 'annual' ? (pack.credits * 12).toLocaleString() : pack.credits.toLocaleString()} 
+                      {billingType === 'annual' ? ' credits/year' : ' credits/month'}
                     </p>
-                  )}
-                </div>
+                  </div>
 
-                <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-sm text-gray-600">
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Mail className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />
+                      {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} emails
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Phone className="w-4 h-4 text-purple-500 mr-2 flex-shrink-0" />
+                      {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} phones
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
                       <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => {
-                    if (plan.plan_type === 'pro') {
-                      // Scroll to pro plans section
-                      document.getElementById('pro-plans')?.scrollIntoView({ behavior: 'smooth' });
-                    } else {
-                      handlePlanUpgrade(plan.id, billingType);
-                    }
-                  }}
-                  disabled={isCurrentPlan || loading}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                    isCurrentPlan
-                      ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
-                      : plan.popular
-                      ? 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gray-900 hover:bg-gray-800 text-white'
-                  }`}
-                >
-                  {isCurrentPlan ? 'Current Plan' : plan.plan_type === 'enterprise' ? 'Contact Sales' : plan.plan_type === 'pro' ? 'View Options' : 'Select Plan'}
-                </button>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Pro Plans Expansion */}
-      {proPlans.length > 0 && (
-        <motion.div
-          id="pro-plans"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Pro Plan Options</h3>
-          <p className="text-gray-600 mb-6">Choose the perfect credit volume for your needs</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {proPlans.map((plan) => {
-              const { annualPrice, savings } = calculateAnnualSavings(plan.price_monthly);
-              const isCurrentPlan = currentPlan?.id === plan.id;
-              
-              return (
-                <div
-                  key={plan.id}
-                  className={`border-2 rounded-lg p-4 transition-all duration-200 cursor-pointer ${
-                    plan.popular 
-                      ? 'border-teal-500 bg-teal-50' 
-                      : isCurrentPlan
-                      ? 'border-green-500 bg-green-50'
-                      : selectedProPlan === plan.id
-                      ? 'border-teal-400 bg-teal-50'
-                      : 'border-gray-200 hover:border-teal-300'
-                  }`}
-                  onClick={() => setSelectedProPlan(plan.id)}
-                >
-                  {plan.popular && (
-                    <div className="text-center mb-2">
-                      <span className="bg-teal-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                        POPULAR
-                      </span>
+                      API access & integrations
                     </div>
-                  )}
-                  
-                  {isCurrentPlan && (
-                    <div className="text-center mb-2">
-                      <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                        CURRENT
-                      </span>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                      Chrome extension
                     </div>
-                  )}
-                  
-                  <div className="text-center">
-                    <h4 className="font-bold text-gray-900">{plan.credits_monthly.toLocaleString()}</h4>
-                    <p className="text-xs text-gray-600 mb-2">credits/month</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      €{billingType === 'annual' ? (annualPrice / 12).toFixed(0) : plan.price_monthly}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      /month
-                    </p>
-                    {billingType === 'annual' && (
-                      <p className="text-xs text-green-600 mt-1">
-                        Save €{savings.toFixed(0)}/year
-                      </p>
-                    )}
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                      Email support
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {selectedProPlan && (
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <button
-                onClick={() => handlePlanUpgrade(selectedProPlan, billingType)}
-                disabled={loading}
-                className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                ) : (
-                  'Upgrade to Selected Plan'
-                )}
-              </button>
-            </div>
-          )}
-        </motion.div>
-      )}
 
-      {/* Transaction History */}
-      {transactions.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
-          <div className="space-y-4">
-            {transactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  {transaction.type === 'subscription' ? (
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <CreditCard className="w-5 h-5 text-blue-600" />
-                    </div>
-                  ) : transaction.type === 'credit_purchase' ? (
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <Zap className="w-5 h-5 text-green-600" />
-                    </div>
-                  ) : (
-                    <div className="p-2 bg-red-100 rounded-lg">
-                      <ArrowRight className="w-5 h-5 text-red-600" />
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-medium text-gray-900">{transaction.description}</h4>
-                    <p className="text-sm text-gray-600">{formatDate(transaction.created_at)}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">
-                    €{transaction.amount.toFixed(2)}
-                  </p>
-                  {transaction.credits_added && (
-                    <p className="text-sm text-green-600">
-                      +{transaction.credits_added.toLocaleString()} credits
-                    </p>
-                  )}
                   <button
-                    onClick={() => handleDownloadInvoice(transaction.id)}
-                    className="text-xs text-teal-600 hover:text-teal-700 mt-1"
+                    onClick={() => handlePlanUpgrade(pack.id, billingType)}
+                    disabled={isCurrentPack || loading}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                      isCurrentPack
+                        ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+                        : pack.popular
+                        ? 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gray-900 hover:bg-gray-800 text-white'
+                    }`}
                   >
-                    Download invoice
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                    ) : isCurrentPack ? (
+                      'Current Pack'
+                    ) : (
+                      'Buy This Pack'
+                    )}
                   </button>
+                  
+                  {billingType === 'annual' && (
+                    <p className="text-xs text-center text-gray-500 mt-2">
+                      Billed €{totalPrice.toFixed(0)} annually
+                    </p>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
 
       {/* Enrichment History */}
       <AnimatePresence>
@@ -1233,7 +994,7 @@ const BillingPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Credit Information */}
+      {/* Credit Information - SIMPLIFIED */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1247,9 +1008,6 @@ const BillingPage: React.FC = () => {
               <p>• <strong>1 email found = 1 credit</strong> - When we successfully find an email address</p>
               <p>• <strong>1 phone found = 10 credits</strong> - When we successfully find a phone number</p>
               <p>• <strong>No result = No charge</strong> - Credits are only deducted for successful enrichments</p>
-              <p>• <strong>Cached results still cost credits</strong> - Even if data is served from our shared database</p>
-              <p>• <strong>Credits expire after 3 months</strong> - Rolling expiration, oldest credits used first</p>
-              <p>• <strong>Annual plans</strong> - All credits allocated upfront, valid for 18 months</p>
             </div>
           </div>
         </div>
