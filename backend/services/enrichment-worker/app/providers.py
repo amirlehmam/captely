@@ -56,7 +56,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         elif len(name_parts) == 1:
             # If only one name part, use it as last name (common for API requirements)
             if not last_name:
-            last_name = name_parts[0]
+                last_name = name_parts[0]
     
     # Ensure we have at least a last name (required by API)
     if not last_name:
@@ -93,7 +93,7 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
         
     # Check for errors
-        if response.status_code == 401 or response.status_code == 403:
+    if response.status_code == 401 or response.status_code == 403:
         logger.error("Icypeas authentication failed")
         service_status.mark_unavailable('icypeas')
         return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
@@ -103,61 +103,61 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
         return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
     
     # Get the request ID
-        data = response.json()
-        request_id = data.get("item", {}).get("_id")
-        
-        if not request_id:
+    data = response.json()
+    request_id = data.get("item", {}).get("_id")
+    
+    if not request_id:
         logger.warning(f"Icypeas did not return request ID. Response: {data}")
         return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
-            
-    logger.info(f"Icypeas request started with ID: {request_id}")
         
+    logger.info(f"Icypeas request started with ID: {request_id}")
+    
     # Poll for results - FIXED: Use settings URL for polling too
     poll_url = f"{settings.api_urls[service_name]}/bulk-single-searchs/read"  # FIXED: Use settings URL
     wait_times = [2, 3, 4, 6]  # Progressive waiting
-        
-        for i, wait_time in enumerate(wait_times):
+    
+    for i, wait_time in enumerate(wait_times):
         # Wait before checking results
-            time.sleep(wait_time)
+        time.sleep(wait_time)
         
         # Make polling request
-            poll_response = httpx.post(
-                poll_url,
-                json={"id": request_id},
-                headers=headers,
-                timeout=20
-            )
-            
+        poll_response = httpx.post(
+            poll_url,
+            json={"id": request_id},
+            headers=headers,
+            timeout=20
+        )
+        
         # Check for errors
-            if poll_response.status_code != 200:
+        if poll_response.status_code != 200:
             logger.warning(f"Icypeas polling attempt {i+1}: HTTP {poll_response.status_code}")
-                continue
-            
+            continue
+        
         # Parse results
-            poll_data = poll_response.json()
-            items = poll_data.get("items", [])
-            
-            if not items:
+        poll_data = poll_response.json()
+        items = poll_data.get("items", [])
+        
+        if not items:
             logger.info(f"Icypeas polling {i+1}: no items yet")
-                continue
-            
-            item = items[0]
-            status = item.get("status")
-            
+            continue
+        
+        item = items[0]
+        status = item.get("status")
+        
         # Check if results are ready
-            if status not in ("DEBITED", "FREE"):
+        if status not in ("DEBITED", "FREE"):
             logger.info(f"Icypeas polling {i+1}: status={status}")
-                continue
-            
+            continue
+        
         # Extract results
         results = item.get("results", {})
         emails = results.get("emails", [])
         phones = results.get("phones", [])
         
         # Extract the actual email string from the email object
-            email = None
-            phone = None
-            
+        email = None
+        phone = None
+        
         if emails and len(emails) > 0:
             email_obj = emails[0]
             if isinstance(email_obj, dict):
@@ -171,14 +171,14 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
                 phone = phone_obj.get("phone") or phone_obj.get("number")
             else:
                 phone = phone_obj
-            
-            if email or phone:
+        
+        if email or phone:
             logger.info(f"Icypeas found: email={email}, phone={phone}")
-            
+        
         # Return results
-            return {
-                "email": email,
-                "phone": phone,
+        return {
+            "email": email,
+            "phone": phone,
             "confidence": 85 if email else 0,  # Default confidence
             "source": "icypeas",
             "raw_data": results
@@ -660,8 +660,8 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
     # Get full name from available data
     full_name = lead.get("full_name", "")
     if not full_name:
-    first_name = lead.get("first_name", "")
-    last_name = lead.get("last_name", "")
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
         if first_name and last_name:
             full_name = f"{first_name} {last_name}".strip()
         elif first_name or last_name:
@@ -757,7 +757,7 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
             
             # Map Enrow status to confidence
             confidence = 0
-        if email:
+            if email:
                 if status == "valid" or qualification == "valid":
                     confidence = 95
                 elif status == "catch_all" or qualification == "catch_all":
@@ -773,10 +773,10 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         return {
             "email": email,
-                "phone": None,  # Enrow focuses on email
-                "confidence": confidence,
+            "phone": None,  # Enrow focuses on email
+            "confidence": confidence,
             "source": service_name,
-                "raw_data": poll_data
+            "raw_data": poll_data
         }
         
         # Polling timeout
