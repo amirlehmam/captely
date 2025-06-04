@@ -146,24 +146,10 @@ const BatchProgress: React.FC = () => {
           </div>
           
           {/* Enhanced Stats grid */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
               <div className="text-xs font-medium text-blue-600 uppercase tracking-wide">Contacts</div>
               <div className="text-2xl font-bold text-blue-900 mt-1">{currentBatch.total}</div>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
-              <div className="text-xs font-medium text-green-600 uppercase tracking-wide flex items-center">
-                <Mail className="h-3 w-3 mr-1" />
-                Email Hit
-              </div>
-              <div className="text-2xl font-bold text-green-900 mt-1">{Math.round(emailHitRate)}%</div>
-            </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
-              <div className="text-xs font-medium text-purple-600 uppercase tracking-wide flex items-center">
-                <Phone className="h-3 w-3 mr-1" />
-                Phone Hit
-              </div>
-              <div className="text-2xl font-bold text-purple-900 mt-1">{Math.round(phoneHitRate)}%</div>
             </div>
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
               <div className="text-xs font-medium text-indigo-600 uppercase tracking-wide">Completed</div>
@@ -176,12 +162,6 @@ const BatchProgress: React.FC = () => {
               </div>
               <div className="text-xl font-bold text-orange-900 mt-1">
                 {Math.round(currentBatch.credits_used || 0)} credits
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200">
-              <div className="text-xs font-medium text-teal-600 uppercase tracking-wide">Avg Score</div>
-              <div className="text-2xl font-bold text-teal-900 mt-1">
-                {Math.round(currentBatch.avg_confidence || 0)}%
               </div>
             </div>
           </div>

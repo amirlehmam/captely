@@ -37,12 +37,12 @@ from app.common import (
 
 # MODERN ADDITIONS: Import verification modules
 try:
-    from enrichment.email_verification import email_verifier
-    from enrichment.phone_verification import phone_verifier
-    VERIFICATION_AVAILABLE = True
+    from enrichment import email_verifier, phone_verifier, VERIFICATION_AVAILABLE
     logger.info("✅ Email and phone verification modules loaded")
 except ImportError as e:
     logger.warning(f"⚠️ Verification modules not available: {e}")
+    email_verifier = None
+    phone_verifier = None
     VERIFICATION_AVAILABLE = False
 
 # MODERN ADDITIONS: Try to import new enrichment engine
@@ -1395,10 +1395,11 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     phone_verification_data = {}
     
     if enrichment_successful and VERIFICATION_AVAILABLE:
-        print(f"🔍 Phase 5: Verifying found results...")
+        print(f"🔍 Phase 5: Verifying found results... (VERIFICATION_AVAILABLE={VERIFICATION_AVAILABLE})")
         
         # Verify email if found
         if contact_data.get("email"):
+            print(f"📧 Starting email verification for: {contact_data['email']}")
             async def verify_email_async():
                 return await verify_email_if_available(contact_data["email"])
             
@@ -1408,11 +1409,12 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 "email_verification_score": email_verification_result["score"] / 100  # Convert to 0-1 scale
             }
             
-            print(f"📧 Email verification: {email_verification_result['verified']} (score: {email_verification_result['score']})")
+            print(f"📧 Email verification result: {email_verification_result['verified']} (score: {email_verification_result['score']})")
             contact_data.update(email_verification_data)
         
         # Verify phone if found
         if contact_data.get("phone"):
+            print(f"📱 Starting phone verification for: {contact_data['phone']}")
             async def verify_phone_async():
                 return await verify_phone_if_available(contact_data["phone"])
             
@@ -1422,8 +1424,17 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 "phone_verification_score": phone_verification_result["score"] / 100  # Convert to 0-1 scale
             }
             
-            print(f"📱 Phone verification: {phone_verification_result['verified']} (score: {phone_verification_result['score']})")
+            print(f"📱 Phone verification result: {phone_verification_result['verified']} (score: {phone_verification_result['score']})")
             contact_data.update(phone_verification_data)
+            
+        print(f"✅ Verification completed. Email verified: {contact_data.get('email_verified', False)}, Phone verified: {contact_data.get('phone_verified', False)}")
+    else:
+        if not enrichment_successful:
+            print(f"⚠️ Skipping verification: No enrichment results found")
+        elif not VERIFICATION_AVAILABLE:
+            print(f"⚠️ Skipping verification: VERIFICATION_AVAILABLE={VERIFICATION_AVAILABLE}")
+        else:
+            print(f"⚠️ Skipping verification: Unknown reason")
     
     # Add cost tracking to contact data
     contact_data["total_cost"] = total_cost
