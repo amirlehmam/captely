@@ -1930,7 +1930,6 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         first_name = lead.get("first_name", "")
         last_name = lead.get("last_name", "")
         company = lead.get("company", "")
-        company_domain = lead.get("company_domain", "")
         
         if not first_name or not last_name or not company:
             return {"email": None, "phone": None, "confidence": 0, "source": "enrow"}
@@ -1940,24 +1939,22 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
             "Content-Type": "application/json"
         }
         
+        # FIXED: Use correct Enrow API format
         payload = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "company": company
+            "fullname": f"{first_name} {last_name}",
+            "company_name": company
         }
         
-        if company_domain:
-            payload["domain"] = company_domain
-        
+        # FIXED: Use correct Enrow endpoint
         response = httpx.post(
-            "https://api.enrow.io/v1/enrich",
+            "https://api.enrow.io/email/find/single",
             json=payload,
             headers=headers,
             timeout=15
         )
         
         if response.status_code != 200:
-            logger.warning(f"Enrow API error: {response.status_code}")
+            logger.warning(f"Enrow API error: {response.status_code} - {response.text}")
             return {"email": None, "phone": None, "confidence": 0, "source": "enrow"}
         
         data = response.json()
@@ -1987,29 +1984,39 @@ def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
             "Content-Type": "application/json"
         }
         
+        # FIXED: Use correct Datagma API format - they accept fullname + company OR email/linkedin
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
+        company = lead.get("company", "")
+        
         payload = {
-            "first_name": lead.get("first_name", ""),
-            "last_name": lead.get("last_name", ""),
-            "company": lead.get("company", "")
+            "fullname": f"{first_name} {last_name}",
+            "company": company
         }
         
+        # Add domain if available
         if lead.get("company_domain"):
-            payload["domain"] = lead.get("company_domain")
+            payload["website"] = lead.get("company_domain")
         
-        response = httpx.post(
-            "https://gateway.datagma.net/api/ingress/v2/contact/email",
-            json=payload,
+        # FIXED: Use correct Datagma endpoint
+        response = httpx.get(
+            "https://gateway.datagma.net/api/ingress/v2/full",
+            params=payload,
             headers=headers,
             timeout=15
         )
         
         if response.status_code != 200:
-            logger.warning(f"Datagma API error: {response.status_code}")
+            logger.warning(f"Datagma API error: {response.status_code} - {response.text}")
             return {"email": None, "phone": None, "confidence": 0, "source": "datagma"}
         
         data = response.json()
-        email = data.get("email")
-        phone = data.get("phone")
+        # Datagma returns nested data structure
+        person_data = data.get("person", {})
+        contact_data = person_data.get("contact", {})
+        
+        email = contact_data.get("email")
+        phone = contact_data.get("phone")
         
         return {
             "email": email,
@@ -2034,12 +2041,21 @@ def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
             "Content-Type": "application/json"
         }
         
+        # FIXED: Use correct Anymailfinder API format
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
+        domain = lead.get("company_domain", "")
+        
+        # If no domain, create one from company name
+        if not domain and lead.get("company"):
+            domain = f"{lead.get('company', '').lower().replace(' ', '').replace('-', '')}.com"
+        
         payload = {
-            "first_name": lead.get("first_name", ""),
-            "last_name": lead.get("last_name", ""),
-            "domain": lead.get("company_domain", "") or f"{lead.get('company', '').lower().replace(' ', '')}.com"
+            "domain": domain,
+            "full_name": f"{first_name} {last_name}"
         }
         
+        # FIXED: Use correct Anymailfinder endpoint
         response = httpx.post(
             "https://api.anymailfinder.com/v5.0/search/person.json",
             json=payload,
@@ -2048,18 +2064,23 @@ def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
         )
         
         if response.status_code != 200:
-            logger.warning(f"Anymailfinder API error: {response.status_code}")
+            logger.warning(f"Anymailfinder API error: {response.status_code} - {response.text}")
             return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
         
         data = response.json()
-        email = data.get("email")
+        results = data.get("results", {})
+        email = results.get("email")
+        validation = results.get("validation", "unknown")
+        
+        # Only count valid emails
+        confidence = 85 if email and validation == "valid" else 0
         
         return {
-            "email": email,
+            "email": email if validation == "valid" else None,
             "phone": None,  # Anymailfinder doesn't provide phone
-            "confidence": data.get("confidence", 0),
+            "confidence": confidence,
             "source": "anymailfinder",
-            "cost": 0.015 if email else 0,
+            "cost": 0.015 if email and validation == "valid" else 0,
             "raw_data": data
         }
         
@@ -2072,40 +2093,96 @@ def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
 def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
     """Call Snov.io API - $0.02/email"""
     try:
+        # FIXED: Snov.io API requires OAuth token first, then uses a two-step process
         headers = {
             "Authorization": f"Bearer {settings.snov_api_secret}",
             "Content-Type": "application/json"
         }
         
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
+        domain = lead.get("company_domain", "")
+        
+        # If no domain, create one from company name
+        if not domain and lead.get("company"):
+            domain = f"{lead.get('company', '').lower().replace(' ', '').replace('-', '')}.com"
+        
+        # FIXED: Use correct Snov.io API format and endpoint
         payload = {
-            "firstName": lead.get("first_name", ""),
-            "lastName": lead.get("last_name", ""),
-            "domain": lead.get("company_domain", "") or f"{lead.get('company', '').lower().replace(' ', '')}.com"
+            "rows": [
+                {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "domain": domain
+                }
+            ]
         }
         
-        response = httpx.post(
-            "https://api.snov.io/v1/get-emails-by-name",
+        # Step 1: Start the search
+        start_response = httpx.post(
+            "https://api.snov.io/v2/emails-by-domain-by-name/start",
             json=payload,
             headers=headers,
             timeout=15
         )
         
-        if response.status_code != 200:
-            logger.warning(f"Snov.io API error: {response.status_code}")
+        if start_response.status_code != 200:
+            logger.warning(f"Snov.io start API error: {start_response.status_code} - {start_response.text}")
             return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
         
-        data = response.json()
-        emails = data.get("emails", [])
+        start_data = start_response.json()
+        task_hash = start_data.get("data", {}).get("task_hash")
         
-        # Get the best email (highest confidence)
+        if not task_hash:
+            logger.warning("Snov.io did not return task_hash")
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        # Step 2: Wait a bit and get results (Snov.io is async)
+        import time
+        time.sleep(2)  # Wait for processing
+        
+        result_response = httpx.get(
+            f"https://api.snov.io/v2/emails-by-domain-by-name/result?task_hash={task_hash}",
+            headers=headers,
+            timeout=15
+        )
+        
+        if result_response.status_code != 200:
+            logger.warning(f"Snov.io result API error: {result_response.status_code} - {result_response.text}")
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        result_data = result_response.json()
+        
+        # Check if completed
+        if result_data.get("status") != "completed":
+            logger.warning("Snov.io search not completed")
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        # Extract email data
+        data_list = result_data.get("data", [])
+        if not data_list:
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        person_data = data_list[0]
+        results = person_data.get("result", [])
+        
+        if not results:
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        # Get best email
         best_email = None
         best_confidence = 0
         
-        for email_data in emails:
-            confidence = email_data.get("confidence", 0)
-            if confidence > best_confidence:
-                best_email = email_data.get("email")
-                best_confidence = confidence
+        for email_data in results:
+            email = email_data.get("email")
+            smtp_status = email_data.get("smtp_status", "unknown")
+            
+            # Only use valid emails
+            if email and smtp_status == "valid":
+                confidence = 90  # High confidence for valid emails
+                if confidence > best_confidence:
+                    best_email = email
+                    best_confidence = confidence
         
         return {
             "email": best_email,
@@ -2113,7 +2190,7 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
             "confidence": best_confidence,
             "source": "snov",
             "cost": 0.02 if best_email else 0,
-            "raw_data": data
+            "raw_data": result_data
         }
         
     except Exception as e:

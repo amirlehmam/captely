@@ -47,17 +47,19 @@ const getDefaultUrl = (service: string): string => {
   const isProduction = import.meta.env?.PROD || window.location.protocol === 'https:';
   
   if (isProduction) {
-    // Production URLs using HTTPS and domain
-    return `https://captely.com/api/${service}`;
+    // Production URLs using HTTPS and domain - removed /api prefix to prevent double /api
+    return `https://captely.com/${service}`;
   } else {
     // Development URLs
     const portMap: Record<string, number> = {
       auth: 8001,
       import: 8002,
-      analytics: 8003,
-      crm: 8004,
-      export: 8005,
-      billing: 8006
+      credit: 8003,
+      export: 8004,
+      analytics: 8005,
+      notification: 8006,
+      billing: 8007,
+      crm: 8008
     };
     return `http://localhost:${portMap[service]}`;
   }

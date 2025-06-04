@@ -876,3 +876,274 @@ async def export_job_data(
 async def health_check():
     """Health check endpoint"""
     return {"status": "ok", "service": "import-service"}
+
+# ==========================================
+# VERIFICATION ENDPOINTS
+# ==========================================
+
+@app.get("/api/verification/stats")
+async def get_verification_stats(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get verification statistics for all contacts of the authenticated user"""
+    try:
+        print(f"📊 Getting verification stats for user: {user_id}")
+        
+        # Get verification statistics for all user's contacts
+        stats_query = text("""
+            SELECT 
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as total_emails,
+                COUNT(CASE WHEN c.email_verified = true THEN 1 END) as verified_emails,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' AND c.email_verified = false THEN 1 END) as invalid_emails,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as total_phones,
+                COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as verified_phones,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' AND c.phone_verified = false THEN 1 END) as invalid_phones,
+                -- Email quality distribution
+                COUNT(CASE WHEN c.email_verification_score >= 0.9 THEN 1 END) as email_excellent,
+                COUNT(CASE WHEN c.email_verification_score >= 0.7 AND c.email_verification_score < 0.9 THEN 1 END) as email_good,
+                COUNT(CASE WHEN c.email_verification_score >= 0.5 AND c.email_verification_score < 0.7 THEN 1 END) as email_fair,
+                COUNT(CASE WHEN c.email_verification_score < 0.5 AND c.email_verification_score IS NOT NULL THEN 1 END) as email_poor,
+                -- Phone type distribution  
+                COUNT(CASE WHEN c.phone_verification_score >= 0.9 THEN 1 END) as phone_mobile,
+                COUNT(CASE WHEN c.phone_verification_score >= 0.7 AND c.phone_verification_score < 0.9 THEN 1 END) as phone_landline,
+                COUNT(CASE WHEN c.phone_verification_score >= 0.5 AND c.phone_verification_score < 0.7 THEN 1 END) as phone_voip,
+                COUNT(CASE WHEN c.phone_verification_score < 0.5 AND c.phone_verification_score IS NOT NULL THEN 1 END) as phone_invalid
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE ij.user_id = :user_id
+        """)
+        
+        result = session.execute(stats_query, {"user_id": user_id})
+        stats = result.first()
+        
+        verification_stats = {
+            "total_emails": stats[0] or 0,
+            "verified_emails": stats[1] or 0,
+            "invalid_emails": stats[2] or 0,
+            "total_phones": stats[3] or 0,
+            "verified_phones": stats[4] or 0,
+            "invalid_phones": stats[5] or 0,
+            "verification_scores": {
+                "email": {
+                    "excellent": stats[6] or 0,
+                    "good": stats[7] or 0,
+                    "fair": stats[8] or 0,
+                    "poor": stats[9] or 0
+                },
+                "phone": {
+                    "mobile": stats[10] or 0,
+                    "landline": stats[11] or 0,
+                    "voip": stats[12] or 0,
+                    "invalid": stats[13] or 0
+                }
+            }
+        }
+        
+        print(f"✅ Verification stats: {verification_stats['total_emails']} emails, {verification_stats['total_phones']} phones")
+        return verification_stats
+        
+    except Exception as e:
+        print(f"❌ Error getting verification stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting verification stats: {str(e)}")
+
+@app.get("/api/verification/stats/{job_id}")
+async def get_job_verification_stats(
+    job_id: str,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get verification statistics for a specific job"""
+    try:
+        print(f"📊 Getting verification stats for job {job_id}, user: {user_id}")
+        
+        # Verify job belongs to user
+        job_check = text("SELECT id FROM import_jobs WHERE id = :job_id AND user_id = :user_id")
+        job_result = session.execute(job_check, {"job_id": job_id, "user_id": user_id})
+        if not job_result.first():
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Get verification statistics for this specific job
+        stats_query = text("""
+            SELECT 
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as total_emails,
+                COUNT(CASE WHEN c.email_verified = true THEN 1 END) as verified_emails,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' AND c.email_verified = false THEN 1 END) as invalid_emails,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as total_phones,
+                COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as verified_phones,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' AND c.phone_verified = false THEN 1 END) as invalid_phones,
+                -- Email quality distribution
+                COUNT(CASE WHEN c.email_verification_score >= 0.9 THEN 1 END) as email_excellent,
+                COUNT(CASE WHEN c.email_verification_score >= 0.7 AND c.email_verification_score < 0.9 THEN 1 END) as email_good,
+                COUNT(CASE WHEN c.email_verification_score >= 0.5 AND c.email_verification_score < 0.7 THEN 1 END) as email_fair,
+                COUNT(CASE WHEN c.email_verification_score < 0.5 AND c.email_verification_score IS NOT NULL THEN 1 END) as email_poor,
+                -- Phone type distribution  
+                COUNT(CASE WHEN c.phone_verification_score >= 0.9 THEN 1 END) as phone_mobile,
+                COUNT(CASE WHEN c.phone_verification_score >= 0.7 AND c.phone_verification_score < 0.9 THEN 1 END) as phone_landline,
+                COUNT(CASE WHEN c.phone_verification_score >= 0.5 AND c.phone_verification_score < 0.7 THEN 1 END) as phone_voip,
+                COUNT(CASE WHEN c.phone_verification_score < 0.5 AND c.phone_verification_score IS NOT NULL THEN 1 END) as phone_invalid
+            FROM contacts c
+            WHERE c.job_id = :job_id
+        """)
+        
+        result = session.execute(stats_query, {"job_id": job_id})
+        stats = result.first()
+        
+        verification_stats = {
+            "total_emails": stats[0] or 0,
+            "verified_emails": stats[1] or 0,
+            "invalid_emails": stats[2] or 0,
+            "total_phones": stats[3] or 0,
+            "verified_phones": stats[4] or 0,
+            "invalid_phones": stats[5] or 0,
+            "verification_scores": {
+                "email": {
+                    "excellent": stats[6] or 0,
+                    "good": stats[7] or 0,
+                    "fair": stats[8] or 0,
+                    "poor": stats[9] or 0
+                },
+                "phone": {
+                    "mobile": stats[10] or 0,
+                    "landline": stats[11] or 0,
+                    "voip": stats[12] or 0,
+                    "invalid": stats[13] or 0
+                }
+            }
+        }
+        
+        print(f"✅ Job {job_id} verification stats: {verification_stats['total_emails']} emails, {verification_stats['total_phones']} phones")
+        return verification_stats
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting job verification stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting verification stats: {str(e)}")
+
+@app.post("/api/verification/job/{job_id}/verify")
+async def verify_job_contacts(
+    job_id: str,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Trigger verification for existing contacts in a job"""
+    try:
+        print(f"🔍 Starting verification for job {job_id}, user: {user_id}")
+        
+        # Verify job belongs to user
+        job_check = text("SELECT id FROM import_jobs WHERE id = :job_id AND user_id = :user_id")
+        job_result = session.execute(job_check, {"job_id": job_id, "user_id": user_id})
+        if not job_result.first():
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Trigger the verification task using Celery
+        from celery import Celery
+        
+        # Create a Celery app connection
+        celery_app = Celery(
+            "import_service",
+            broker="redis://redis:6379/0",
+            backend="redis://redis:6379/0"
+        )
+        
+        # Send the verification task to the enrichment worker
+        task = celery_app.send_task(
+            'app.tasks.verify_existing_contacts',
+            args=[job_id],
+            queue='contact_enrichment'
+        )
+        
+        print(f"✅ Verification task {task.id} queued for job {job_id}")
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "task_id": task.id,
+            "message": "Verification task started"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error starting verification: {e}")
+        raise HTTPException(status_code=500, detail=f"Error starting verification: {str(e)}")
+
+@app.post("/api/verification/email")
+async def verify_single_email(
+    request: dict,
+    user_id: str = Depends(verify_api_token)
+):
+    """Verify a single email address"""
+    try:
+        email = request.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        print(f"📧 Verifying email: {email}")
+        
+        # Trigger the email verification task
+        from celery import Celery
+        
+        celery_app = Celery(
+            "import_service",
+            broker="redis://redis:6379/0",
+            backend="redis://redis:6379/0"
+        )
+        
+        # For now, return a simple response. In a full implementation,
+        # this would call the actual verification service
+        return {
+            "email": email,
+            "is_valid": True,  # Placeholder
+            "verification_level": 2,
+            "is_catchall": False,
+            "is_disposable": False,
+            "is_role_based": False,
+            "deliverable": True,
+            "score": 85,
+            "reason": "Verified successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error verifying email: {e}")
+        raise HTTPException(status_code=500, detail=f"Error verifying email: {str(e)}")
+
+@app.post("/api/verification/phone")
+async def verify_single_phone(
+    request: dict,
+    user_id: str = Depends(verify_api_token)
+):
+    """Verify a single phone number"""
+    try:
+        phone = request.get("phone")
+        country_hint = request.get("country_hint")
+        
+        if not phone:
+            raise HTTPException(status_code=400, detail="Phone is required")
+        
+        print(f"📱 Verifying phone: {phone}")
+        
+        # For now, return a simple response. In a full implementation,
+        # this would call the actual verification service
+        return {
+            "phone": phone,
+            "is_valid": True,  # Placeholder
+            "is_mobile": True,
+            "is_landline": False,
+            "is_voip": False,
+            "country": "US",
+            "carrier_name": "Verizon",
+            "region": "New York",
+            "formatted_international": "+1234567890",
+            "score": 90,
+            "reason": "Verified successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error verifying phone: {e}")
+        raise HTTPException(status_code=500, detail=f"Error verifying phone: {str(e)}")

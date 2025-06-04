@@ -561,37 +561,76 @@ async def get_dashboard_analytics(
         if recent_jobs:
             current_batch = recent_jobs[0]  # Most recent job
         
-        # Get provider performance (mock data for now since all providers are failing)
-        provider_performance = [
-            {
-                "provider": "apollo",
-                "success_rate": 0,
-                "avg_confidence": 0,
-                "total_requests": 100,
-                "status": "error"  # Due to insufficient credits
-            },
-            {
-                "provider": "hunter",
-                "success_rate": 0,
-                "avg_confidence": 0,
-                "total_requests": 50,
-                "status": "error"  # Due to rate limits
-            },
-            {
-                "provider": "clearbit",
-                "success_rate": 0,
-                "avg_confidence": 0,
-                "total_requests": 0,
-                "status": "inactive"  # Not implemented
-            },
-            {
-                "provider": "pdl",
-                "success_rate": 0,
-                "avg_confidence": 0,
-                "total_requests": 0,
-                "status": "inactive"  # Not implemented
-            }
-        ]
+        # Get provider performance (real data from database)
+        provider_query = text("""
+            SELECT 
+                c.enrichment_provider,
+                COUNT(*) as total_requests,
+                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                AVG(c.enrichment_score) as avg_confidence,
+                AVG(c.credits_consumed) as avg_cost,
+                MAX(c.created_at) as last_used
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE ij.user_id = :user_id 
+            AND c.enrichment_provider IS NOT NULL
+            AND c.created_at >= NOW() - INTERVAL '7 days'  -- Last 7 days
+            GROUP BY c.enrichment_provider
+            ORDER BY total_requests DESC
+        """)
+        
+        provider_result = await session.execute(provider_query, {"user_id": user_id})
+        
+        provider_performance = []
+        for row in provider_result.fetchall():
+            provider_name = row[0]
+            total_requests = row[1] or 0
+            emails_found = row[2] or 0
+            phones_found = row[3] or 0
+            avg_confidence = float(row[4] or 0)
+            avg_cost = float(row[5] or 0)
+            last_used = row[6]
+            
+            # Calculate success rate (emails OR phones found)
+            success_rate = ((emails_found + phones_found) / total_requests * 100) if total_requests > 0 else 0
+            
+            # Determine status based on recent activity and success
+            if total_requests > 0 and success_rate > 50:
+                status = "active"
+            elif total_requests > 0 and success_rate > 0:
+                status = "low_performance"
+            elif total_requests > 0:
+                status = "error"
+            else:
+                status = "inactive"
+            
+            provider_performance.append({
+                "provider": provider_name,
+                "success_rate": round(success_rate, 1),
+                "avg_confidence": round(avg_confidence, 1),
+                "total_requests": total_requests,
+                "emails_found": emails_found,
+                "phones_found": phones_found,
+                "avg_cost": round(avg_cost, 3),
+                "status": status,
+                "last_used": last_used.isoformat() if last_used else None
+            })
+        
+        # If no provider data, show the configured 10-provider cascade
+        if not provider_performance:
+            provider_performance = [
+                {"provider": "enrow", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.008},
+                {"provider": "icypeas", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.009},
+                {"provider": "apollo", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.012},
+                {"provider": "datagma", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.012},
+                {"provider": "anymailfinder", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.015},
+                {"provider": "snov", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.02},
+                {"provider": "findymail", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.025},
+                {"provider": "dropcontact", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.034},
+                {"provider": "hunter", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.036},
+                {"provider": "kaspr", "success_rate": 0, "avg_confidence": 0, "total_requests": 0, "status": "inactive", "avg_cost": 0.071}
+            ]
         
         # Calculate credits used today
         today_credits_query = text("""
