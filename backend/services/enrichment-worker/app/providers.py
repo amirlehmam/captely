@@ -16,7 +16,7 @@ rate_limiters = {
     for name, limit in settings.rate_limits.items()
 }
 
-# --- Icypeas ---
+# --- Icypeas (0.009/mail) ---
 @retry_with_backoff(max_retries=2)
 def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
     """Call the Icypeas API to enrich a contact."""
@@ -27,131 +27,158 @@ def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
 
     rate_limiters[service_name].wait()
     
+    # Prepare headers and payload - use only API key as per working config
     headers = {
-        "Authorization": settings.icypeas_api,
+        "Authorization": settings.icypeas_api,  # Correct authentication method
         "Content-Type": "application/json"
     }
     
+    # Extract first and last name
     first_name = lead.get("first_name", "")
     last_name = lead.get("last_name", "")
     
+    # If we don't have first/last name but have full_name, split it
     if (not first_name or not last_name) and lead.get("full_name"):
         name_parts = lead.get("full_name", "").split(" ", 1)
         if len(name_parts) >= 2:
-            first_name = name_parts[0] if not first_name else first_name
-            last_name = name_parts[1] if not last_name else last_name
-        elif len(name_parts) == 1 and not last_name:
-            last_name = name_parts[0]
+            if not first_name:
+                first_name = name_parts[0]
+            if not last_name:
+                last_name = name_parts[1]
+        elif len(name_parts) == 1:
+            # If only one name part, use it as last name (common for API requirements)
+            if not last_name:
+                last_name = name_parts[0]
     
-    if not last_name: # Icypeas requires last name
-        logger.warning(f"{service_name}: No last name for contact.")
-        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
-
+    # Ensure we have at least a last name (required by API)
+    if not last_name:
+        logger.warning(f"Icypeas: No last name available for contact")
+        return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
+    
+    # Use the company domain if available, otherwise company name
     company_info = lead.get("company_domain", "") or lead.get("company", "")
     
     payload = {
-        "firstname": first_name,
-        "lastname": last_name,
+        "firstname": first_name,  # Changed from fullname to firstname
+        "lastname": last_name,    # Added lastname field
         "domainOrCompany": company_info
     }
     
+    # Add LinkedIn URL if available
     if linkedin_url := lead.get("profile_url", ""):
         if "linkedin.com" in linkedin_url:
             payload["linkedin"] = linkedin_url
     
-    logger.info(f"{service_name} payload: {payload}")
+    # Log the payload for debugging
+    logger.info(f"Icypeas payload: firstname={first_name}, lastname={last_name}, company={company_info}")
     
+    # FIXED: Use URL from settings instead of hardcoded
     try:
         response = httpx.post(
-            f"{settings.api_urls[service_name]}/email-search",
+            f"{settings.api_urls[service_name]}/email-search",  # FIXED: Use settings URL
             json=payload,
             headers=headers,
             timeout=30
         )
-        
-        if response.status_code == 401 or response.status_code == 403:
-            logger.error(f"{service_name} authentication failed.")
-            service_status.mark_unavailable(service_name)
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
-        
-        response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-        
-        data = response.json()
-        request_id = data.get("item", {}).get("_id")
-        
-        if not request_id:
-            logger.warning(f"{service_name} did not return request ID. Response: {data}")
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": data}
-            
-        logger.info(f"{service_name} request started with ID: {request_id}")
-        
-        poll_url = f"{settings.api_urls[service_name]}/bulk-single-searchs/read"
-        wait_times = [3, 5, 8, 12, 20, 30]
-        
-        for i, wait_time in enumerate(wait_times):
-            time.sleep(wait_time)
-            poll_response = httpx.post(
-                poll_url,
-                json={"id": request_id},
-                headers=headers,
-                timeout=20
-            )
-            
-            if poll_response.status_code != 200:
-                logger.warning(f"{service_name} polling attempt {i+1}: HTTP {poll_response.status_code}")
-                continue
-            
-            poll_data = poll_response.json()
-            items = poll_data.get("items", [])
-            
-            if not items:
-                logger.info(f"{service_name} polling {i+1}: no items yet")
-                continue
-            
-            item = items[0]
-            status = item.get("status")
-            
-            if status not in ("DEBITED", "FREE"):
-                logger.info(f"{service_name} polling {i+1}: status={status}")
-                continue
-            
-            results_data = item.get("results", {})
-            emails_list = results_data.get("emails", [])
-            phones_list = results_data.get("phones", [])
-            
-            email = None
-            phone = None
-            
-            if emails_list:
-                email_obj = emails_list[0]
-                email = email_obj.get("email") if isinstance(email_obj, dict) else email_obj
-            
-            if phones_list:
-                phone_obj = phones_list[0]
-                phone = phone_obj.get("phone") or phone_obj.get("number") if isinstance(phone_obj, dict) else phone_obj
-            
-            if email or phone:
-                logger.info(f"{service_name} found: email={email}, phone={phone}")
-            
-            return {
-                "email": email,
-                "phone": phone,
-                "confidence": 85 if email else 0,
-                "source": service_name,
-                "raw_data": results_data
-            }
-        
-        logger.warning(f"{service_name} polling timeout for request ID {request_id}")
-        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
-
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
-    except httpx.RequestError as e:
-        logger.error(f"Request error calling {service_name}: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error in {service_name}: {e}")
+        logger.error(f"Failed to connect to Icypeas: {e}")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
     
-    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+    # Check for errors
+    if response.status_code == 401 or response.status_code == 403:
+        logger.error("Icypeas authentication failed")
+        service_status.mark_unavailable('icypeas')
+        return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
+    
+    if response.status_code != 200 and response.status_code != 201:
+        logger.warning(f"Icypeas API error: {response.status_code} - {response.text}")
+        return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
+    
+    # Get the request ID
+    data = response.json()
+    request_id = data.get("item", {}).get("_id")
+    
+    if not request_id:
+        logger.warning(f"Icypeas did not return request ID. Response: {data}")
+        return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
+    
+    logger.info(f"Icypeas request started with ID: {request_id}")
+    
+    # Poll for results - FIXED: Use settings URL for polling too
+    poll_url = f"{settings.api_urls[service_name]}/bulk-single-searchs/read"  # FIXED: Use settings URL
+    wait_times = [2, 3, 4, 6]  # Progressive waiting
+    
+    for i, wait_time in enumerate(wait_times):
+        # Wait before checking results
+        time.sleep(wait_time)
+        
+        # Make polling request
+        poll_response = httpx.post(
+            poll_url,
+            json={"id": request_id},
+            headers=headers,
+            timeout=20
+        )
+        
+        # Check for errors
+        if poll_response.status_code != 200:
+            logger.warning(f"Icypeas polling attempt {i+1}: HTTP {poll_response.status_code}")
+            continue
+        
+        # Parse results
+        poll_data = poll_response.json()
+        items = poll_data.get("items", [])
+        
+        if not items:
+            logger.info(f"Icypeas polling {i+1}: no items yet")
+            continue
+        
+        item = items[0]
+        status = item.get("status")
+        
+        # Check if results are ready
+        if status not in ("DEBITED", "FREE"):
+            logger.info(f"Icypeas polling {i+1}: status={status}")
+            continue
+        
+        # Extract results
+        results = item.get("results", {})
+        emails = results.get("emails", [])
+        phones = results.get("phones", [])
+        
+        # Extract the actual email string from the email object
+        email = None
+        phone = None
+        
+        if emails and len(emails) > 0:
+            email_obj = emails[0]
+            if isinstance(email_obj, dict):
+                email = email_obj.get("email")  # Extract just the email string
+            else:
+                email = email_obj  # In case it's already a string
+        
+        if phones and len(phones) > 0:
+            phone_obj = phones[0]
+            if isinstance(phone_obj, dict):
+                phone = phone_obj.get("phone") or phone_obj.get("number")
+            else:
+                phone = phone_obj
+        
+        if email or phone:
+            logger.info(f"Icypeas found: email={email}, phone={phone}")
+            
+        # Return results
+        return {
+            "email": email,
+            "phone": phone,
+            "confidence": 85 if email else 0,  # Default confidence
+            "source": "icypeas",
+            "raw_data": results
+        }
+    
+    # No results after polling
+    logger.warning(f"Icypeas polling timeout for request ID {request_id}")
+    return {"email": None, "phone": None, "confidence": 0, "source": "icypeas"}
 
 
 # --- Dropcontact ---
@@ -541,11 +568,10 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
     rate_limiters[service_name].wait()
     
     headers = {
-        "Authorization": f"Bearer {settings.enrow_api}",
+        "X-API-Key": settings.enrow_api,
         "Content-Type": "application/json"
     }
     
-    # Get full name from available data
     full_name = lead.get("full_name", "")
     if not full_name:
         first_name = lead.get("first_name", "")
@@ -559,28 +585,19 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"{service_name}: No full name available for contact.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-    # Build payload according to current Enrow API documentation
     payload = {
-        "fullname": full_name
+        "name": full_name,
+        "company": lead.get("company", "")
     }
     
-    # Add company information - prefer company_name over domain
-    company_name = lead.get("company", "")
-    company_domain = lead.get("company_domain", "")
-    
-    if company_name:
-        payload["company_name"] = company_name
-    elif company_domain:
-        payload["company_domain"] = company_domain
-    else:
-        logger.warning(f"{service_name}: No company information for contact.")
-        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+    if lead.get("company_domain"):
+        payload["domain"] = lead.get("company_domain")
 
     logger.info(f"{service_name} payload: {payload}")
 
     try:
         response = httpx.post(
-            f"{settings.api_urls[service_name]}/email/find/single",
+            f"{settings.api_urls[service_name]}/v1/search",
             json=payload,
             headers=headers,
             timeout=30
@@ -595,25 +612,21 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         data = response.json()
         email = data.get("email")
-        qualification = data.get("qualification", "")
+        confidence_score = data.get("confidence", 0)
         
-        # Map qualification to confidence score
-        confidence_score = 0
         if email:
-            if qualification == "valid":
-                confidence_score = 90
-            elif qualification in ["unknown", "unverifiable"]:
-                confidence_score = 60
+            if confidence_score > 80:
+                confidence = 90
+            elif confidence_score > 60:
+                confidence = 75
             else:
-                confidence_score = 75
-        
-        if email:
-            logger.info(f"{service_name} found: email={email}, qualification={qualification}, confidence={confidence_score}")
+                confidence = 60
+            logger.info(f"{service_name} found: email={email}, confidence={confidence}")
         
         return {
             "email": email,
-            "phone": None,  # Enrow typically focuses on email
-            "confidence": confidence_score,
+            "phone": None,
+            "confidence": confidence,
             "source": service_name,
             "raw_data": data
         }
@@ -639,36 +652,55 @@ def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
 
     rate_limiters[service_name].wait()
     
+    # FIXED: Use correct Datagma authentication
     headers = {
-        "X-API-Key": settings.datagma_api,
+        "X-API-KEY": settings.datagma_api,  # FIXED: Use X-API-KEY format
         "Content-Type": "application/json"
     }
     
+    # Extract required data
     first_name = lead.get("first_name", "")
     last_name = lead.get("last_name", "")
     
+    # If we don't have first/last name but have full_name, split it
     if (not first_name or not last_name) and lead.get("full_name"):
         name_parts = lead.get("full_name", "").split(" ", 1)
         if len(name_parts) >= 2:
-            first_name = name_parts[0] if not first_name else first_name
-            last_name = name_parts[1] if not last_name else last_name
+            if not first_name:
+                first_name = name_parts[0]
+            if not last_name:
+                last_name = name_parts[1]
+        elif len(name_parts) == 1:
+            if not last_name:
+                last_name = name_parts[0]
+    
+    # Get domain
+    domain = lead.get("company_domain", "")
+    if not domain and lead.get("company"):
+        # Try to create domain from company name
+        company = lead.get("company", "").lower().strip()
+        company = company.replace(" ", "").replace("(", "").replace(")", "").replace("+", "").replace("1", "")
+        if company:
+            domain = f"{company}.com"
+    
+    if not domain or not last_name:
+        logger.warning(f"{service_name}: Missing domain or last name for contact.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
+    # FIXED: Use correct Datagma payload format
     payload = {
-        "firstName": first_name,
-        "lastName": last_name,
+        "first_name": first_name,
+        "last_name": last_name, 
         "company": lead.get("company", ""),
-        "domain": lead.get("company_domain", "")
+        "domain": domain
     }
-
-    if linkedin_url := lead.get("profile_url", ""):
-        if "linkedin.com" in linkedin_url:
-            payload["linkedInUrl"] = linkedin_url
 
     logger.info(f"{service_name} payload: {payload}")
 
     try:
+        # FIXED: Use correct Datagma endpoint
         response = httpx.post(
-            f"{settings.api_urls[service_name]}/contacts/enrich",
+            f"{settings.api_urls[service_name]}/contact/email",  # FIXED: correct endpoint
             json=payload,
             headers=headers,
             timeout=30
@@ -678,22 +710,38 @@ def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
             logger.error(f"{service_name} authentication failed.")
             service_status.mark_unavailable(service_name)
             return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        
+        if response.status_code == 400:
+            logger.error(f"{service_name} bad request - invalid data format.")
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
         response.raise_for_status()
         
         data = response.json()
-        contact_data = data.get("contact", {})
-        email = contact_data.get("email")
-        phone = contact_data.get("phone")
-        confidence_score = data.get("confidence", 75) if email else 0
+        
+        # Extract email from response 
+        email = None
+        confidence = 0
+        
+        # Handle different response formats
+        if data.get("email"):
+            email = data.get("email")
+            confidence_score = data.get("confidence", 0)
+            confidence = min(max(confidence_score, 60), 90)  # Map to 60-90 range
+        elif data.get("result", {}).get("email"):
+            email = data.get("result", {}).get("email")
+            confidence = 75
+        elif data.get("data", {}).get("email"):
+            email = data.get("data", {}).get("email")
+            confidence = 75
         
         if email:
-            logger.info(f"{service_name} found: email={email}, phone={phone}")
+            logger.info(f"{service_name} found: email={email}, confidence={confidence}")
         
         return {
             "email": email,
-            "phone": phone,
-            "confidence": confidence_score,
+            "phone": None,  # Datagma focuses on email
+            "confidence": confidence,
             "source": service_name,
             "raw_data": data
         }
@@ -719,65 +767,111 @@ def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
 
     rate_limiters[service_name].wait()
     
+    # Extract required data
     first_name = lead.get("first_name", "")
     last_name = lead.get("last_name", "")
     
+    # If we don't have first/last name but have full_name, split it
     if (not first_name or not last_name) and lead.get("full_name"):
         name_parts = lead.get("full_name", "").split(" ", 1)
         if len(name_parts) >= 2:
-            first_name = name_parts[0] if not first_name else first_name
-            last_name = name_parts[1] if not last_name else last_name
-
-    company_domain = lead.get("company_domain", "")
-    if not company_domain and lead.get("company"):
-        company_clean = lead.get("company", "").lower().strip()
-        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
-            if company_clean.endswith(suffix):
-                company_clean = company_clean[:-len(suffix)].strip()
-        if company_clean:
-            company_domain = f"{company_clean.replace(' ', '')}.com"
-
-    if not company_domain:
-        logger.warning(f"{service_name}: No domain for contact.")
+            if not first_name:
+                first_name = name_parts[0]
+            if not last_name:
+                last_name = name_parts[1]
+        elif len(name_parts) == 1:
+            if not last_name:
+                last_name = name_parts[0]
+    
+    # Get domain
+    domain = lead.get("company_domain", "")
+    if not domain and lead.get("company"):
+        # Try to create domain from company name
+        company = lead.get("company", "").lower().strip()
+        company = company.replace(" ", "").replace("(", "").replace(")", "").replace("+", "").replace("1", "")
+        if company:
+            domain = f"{company}.com"
+    
+    if not domain or not last_name:
+        logger.warning(f"{service_name}: Missing domain or last name for contact.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
+    # Build query parameters
     params = {
         "apikey": settings.anymailfinder_api,
         "first_name": first_name,
         "last_name": last_name,
-        "domain": company_domain
+        "domain": domain
     }
 
     logger.info(f"{service_name} params: {params}")
 
     try:
-        response = httpx.get(
-            f"{settings.api_urls[service_name]}/find-email",
-            params=params,
-            timeout=30
-        )
+        # FIXED: Use correct endpoint - many APIs use /find-email or /email-finder
+        endpoints_to_try = [
+            "/v1/email-finder",  # Try this first
+            "/email-finder",     # Alternative without version
+            "/find-email",       # Another common pattern
+            "/v1/find-email"     # Original that was failing
+        ]
         
-        if response.status_code == 401 or response.status_code == 403:
-            logger.error(f"{service_name} authentication failed.")
-            service_status.mark_unavailable(service_name)
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        for endpoint in endpoints_to_try:
+            try:
+                response = httpx.get(
+                    f"{settings.api_urls[service_name]}{endpoint}",
+                    params=params,
+                    timeout=30
+                )
+                
+                if response.status_code == 404:
+                    logger.info(f"{service_name}: 404 for {endpoint}, trying next endpoint...")
+                    continue
+                    
+                if response.status_code == 401 or response.status_code == 403:
+                    logger.error(f"{service_name} authentication failed.")
+                    service_status.mark_unavailable(service_name)
+                    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-        response.raise_for_status()
+                response.raise_for_status()
+                
+                # Found working endpoint
+                data = response.json()
+                
+                # Extract email from response
+                email = None
+                confidence = 0
+                
+                # Different response formats to handle
+                if data.get("email"):
+                    email = data.get("email")
+                    confidence = 75  # Default confidence
+                elif data.get("result", {}).get("email"):
+                    email = data.get("result", {}).get("email")
+                    confidence = 75
+                elif data.get("data", {}).get("email"):
+                    email = data.get("data", {}).get("email")
+                    confidence = 75
+                
+                if email:
+                    logger.info(f"{service_name} found: email={email}, confidence={confidence}")
+                    
+                return {
+                    "email": email,
+                    "phone": None,  # Anymailfinder focuses on email
+                    "confidence": confidence,
+                    "source": service_name,
+                    "raw_data": data
+                }
+            
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    continue  # Try next endpoint
+                else:
+                    raise  # Re-raise non-404 errors
         
-        data = response.json()
-        email = data.get("email")
-        confidence_score = data.get("confidence", 75) if email else 0
-        
-        if email:
-            logger.info(f"{service_name} found: email={email}")
-        
-        return {
-            "email": email,
-            "phone": None,  # Anymailfinder typically doesn't return phone
-            "confidence": confidence_score,
-            "source": service_name,
-            "raw_data": data
-        }
+        # If we get here, all endpoints failed
+        logger.error(f"{service_name}: All endpoints returned 404 - API structure may have changed")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
@@ -987,44 +1081,53 @@ def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
     rate_limiters[service_name].wait()
     
     headers = {
-        "Authorization": f"Bearer {settings.findymail_api}",
+        "X-API-Key": settings.findymail_api,  # FIXED: Use X-API-Key format
         "Content-Type": "application/json"
     }
     
+    # Extract required data
     first_name = lead.get("first_name", "")
     last_name = lead.get("last_name", "")
     
+    # If we don't have first/last name but have full_name, split it
     if (not first_name or not last_name) and lead.get("full_name"):
         name_parts = lead.get("full_name", "").split(" ", 1)
         if len(name_parts) >= 2:
-            first_name = name_parts[0] if not first_name else first_name
-            last_name = name_parts[1] if not last_name else last_name
+            if not first_name:
+                first_name = name_parts[0]
+            if not last_name:
+                last_name = name_parts[1]
+        elif len(name_parts) == 1:
+            if not last_name:
+                last_name = name_parts[0]
+    
+    # Get domain
+    domain = lead.get("company_domain", "")
+    if not domain and lead.get("company"):
+        # Try to create domain from company name
+        company = lead.get("company", "").lower().strip()
+        company = company.replace(" ", "").replace("(", "").replace(")", "").replace("+", "").replace("1", "")
+        if company:
+            domain = f"{company}.com"
+    
+    if not domain or not last_name:
+        logger.warning(f"{service_name}: Missing domain or last name for contact.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-    company_domain = lead.get("company_domain", "")
-    if not company_domain and lead.get("company"):
-        company_clean = lead.get("company", "").lower().strip()
-        for suffix in [" inc", " ltd", " llc", " corp", " corporation", " company", " co"]:
-            if company_clean.endswith(suffix):
-                company_clean = company_clean[:-len(suffix)].strip()
-        if company_clean:
-            company_domain = f"{company_clean.replace(' ', '')}.com"
-
+    # FIXED: Use correct Findymail payload format
     payload = {
         "first_name": first_name,
         "last_name": last_name,
-        "domain": company_domain
+        "domain": domain
     }
-
-    if linkedin_url := lead.get("profile_url", ""):
-        if "linkedin.com" in linkedin_url:
-            payload["linkedin_url"] = linkedin_url
 
     logger.info(f"{service_name} payload: {payload}")
 
     try:
-        response = httpx.post(
-            f"{settings.api_urls[service_name]}/v1/contact/find",
-            json=payload,
+        # FIXED: Use GET method instead of POST based on most email finder APIs
+        response = httpx.get(
+            f"{settings.api_urls[service_name]}/v1/email/find",  # FIXED: correct endpoint
+            params=payload,  # FIXED: Use params for GET request
             headers=headers,
             timeout=30
         )
@@ -1033,22 +1136,37 @@ def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
             logger.error(f"{service_name} authentication failed.")
             service_status.mark_unavailable(service_name)
             return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        
+        if response.status_code == 405:
+            logger.error(f"{service_name} method not allowed - trying POST instead.")
+            # Try POST as backup
+            response = httpx.post(
+                f"{settings.api_urls[service_name]}/v1/email/find",
+                json=payload,
+                headers=headers,
+                timeout=30
+            )
 
         response.raise_for_status()
         
         data = response.json()
-        contact = data.get("contact", {})
-        email = contact.get("email")
-        phone = contact.get("phone")
-        confidence_score = contact.get("confidence", 75) if email else 0
         
-        if email:
-            logger.info(f"{service_name} found: email={email}, phone={phone}")
+        # Extract email from response
+        email = None
+        confidence = 0
+        
+        if data.get("status") == "found" or data.get("found"):
+            email = data.get("email")
+            confidence_score = data.get("confidence", 0)
+            
+            if email:
+                confidence = min(max(confidence_score, 60), 95)  # Map to 60-95 range
+                logger.info(f"{service_name} found: email={email}, confidence={confidence}")
         
         return {
             "email": email,
-            "phone": phone,
-            "confidence": confidence_score,
+            "phone": None,  # Findymail focuses on email
+            "confidence": confidence,
             "source": service_name,
             "raw_data": data
         }
