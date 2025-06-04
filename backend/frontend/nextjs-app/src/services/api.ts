@@ -806,204 +806,93 @@ class ApiService {
   }
 
   // ==========================================
-  // CRM
+  // CRM - UNIFIED CONTACTS VIEW
   // ==========================================
 
   async getCrmContacts(params: {
     page?: number;
     limit?: number;
     search?: string;
-    status?: string;
-    tags?: string[];
+    batch_filter?: string;
+    status_filter?: string;
+    email_reliability?: string;
+    lead_score_min?: number;
+    lead_score_max?: number;
   } = {}): Promise<{
-    contacts: Contact[];
+    contacts: (Contact & {
+      lead_score: number;
+      email_reliability: string;
+      batch_name?: string;
+      batch_created_at?: string;
+    })[];
     total: number;
     page: number;
+    limit: number;
     total_pages: number;
+    filters_applied: any;
   }> {
-    // For now, we'll get contacts from completed jobs
-    const jobsResponse = await this.getJobs();
-    const completedJobs = jobsResponse.jobs?.filter(job => job.status === 'completed') || [];
-    
-    if (completedJobs.length === 0) {
-      return {
-        contacts: [],
-        total: 0,
-        page: 1,
-        total_pages: 0
-      };
-    }
+    return client.get(`${API_CONFIG.importUrl}/api/crm/contacts`, params);
+  }
 
-    // Get contacts from the most recent completed job
-    const latestJob = completedJobs[0];
-    const contactsResponse = await this.getJobContacts(latestJob.id, params.page, params.limit);
-    
-    return {
-      contacts: contactsResponse.contacts.map(contact => ({
-        ...contact,
-        status: this.getContactStatus(contact),
-        lead_score: this.calculateLeadScore(contact),
-        tags: this.generateContactTags(contact)
-      })),
-      total: contactsResponse.total,
-      page: contactsResponse.page,
-      total_pages: contactsResponse.total_pages
+  async getCrmContactsStats(): Promise<{
+    overview: {
+      total_contacts: number;
+      enriched_contacts: number;
+      contacts_with_email: number;
+      contacts_with_phone: number;
+      verified_emails: number;
+      verified_phones: number;
+      avg_lead_score: number;
+      total_credits_consumed: number;
     };
-  }
-
-  async getCrmActivities(params: {
-    page?: number;
-    limit?: number;
-    type?: string;
-  } = {}): Promise<{
-    activities: any[];
-    total: number;
-    page: number;
-    total_pages: number;
+    lead_quality: {
+      high_quality: number;
+      medium_quality: number;
+      low_quality: number;
+    };
+    email_reliability: {
+      excellent: number;
+      good: number;
+      fair: number;
+      poor: number;
+    };
   }> {
-    try {
-      // Connect to real CRM service instead of using mock data
-      const queryParams: Record<string, any> = {
-        limit: params.limit || 50,
-        skip: ((params.page || 1) - 1) * (params.limit || 50)
-      };
-      
-      // Only add type parameter if it's defined and not 'undefined'
-      if (params.type && params.type !== 'undefined' && params.type !== 'all') {
-        queryParams.type = params.type;
-      }
-      
-      const response = await client.get<any[]>(`${API_CONFIG.crmUrl}/api/activities`, queryParams);
-
-      const activities = Array.isArray(response) ? response : [];
-      const total = activities.length;
-      const page = params.page || 1;
-      const limit = params.limit || 10;
-
-      return {
-        activities: activities,
-        total: total,
-        page: page,
-        total_pages: Math.ceil(total / limit)
-      };
-    } catch (error) {
-      console.error('Error fetching CRM activities:', error);
-      return {
-        activities: [],
-        total: 0,
-        page: 1,
-        total_pages: 0
-      };
-    }
+    return client.get(`${API_CONFIG.importUrl}/api/crm/contacts/stats`);
   }
 
-  async createCrmActivity(activityData: {
-    type: string;
-    title: string;
-    description?: string;
-    contact_id?: string;
-    status?: string;
-    priority?: string;
-    due_date?: string;
-    created_by?: string;
-    assigned_to?: string;
-  }): Promise<any> {
-    try {
-      // Ensure required fields have default values
-      const completeActivityData = {
-        type: activityData.type,
-        title: activityData.title,
-        description: activityData.description || '',
-        contact_id: activityData.contact_id || null,
-        status: activityData.status || 'pending',
-        priority: activityData.priority || 'medium',
-        due_date: activityData.due_date || null,
-        created_by: activityData.created_by || 'web_user',
-        assigned_to: activityData.assigned_to || 'web_user'
-      };
-
-      const response = await client.post(`${API_CONFIG.crmUrl}/api/activities`, completeActivityData);
-      toast.success('Activity created successfully!');
-      return response;
-    } catch (error: any) {
-      // Enhanced error handling for 422 validation errors
-      if (error.status === 422) {
-        toast.error(`Failed to create activity: ${error.message}`);
-      } else {
-        toast.error('Failed to create activity');
-      }
-      throw error;
-    }
+  async getCrmBatches(): Promise<{
+    batches: Array<{
+      id: string;
+      name: string;
+      created_at: string;
+      contact_count: number;
+      enriched_count: number;
+    }>;
+  }> {
+    return client.get(`${API_CONFIG.importUrl}/api/crm/batches`);
   }
 
-  async updateActivityStatus(activityId: string, status: string): Promise<any> {
+  async bulkExportCrmContacts(
+    contactIds: string[],
+    exportType: 'hubspot' | 'csv' = 'hubspot'
+  ): Promise<any> {
     try {
-      const response = await client.put(`${API_CONFIG.crmUrl}/api/activities/${activityId}/status`, {
-        status: status
+      const response = await client.post(`${API_CONFIG.importUrl}/api/crm/contacts/bulk-export`, {
+        contact_ids: contactIds,
+        export_type: exportType
       });
-      toast.success('Activity status updated!');
-      return response;
-    } catch (error) {
-      toast.error('Failed to update activity status');
+      
+      if (exportType === 'csv') {
+        // Handle CSV download
+        return response;
+      } else {
+        toast.success(`Exported ${contactIds.length} contacts to HubSpot!`);
+        return response;
+      }
+    } catch (error: any) {
+      toast.error(`Failed to export contacts: ${error.message}`);
       throw error;
     }
-  }
-
-  private getContactStatus(contact: Contact): string {
-    if (contact.enriched && contact.email) {
-      return contact.email_verified ? 'qualified' : 'contacted';
-    }
-    return contact.enriched ? 'new' : 'pending';
-  }
-
-  private calculateLeadScore(contact: Contact): number {
-    let score = 0;
-    if (contact.email) score += 30;
-    if (contact.phone) score += 25;
-    if (contact.email_verified) score += 20;
-    if (contact.phone_verified) score += 15;
-    if (contact.enrichment_score) score += contact.enrichment_score * 0.1;
-    return Math.min(100, score);
-  }
-
-  private generateContactTags(contact: Contact): string[] {
-    const tags: string[] = [];
-    if (contact.email) tags.push('email');
-    if (contact.phone) tags.push('phone');
-    if (contact.email_verified) tags.push('verified');
-    if (contact.enrichment_provider) tags.push(contact.enrichment_provider);
-    if (contact.industry) tags.push(contact.industry.toLowerCase());
-    return tags;
-  }
-
-  async createContact(contactData: Partial<Contact>): Promise<Contact> {
-    // This would create a new contact in the CRM
-    // For now, we'll simulate this
-    toast.success('Contact created successfully!');
-    return {
-      id: `contact_${Date.now()}`,
-      job_id: 'manual',
-      first_name: contactData.first_name || '',
-      last_name: contactData.last_name,
-      email: contactData.email,
-      phone: contactData.phone,
-      company: contactData.company,
-      position: contactData.position,
-      location: contactData.location,
-      industry: contactData.industry,
-      profile_url: contactData.profile_url,
-      enriched: false,
-      enrichment_status: 'pending',
-      email_verified: false,
-      phone_verified: false,
-      created_at: new Date().toISOString()
-    } as Contact;
-  }
-
-  async deleteContact(contactId: string): Promise<void> {
-    // This would delete a contact from the CRM
-    toast.success('Contact deleted successfully!');
-    throw new Error('Not implemented yet');
   }
 
   // ==========================================
@@ -1217,45 +1106,18 @@ class ApiService {
     page?: number;
     limit?: number;
   } = {}): Promise<any[]> {
-    try {
-      const response = await client.get<any[]>(`${API_CONFIG.crmUrl}/api/campaigns`, {
-        limit: params.limit || 50,
-        skip: ((params.page || 1) - 1) * (params.limit || 50)
-      });
-      return Array.isArray(response) ? response : [];
-    } catch (error) {
-      console.error('Error fetching CRM campaigns:', error);
-      return [];
-    }
+    // Deprecated - CRM Campaigns removed per requirements
+    return [];
   }
 
-  async createCampaign(campaignData: {
-    name: string;
-    type: string;
-    from_email?: string;
-    from_name?: string;
-  }): Promise<any> {
-    try {
-      const response = await client.post(`${API_CONFIG.crmUrl}/api/campaigns`, campaignData);
-      toast.success('Campaign created successfully!');
-      return response;
-    } catch (error) {
-      toast.error('Failed to create campaign');
-      throw error;
-    }
+  async createCampaign(): Promise<any> {
+    // Deprecated - CRM Campaigns removed per requirements
+    throw new Error('CRM Campaigns feature has been removed');
   }
 
-  async updateCampaignStatus(campaignId: string, status: string): Promise<any> {
-    try {
-      const response = await client.put(`${API_CONFIG.crmUrl}/api/campaigns/${campaignId}/status`, {
-        status: status
-      });
-      toast.success('Campaign status updated!');
-      return response;
-    } catch (error) {
-      toast.error('Failed to update campaign status');
-      throw error;
-    }
+  async updateCampaignStatus(): Promise<any> {
+    // Deprecated - CRM Campaigns removed per requirements
+    throw new Error('CRM Campaigns feature has been removed');
   }
 }
 

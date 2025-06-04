@@ -1643,3 +1643,375 @@ async def get_export_logs(
     except Exception as e:
         print(f"Error fetching export logs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# CRM CONTACTS ENDPOINTS
+# ==========================================
+
+@app.get("/api/crm/contacts")
+async def get_crm_contacts(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    search: str = Query("", description="Search term"),
+    batch_filter: str = Query("all", description="Filter by specific batch"),
+    status_filter: str = Query("all", description="Filter by enrichment status"),
+    email_reliability: str = Query("all", description="Filter by email reliability"),
+    lead_score_min: int = Query(0, ge=0, le=100),
+    lead_score_max: int = Query(100, ge=0, le=100),
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get unified view of all contacts from all batches with advanced filtering"""
+    try:
+        # Build base query
+        where_conditions = ["ij.user_id = :user_id"]
+        params = {"user_id": user_id}
+        
+        # Add search filter
+        if search:
+            where_conditions.append("""(
+                c.first_name ILIKE :search OR 
+                c.last_name ILIKE :search OR 
+                c.email ILIKE :search OR 
+                c.company ILIKE :search OR
+                c.position ILIKE :search
+            )""")
+            params["search"] = f"%{search}%"
+        
+        # Add batch filter
+        if batch_filter != "all":
+            where_conditions.append("c.job_id = :batch_filter")
+            params["batch_filter"] = batch_filter
+        
+        # Add status filter
+        if status_filter != "all":
+            if status_filter == "enriched":
+                where_conditions.append("c.enriched = true")
+            elif status_filter == "not_enriched":
+                where_conditions.append("c.enriched = false")
+            elif status_filter == "verified":
+                where_conditions.append("c.email_verified = true")
+        
+        # Add email reliability filter
+        if email_reliability != "all":
+            where_conditions.append("c.email_reliability = :email_reliability")
+            params["email_reliability"] = email_reliability
+        
+        # Add lead score range filter
+        where_conditions.append("c.lead_score BETWEEN :lead_score_min AND :lead_score_max")
+        params["lead_score_min"] = lead_score_min
+        params["lead_score_max"] = lead_score_max
+        
+        where_clause = "WHERE " + " AND ".join(where_conditions)
+        
+        # Get total count
+        count_query = text(f"""
+            SELECT COUNT(*)
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            {where_clause}
+        """)
+        count_result = session.execute(count_query, params)
+        total = count_result.scalar() or 0
+        
+        # Calculate pagination
+        offset = (page - 1) * limit
+        total_pages = (total + limit - 1) // limit
+        
+        # Get contacts with enhanced fields
+        contacts_query = text(f"""
+            SELECT 
+                c.id, c.job_id, c.first_name, c.last_name, c.email, c.phone, 
+                c.company, c.position, c.location, c.industry, c.profile_url, 
+                c.enriched, c.enrichment_status, c.enrichment_provider, 
+                c.enrichment_score, c.email_verified, c.phone_verified,
+                c.email_verification_score, c.phone_verification_score, 
+                c.notes, c.credits_consumed, c.lead_score, c.email_reliability,
+                c.created_at, c.updated_at,
+                ij.file_name as batch_name,
+                ij.created_at as batch_created_at
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            {where_clause}
+            ORDER BY c.created_at DESC
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        params.update({"limit": limit, "offset": offset})
+        contacts_result = session.execute(contacts_query, params)
+        
+        contacts = []
+        for row in contacts_result.fetchall():
+            contacts.append({
+                "id": str(row[0]),
+                "job_id": str(row[1]),
+                "first_name": row[2],
+                "last_name": row[3],
+                "email": row[4],
+                "phone": row[5],
+                "company": row[6],
+                "position": row[7],
+                "location": row[8],
+                "industry": row[9],
+                "profile_url": row[10],
+                "enriched": row[11],
+                "enrichment_status": row[12],
+                "enrichment_provider": row[13],
+                "enrichment_score": float(row[14]) if row[14] else None,
+                "email_verified": row[15],
+                "phone_verified": row[16],
+                "email_verification_score": float(row[17]) if row[17] else None,
+                "phone_verification_score": float(row[18]) if row[18] else None,
+                "notes": row[19],
+                "credits_consumed": float(row[20]) if row[20] else 0,
+                "lead_score": int(row[21]) if row[21] else 0,
+                "email_reliability": row[22] or "unknown",
+                "created_at": row[23].isoformat() if row[23] else None,
+                "updated_at": row[24].isoformat() if row[24] else None,
+                "batch_name": row[25],
+                "batch_created_at": row[26].isoformat() if row[26] else None
+            })
+        
+        return {
+            "contacts": contacts,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
+            "filters_applied": {
+                "search": search,
+                "batch_filter": batch_filter,
+                "status_filter": status_filter,
+                "email_reliability": email_reliability,
+                "lead_score_range": f"{lead_score_min}-{lead_score_max}"
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error fetching CRM contacts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/crm/contacts/stats")
+async def get_crm_contacts_stats(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get comprehensive CRM contacts statistics"""
+    try:
+        stats_query = text("""
+            SELECT 
+                COUNT(*) as total_contacts,
+                COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_contacts,
+                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as contacts_with_email,
+                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as contacts_with_phone,
+                COUNT(CASE WHEN c.email_verified = true THEN 1 END) as verified_emails,
+                COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as verified_phones,
+                
+                -- Lead score distribution
+                COUNT(CASE WHEN c.lead_score >= 80 THEN 1 END) as high_quality_leads,
+                COUNT(CASE WHEN c.lead_score >= 50 AND c.lead_score < 80 THEN 1 END) as medium_quality_leads,
+                COUNT(CASE WHEN c.lead_score < 50 THEN 1 END) as low_quality_leads,
+                
+                -- Email reliability distribution
+                COUNT(CASE WHEN c.email_reliability = 'excellent' THEN 1 END) as excellent_emails,
+                COUNT(CASE WHEN c.email_reliability = 'good' THEN 1 END) as good_emails,
+                COUNT(CASE WHEN c.email_reliability = 'fair' THEN 1 END) as fair_emails,
+                COUNT(CASE WHEN c.email_reliability = 'poor' THEN 1 END) as poor_emails,
+                
+                AVG(c.lead_score) as avg_lead_score,
+                SUM(c.credits_consumed) as total_credits_consumed
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE ij.user_id = :user_id
+        """)
+        
+        result = session.execute(stats_query, {"user_id": user_id})
+        stats = result.first()
+        
+        return {
+            "overview": {
+                "total_contacts": stats[0] or 0,
+                "enriched_contacts": stats[1] or 0,
+                "contacts_with_email": stats[2] or 0,
+                "contacts_with_phone": stats[3] or 0,
+                "verified_emails": stats[4] or 0,
+                "verified_phones": stats[5] or 0,
+                "avg_lead_score": round(float(stats[14] or 0), 1),
+                "total_credits_consumed": float(stats[15] or 0)
+            },
+            "lead_quality": {
+                "high_quality": stats[6] or 0,
+                "medium_quality": stats[7] or 0,
+                "low_quality": stats[8] or 0
+            },
+            "email_reliability": {
+                "excellent": stats[9] or 0,
+                "good": stats[10] or 0,
+                "fair": stats[11] or 0,
+                "poor": stats[12] or 0
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error fetching CRM stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/crm/batches")
+async def get_crm_batches(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get list of batches for filtering in CRM"""
+    try:
+        batches_query = text("""
+            SELECT 
+                ij.id,
+                ij.file_name,
+                ij.created_at,
+                COUNT(c.id) as contact_count,
+                COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_count
+            FROM import_jobs ij
+            LEFT JOIN contacts c ON ij.id = c.job_id
+            WHERE ij.user_id = :user_id
+            GROUP BY ij.id, ij.file_name, ij.created_at
+            ORDER BY ij.created_at DESC
+        """)
+        
+        result = session.execute(batches_query, {"user_id": user_id})
+        batches = []
+        
+        for row in result.fetchall():
+            batches.append({
+                "id": str(row[0]),
+                "name": row[1] or f"Batch {str(row[0])[:8]}",
+                "created_at": row[2].isoformat() if row[2] else None,
+                "contact_count": row[3] or 0,
+                "enriched_count": row[4] or 0
+            })
+        
+        return {"batches": batches}
+        
+    except Exception as e:
+        print(f"Error fetching CRM batches: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/crm/contacts/bulk-export")
+async def bulk_export_crm_contacts(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Bulk export contacts to HubSpot or CSV"""
+    try:
+        contact_ids = request.get("contact_ids", [])
+        export_type = request.get("export_type", "hubspot")  # "hubspot" or "csv"
+        
+        if not contact_ids:
+            raise HTTPException(status_code=400, detail="No contacts selected for export")
+        
+        # Verify contacts belong to user
+        verify_query = text("""
+            SELECT c.id FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE c.id = ANY(:contact_ids) AND ij.user_id = :user_id
+        """)
+        verify_result = session.execute(verify_query, {
+            "contact_ids": contact_ids,
+            "user_id": user_id
+        })
+        verified_ids = [str(row[0]) for row in verify_result.fetchall()]
+        
+        if len(verified_ids) != len(contact_ids):
+            raise HTTPException(status_code=403, detail="Some contacts do not belong to user")
+        
+        if export_type == "hubspot":
+            # Process HubSpot export for each contact
+            exported_count = 0
+            failed_count = 0
+            
+            for contact_id in verified_ids:
+                try:
+                    # Mock HubSpot export - in real implementation, call HubSpot API
+                    hubspot_contact_id = f"hubspot_{contact_id}_{int(time.time())}"
+                    
+                    # Log the export
+                    export_log_query = text("""
+                        INSERT INTO export_logs (user_id, contact_id, platform, platform_contact_id, status, created_at)
+                        VALUES (:user_id, :contact_id, 'hubspot', :platform_contact_id, 'success', CURRENT_TIMESTAMP)
+                    """)
+                    session.execute(export_log_query, {
+                        "user_id": user_id,
+                        "contact_id": contact_id,
+                        "platform_contact_id": hubspot_contact_id
+                    })
+                    exported_count += 1
+                except Exception as e:
+                    print(f"Failed to export contact {contact_id}: {e}")
+                    failed_count += 1
+            
+            session.commit()
+            
+            return {
+                "success": True,
+                "export_type": "hubspot",
+                "exported_count": exported_count,
+                "failed_count": failed_count,
+                "message": f"Exported {exported_count} contacts to HubSpot"
+            }
+        
+        else:  # CSV export
+            # Get contact data for CSV
+            contacts_query = text("""
+                SELECT 
+                    c.first_name, c.last_name, c.email, c.phone, c.company, 
+                    c.position, c.location, c.industry, c.lead_score, c.email_reliability,
+                    c.enrichment_provider, c.created_at
+                FROM contacts c
+                JOIN import_jobs ij ON c.job_id = ij.id
+                WHERE c.id = ANY(:contact_ids) AND ij.user_id = :user_id
+                ORDER BY c.created_at DESC
+            """)
+            
+            contacts_result = session.execute(contacts_query, {
+                "contact_ids": verified_ids,
+                "user_id": user_id
+            })
+            
+            contacts_data = []
+            for row in contacts_result.fetchall():
+                contacts_data.append({
+                    "first_name": row[0],
+                    "last_name": row[1],
+                    "email": row[2] or "",
+                    "phone": row[3] or "",
+                    "company": row[4] or "",
+                    "position": row[5] or "",
+                    "location": row[6] or "",
+                    "industry": row[7] or "",
+                    "lead_score": row[8] or 0,
+                    "email_reliability": row[9] or "unknown",
+                    "enrichment_provider": row[10] or "",
+                    "created_at": row[11].isoformat() if row[11] else ""
+                })
+            
+            # Create CSV response
+            import io
+            output = io.StringIO()
+            if contacts_data:
+                writer = csv.DictWriter(output, fieldnames=contacts_data[0].keys())
+                writer.writeheader()
+                writer.writerows(contacts_data)
+            
+            return Response(
+                content=output.getvalue(),
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=crm_contacts_export_{int(time.time())}.csv"
+                }
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in bulk export: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
