@@ -46,6 +46,8 @@ services:
       - ./services/common:/app/common
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-622304968200-bu1m53eqbgit3q0kmk35jd4c2260p3hn.apps.googleusercontent.com}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-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}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
