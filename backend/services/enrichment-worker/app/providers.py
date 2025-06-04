@@ -567,11 +567,13 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
 
     rate_limiters[service_name].wait()
     
+    # FIXED: Use exact headers from Enrow documentation
     headers = {
-        "X-API-Key": settings.enrow_api,
-        "Content-Type": "application/json"
+        "accept": "application/json",
+        "content-type": "application/json"
     }
     
+    # Get full name from available data
     full_name = lead.get("full_name", "")
     if not full_name:
         first_name = lead.get("first_name", "")
@@ -585,19 +587,31 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"{service_name}: No full name available for contact.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
+    # FIXED: Use exact payload format from Enrow documentation
     payload = {
-        "name": full_name,
-        "company": lead.get("company", "")
+        "fullname": full_name,  # FIXED: Use "fullname" as per docs
+        "api_key": settings.enrow_api  # FIXED: API key in body
     }
     
+    # Add company_domain if available (preferred by Enrow)
     if lead.get("company_domain"):
-        payload["domain"] = lead.get("company_domain")
+        payload["company_domain"] = lead.get("company_domain")
+    
+    # Add company_name if available
+    if lead.get("company"):
+        payload["company_name"] = lead.get("company")
+    
+    # Ensure we have at least company info
+    if not payload.get("company_domain") and not payload.get("company_name"):
+        logger.warning(f"{service_name}: No company information available.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     logger.info(f"{service_name} payload: {payload}")
 
     try:
+        # FIXED: Use exact endpoint from Enrow documentation
         response = httpx.post(
-            f"{settings.api_urls[service_name]}/v1/search",
+            "https://api.enrow.io/email/find/single",  # FIXED: Exact endpoint from docs
             json=payload,
             headers=headers,
             timeout=30
@@ -607,17 +621,35 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
             logger.error(f"{service_name} authentication failed.")
             service_status.mark_unavailable(service_name)
             return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        
+        if response.status_code == 404:
+            logger.error(f"{service_name} endpoint not found - check API documentation.")
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
         response.raise_for_status()
         
         data = response.json()
-        email = data.get("email")
-        confidence_score = data.get("confidence", 0)
         
+        # Extract email from response based on typical API response formats
+        email = None
+        confidence = 0
+        
+        # Handle different possible response formats
+        if data.get("email"):
+            email = data.get("email")
+            confidence = data.get("confidence", 75)
+        elif data.get("result", {}).get("email"):
+            email = data.get("result", {}).get("email")
+            confidence = data.get("result", {}).get("confidence", 75)
+        elif data.get("data", {}).get("email"):
+            email = data.get("data", {}).get("email")
+            confidence = data.get("data", {}).get("confidence", 75)
+        
+        # Normalize confidence to 0-100 scale
         if email:
-            if confidence_score > 80:
+            if confidence > 80:
                 confidence = 90
-            elif confidence_score > 60:
+            elif confidence > 60:
                 confidence = 75
             else:
                 confidence = 60
@@ -625,7 +657,7 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         
         return {
             "email": email,
-            "phone": None,
+            "phone": None,  # Enrow focuses on email
             "confidence": confidence,
             "source": service_name,
             "raw_data": data
