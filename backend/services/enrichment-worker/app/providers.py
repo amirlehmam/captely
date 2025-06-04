@@ -16,6 +16,14 @@ rate_limiters = {
     for name, limit in settings.rate_limits.items()
 }
 
+# Add service status reset function at the top
+def reset_service_availability(service_name: str):
+    """Reset service availability status."""
+    if hasattr(service_status, '_unavailable_until'):
+        if service_name in service_status._unavailable_until:
+            del service_status._unavailable_until[service_name]
+            logger.info(f"Service {service_name} availability reset - ready for retry")
+
 # --- Icypeas (0.009/mail) ---
 @retry_with_backoff(max_retries=2)
 def call_icypeas(lead: Dict[str, Any]) -> Dict[str, Any]:
@@ -561,16 +569,23 @@ def enrich_with_clearbit(lead: Dict[str, Any]) -> Dict[str, Any]:
 def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
     """Call the Enrow API to enrich a contact."""
     service_name = 'enrow'
+    
+    # FIXED: Reset service status to allow retry
+    if not service_status.is_available(service_name):
+        reset_service_availability(service_name)
+        logger.info(f"Attempting {service_name} after status reset")
+    
     if not service_status.is_available(service_name):
         logger.warning(f"{service_name} is marked unavailable, skipping.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     rate_limiters[service_name].wait()
     
-    # FIXED: Use exact headers from Enrow documentation
+    # FIXED: Use exact headers from Enrow documentation + API key in headers
     headers = {
         "accept": "application/json",
-        "content-type": "application/json"
+        "content-type": "application/json",
+        "Authorization": f"Bearer {settings.enrow_api}"  # FIXED: API key in headers
     }
     
     # Get full name from available data
@@ -587,10 +602,9 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"{service_name}: No full name available for contact.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-    # FIXED: Use exact payload format from Enrow documentation
+    # FIXED: Use exact payload format from Enrow documentation (NO API KEY IN BODY)
     payload = {
-        "fullname": full_name,  # FIXED: Use "fullname" as per docs
-        "api_key": settings.enrow_api  # FIXED: API key in body
+        "fullname": full_name  # FIXED: Only fullname as per docs
     }
     
     # Add company_domain if available (preferred by Enrow)
@@ -609,64 +623,100 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"{service_name} payload: {payload}")
 
     try:
-        # FIXED: Use exact endpoint from Enrow documentation
-        response = httpx.post(
-            "https://api.enrow.io/email/find/single",  # FIXED: Exact endpoint from docs
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
+        # FIXED: Try multiple authentication methods for Enrow
+        auth_methods = [
+            {"Authorization": f"Bearer {settings.enrow_api}"},  # Bearer token
+            {"X-API-Key": settings.enrow_api},  # X-API-Key header
+            {"Authorization": f"Token {settings.enrow_api}"},  # Token auth
+            {}  # No auth header, API key in body
+        ]
         
-        if response.status_code == 401 or response.status_code == 403:
-            logger.error(f"{service_name} authentication failed.")
-            service_status.mark_unavailable(service_name)
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        for i, auth_header in enumerate(auth_methods):
+            # Combine base headers with auth
+            request_headers = {**headers}
+            request_headers.update(auth_header)
+            
+            # For no-auth method, add API key to payload
+            request_payload = payload.copy()
+            if i == 3:  # Last method - API key in body
+                request_payload["api_key"] = settings.enrow_api
+            
+            logger.info(f"Enrow attempt {i+1}/4: auth method: {list(auth_header.keys()) if auth_header else 'api_key_in_body'}")
+            
+            try:
+                # FIXED: Use exact endpoint from Enrow documentation
+                response = httpx.post(
+                    "https://api.enrow.io/email/find/single",  # FIXED: Exact endpoint from docs
+                    json=request_payload,
+                    headers=request_headers,
+                    timeout=30
+                )
+                
+                logger.info(f"Enrow HTTP Response (method {i+1}): {response.status_code} - {response.text[:200]}")
+                
+                if response.status_code == 401 or response.status_code == 403:
+                    logger.warning(f"{service_name} auth method {i+1} failed - trying next method")
+                    continue  # Try next auth method
+                
+                if response.status_code == 404:
+                    logger.error(f"{service_name} endpoint not found - check API documentation.")
+                    break  # Don't try other auth methods for 404
+                
+                response.raise_for_status()
+                
+                # If we get here, the request succeeded
+                data = response.json()
+                
+                # Extract email from response based on typical API response formats
+                email = None
+                confidence = 0
+                status = data.get("status", "")
+                
+                # Handle different possible response formats from Enrow
+                if data.get("email"):
+                    email = data.get("email")
+                    if status == "valid":
+                        confidence = 90
+                    elif status == "catch_all":
+                        confidence = 70
+                    elif status == "unknown":
+                        confidence = 60
+                    else:
+                        confidence = 75
+                elif data.get("result", {}).get("email"):
+                    email = data.get("result", {}).get("email")
+                    confidence = 75
+                elif data.get("data", {}).get("email"):
+                    email = data.get("data", {}).get("email")
+                    confidence = 75
+                
+                if email:
+                    logger.info(f"{service_name} SUCCESS with method {i+1}: email={email}, status={status}, confidence={confidence}")
+                else:
+                    logger.info(f"{service_name} no email found in response: {data}")
+                
+                return {
+                    "email": email,
+                    "phone": None,  # Enrow focuses on email
+                    "confidence": confidence,
+                    "source": service_name,
+                    "raw_data": data
+                }
+                
+            except httpx.HTTPStatusError as e:
+                logger.warning(f"Enrow auth method {i+1} HTTP error: {e.response.status_code} - {e.response.text[:100]}")
+                if e.response.status_code in [401, 403]:
+                    continue  # Try next auth method
+                else:
+                    break  # Other errors, don't try more methods
+            except httpx.RequestError as e:
+                logger.error(f"Enrow auth method {i+1} request error: {e}")
+                break  # Connection issues, don't try more methods
         
-        if response.status_code == 404:
-            logger.error(f"{service_name} endpoint not found - check API documentation.")
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        # If we get here, all auth methods failed
+        logger.error(f"{service_name} all authentication methods failed")
+        service_status.mark_unavailable(service_name)
 
-        response.raise_for_status()
-        
-        data = response.json()
-        
-        # Extract email from response based on typical API response formats
-        email = None
-        confidence = 0
-        
-        # Handle different possible response formats
-        if data.get("email"):
-            email = data.get("email")
-            confidence = data.get("confidence", 75)
-        elif data.get("result", {}).get("email"):
-            email = data.get("result", {}).get("email")
-            confidence = data.get("result", {}).get("confidence", 75)
-        elif data.get("data", {}).get("email"):
-            email = data.get("data", {}).get("email")
-            confidence = data.get("data", {}).get("confidence", 75)
-        
-        # Normalize confidence to 0-100 scale
-        if email:
-            if confidence > 80:
-                confidence = 90
-            elif confidence > 60:
-                confidence = 75
-            else:
-                confidence = 60
-            logger.info(f"{service_name} found: email={email}, confidence={confidence}")
-        
-        return {
-            "email": email,
-            "phone": None,  # Enrow focuses on email
-            "confidence": confidence,
-            "source": service_name,
-            "raw_data": data
-        }
-
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
-    except httpx.RequestError as e:
-        logger.error(f"Request error calling {service_name}: {e}")
     except Exception as e:
         logger.error(f"Unexpected error in {service_name}: {e}")
 
@@ -730,53 +780,81 @@ def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"{service_name} payload: {payload}")
 
     try:
-        # FIXED: Use correct Datagma endpoint
-        response = httpx.post(
-            f"{settings.api_urls[service_name]}/contact/email",  # FIXED: correct endpoint
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
+        # FIXED: Try multiple possible Datagma endpoints
+        endpoints_to_try = [
+            "/v1/email-finder",     # Most common endpoint pattern
+            "/email-finder",        # Alternative without version
+            "/find-email",          # Another common pattern
+            "/contact/email",       # Current endpoint that's failing
+            "/email/find"           # Another variation
+        ]
         
-        if response.status_code == 401 or response.status_code == 403:
-            logger.error(f"{service_name} authentication failed.")
-            service_status.mark_unavailable(service_name)
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
-        
-        if response.status_code == 400:
-            logger.error(f"{service_name} bad request - invalid data format.")
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        for endpoint in endpoints_to_try:
+            try:
+                # FIXED: Use correct Datagma endpoint
+                response = httpx.post(
+                    f"{settings.api_urls[service_name]}{endpoint}",
+                    json=payload,
+                    headers=headers,
+                    timeout=30
+                )
+                
+                logger.info(f"Datagma endpoint {endpoint}: {response.status_code}")
+                
+                if response.status_code == 404:
+                    logger.info(f"{service_name}: 404 for {endpoint}, trying next endpoint...")
+                    continue
+                    
+                if response.status_code == 401 or response.status_code == 403:
+                    logger.error(f"{service_name} authentication failed.")
+                    service_status.mark_unavailable(service_name)
+                    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+                
+                if response.status_code == 400:
+                    logger.error(f"{service_name} bad request - invalid data format.")
+                    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-        response.raise_for_status()
+                response.raise_for_status()
+                
+                # Found working endpoint
+                data = response.json()
+                
+                # Extract email from response 
+                email = None
+                confidence = 0
+                
+                # Handle different response formats
+                if data.get("email"):
+                    email = data.get("email")
+                    confidence_score = data.get("confidence", 0)
+                    confidence = min(max(confidence_score, 60), 90)  # Map to 60-90 range
+                elif data.get("result", {}).get("email"):
+                    email = data.get("result", {}).get("email")
+                    confidence = 75
+                elif data.get("data", {}).get("email"):
+                    email = data.get("data", {}).get("email")
+                    confidence = 75
+                
+                if email:
+                    logger.info(f"{service_name} SUCCESS with {endpoint}: email={email}, confidence={confidence}")
+                
+                return {
+                    "email": email,
+                    "phone": None,  # Datagma focuses on email
+                    "confidence": confidence,
+                    "source": service_name,
+                    "raw_data": data
+                }
+            
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    continue  # Try next endpoint
+                else:
+                    raise  # Re-raise non-404 errors
         
-        data = response.json()
-        
-        # Extract email from response 
-        email = None
-        confidence = 0
-        
-        # Handle different response formats
-        if data.get("email"):
-            email = data.get("email")
-            confidence_score = data.get("confidence", 0)
-            confidence = min(max(confidence_score, 60), 90)  # Map to 60-90 range
-        elif data.get("result", {}).get("email"):
-            email = data.get("result", {}).get("email")
-            confidence = 75
-        elif data.get("data", {}).get("email"):
-            email = data.get("data", {}).get("email")
-            confidence = 75
-        
-        if email:
-            logger.info(f"{service_name} found: email={email}, confidence={confidence}")
-        
-        return {
-            "email": email,
-            "phone": None,  # Datagma focuses on email
-            "confidence": confidence,
-            "source": service_name,
-            "raw_data": data
-        }
+        # If we get here, all endpoints failed
+        logger.error(f"{service_name}: All endpoints returned 404 - API structure may have changed")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")

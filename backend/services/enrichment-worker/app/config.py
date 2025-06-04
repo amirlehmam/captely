@@ -53,13 +53,13 @@ class Settings:
         self.prospeo_api = os.environ.get('PROSPEO_API_KEY', 'b64e92cd66725c2f7019a0e0c04411af')
         self.enrich_so_api = os.environ.get('ENRICH_SO_API_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Mzg0MDNiMzljYmJlODIyMDU1YTQ3NiIsInR5cGUiOiJhcGkiLCJyb3RhdGlvbiI6IjNkZmNiOGQ0LTE1NWQtNDQyZS1iM2IyLTc0M2U4NzNmYWZlMyIsImlhdCI6MTc0ODUxNjkyOH0.miPUx568OiSFwqukVFMah8q3U9a-BL1KWD60ZzPeWc8')
         
-        # API base URLs - FIXED based on terminal logs and current documentation
+        # API base URLs - FIXED based on terminal logs and current provider documentation
         self.api_urls = {
             'enrow': 'https://api.enrow.io',  
             'icypeas': 'https://app.icypeas.com/api',  # FIXED: was icypeas.com, should be app.icypeas.com
             'apollo': 'https://api.apollo.io/v1',
             'datagma': 'https://gateway.datagma.net/api/ingress',  # FIXED: correct domain
-            'anymailfinder': 'https://api.anymailfinder.com',  # FIXED: removed v1 from base
+            'anymailfinder': 'https://app.anymailfinder.com/api',  # FIXED: changed from api.anymailfinder.com to app.anymailfinder.com
             'snov': 'https://api.snov.io',  
             'findymail': 'https://api.findymail.com',  # FIXED: was app.findymail.com
             'dropcontact': 'https://api.dropcontact.com',
