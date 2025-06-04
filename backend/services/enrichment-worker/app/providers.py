@@ -1133,7 +1133,7 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
             {
                 "first_name": first_name,
                 "last_name": last_name,
-        "domain": company_domain
+                "domain": company_domain
             }
         ]
     }
@@ -1192,7 +1192,6 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
                 data_results = poll_data.get("data", [])
                 if data_results:
                     result = data_results[0]
-                    people_name = result.get("people", "")
                     result_list = result.get("result", [])
                     
                     if result_list:
@@ -1202,7 +1201,7 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
                         
                         # Map SMTP status to confidence
                         confidence_score = 0
-                if email:
+                        if email:
                             if smtp_status == "valid":
                                 confidence_score = 90
                             elif smtp_status == "unknown":
@@ -1212,16 +1211,16 @@ def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
                         
                         if email:
                             logger.info(f"{service_name} found: email={email}, smtp_status={smtp_status}, confidence={confidence_score}")
-                
-                return {
-                    "email": email,
-                    "phone": None,
-                    "confidence": confidence_score,
-                    "source": service_name,
+                        
+                        return {
+                            "email": email,
+                            "phone": None,
+                            "confidence": confidence_score,
+                            "source": service_name,
                             "raw_data": poll_data
-                }
-        
-        logger.info(f"{service_name}: No results found")
+                        }
+                
+                logger.info(f"{service_name}: No results found")
                 return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": poll_data}
             else:
                 logger.warning(f"{service_name} unexpected status: {status}")
