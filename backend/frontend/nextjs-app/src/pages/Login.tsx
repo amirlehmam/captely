@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle,
-  AlertCircle, Loader2, LogIn, ChevronRight
+  AlertCircle, Loader2, LogIn, ChevronRight, Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
@@ -16,6 +16,25 @@ interface LoginFormData {
 
 interface LoginPageProps {
   onLogin: () => void;
+}
+
+// Declare global types for OAuth
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          prompt: (callback?: any) => void;
+        };
+      };
+    };
+    AppleID?: {
+      auth: {
+        signIn: (config: any) => Promise<any>;
+      };
+    };
+  }
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
@@ -51,10 +70,107 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     };
     window.addEventListener('mousemove', handleMouseMove);
 
+    // Load Google OAuth
+    const loadGoogleOAuth = () => {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeGoogleOAuth;
+      document.head.appendChild(script);
+    };
+
+    // Load Apple Sign-In
+    const loadAppleSignIn = () => {
+      const script = document.createElement('script');
+      script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    };
+
+    loadGoogleOAuth();
+    loadAppleSignIn();
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
+
+  const initializeGoogleOAuth = () => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '622304968200-bu1m53eqbgit3q0kmk35jd4c2260p3hn.apps.googleusercontent.com',
+        callback: handleGoogleSignIn,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+    }
+  };
+
+  const handleGoogleSignIn = async (response: any) => {
+    try {
+      setLoading(true);
+      
+      // Send the Google ID token to backend for verification and login
+      const result = await apiService.oauthSignup('google', {
+        credential: response.credential
+      });
+      
+      // Success - user is logged in
+      toast.success('Welcome back! 🎉');
+      onLogin();
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Google sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      if (!window.AppleID) {
+        toast.error('Apple Sign-In is not available. Please try again.');
+        return;
+      }
+
+      setLoading(true);
+      
+      const response = await window.AppleID.auth.signIn({
+        scope: 'name email',
+        redirectURI: window.location.origin + '/auth/apple/callback',
+        state: 'login'
+      });
+
+      // Send Apple authorization to backend
+      const result = await apiService.oauthSignup('apple', {
+        authorization: response.authorization,
+        user: response.user
+      });
+
+      // Success - user is logged in
+      toast.success('Welcome back! 🎉');
+      onLogin();
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Apple sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const triggerGoogleSignIn = () => {
+    if (window.google) {
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed()) {
+          toast.error('Google Sign-In popup was blocked. Please allow popups.');
+        }
+      });
+    } else {
+      toast.error('Google Sign-In is not available. Please try again.');
+    }
+  };
 
   const validateEmail = (email: string): string => {
     if (!email) return 'Email is required';
@@ -197,6 +313,46 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             className="bg-white rounded-2xl shadow-xl p-8"
           >
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* OAuth Buttons */}
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={triggerGoogleSignIn}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Continue with Google
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAppleSignIn}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-black text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
+                  </svg>
+                  Continue with Apple
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or sign in with email</span>
+                </div>
+              </div>
+
               {/* Email field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

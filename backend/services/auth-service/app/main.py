@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "devsecret"
     jwt_algorithm: str = "HS256"
     jwt_exp_minutes: int = 60
+    google_client_id: str = "622304968200-bu1m53eqbgit3q0kmk35jd4c2260p3hn.apps.googleusercontent.com"
+    google_client_secret: str = "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"
     cors_origins: List[str] = ["http://localhost:5173",
                                "http://localhost:3000",
                                "http://localhost:8000",
@@ -195,9 +197,9 @@ async def verify_google_token(credential: str) -> dict:
             user_info = response.json()
             
             # Verify the token is for our app
-            # expected_client_id = "your-google-client-id"  # Add to settings
-            # if user_info.get('aud') != expected_client_id:
-            #     raise HTTPException(status_code=400, detail="Invalid token audience")
+            expected_client_id = settings.google_client_id
+            if user_info.get('aud') != expected_client_id:
+                raise HTTPException(status_code=400, detail="Invalid token audience")
             
             return {
                 'email': user_info.get('email'),
@@ -233,6 +235,11 @@ origins = [
     "http://localhost:8001",
     "http://localhost:8002",
     "http://localhost:8003",
+    # Production domains
+    "https://captely.com",
+    "https://www.captely.com",
+    "http://captely.com",
+    "http://www.captely.com",
     # Add server IP addresses for DigitalOcean deployment
     "http://164.90.232.146:3000",
     "http://164.90.232.146:8001",
