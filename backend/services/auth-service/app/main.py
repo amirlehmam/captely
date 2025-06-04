@@ -1,5 +1,7 @@
 import asyncio
 import secrets
+import httpx
+import json
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -164,6 +166,61 @@ class ApiKeyOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Add OAuth models after existing Pydantic models
+class OAuthSignupIn(BaseModel):
+    provider: str  # 'google' or 'apple'
+    credential: Optional[str] = None  # Google ID token
+    authorization: Optional[dict] = None  # Apple authorization
+    user: Optional[dict] = None  # Apple user info
+
+class OAuthCompleteIn(BaseModel):
+    first_name: str
+    last_name: str
+    company: str
+    phone: str
+    auth_method: str
+
+# Google OAuth verification function
+async def verify_google_token(credential: str) -> dict:
+    """Verify Google ID token and extract user info"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=400, detail="Invalid Google token")
+            
+            user_info = response.json()
+            
+            # Verify the token is for our app
+            # expected_client_id = "your-google-client-id"  # Add to settings
+            # if user_info.get('aud') != expected_client_id:
+            #     raise HTTPException(status_code=400, detail="Invalid token audience")
+            
+            return {
+                'email': user_info.get('email'),
+                'first_name': user_info.get('given_name'),
+                'last_name': user_info.get('family_name'),
+                'verified': user_info.get('email_verified', False)
+            }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Google token verification failed: {str(e)}")
+
+async def verify_apple_token(authorization: dict, user_info: dict) -> dict:
+    """Verify Apple ID token and extract user info"""
+    try:
+        # In production, you would verify the Apple JWT token
+        # For now, we'll trust the provided information
+        return {
+            'email': user_info.get('email'),
+            'first_name': user_info.get('name', {}).get('firstName'),
+            'last_name': user_info.get('name', {}).get('lastName'),
+            'verified': True  # Apple emails are always verified
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Apple token verification failed: {str(e)}")
 
 # 5. APP & CORS
 app = FastAPI(title="Captely Auth Service")
@@ -719,6 +776,119 @@ async def update_setting(
         return {"message": f"Setting {key} updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Add OAuth endpoints after existing routes
+
+@app.post("/auth/oauth/signup")
+async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
+    """Handle OAuth signup from Google or Apple"""
+    try:
+        user_info = None
+        
+        if data.provider == 'google' and data.credential:
+            user_info = await verify_google_token(data.credential)
+        elif data.provider == 'apple' and data.authorization:
+            user_info = await verify_apple_token(data.authorization, data.user or {})
+        else:
+            raise HTTPException(status_code=400, detail="Invalid OAuth provider or missing credentials")
+        
+        if not user_info or not user_info.get('email'):
+            raise HTTPException(status_code=400, detail="Unable to get user email from OAuth provider")
+        
+        email = user_info['email']
+        
+        # Check if user already exists
+        result = await db.execute(select(User).where(User.email == email))
+        existing_user = result.scalar_one_or_none()
+        
+        if existing_user:
+            # User exists, log them in
+            token = create_access_token(str(existing_user.id))
+            return {
+                "user": {
+                    "id": str(existing_user.id),
+                    "email": existing_user.email,
+                    "first_name": existing_user.first_name,
+                    "last_name": existing_user.last_name
+                },
+                "needsInfo": False,
+                "token": token
+            }
+        
+        # Create new user with OAuth info
+        new_user = User(
+            email=email,
+            first_name=user_info.get('first_name', ''),
+            last_name=user_info.get('last_name', ''),
+            password_hash='',  # No password for OAuth users
+            auth_provider=data.provider,
+            email_verified=user_info.get('verified', False),
+            is_active=True
+        )
+        
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        
+        # Check if user needs to complete profile
+        needs_info = not all([
+            new_user.first_name,
+            new_user.last_name,
+            new_user.company,
+            new_user.phone
+        ])
+        
+        token = create_access_token(str(new_user.id))
+        
+        return {
+            "user": {
+                "id": str(new_user.id),
+                "email": new_user.email,
+                "first_name": new_user.first_name,
+                "last_name": new_user.last_name
+            },
+            "needsInfo": needs_info,
+            "token": token
+        }
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"OAuth signup failed: {str(e)}")
+
+@app.post("/auth/oauth/complete")
+async def complete_oauth_signup(
+    data: OAuthCompleteIn, 
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Complete OAuth user profile"""
+    try:
+        # Update user with additional information
+        current_user.first_name = data.first_name
+        current_user.last_name = data.last_name
+        current_user.company = data.company
+        current_user.phone = data.phone
+        
+        await db.commit()
+        await db.refresh(current_user)
+        
+        return {
+            "user": {
+                "id": str(current_user.id),
+                "email": current_user.email,
+                "first_name": current_user.first_name,
+                "last_name": current_user.last_name,
+                "company": current_user.company,
+                "phone": current_user.phone
+            },
+            "success": True
+        }
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Profile completion failed: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)

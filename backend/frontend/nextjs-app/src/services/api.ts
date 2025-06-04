@@ -420,6 +420,86 @@ class ApiService {
   }
 
   // ==========================================
+  // AUTHENTICATION - OAUTH METHODS
+  // ==========================================
+
+  async oauthSignup(provider: 'google' | 'apple', data: any): Promise<{
+    user: any;
+    needsInfo: boolean;
+    token?: string;
+  }> {
+    try {
+      const response = await fetch(`${API_CONFIG.authUrl}/auth/oauth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider,
+          ...data
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'OAuth signup failed');
+      }
+
+      const result = await response.json();
+      
+      if (result.token) {
+        localStorage.setItem('captely_jwt', result.token);
+      }
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async completeOAuthSignup(data: {
+    firstName: string;
+    lastName: string;
+    company: string;
+    phone: string;
+    authMethod: string;
+  }): Promise<any> {
+    try {
+      const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+      
+      const response = await fetch(`${API_CONFIG.authUrl}/auth/oauth/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          company: data.company,
+          phone: data.phone,
+          auth_method: data.authMethod
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to complete OAuth signup');
+      }
+
+      const result = await response.json();
+      
+      if (result.token) {
+        localStorage.setItem('captely_jwt', result.token);
+      }
+      
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ==========================================
   // DASHBOARD & ANALYTICS
   // ==========================================
 
