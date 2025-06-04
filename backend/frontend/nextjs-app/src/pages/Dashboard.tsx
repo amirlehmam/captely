@@ -15,7 +15,6 @@ import { useDashboardStats, useJobs, useServiceHealth } from '../hooks/useApi';
 
 // Components
 import BatchProgress from '../components/dashboard/BatchProgress';
-import RecentBatches from '../components/dashboard/RecentBatches';
 import ProviderStatus from '../components/dashboard/ProviderStatus';
 import CreditUsage from '../components/dashboard/CreditUsage';
 
@@ -269,15 +268,6 @@ const Dashboard: React.FC = () => {
           <ProviderStatus />
         </motion.div>
       </div>
-
-      {/* Bottom Section - Recent batches */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <RecentBatches />
-      </motion.div>
 
       {/* Quick Actions Section */}
       <motion.div
