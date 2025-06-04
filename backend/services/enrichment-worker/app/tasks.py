@@ -166,9 +166,10 @@ async def verify_email_if_available(email: str) -> Dict[str, Any]:
         }
     
     try:
+        # FIXED: Call the actual email_verifier object
         result = await email_verifier.verify_email(email)
         return {
-            "verified": result.is_valid,
+            "verified": result.is_valid,  # Use is_valid instead of verified
             "score": result.score,
             "details": {
                 "level": result.verification_level,
@@ -197,9 +198,10 @@ async def verify_phone_if_available(phone: str) -> Dict[str, Any]:
         }
     
     try:
+        # FIXED: Call the actual phone_verifier object
         result = await phone_verifier.verify_phone(phone)
         return {
-            "verified": result.is_valid,
+            "verified": result.is_valid,  # Use is_valid instead of verified
             "score": result.score,
             "details": {
                 "is_mobile": result.is_mobile,
@@ -2365,3 +2367,133 @@ def extract_domain(company: str) -> str:
         domain += ".com"
     
     return domain
+
+@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.verify_all_existing_contacts')
+def verify_all_existing_contacts(self, user_id: Optional[str] = None):
+    """
+    Verify ALL existing contacts that have emails/phones but no verification status
+    """
+    try:
+        logger.info(f"Starting verification task for user: {user_id}")
+        
+        with SyncSessionLocal() as session:
+            # Build query conditions
+            where_conditions = ["(c.email IS NOT NULL OR c.phone IS NOT NULL)"]
+            params = {}
+            
+            if user_id:
+                where_conditions.append("ij.user_id = :user_id")
+                params["user_id"] = user_id
+            
+            # Get contacts that need verification
+            where_clause = " AND ".join(where_conditions)
+            
+            stmt = text(f"""
+                SELECT c.id, c.email, c.phone, c.job_id
+                FROM contacts c
+                JOIN import_jobs ij ON c.job_id = ij.id
+                WHERE {where_clause}
+                AND (
+                    (c.email IS NOT NULL AND c.email != '' AND (c.email_verified = false OR c.email_verification_score IS NULL)) OR
+                    (c.phone IS NOT NULL AND c.phone != '' AND (c.phone_verified = false OR c.phone_verification_score IS NULL))
+                )
+                LIMIT 100
+            """)
+            
+            result = session.execute(stmt, params)
+            contacts = result.fetchall()
+            
+            logger.info(f"Found {len(contacts)} contacts needing verification")
+            print(f"🔍 Found {len(contacts)} contacts needing verification")
+            
+            verified_count = 0
+            
+            for contact in contacts:
+                contact_id, email, phone, job_id = contact
+                
+                print(f"🔍 Verifying contact {contact_id}: email={email}, phone={phone}")
+                
+                # Verify email if present
+                email_verified = False
+                email_verification_score = None
+                if email and email.strip():
+                    try:
+                        async def verify_email_async():
+                            return await verify_email_if_available(email.strip())
+                        
+                        email_result = run_async(verify_email_async())
+                        email_verified = email_result["verified"]
+                        email_verification_score = email_result["score"] / 100.0  # Convert to 0-1 scale
+                        
+                        print(f"📧 Email {email} verified: {email_verified} (score: {email_result['score']})")
+                    except Exception as e:
+                        print(f"❌ Email verification failed for {email}: {e}")
+                        email_verified = False
+                        email_verification_score = 0.0
+                
+                # Verify phone if present
+                phone_verified = False
+                phone_verification_score = None
+                if phone and phone.strip():
+                    try:
+                        async def verify_phone_async():
+                            return await verify_phone_if_available(phone.strip())
+                        
+                        phone_result = run_async(verify_phone_async())
+                        phone_verified = phone_result["verified"]
+                        phone_verification_score = phone_result["score"] / 100.0  # Convert to 0-1 scale
+                        
+                        print(f"📱 Phone {phone} verified: {phone_verified} (score: {phone_result['score']})")
+                    except Exception as e:
+                        print(f"❌ Phone verification failed for {phone}: {e}")
+                        phone_verified = False
+                        phone_verification_score = 0.0
+                
+                # Update contact with verification results
+                update_fields = []
+                update_params = {"contact_id": contact_id}
+                
+                if email and email.strip():
+                    update_fields.append("email_verified = :email_verified")
+                    update_fields.append("email_verification_score = :email_verification_score")
+                    update_params["email_verified"] = email_verified
+                    update_params["email_verification_score"] = email_verification_score
+                
+                if phone and phone.strip():
+                    update_fields.append("phone_verified = :phone_verified")
+                    update_fields.append("phone_verification_score = :phone_verification_score")
+                    update_params["phone_verified"] = phone_verified
+                    update_params["phone_verification_score"] = phone_verification_score
+                
+                if update_fields:
+                    update_fields.append("updated_at = CURRENT_TIMESTAMP")
+                    update_query = text(f"""
+                        UPDATE contacts 
+                        SET {', '.join(update_fields)}
+                        WHERE id = :contact_id
+                    """)
+                    
+                    session.execute(update_query, update_params)
+                    verified_count += 1
+                    
+                    print(f"✅ Updated contact {contact_id} verification status")
+            
+            session.commit()
+            logger.info(f"Verified {verified_count} contacts")
+            print(f"✅ Verification completed: {verified_count} contacts updated")
+            
+            return {
+                "success": True,
+                "verified_count": verified_count,
+                "verification_available": VERIFICATION_AVAILABLE,
+                "user_id": user_id
+            }
+        
+    except Exception as e:
+        logger.error(f"Error in verify_all_existing_contacts: {str(e)}")
+        print(f"❌ Verification task failed: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "verified_count": 0
+        }
