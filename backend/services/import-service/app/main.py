@@ -1692,13 +1692,13 @@ async def get_crm_contacts(
             elif status_filter == "verified":
                 where_conditions.append("c.email_verified = true")
         
-        # Add email reliability filter
+        # Add email reliability filter (with fallback for missing column)
         if email_reliability != "all":
-            where_conditions.append("c.email_reliability = :email_reliability")
+            where_conditions.append("COALESCE(c.email_reliability, 'unknown') = :email_reliability")
             params["email_reliability"] = email_reliability
         
-        # Add lead score range filter
-        where_conditions.append("c.lead_score BETWEEN :lead_score_min AND :lead_score_max")
+        # Add lead score range filter (with fallback for missing column)
+        where_conditions.append("COALESCE(c.lead_score, 0) BETWEEN :lead_score_min AND :lead_score_max")
         params["lead_score_min"] = lead_score_min
         params["lead_score_max"] = lead_score_max
         
@@ -1718,15 +1718,18 @@ async def get_crm_contacts(
         offset = (page - 1) * limit
         total_pages = (total + limit - 1) // limit
         
-        # Get contacts with enhanced fields
+        # Get contacts with enhanced fields (with fallbacks for missing columns)
         contacts_query = text(f"""
             SELECT 
                 c.id, c.job_id, c.first_name, c.last_name, c.email, c.phone, 
                 c.company, c.position, c.location, c.industry, c.profile_url, 
                 c.enriched, c.enrichment_status, c.enrichment_provider, 
                 c.enrichment_score, c.email_verified, c.phone_verified,
-                c.email_verification_score, c.phone_verification_score, 
-                c.notes, c.credits_consumed, c.lead_score, c.email_reliability,
+                COALESCE(c.email_verification_score, 0.0) as email_verification_score, 
+                COALESCE(c.phone_verification_score, 0.0) as phone_verification_score, 
+                c.notes, COALESCE(c.credits_consumed, 0) as credits_consumed, 
+                COALESCE(c.lead_score, 0) as lead_score, 
+                COALESCE(c.email_reliability, 'unknown') as email_reliability,
                 c.created_at, c.updated_at,
                 ij.file_name as batch_name,
                 ij.created_at as batch_created_at
@@ -1807,19 +1810,19 @@ async def get_crm_contacts_stats(
                 COUNT(CASE WHEN c.email_verified = true THEN 1 END) as verified_emails,
                 COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as verified_phones,
                 
-                -- Lead score distribution
-                COUNT(CASE WHEN c.lead_score >= 80 THEN 1 END) as high_quality_leads,
-                COUNT(CASE WHEN c.lead_score >= 50 AND c.lead_score < 80 THEN 1 END) as medium_quality_leads,
-                COUNT(CASE WHEN c.lead_score < 50 THEN 1 END) as low_quality_leads,
+                -- Lead score distribution (with fallback for missing column)
+                COUNT(CASE WHEN COALESCE(c.lead_score, 0) >= 80 THEN 1 END) as high_quality_leads,
+                COUNT(CASE WHEN COALESCE(c.lead_score, 0) >= 50 AND COALESCE(c.lead_score, 0) < 80 THEN 1 END) as medium_quality_leads,
+                COUNT(CASE WHEN COALESCE(c.lead_score, 0) < 50 THEN 1 END) as low_quality_leads,
                 
-                -- Email reliability distribution
-                COUNT(CASE WHEN c.email_reliability = 'excellent' THEN 1 END) as excellent_emails,
-                COUNT(CASE WHEN c.email_reliability = 'good' THEN 1 END) as good_emails,
-                COUNT(CASE WHEN c.email_reliability = 'fair' THEN 1 END) as fair_emails,
-                COUNT(CASE WHEN c.email_reliability = 'poor' THEN 1 END) as poor_emails,
+                -- Email reliability distribution (with fallback for missing column)
+                COUNT(CASE WHEN COALESCE(c.email_reliability, 'unknown') = 'excellent' THEN 1 END) as excellent_emails,
+                COUNT(CASE WHEN COALESCE(c.email_reliability, 'unknown') = 'good' THEN 1 END) as good_emails,
+                COUNT(CASE WHEN COALESCE(c.email_reliability, 'unknown') = 'fair' THEN 1 END) as fair_emails,
+                COUNT(CASE WHEN COALESCE(c.email_reliability, 'unknown') = 'poor' THEN 1 END) as poor_emails,
                 
-                AVG(c.lead_score) as avg_lead_score,
-                SUM(c.credits_consumed) as total_credits_consumed
+                AVG(COALESCE(c.lead_score, 0)) as avg_lead_score,
+                SUM(COALESCE(c.credits_consumed, 0)) as total_credits_consumed
             FROM contacts c
             JOIN import_jobs ij ON c.job_id = ij.id
             WHERE ij.user_id = :user_id
@@ -1960,11 +1963,13 @@ async def bulk_export_crm_contacts(
             }
         
         else:  # CSV export
-            # Get contact data for CSV
+            # Get contact data for CSV (with fallbacks for missing columns)
             contacts_query = text("""
                 SELECT 
                     c.first_name, c.last_name, c.email, c.phone, c.company, 
-                    c.position, c.location, c.industry, c.lead_score, c.email_reliability,
+                    c.position, c.location, c.industry, 
+                    COALESCE(c.lead_score, 0) as lead_score, 
+                    COALESCE(c.email_reliability, 'unknown') as email_reliability,
                     c.enrichment_provider, c.created_at
                 FROM contacts c
                 JOIN import_jobs ij ON c.job_id = ij.id
