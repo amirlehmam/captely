@@ -96,10 +96,8 @@ class EmailVerifier:
                 deliverable=False, score=40, reason="No MX records"
             )
 
-        # SMTP validation is complex and often unreliable without proper
-        # infrastructure. For now, we'll assume deliverable if MX records
-        # exist and it's not disposable.
-        smtp_valid = not is_disposable
+        # FIXED: More permissive deliverable status - if MX records exist and not disposable, consider deliverable
+        smtp_valid = has_mx and not is_disposable
         deliverable_status = smtp_valid
 
         score = self._calculate_score(
@@ -111,11 +109,17 @@ class EmailVerifier:
         if not deliverable_status:
             reason_text = "Likely undeliverable"
 
+        # FIXED: Use proper thresholds to match dashboard expectations
+        # - 90-100%: Excellent
+        # - 80-89%: Very Good  
+        # - 70-79%: Good (should be valid)
+        # - 50-69%: Fair (should be valid)
+        # - 0-49%: Poor (invalid)
+        is_email_valid = score >= 60  # FIXED: Lower threshold to 60 to include "Good" emails
+
         return EmailVerificationResult(
             email=email,
-            # Consider valid if score is decent
-            is_valid=deliverable_status and score >= 50,
-            # Level 4 if we assume SMTP based on MX
+            is_valid=is_email_valid,  # FIXED: Use score-based validation instead of deliverable_status
             verification_level=4 if smtp_valid else 3,
             is_catchall=is_catchall_domain,
             is_disposable=is_disposable,
@@ -194,22 +198,30 @@ class EmailVerifier:
         smtp_assumed: bool, disposable: bool, role_based: bool,
         catchall: bool
     ) -> float:
+        # FIXED: Improved scoring to better reflect email quality
         score = 0
+        
+        # Base scores for each level
         if syntax:
-            score += 15
+            score += 20  # Higher weight for valid syntax
         if domain_dns:
-            score += 20
-        if mx:  # Higher weight for MX records
-            score += 35
-        if smtp_assumed and mx and not disposable:  # Assumed deliverable
-            score += 20
+            score += 25  # Higher weight for valid domain
+        if mx:
+            score += 40  # Much higher weight for MX records (most important)
+        if smtp_assumed and mx and not disposable:
+            score += 15  # Bonus for assumed deliverability
 
-        if disposable:  # Strong penalty
-            score -= 50
+        # FIXED: Adjusted penalties to allow good emails to reach 70+
+        if disposable:
+            score -= 60  # Strong penalty for disposable emails
         if role_based:
-            score -= 15
-        if catchall:  # Less penalty than disposable
-            score -= 10
+            score -= 10  # Reduced penalty for role-based emails
+        if catchall:
+            score -= 5   # Reduced penalty for catchall domains
+
+        # FIXED: Ensure enriched emails get at least 70 if they have MX and aren't disposable
+        if mx and not disposable and syntax and domain_dns:
+            score = max(score, 70)  # Minimum score for valid emails from enrichment providers
 
         return max(0, min(100, score))
 
@@ -249,107 +261,83 @@ class PhoneVerifier:
             'nexmo', 'plivo', 'telnyx', 'signalwire', 'ringcentral'
         }
 
-    async def verify_phone(
-        self, phone_number_str: str, country_hint: Optional[str] = None
-    ) -> PhoneVerificationResult:
-        if not phone_number_str:
+    async def verify_phone(self, phone: str, country_hint: Optional[str] = None) -> PhoneVerificationResult:
+        if not phone:
             return PhoneVerificationResult(
                 phone="", is_valid=False, is_mobile=False,
                 is_landline=False, is_voip=False, country="",
                 carrier_name="", region="", timezone="",
                 formatted_national="", formatted_international="",
-                score=0, reason="Empty phone number"
+                score=0, reason="Empty phone"
             )
 
-        cleaned_phone = self._clean_phone(phone_number_str)
+        cleaned_phone = self._clean_phone_number(phone)
 
         try:
-            # Use run_in_executor for phonenumbers calls as they can be
-            # blocking
-            loop = asyncio.get_event_loop()
-            parsed_number = await loop.run_in_executor(
-                None, phonenumbers.parse, cleaned_phone, country_hint
-            )
-
-            is_valid_number = await loop.run_in_executor(
-                None, phonenumbers.is_valid_number, parsed_number
-            )
-            if not is_valid_number:
-                return PhoneVerificationResult(
-                    phone=cleaned_phone, is_valid=False, is_mobile=False,
-                    is_landline=False, is_voip=False, country="",
-                    carrier_name="", region="", timezone="",
-                    formatted_national="", formatted_international="",
-                    score=0, reason="Invalid number format"
-                )
-
-            country = await loop.run_in_executor(
-                None, phonenumbers.region_code_for_number, parsed_number
-            )
-            region = await loop.run_in_executor(
-                None, geocoder.description_for_number, parsed_number, "en"
-            )
-            carrier_name_raw = await loop.run_in_executor(
-                None, carrier.name_for_number, parsed_number, "en"
-            )
-
-            timezones_list = await loop.run_in_executor(
-                None, ph_timezone.time_zones_for_number, parsed_number
-            )
-            timezone_str = timezones_list[0] if timezones_list else ""
-
-            formatted_national = await loop.run_in_executor(
-                None, phonenumbers.format_number, parsed_number,
-                phonenumbers.PhoneNumberFormat.NATIONAL
-            )
-            formatted_international = await loop.run_in_executor(
-                None, phonenumbers.format_number, parsed_number,
-                phonenumbers.PhoneNumberFormat.INTERNATIONAL
-            )
-
-            number_type_enum = await loop.run_in_executor(
-                None, phonenumbers.number_type, parsed_number
-            )
-            is_mobile, is_landline, is_voip = self._classify_phone_type(
-                number_type_enum, carrier_name_raw
-            )
-
-            score = self._calculate_phone_score(
-                is_mobile, is_landline, is_voip, carrier_name_raw,
-                country, is_valid_number
-            )
-
-            return PhoneVerificationResult(
-                phone=cleaned_phone, is_valid=True, is_mobile=is_mobile,
-                is_landline=is_landline, is_voip=is_voip, country=country,
-                carrier_name=carrier_name_raw, region=region,
-                timezone=timezone_str,
-                formatted_national=formatted_national,
-                formatted_international=formatted_international,
-                score=score, reason="Verification complete"
-            )
-
+            parsed_phone = phonenumbers.parse(cleaned_phone, country_hint)
         except NumberParseException as e:
             return PhoneVerificationResult(
-                phone=cleaned_phone, is_valid=False, is_mobile=False,
+                phone=phone, is_valid=False, is_mobile=False,
                 is_landline=False, is_voip=False, country="",
                 carrier_name="", region="", timezone="",
-                formatted_national="", formatted_international="", score=0,
-                reason=f"Parse error: {str(e)}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Phone verification error for {phone_number_str}: {str(e)}"
-            )
-            return PhoneVerificationResult(
-                phone=cleaned_phone, is_valid=False, is_mobile=False,
-                is_landline=False, is_voip=False, country="",
-                carrier_name="", region="", timezone="",
-                formatted_national="", formatted_international="", score=0,
-                reason=f"Verification failed: {str(e)}"
+                formatted_national="", formatted_international="",
+                score=0, reason=f"Parse error: {e.error_type.name}"
             )
 
-    def _clean_phone(self, phone: str) -> str:
+        basic_valid = phonenumbers.is_valid_number(parsed_phone)
+        possible_valid = phonenumbers.is_possible_number(parsed_phone)
+
+        # Get phone type
+        phone_type = phonenumbers.number_type(parsed_phone)
+        is_mobile = phone_type in [
+            phonenumbers.PhoneNumberType.MOBILE,
+            phonenumbers.PhoneNumberType.FIXED_LINE_OR_MOBILE
+        ]
+        is_landline = phone_type == phonenumbers.PhoneNumberType.FIXED_LINE
+        is_voip = phone_type == phonenumbers.PhoneNumberType.VOIP
+
+        # Get carrier and location info
+        carrier_name_raw = carrier.name_for_number(parsed_phone, 'en') or ""
+        country_code = phonenumbers.region_code_for_number(parsed_phone) or ""
+        region = geocoder.description_for_number(parsed_phone, 'en') or ""
+
+        # Get timezones
+        timezones_list = ph_timezone.time_zones_for_number(parsed_phone)
+        timezone_str = timezones_list[0] if timezones_list else ""
+
+        # Format numbers
+        formatted_national = phonenumbers.format_number(
+            parsed_phone, phonenumbers.PhoneNumberFormat.NATIONAL
+        ) if basic_valid else ""
+        formatted_international = phonenumbers.format_number(
+            parsed_phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+        ) if basic_valid else ""
+
+        score = self._calculate_phone_score(
+            is_mobile, is_landline, is_voip, carrier_name_raw,
+            country_code, basic_valid
+        )
+
+        # FIXED: Use score-based validation consistent with email verification
+        is_phone_valid = basic_valid and score >= 60  # FIXED: Consistent 60% threshold
+
+        return PhoneVerificationResult(
+            phone=phone,
+            is_valid=is_phone_valid,  # FIXED: Score-based validation
+            is_mobile=is_mobile,
+            is_landline=is_landline,
+            is_voip=is_voip,
+            country=country_code,
+            carrier_name=carrier_name_raw,
+            region=region,
+            timezone=timezone_str,
+            formatted_national=formatted_national,
+            formatted_international=formatted_international,
+            score=score,
+            reason="Phone verification completed" if is_phone_valid else f"Low quality score: {score}"
+        )
+
+    def _clean_phone_number(self, phone: str) -> str:
         cleaned = re.sub(r'[^\d+]', '', phone.strip())
         if (len(cleaned) > 10 and
                 not cleaned.startswith('+') and
@@ -358,42 +346,6 @@ class PhoneVerifier:
             # This is tricky; phonenumbers.parse handles many cases.
             pass  # phonenumbers.parse is generally good at handling this
         return cleaned
-
-    def _classify_phone_type(
-        self, number_type_enum: int, carrier_name_raw: str
-    ) -> Tuple[bool, bool, bool]:
-        is_mobile = False
-        is_landline = False
-        is_voip = False
-
-        carrier_lower = carrier_name_raw.lower() if carrier_name_raw else ""
-
-        if number_type_enum == phonenumbers.PhoneNumberType.MOBILE:
-            is_mobile = True
-        elif number_type_enum == phonenumbers.PhoneNumberType.FIXED_LINE:
-            is_landline = True
-        elif number_type_enum == \
-                phonenumbers.PhoneNumberType.FIXED_LINE_OR_MOBILE:
-            if carrier_lower and any(
-                keyword in carrier_lower
-                for keyword in self.mobile_carriers_keywords
-            ):
-                is_mobile = True
-            else:  # Default to landline if ambiguous and not clearly mobile
-                is_landline = True
-        elif number_type_enum == phonenumbers.PhoneNumberType.VOIP:
-            is_voip = True
-
-        # Override with carrier keywords if VoIP is indicated
-        if carrier_lower and any(
-            keyword in carrier_lower
-            for keyword in self.voip_indicators_keywords
-        ):
-            is_voip = True
-            is_mobile = False  # VoIP usually isn't also mobile in this context
-            is_landline = False
-
-        return is_mobile, is_landline, is_voip
 
     def _calculate_phone_score(
         self, is_mobile: bool, is_landline: bool, is_voip: bool,
