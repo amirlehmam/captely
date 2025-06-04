@@ -288,7 +288,14 @@ services:
     build:
       context: ./frontend/nextjs-app
       dockerfile: Dockerfile.prod
+      args:
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-112233445566-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com}
+        - VITE_APPLE_CLIENT_ID=${VITE_APPLE_CLIENT_ID:-com.captely.signin}
     container_name: captely-frontend
+    env_file: .env
+    environment:
+      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-112233445566-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com}
+      - VITE_APPLE_CLIENT_ID=${VITE_APPLE_CLIENT_ID:-com.captely.signin}
     depends_on:
       - auth-service
       - import-service
