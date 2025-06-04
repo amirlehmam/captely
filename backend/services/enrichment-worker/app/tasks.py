@@ -14,6 +14,7 @@ import uuid
 import random
 import string
 import concurrent.futures
+import requests
 
 # Celery imports
 from celery import Task, chain, group
@@ -1950,41 +1951,284 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
             "Content-Type": "application/json"
         }
         
-        # FIXED: Use correct Enrow API format
+        # FIXED: Use correct Enrow API format based on official documentation
         payload = {
-            "fullname": f"{first_name} {last_name}",
-            "company_name": company
+            "full_name": f"{first_name} {last_name}",
+            "domain": extract_domain(company)
         }
         
-        # FIXED: Use correct Enrow endpoint
-        response = httpx.post(
-            "https://api.enrow.io/email/find/single",
+        print(f"🔍 Enrow API call for {first_name} {last_name} at {company}")
+        
+        # CORRECT ENDPOINT: https://api.enrow.io/single-email-find
+        response = requests.post(
+            "https://api.enrow.io/single-email-find",
             json=payload,
             headers=headers,
-            timeout=15
+            timeout=30
         )
         
-        if response.status_code != 200:
-            logger.warning(f"Enrow API error: {response.status_code} - {response.text}")
+        print(f"📡 Enrow response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ Enrow data: {data}")
+            
+            # Extract email and confidence from response
+            email = data.get("email") or data.get("result", {}).get("email")
+            confidence = 85 if email else 0
+            
+            return {
+                "email": email,
+                "phone": None,  # Enrow primarily focuses on emails
+                "confidence": confidence,
+                "source": "enrow"
+            }
+        else:
+            print(f"❌ Enrow API error: {response.status_code} - {response.text}")
             return {"email": None, "phone": None, "confidence": 0, "source": "enrow"}
-        
-        data = response.json()
-        email = data.get("email")
-        phone = data.get("phone")
-        
-        return {
-            "email": email,
-            "phone": phone,
-            "confidence": 90 if email else 0,
-            "source": "enrow",
-            "cost": 0.008 if email else 0,
-            "raw_data": data
-        }
-        
+            
     except Exception as e:
-        logger.error(f"Enrow error: {e}")
+        print(f"❌ Enrow exception: {str(e)}")
         return {"email": None, "phone": None, "confidence": 0, "source": "enrow"}
 
+@retry_with_backoff(max_retries=2)
+def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call Snov.io API - $0.02/email with async workflow"""
+    try:
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
+        company = lead.get("company", "")
+        
+        if not first_name or not last_name or not company:
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        # STEP 1: Get OAuth2 access token
+        token_payload = {
+            'grant_type': 'client_credentials',
+            'client_id': settings.snov_api_id,
+            'client_secret': settings.snov_api_secret
+        }
+        
+        token_response = requests.post(
+            'https://api.snov.io/v1/oauth/access_token',
+            data=token_payload,
+            timeout=30
+        )
+        
+        if token_response.status_code != 200:
+            print(f"❌ Snov.io token error: {token_response.status_code}")
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        access_token = token_response.json().get('access_token')
+        
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        # STEP 2: Start email search
+        search_payload = {
+            'rows': [
+                {
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'domain': extract_domain(company)
+                }
+            ]
+        }
+        
+        print(f"🔍 Snov.io API call for {first_name} {last_name} at {company}")
+        
+        start_response = requests.post(
+            'https://api.snov.io/v2/emails-by-domain-by-name/start',
+            json=search_payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        if start_response.status_code != 200:
+            print(f"❌ Snov.io start error: {start_response.status_code}")
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        task_hash = start_response.json().get('data', {}).get('task_hash')
+        
+        if not task_hash:
+            print("❌ Snov.io: No task hash received")
+            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+        # STEP 3: Poll for results (with retries)
+        for attempt in range(5):  # Try up to 5 times
+            time.sleep(2)  # Wait 2 seconds between polls
+            
+            result_response = requests.get(
+                f'https://api.snov.io/v2/emails-by-domain-by-name/result',
+                params={'task_hash': task_hash},
+                headers=headers,
+                timeout=30
+            )
+            
+            if result_response.status_code == 200:
+                result_data = result_response.json()
+                
+                if result_data.get('status') == 'completed':
+                    data = result_data.get('data', [])
+                    if data and len(data) > 0:
+                        result = data[0].get('result', [])
+                        if result and len(result) > 0:
+                            email = result[0].get('email')
+                            smtp_status = result[0].get('smtp_status')
+                            
+                            confidence = 90 if smtp_status == 'valid' else 70 if email else 0
+                            
+                            return {
+                                "email": email,
+                                "phone": None,
+                                "confidence": confidence,
+                                "source": "snov"
+                            }
+                elif result_data.get('status') == 'in_progress':
+                    continue  # Keep polling
+                else:
+                    break  # Failed or unknown status
+        
+        print("⏰ Snov.io: Task didn't complete in time")
+        return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+        
+    except Exception as e:
+        print(f"❌ Snov.io exception: {str(e)}")
+        return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
+
+@retry_with_backoff(max_retries=2)
+def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call Anymailfinder API - $0.015/email"""
+    try:
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
+        company = lead.get("company", "")
+        
+        if not first_name or not last_name or not company:
+            return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
+        
+        headers = {
+            "Authorization": f"Bearer {settings.anymailfinder_api}",
+            "Content-Type": "application/json"
+        }
+        
+        # FIXED: Use correct Anymailfinder API format based on official documentation
+        payload = {
+            "domain": extract_domain(company),
+            "first_name": first_name,
+            "last_name": last_name
+        }
+        
+        print(f"🔍 Anymailfinder API call for {first_name} {last_name} at {company}")
+        
+        # CORRECT ENDPOINT: https://api.anymailfinder.com/v5.0/search/person.json
+        response = requests.post(
+            "https://api.anymailfinder.com/v5.0/search/person.json",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        print(f"📡 Anymailfinder response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ Anymailfinder data: {data}")
+            
+            # Extract email and confidence from response
+            email = data.get("email") or data.get("result", {}).get("email")
+            confidence_score = data.get("confidence", 0)
+            state = data.get("state", "")
+            
+            # Map confidence based on response
+            if state == "high" or confidence_score > 80:
+                confidence = 85
+            elif email:
+                confidence = 70
+            else:
+                confidence = 0
+            
+            return {
+                "email": email,
+                "phone": None,
+                "confidence": confidence,
+                "source": "anymailfinder"
+            }
+        else:
+            print(f"❌ Anymailfinder API error: {response.status_code} - {response.text}")
+            return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
+            
+    except Exception as e:
+        print(f"❌ Anymailfinder exception: {str(e)}")
+        return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
+
+@retry_with_backoff(max_retries=2)
+def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
+    """Call Findymail API - $0.025/email"""
+    try:
+        first_name = lead.get("first_name", "")
+        last_name = lead.get("last_name", "")
+        company = lead.get("company", "")
+        
+        if not first_name or not last_name or not company:
+            return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
+        
+        headers = {
+            "Authorization": f"Bearer {settings.findymail_api}",
+            "Content-Type": "application/json"
+        }
+        
+        # Based on common API patterns for Findymail
+        payload = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "domain": extract_domain(company)
+        }
+        
+        print(f"🔍 Findymail API call for {first_name} {last_name} at {company}")
+        
+        # Use the most likely endpoint based on documentation patterns
+        response = requests.post(
+            "https://api.findymail.com/v1/email/find",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        print(f"📡 Findymail response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ Findymail data: {data}")
+            
+            # Extract email and confidence from response
+            email = data.get("email") or data.get("result", {}).get("email")
+            confidence_score = data.get("confidence", 0) or data.get("score", 0)
+            verified = data.get("verified", False)
+            
+            # Map confidence based on response
+            if verified and confidence_score > 80:
+                confidence = 90
+            elif email:
+                confidence = 75
+            else:
+                confidence = 0
+            
+            return {
+                "email": email,
+                "phone": None,
+                "confidence": confidence,
+                "source": "findymail"
+            }
+        else:
+            print(f"❌ Findymail API error: {response.status_code} - {response.text}")
+            return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
+            
+    except Exception as e:
+        print(f"❌ Findymail exception: {str(e)}")
+        return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
 
 @retry_with_backoff(max_retries=2)
 def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
@@ -2042,408 +2286,6 @@ def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Datagma error: {e}")
         return {"email": None, "phone": None, "confidence": 0, "source": "datagma"}
 
-
-@retry_with_backoff(max_retries=2)
-def call_anymailfinder(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Anymailfinder API - $0.015/email"""
-    try:
-        headers = {
-            "Authorization": f"Bearer {settings.anymailfinder_api}",
-            "Content-Type": "application/json"
-        }
-        
-        # FIXED: Use correct Anymailfinder API format
-        first_name = lead.get("first_name", "")
-        last_name = lead.get("last_name", "")
-        domain = lead.get("company_domain", "")
-        
-        # If no domain, create one from company name
-        if not domain and lead.get("company"):
-            domain = f"{lead.get('company', '').lower().replace(' ', '').replace('-', '')}.com"
-        
-        payload = {
-            "domain": domain,
-            "full_name": f"{first_name} {last_name}"
-        }
-        
-        # FIXED: Use correct Anymailfinder endpoint
-        response = httpx.post(
-            "https://api.anymailfinder.com/v5.0/search/person.json",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"Anymailfinder API error: {response.status_code} - {response.text}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
-        
-        data = response.json()
-        results = data.get("results", {})
-        email = results.get("email")
-        validation = results.get("validation", "unknown")
-        
-        # Only count valid emails
-        confidence = 85 if email and validation == "valid" else 0
-        
-        return {
-            "email": email if validation == "valid" else None,
-            "phone": None,  # Anymailfinder doesn't provide phone
-            "confidence": confidence,
-            "source": "anymailfinder",
-            "cost": 0.015 if email and validation == "valid" else 0,
-            "raw_data": data
-        }
-        
-    except Exception as e:
-        logger.error(f"Anymailfinder error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "anymailfinder"}
-
-
-@retry_with_backoff(max_retries=2)
-def call_snov(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Snov.io API - $0.02/email"""
-    try:
-        # FIXED: Snov.io API requires OAuth token first, then uses a two-step process
-        headers = {
-            "Authorization": f"Bearer {settings.snov_api_secret}",
-            "Content-Type": "application/json"
-        }
-        
-        first_name = lead.get("first_name", "")
-        last_name = lead.get("last_name", "")
-        domain = lead.get("company_domain", "")
-        
-        # If no domain, create one from company name
-        if not domain and lead.get("company"):
-            domain = f"{lead.get('company', '').lower().replace(' ', '').replace('-', '')}.com"
-        
-        # FIXED: Use correct Snov.io API format and endpoint
-        payload = {
-            "rows": [
-                {
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "domain": domain
-                }
-            ]
-        }
-        
-        # Step 1: Start the search
-        start_response = httpx.post(
-            "https://api.snov.io/v2/emails-by-domain-by-name/start",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if start_response.status_code != 200:
-            logger.warning(f"Snov.io start API error: {start_response.status_code} - {start_response.text}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        start_data = start_response.json()
-        task_hash = start_data.get("data", {}).get("task_hash")
-        
-        if not task_hash:
-            logger.warning("Snov.io did not return task_hash")
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        # Step 2: Wait a bit and get results (Snov.io is async)
-        import time
-        time.sleep(2)  # Wait for processing
-        
-        result_response = httpx.get(
-            f"https://api.snov.io/v2/emails-by-domain-by-name/result?task_hash={task_hash}",
-            headers=headers,
-            timeout=15
-        )
-        
-        if result_response.status_code != 200:
-            logger.warning(f"Snov.io result API error: {result_response.status_code} - {result_response.text}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        result_data = result_response.json()
-        
-        # Check if completed
-        if result_data.get("status") != "completed":
-            logger.warning("Snov.io search not completed")
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        # Extract email data
-        data_list = result_data.get("data", [])
-        if not data_list:
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        person_data = data_list[0]
-        results = person_data.get("result", [])
-        
-        if not results:
-            return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-        
-        # Get best email
-        best_email = None
-        best_confidence = 0
-        
-        for email_data in results:
-            email = email_data.get("email")
-            smtp_status = email_data.get("smtp_status", "unknown")
-            
-            # Only use valid emails
-            if email and smtp_status == "valid":
-                confidence = 90  # High confidence for valid emails
-                if confidence > best_confidence:
-                    best_email = email
-                    best_confidence = confidence
-        
-        return {
-            "email": best_email,
-            "phone": None,  # Snov.io doesn't provide phone in this endpoint
-            "confidence": best_confidence,
-            "source": "snov",
-            "cost": 0.02 if best_email else 0,
-            "raw_data": result_data
-        }
-        
-    except Exception as e:
-        logger.error(f"Snov.io error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "snov"}
-
-
-@retry_with_backoff(max_retries=2)
-def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Findymail API - $0.025/email"""
-    try:
-        headers = {
-            "Authorization": f"Bearer {settings.findymail_api}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "first_name": lead.get("first_name", ""),
-            "last_name": lead.get("last_name", ""),
-            "domain": lead.get("company_domain", ""),
-            "company": lead.get("company", "")
-        }
-        
-        response = httpx.post(
-            "https://app.findymail.com/api/search/email",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"Findymail API error: {response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
-        
-        data = response.json()
-        email = data.get("email")
-        phone = data.get("phone")
-        
-        return {
-            "email": email,
-            "phone": phone,
-            "confidence": data.get("confidence", 85) if email else 0,
-            "source": "findymail",
-            "cost": 0.025 if email else 0,
-            "raw_data": data
-        }
-        
-    except Exception as e:
-        logger.error(f"Findymail error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "findymail"}
-
-
-@retry_with_backoff(max_retries=2)
-def call_kendo(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Kendo API - $0.03/email"""
-    try:
-        headers = {
-            "Authorization": f"Bearer {settings.kendo_api}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "first_name": lead.get("first_name", ""),
-            "last_name": lead.get("last_name", ""),
-            "company_domain": lead.get("company_domain", ""),
-            "company_name": lead.get("company", "")
-        }
-        
-        response = httpx.post(
-            "https://kendo.email/api/v1/contact/search",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"Kendo API error: {response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "kendo"}
-        
-        data = response.json()
-        contact = data.get("contact", {})
-        email = contact.get("email")
-        
-        return {
-            "email": email,
-            "phone": None,  # Kendo primarily focuses on email
-            "confidence": contact.get("confidence", 0),
-            "source": "kendo",
-            "cost": 0.03 if email else 0,
-            "raw_data": data
-        }
-        
-    except Exception as e:
-        logger.error(f"Kendo error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "kendo"}
-
-
-@retry_with_backoff(max_retries=2)
-def call_enrich_so(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Enrich.so API - $0.035/email"""
-    try:
-        headers = {
-            "X-API-Key": settings.enrich_so_api,
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "firstName": lead.get("first_name", ""),
-            "lastName": lead.get("last_name", ""),
-            "companyDomain": lead.get("company_domain", ""),
-            "companyName": lead.get("company", "")
-        }
-        
-        response = httpx.post(
-            "https://api.enrich.so/v1/contact/enrich",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"Enrich.so API error: {response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "enrich_so"}
-        
-        data = response.json()
-        contact = data.get("contact", {})
-        email = contact.get("email")
-        phone = contact.get("phone")
-        
-        return {
-            "email": email,
-            "phone": phone,
-            "confidence": contact.get("confidence", 80) if email else 0,
-            "source": "enrich_so",
-            "cost": 0.035 if email else 0,
-            "raw_data": data
-        }
-        
-    except Exception as e:
-        logger.error(f"Enrich.so error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "enrich_so"}
-
-
-@retry_with_backoff(max_retries=2)
-def call_prospeo(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Prospeo API - $0.04/email"""
-    try:
-        headers = {
-            "X-KEY": settings.prospeo_api,
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "first_name": lead.get("first_name", ""),
-            "last_name": lead.get("last_name", ""),
-            "company": lead.get("company_domain", "") or lead.get("company", "")
-        }
-        
-        response = httpx.post(
-            "https://api.prospeo.io/email-finder",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"Prospeo API error: {response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "prospeo"}
-        
-        data = response.json()
-        email = data.get("email")
-        
-        return {
-            "email": email,
-            "phone": None,  # Prospeo focuses on email finding
-            "confidence": data.get("confidence", 0),
-            "source": "prospeo",
-            "cost": 0.04 if email else 0,
-            "raw_data": data
-        }
-        
-    except Exception as e:
-        logger.error(f"Prospeo error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "prospeo"}
-
-
-@retry_with_backoff(max_retries=2)
-def call_contactout(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call ContactOut API - $0.05/email"""
-    try:
-        headers = {
-            "Authorization": f"Bearer {settings.contactout_api}",
-            "Content-Type": "application/json"
-        }
-        
-        # ContactOut uses LinkedIn URL preferably
-        linkedin_url = lead.get("profile_url", "")
-        
-        if linkedin_url and "linkedin.com" in linkedin_url:
-            payload = {"linkedin_url": linkedin_url}
-        else:
-            payload = {
-                "first_name": lead.get("first_name", ""),
-                "last_name": lead.get("last_name", ""),
-                "company": lead.get("company", "")
-            }
-        
-        response = httpx.post(
-            "https://api.contactout.com/v2/search",
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        
-        if response.status_code != 200:
-            logger.warning(f"ContactOut API error: {response.status_code}")
-            return {"email": None, "phone": None, "confidence": 0, "source": "contactout"}
-        
-        data = response.json()
-        results = data.get("results", [])
-        
-        if results:
-            result = results[0]
-            email = result.get("email")
-            phone = result.get("phone")
-            
-            return {
-                "email": email,
-                "phone": phone,
-                "confidence": result.get("confidence", 85) if email else 0,
-                "source": "contactout",
-                "cost": 0.05 if email else 0,
-                "raw_data": data
-            }
-        
-        return {"email": None, "phone": None, "confidence": 0, "source": "contactout"}
-        
-    except Exception as e:
-        logger.error(f"ContactOut error: {e}")
-        return {"email": None, "phone": None, "confidence": 0, "source": "contactout"}
-
-
 @retry_with_backoff(max_retries=2)
 def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
     """Call Kaspr API - MOST EXPENSIVE at $0.071/email"""
@@ -2494,3 +2336,32 @@ def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Kaspr error: {e}")
         return {"email": None, "phone": None, "confidence": 0, "source": "kaspr"}
+
+def extract_domain(company: str) -> str:
+    """Extract domain from company name or URL"""
+    if not company:
+        return ""
+    
+    # Remove common protocols
+    company = company.replace("https://", "").replace("http://", "").replace("www.", "")
+    
+    # If it already looks like a domain, use it
+    if "." in company and not " " in company:
+        return company.split("/")[0]  # Remove any path components
+    
+    # Otherwise, create a domain from company name
+    domain = company.lower()
+    # Remove common company suffixes
+    suffixes = [" inc", " llc", " corp", " corporation", " company", " co", " ltd", " limited"]
+    for suffix in suffixes:
+        domain = domain.replace(suffix, "")
+    
+    # Remove special characters and spaces
+    domain = "".join(c for c in domain if c.isalnum() or c in ".-")
+    domain = domain.replace(" ", "").replace("-", "")
+    
+    # Add .com if no TLD present
+    if "." not in domain:
+        domain += ".com"
+    
+    return domain

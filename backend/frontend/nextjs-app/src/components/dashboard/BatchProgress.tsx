@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, CheckCircle, AlertCircle, Clock, Loader, Shield, Mail, Phone, DollarSign } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle, Clock, Loader, Shield, Mail, Phone, DollarSign, Cog } from 'lucide-react';
 import api from '../../services/api';
 import VerificationStats from './VerificationStats';
 
@@ -200,102 +200,59 @@ const BatchProgress: React.FC = () => {
             </div>
           )}
           
-          {/* Stage progress */}
-          <div className="mb-8">
-            <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
-              <Clock className="h-4 w-4 text-gray-600 mr-2" />
-              Processing Stages
-            </h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* Stage 1: Import */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-900">1. Import</span>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+          {/* Enhanced Processing Stages */}
+          {currentBatch.status === 'processing' && (
+            <div className="mt-8 bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Cog className="h-5 w-5 mr-2 text-blue-600" />
+                Processing Stages
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-700">✅ Contact extraction</span>
                 </div>
-                <div className="text-xs text-gray-600">
-                  <div>Status: Completed</div>
-                  <div>Duration: ~30s</div>
-                  <div>Contacts: {currentBatch.total}</div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-gray-700">🔍 Email enrichment cascade (Enrow → Icypeas → Apollo → Datagma...)</span>
                 </div>
-              </div>
-
-              {/* Stage 2: Enrichment */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-900">2. Enrichment</span>
-                  {progress >= 100 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : progress > 0 ? (
-                    <Loader className="h-5 w-5 text-blue-500 animate-spin" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
-                  )}
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                  <span className="text-gray-700">📧 Email verification & scoring</span>
                 </div>
-                <div className="text-xs text-gray-600">
-                  <div>Status: {progress >= 100 ? 'Completed' : progress > 0 ? 'Processing' : 'Pending'}</div>
-                  <div>Progress: {Math.round(progress)}%</div>
-                  <div>Found: {Math.round(emailHitRate)}% emails, {Math.round(phoneHitRate)}% phones</div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                  <span className="text-gray-700">📞 Phone number enrichment & verification</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                  <span className="text-gray-400">⚡ Final data consolidation</span>
                 </div>
               </div>
-
-              {/* Stage 3: Email Verification */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-900">3. Email Verify</span>
-                  {progress >= 100 && emailHitRate > 0 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : progress >= 100 ? (
-                    <Loader className="h-5 w-5 text-orange-500 animate-spin" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-                <div className="text-xs text-gray-600">
-                  <div>Status: {progress >= 100 && emailHitRate > 0 ? 'Verifying' : progress >= 100 ? 'Ready' : 'Waiting'}</div>
-                  <div>Quality: Checking deliverability</div>
-                  <div>Emails: {currentBatch.emails_found || 0} found</div>
-                </div>
-              </div>
-
-              {/* Stage 4: Phone Verification */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-900">4. Phone Verify</span>
-                  {progress >= 100 && phoneHitRate > 0 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : progress >= 100 ? (
-                    <Loader className="h-5 w-5 text-purple-500 animate-spin" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-                <div className="text-xs text-gray-600">
-                  <div>Status: {progress >= 100 && phoneHitRate > 0 ? 'Verifying' : progress >= 100 ? 'Ready' : 'Waiting'}</div>
-                  <div>Type: Mobile/Landline detection</div>
-                  <div>Phones: {currentBatch.phones_found || 0} found</div>
-                </div>
-              </div>
-
-              {/* Stage 5: Export Ready */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-900">5. Export</span>
-                  {progress >= 100 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-                <div className="text-xs text-gray-600">
-                  <div>Status: {progress >= 100 ? 'Ready' : 'Pending'}</div>
-                  <div>Format: CSV/Excel/JSON</div>
-                  <div>Quality: Verified data</div>
+              
+              {/* Real-time stats during processing */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Emails Found:</span>
+                    <span className="ml-2 font-medium text-green-600">{Math.round((currentBatch.emails_found || 0) / (currentBatch.total || 1) * 100)}%</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Phones Found:</span>
+                    <span className="ml-2 font-medium text-blue-600">{Math.round((currentBatch.phones_found || 0) / (currentBatch.total || 1) * 100)}%</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Avg Confidence:</span>
+                    <span className="ml-2 font-medium text-purple-600">{Math.round(currentBatch.avg_confidence || 0)}%</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Credits Used:</span>
+                    <span className="ml-2 font-medium text-orange-600">{currentBatch.credits_used || 0}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
