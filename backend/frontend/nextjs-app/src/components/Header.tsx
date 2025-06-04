@@ -1,8 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Search, Menu } from 'lucide-react';
 import CreditDisplay from './common/CreditDisplay';
 
 const Header: React.FC = () => {
+  const [userName, setUserName] = useState('User');
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+        if (!token) return;
+
+        // Fetch user profile
+        const profileResponse = await fetch(`${import.meta.env.VITE_AUTH_URL || 'http://localhost:8001'}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          const firstName = profileData.first_name || '';
+          setUserName(firstName || 'User');
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUserName();
+  }, []);
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="px-4 sm:px-6 lg:px-8">
@@ -38,7 +64,7 @@ const Header: React.FC = () => {
             
             <div className="hidden md:flex items-center space-x-2 text-sm">
               <span className="text-gray-500">Good morning,</span>
-              <span className="text-gray-900 font-medium">Test User</span>
+              <span className="text-gray-900 font-medium">{userName}</span>
             </div>
           </div>
         </div>

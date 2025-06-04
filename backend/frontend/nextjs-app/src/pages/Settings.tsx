@@ -98,10 +98,8 @@ const SettingsPage: React.FC = () => {
   const [securitySettings, setSecuritySettings] = useState({
     two_factor_enabled: false,
     login_alerts: true,
-    session_timeout: 480, // minutes
     ip_whitelist_enabled: false,
     allowed_ips: [],
-    api_rate_limit: 1000, // requests per hour
     password_policy: {
       min_length: 8,
       require_uppercase: true,
@@ -164,10 +162,10 @@ const SettingsPage: React.FC = () => {
       description: 'Manage API access'
     },
     {
-      id: 'enrichment',
-      label: 'Enrichment',
-      icon: <Zap className="w-5 h-5" />,
-      description: 'Data enrichment settings'
+      id: 'import',
+      label: 'Import Settings',
+      icon: <Upload className="w-5 h-5" />,
+      description: 'Import and enrichment settings'
     },
     {
       id: 'notifications',
@@ -686,61 +684,16 @@ const SettingsPage: React.FC = () => {
   const renderEnrichmentSettings = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Enrichment Settings</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Import Settings</h2>
         
-        {/* Quality Settings */}
+        {/* Auto-Enrichment Settings */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Enrichment Quality</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Automatic Enrichment</h3>
           <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Quality Preference</label>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { value: 'highest', label: 'Highest Quality', description: 'Maximum accuracy, slower processing' },
-                  { value: 'balanced', label: 'Balanced', description: 'Good accuracy with reasonable speed' },
-                  { value: 'fastest', label: 'Fastest', description: 'Quick results, may sacrifice some accuracy' }
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setEnrichmentSettings(prev => ({ ...prev, quality_threshold: option.value }))}
-                    className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
-                      enrichmentSettings.quality_threshold === option.value
-                        ? 'border-teal-500 bg-teal-50'
-                        : 'border-gray-200 hover:border-teal-300'
-                    }`}
-                  >
-                    <div className="font-semibold text-gray-900">{option.label}</div>
-                    <div className="text-sm text-gray-600 mt-1">{option.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Minimum Confidence Score: {(enrichmentSettings.confidence_threshold * 100).toFixed(0)}%
-              </label>
-              <input
-                type="range"
-                min="30"
-                max="100"
-                value={enrichmentSettings.confidence_threshold * 100}
-                onChange={(e) => setEnrichmentSettings(prev => ({ 
-                  ...prev, 
-                  confidence_threshold: parseInt(e.target.value) / 100 
-                }))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>30% (More Results)</span>
-                <span>100% (Higher Quality)</span>
-              </div>
-            </div>
-
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Auto-Enrichment</h4>
-                <p className="text-sm text-gray-600">Automatically enrich new contacts on import</p>
+                <h4 className="font-medium text-gray-900">Automatically Enrich New Contacts on Import</h4>
+                <p className="text-sm text-gray-600">When enabled, new contacts will be automatically enriched when you import them</p>
               </div>
               <button
                 onClick={() => setEnrichmentSettings(prev => ({ ...prev, auto_enrich: !prev.auto_enrich }))}
@@ -754,22 +707,22 @@ const SettingsPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-gray-900">Retry Failed Enrichments</h4>
-                <p className="text-sm text-gray-600">Automatically retry contacts that failed to enrich</p>
+            {enrichmentSettings.auto_enrich && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h5 className="font-medium text-blue-900 mb-1">Auto-Enrichment Benefits</h5>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• Automatically finds email addresses and phone numbers</li>
+                      <li>• Verifies contact information for accuracy</li>
+                      <li>• Saves time by processing contacts immediately</li>
+                      <li>• Uses our smart cascade system for best results</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => setEnrichmentSettings(prev => ({ ...prev, retry_failed: !prev.retry_failed }))}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  enrichmentSettings.retry_failed ? 'bg-teal-600' : 'bg-gray-200'
-                }`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                  enrichmentSettings.retry_failed ? 'translate-x-6' : 'translate-x-1'
-                }`} />
-              </button>
-            </div>
+            )}
           </div>
           
           <div className="mt-6">
@@ -788,58 +741,33 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Data Sources */}
+        {/* Self-Enrichment Section */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Source Priority</h3>
-          <p className="text-sm text-gray-600 mb-6">
-            Drag providers to reorder enrichment priority. Higher priority sources are tried first.
-          </p>
-          <div className="space-y-3">
-            {enrichmentProviders.map((provider, index) => (
-              <div 
-                key={provider.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-teal-300 transition-all duration-200"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="text-lg font-semibold text-gray-500">#{provider.priority}</div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{provider.name}</h4>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                      <span>Success Rate: {provider.successRate}%</span>
-                      <span>Credits Used: {provider.creditsUsed.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => updateProviderPriority(provider.id, 'up')}
-                    disabled={index === 0}
-                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => updateProviderPriority(provider.id, 'down')}
-                    disabled={index === enrichmentProviders.length - 1}
-                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setEnrichmentProviders(prev => 
-                      prev.map(p => p.id === provider.id ? { ...p, enabled: !p.enabled } : p)
-                    )}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                      provider.enabled ? 'bg-teal-600' : 'bg-gray-200'
-                    }`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                      provider.enabled ? 'translate-x-6' : 'translate-x-1'
-                    }`} />
-                  </button>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Self-Enrichment</h3>
+          <div className="space-y-4">
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
+              <div className="flex items-start">
+                <Zap className="w-5 h-5 text-purple-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div>
+                  <h5 className="font-medium text-purple-900 mb-1">Manual Enrichment</h5>
+                  <p className="text-sm text-purple-700">
+                    You can manually enrich contacts at any time from the Import page or by uploading a CSV file.
+                    This gives you full control over when and which contacts to enrich.
+                  </p>
                 </div>
               </div>
-            ))}
+            </div>
+            
+            <div className="flex items-center justify-center pt-4">
+              <a
+                href="/import"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Go to Import Page
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -989,43 +917,6 @@ const SettingsPage: React.FC = () => {
                   securitySettings.login_alerts ? 'translate-x-6' : 'translate-x-1'
                 }`} />
               </button>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Session Timeout: {securitySettings.session_timeout} minutes
-              </label>
-              <input
-                type="range"
-                min="30"
-                max="1440"
-                step="30"
-                value={securitySettings.session_timeout}
-                onChange={(e) => setSecuritySettings(prev => ({ 
-                  ...prev, 
-                  session_timeout: parseInt(e.target.value)
-                }))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>30 min</span>
-                <span>24 hours</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                API Rate Limit: {securitySettings.api_rate_limit} requests/hour
-              </label>
-              <input
-                type="number"
-                value={securitySettings.api_rate_limit}
-                onChange={(e) => setSecuritySettings(prev => ({ 
-                  ...prev, 
-                  api_rate_limit: parseInt(e.target.value) || 1000
-                }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-              />
             </div>
           </div>
         </div>
@@ -1480,7 +1371,7 @@ const SettingsPage: React.FC = () => {
         );
       case 'api':
         return renderApiSettings();
-      case 'enrichment':
+      case 'import':
         return renderEnrichmentSettings();
       case 'notifications':
         return (

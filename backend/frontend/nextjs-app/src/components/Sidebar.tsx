@@ -31,19 +31,9 @@ const navItems = [
 
 const crmItems = [
   {
-    path: '/crm/contacts',
+    path: '/crm',
     icon: <UserPlus className="w-4 h-4" />,
     label: 'Contacts'
-  },
-  {
-    path: '/crm/activities',
-    icon: <Activity className="w-4 h-4" />,
-    label: 'Activities'
-  },
-  {
-    path: '/crm/campaigns',
-    icon: <Megaphone className="w-4 h-4" />,
-    label: 'Campaigns'
   }
 ];
 
@@ -73,7 +63,7 @@ const otherItems = [
 const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const [crmExpanded, setCrmExpanded] = useState(true);
   const [userCredits, setUserCredits] = useState({ balance: 5000, used_this_month: 0, limit_monthly: 5000 });
-  const [userInfo, setUserInfo] = useState({ name: 'Test User Pro', plan: 'Professional' });
+  const [userInfo, setUserInfo] = useState({ name: 'Loading...', plan: 'Professional', initials: 'L' });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -82,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         if (!token) return;
 
         // Fetch user credits
-        const creditsResponse = await fetch(`${import.meta.env.VITE_IMPORT_URL}/api/user/credits`, {
+        const creditsResponse = await fetch(`${import.meta.env.VITE_IMPORT_URL || 'http://localhost:8002'}/api/user/credits`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -91,10 +81,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           setUserCredits(creditsData);
         }
 
-        // For now, use static user info - could fetch from auth service
-        setUserInfo({ name: 'Test User Pro', plan: 'Professional' });
+        // Fetch user profile
+        const profileResponse = await fetch(`${import.meta.env.VITE_AUTH_URL || 'http://localhost:8001'}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          const firstName = profileData.first_name || '';
+          const lastName = profileData.last_name || '';
+          const fullName = `${firstName} ${lastName}`.trim() || 'User';
+          const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'U';
+          
+          setUserInfo({ 
+            name: fullName, 
+            plan: 'Professional',
+            initials: initials
+          });
+        }
       } catch (error) {
         console.error('Error fetching user data:', error);
+        // Keep loading state or fallback
+        setUserInfo({ name: 'User', plan: 'Professional', initials: 'U' });
       }
     };
 
@@ -232,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
       <div className="flex-shrink-0 p-4 border-t border-gray-200">
         <div className="flex items-center">
           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 flex items-center justify-center">
-            <span className="text-sm font-medium text-white">TU</span>
+            <span className="text-sm font-medium text-white">{userInfo.initials}</span>
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-900">
