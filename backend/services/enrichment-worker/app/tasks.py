@@ -1170,11 +1170,90 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str):
         raise
 
 @celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.cascade_enrich')
-def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
+def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrichment_config: Dict[str, bool] = None):
     """
     UPDATED: Cost-optimized cascade enrichment using corrected provider functions
+    Now supports selective enrichment based on user preferences
     """
-    print(f"💰 Starting COST-OPTIMIZED enrichment for {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}")
+    # Parse enrichment configuration
+    if enrichment_config is None:
+        # Default to both email and phone if not specified (backward compatibility)
+        enrichment_config = {"enrich_email": True, "enrich_phone": True}
+    
+    enrich_email = enrichment_config.get("enrich_email", True)
+    enrich_phone = enrichment_config.get("enrich_phone", True)
+    
+    enrichment_type_text = []
+    if enrich_email:
+        enrichment_type_text.append("Email")
+    if enrich_phone:
+        enrichment_type_text.append("Phone")
+    enrichment_type_str = " + ".join(enrichment_type_text) if enrichment_type_text else "No enrichment"
+    
+    print(f"🎯 Starting {enrichment_type_str} enrichment for {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}")
+    
+    # Skip enrichment entirely if neither email nor phone is requested
+    if not enrich_email and not enrich_phone:
+        print(f"⚠️ No enrichment types selected, skipping enrichment")
+        contact_data = {
+            "id": str(uuid.uuid4()),
+            "job_id": job_id,
+            "user_id": user_id,
+            "first_name": lead.get("first_name", ""),
+            "last_name": lead.get("last_name", ""),
+            "company": lead.get("company", ""),
+            "position": lead.get("position", ""),
+            "location": lead.get("location", ""),
+            "industry": lead.get("industry", ""),
+            "profile_url": lead.get("profile_url", ""),
+            "enriched": False,
+            "enrichment_status": "skipped",
+            "credits_consumed": 0,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Save to database and return
+        try:
+            with SyncSessionLocal() as session:
+                contact_insert = text("""
+                    INSERT INTO contacts (
+                        job_id, first_name, last_name, company, position, location, 
+                        industry, profile_url, enriched, enrichment_status,
+                        credits_consumed, created_at, updated_at
+                    ) VALUES (
+                        :job_id, :first_name, :last_name, :company, :position, :location,
+                        :industry, :profile_url, :enriched, :enrichment_status,
+                        :credits_consumed, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                session.execute(contact_insert, {
+                    "job_id": job_id,
+                    "first_name": contact_data["first_name"],
+                    "last_name": contact_data["last_name"],
+                    "company": contact_data["company"],
+                    "position": contact_data["position"],
+                    "location": contact_data["location"],
+                    "industry": contact_data["industry"],
+                    "profile_url": contact_data["profile_url"],
+                    "enriched": contact_data["enriched"],
+                    "enrichment_status": contact_data["enrichment_status"],
+                    "credits_consumed": contact_data["credits_consumed"]
+                })
+                
+                # Update job progress
+                session.execute(
+                    text("UPDATE import_jobs SET completed = completed + 1, updated_at = CURRENT_TIMESTAMP WHERE id = :job_id"),
+                    {"job_id": job_id}
+                )
+                
+                session.commit()
+                print(f"📝 Saved skipped contact and updated job progress")
+        except Exception as e:
+            print(f"❌ Error saving skipped contact: {e}")
+        
+        return {"status": "skipped", "reason": "no_enrichment_types_selected"}
     
     # Initialize contact data structure
     contact_data = {
@@ -1230,37 +1309,43 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 print(f"❌ Provider function not found for {provider_name}")
                 continue
                 
-            if result and (result.get("email") or result.get("phone")):
-                # Found results with cheap provider - STOP HERE for cost optimization!
-                email = result.get("email")
-                phone = result.get("phone")
+            if result:
+                # Check if we found the requested types
+                email = result.get("email") if enrich_email else None
+                phone = result.get("phone") if enrich_phone else None
                 
-                # Clean results
-                if isinstance(email, dict):
-                    email = email.get("email") if email else None
-                if isinstance(phone, dict):
-                    phone = phone.get("phone") or phone.get("number") if phone else None
+                # Only consider successful if we found what was requested
+                has_requested_data = (enrich_email and email) or (enrich_phone and phone)
                 
-                total_cost = result.get("cost", cost if email else 0)
-                
-                contact_data.update({
-                    "email": email,
-                    "phone": phone,
-                    "enriched": True,
-                    "enrichment_status": "completed",
-                    "enrichment_provider": provider_name,
-                    "enrichment_score": result.get("confidence", 85),
-                    "email_verified": result.get("email_verified", False),
-                    "phone_verified": result.get("phone_verified", False),
-                    "updated_at": datetime.utcnow()
-                })
-                
-                enrichment_successful = True
-                provider_used = provider_name
-                processing_time = time.time() - start_time
-                print(f"✅ SUCCESS with CHEAPEST tier {provider_name} (${cost}) in {processing_time:.2f}s")
-                print(f"💰 Cost savings: Used ${cost} instead of up to ${max(service_costs.values())}")
-                break
+                if has_requested_data:
+                    # Found results with cheap provider - STOP HERE for cost optimization!
+                    
+                    # Clean results
+                    if isinstance(email, dict):
+                        email = email.get("email") if email else None
+                    if isinstance(phone, dict):
+                        phone = phone.get("phone") or phone.get("number") if phone else None
+                    
+                    total_cost = result.get("cost", cost if email else 0)
+                    
+                    contact_data.update({
+                        "email": email,
+                        "phone": phone,
+                        "enriched": True,
+                        "enrichment_status": "completed",
+                        "enrichment_provider": provider_name,
+                        "enrichment_score": result.get("confidence", 85),
+                        "email_verified": result.get("email_verified", False),
+                        "phone_verified": result.get("phone_verified", False),
+                        "updated_at": datetime.utcnow()
+                    })
+                    
+                    enrichment_successful = True
+                    provider_used = provider_name
+                    processing_time = time.time() - start_time
+                    print(f"✅ SUCCESS with CHEAPEST tier {provider_name} (${cost}) in {processing_time:.2f}s")
+                    print(f"💰 Cost savings: Used ${cost} instead of up to ${max(service_costs.values())}")
+                    break
                 
         except Exception as e:
             print(f"❌ {provider_name} failed: {e}")
@@ -1288,41 +1373,46 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 else:
                     continue
                     
-                if result and (result.get("email") or result.get("phone")):
-                    email = result.get("email")
-                    phone = result.get("phone")
+                if result:
+                    # Check if we found the requested types
+                    email = result.get("email") if enrich_email else None
+                    phone = result.get("phone") if enrich_phone else None
                     
-                    # Clean results
-                    if isinstance(email, dict):
-                        email = email.get("email") if email else None
-                    if isinstance(phone, dict):
-                        phone = phone.get("phone") or phone.get("number") if phone else None
+                    # Only consider successful if we found what was requested
+                    has_requested_data = (enrich_email and email) or (enrich_phone and phone)
                     
-                    total_cost = result.get("cost", cost if email else 0)
-                    
-                    contact_data.update({
-                        "email": email,
-                        "phone": phone,
-                        "enriched": True,
-                        "enrichment_status": "completed",
-                        "enrichment_provider": provider_name,
-                        "enrichment_score": result.get("confidence", 85),
-                        "email_verified": result.get("email_verified", False),
-                        "phone_verified": result.get("phone_verified", False),
-                        "updated_at": datetime.utcnow()
-                    })
-                    
-                    enrichment_successful = True
-                    provider_used = provider_name
-                    processing_time = time.time() - start_time
-                    print(f"✅ SUCCESS with MID-TIER {provider_name} (${cost}) in {processing_time:.2f}s")
-                    break
+                    if has_requested_data:
+                        # Clean results
+                        if isinstance(email, dict):
+                            email = email.get("email") if email else None
+                        if isinstance(phone, dict):
+                            phone = phone.get("phone") or phone.get("number") if phone else None
+                        
+                        total_cost = result.get("cost", cost if email else 0)
+                        
+                        contact_data.update({
+                            "email": email,
+                            "phone": phone,
+                            "enriched": True,
+                            "enrichment_status": "completed",
+                            "enrichment_provider": provider_name,
+                            "enrichment_score": result.get("confidence", 85),
+                            "email_verified": result.get("email_verified", False),
+                            "phone_verified": result.get("phone_verified", False),
+                            "updated_at": datetime.utcnow()
+                        })
+                        
+                        enrichment_successful = True
+                        provider_used = provider_name
+                        processing_time = time.time() - start_time
+                        print(f"✅ SUCCESS with MID-TIER {provider_name} (${cost}) in {processing_time:.2f}s")
+                        break
                     
             except Exception as e:
                 print(f"❌ {provider_name} failed: {e}")
                 continue
     
-    # Phase 3: EXPENSIVE providers ONLY if still no email
+    # Phase 3: EXPENSIVE providers ONLY if still no results
     if not enrichment_successful and len(service_order) > 8:
         tier3_providers = service_order[8:]  # Most expensive providers
         print(f"💎 Phase 3: Last resort - EXPENSIVE providers")
@@ -1344,36 +1434,41 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 else:
                     continue
                     
-                if result and (result.get("email") or result.get("phone")):
-                    email = result.get("email")
-                    phone = result.get("phone")
+                if result:
+                    # Check if we found the requested types
+                    email = result.get("email") if enrich_email else None
+                    phone = result.get("phone") if enrich_phone else None
                     
-                    # Clean results
-                    if isinstance(email, dict):
-                        email = email.get("email") if email else None
-                    if isinstance(phone, dict):
-                        phone = phone.get("phone") or phone.get("number") if phone else None
+                    # Only consider successful if we found what was requested
+                    has_requested_data = (enrich_email and email) or (enrich_phone and phone)
                     
-                    total_cost = result.get("cost", cost if email else 0)
-                    
-                    contact_data.update({
-                        "email": email,
-                        "phone": phone,
-                        "enriched": True,
-                        "enrichment_status": "completed",
-                        "enrichment_provider": provider_name,
-                        "enrichment_score": result.get("confidence", 85),
-                        "email_verified": result.get("email_verified", False),
-                        "phone_verified": result.get("phone_verified", False),
-                        "updated_at": datetime.utcnow()
-                    })
-                    
-                    enrichment_successful = True
-                    provider_used = provider_name
-                    processing_time = time.time() - start_time
-                    print(f"✅ SUCCESS with EXPENSIVE {provider_name} (${cost}) in {processing_time:.2f}s")
-                    print(f"💸 Expensive but successful: ${cost} for final result")
-                    break
+                    if has_requested_data:
+                        # Clean results
+                        if isinstance(email, dict):
+                            email = email.get("email") if email else None
+                        if isinstance(phone, dict):
+                            phone = phone.get("phone") or phone.get("number") if phone else None
+                        
+                        total_cost = result.get("cost", cost if email else 0)
+                        
+                        contact_data.update({
+                            "email": email,
+                            "phone": phone,
+                            "enriched": True,
+                            "enrichment_status": "completed",
+                            "enrichment_provider": provider_name,
+                            "enrichment_score": result.get("confidence", 85),
+                            "email_verified": result.get("email_verified", False),
+                            "phone_verified": result.get("phone_verified", False),
+                            "updated_at": datetime.utcnow()
+                        })
+                        
+                        enrichment_successful = True
+                        provider_used = provider_name
+                        processing_time = time.time() - start_time
+                        print(f"✅ SUCCESS with EXPENSIVE {provider_name} (${cost}) in {processing_time:.2f}s")
+                        print(f"💸 Expensive but successful: ${cost} for final result")
+                        break
                     
             except Exception as e:
                 print(f"❌ {provider_name} failed: {e}")
@@ -1397,27 +1492,32 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 print(f"🔄 Fallback: Trying {provider_name}")
                 result = provider_func(lead)
                 
-                if result and (result.get("email") or result.get("phone")):
-                    email = result.get("email")
-                    phone = result.get("phone")
+                if result:
+                    # Check if we found the requested types
+                    email = result.get("email") if enrich_email else None
+                    phone = result.get("phone") if enrich_phone else None
                     
-                    contact_data.update({
-                        "email": email,
-                        "phone": phone,
-                        "enriched": True,
-                        "enrichment_status": "completed",
-                        "enrichment_provider": f"{provider_name}_fallback",
-                        "enrichment_score": result.get("confidence", 70),
-                        "email_verified": result.get("email_verified", False),
-                        "phone_verified": result.get("phone_verified", False),
-                        "updated_at": datetime.utcnow()
-                    })
+                    # Only consider successful if we found what was requested
+                    has_requested_data = (enrich_email and email) or (enrich_phone and phone)
                     
-                    enrichment_successful = True
-                    provider_used = f"{provider_name}_fallback"
-                    total_cost = 0.0  # Fallback providers don't count toward new pricing
-                    print(f"✅ Fallback success with {provider_name}")
-                    break
+                    if has_requested_data:
+                        contact_data.update({
+                            "email": email,
+                            "phone": phone,
+                            "enriched": True,
+                            "enrichment_status": "completed",
+                            "enrichment_provider": f"{provider_name}_fallback",
+                            "enrichment_score": result.get("confidence", 70),
+                            "email_verified": result.get("email_verified", False),
+                            "phone_verified": result.get("phone_verified", False),
+                            "updated_at": datetime.utcnow()
+                        })
+                        
+                        enrichment_successful = True
+                        provider_used = f"{provider_name}_fallback"
+                        total_cost = 0.0  # Fallback providers don't count toward new pricing
+                        print(f"✅ Fallback success with {provider_name}")
+                        break
                     
             except Exception as e:
                 print(f"❌ Fallback {provider_name} failed: {e}")
@@ -1474,15 +1574,15 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
     if enrichment_successful:
         print(f"💰 Total enrichment cost: ${total_cost:.3f} using {provider_used}")
     
-    # Calculate credits based on actual results found
+    # Calculate credits based on actual results found AND what was requested
     credits_to_charge = 0
-    email_found = bool(contact_data.get("email"))
-    phone_found = bool(contact_data.get("phone"))
+    email_found = bool(contact_data.get("email")) and enrich_email
+    phone_found = bool(contact_data.get("phone")) and enrich_phone
     
-    # CORRECT CREDIT PRICING MODEL
+    # CORRECT CREDIT PRICING MODEL - only charge for requested types that were found
     if email_found:
         credits_to_charge += 1  # 1 credit per email
-        print(f"📧 Email found: +1 credit")
+        print(f"📧 Email found (requested): +1 credit")
     
     if phone_found:
         credits_to_charge += 10  # 10 credits per phone
@@ -1538,7 +1638,9 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str):
                 if phone_found:
                     reason_parts.append("1 phone (+10 credits)")
                 
-                reason = f"Enrichment results: {', '.join(reason_parts)} for {lead.get('company', 'unknown')}"
+                # Add enrichment type info
+                enrichment_info = f" [{enrichment_type_str} requested]"
+                reason = f"Enrichment results: {', '.join(reason_parts)} for {lead.get('company', 'unknown')}{enrichment_info}"
                 
                 session.execute(
                     text("""

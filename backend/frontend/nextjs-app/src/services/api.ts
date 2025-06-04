@@ -455,15 +455,85 @@ class ApiService {
   // IMPORT & JOBS
   // ==========================================
 
-  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<{ job_id: string }> {
+  async uploadFile(
+    file: File, 
+    onProgress?: (progress: number) => void,
+    enrichmentType?: { email: boolean; phone: boolean }
+  ): Promise<{ job_id: string }> {
     try {
-      const response = await client.uploadFile<{ job_id: string }>(
-        `${API_CONFIG.importUrl}/api/imports/file`,
-        file,
-        onProgress
-      );
-      toast.success('File uploaded successfully! Enrichment started.');
-      return response;
+      // Create FormData with file and enrichment options
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Add enrichment type parameters if provided
+      if (enrichmentType) {
+        formData.append('enrich_email', enrichmentType.email.toString());
+        formData.append('enrich_phone', enrichmentType.phone.toString());
+      } else {
+        // Default to both if not specified (backward compatibility)
+        formData.append('enrich_email', 'true');
+        formData.append('enrich_phone', 'true');
+      }
+      
+      // Use the raw fetch API for better control over FormData
+      const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+      
+      const xhr = new XMLHttpRequest();
+      
+      return new Promise<{ job_id: string }>((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable && onProgress) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            onProgress(progress);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              
+              // Show success message with enrichment type info
+              const typeText = enrichmentType?.email && enrichmentType?.phone 
+                ? 'Email + Phone enrichment'
+                : enrichmentType?.email 
+                  ? 'Email enrichment'
+                  : enrichmentType?.phone 
+                    ? 'Phone enrichment'
+                    : 'Full enrichment';
+              
+              toast.success(`File uploaded successfully! ${typeText} started.`);
+              resolve(response);
+            } catch (error) {
+              reject(new Error('Invalid response format'));
+            }
+          } else {
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              reject(new ApiError(xhr.status, errorResponse.message || 'Upload failed', errorResponse));
+            } catch {
+              reject(new ApiError(xhr.status, `Upload failed with status ${xhr.status}`));
+            }
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload'));
+        });
+
+        xhr.addEventListener('timeout', () => {
+          reject(new Error('Upload timeout'));
+        });
+
+        xhr.open('POST', `${API_CONFIG.importUrl}/api/imports/file`);
+        
+        if (token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+        
+        xhr.timeout = 300000; // 5 minutes timeout
+        xhr.send(formData);
+      });
     } catch (error) {
       toast.error('File upload failed. Please try again.');
       throw error;

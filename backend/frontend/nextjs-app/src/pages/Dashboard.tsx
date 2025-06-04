@@ -6,7 +6,7 @@ import {
   TrendingUp, BarChart3, RefreshCw, Upload,
   CheckCircle, XCircle, AlertTriangle, Eye,
   Activity, Zap, Target, ArrowUp, ArrowDown,
-  Calendar, DollarSign, Wifi, WifiOff
+  Calendar, DollarSign, Wifi, WifiOff, Cog
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -18,7 +18,6 @@ import BatchProgress from '../components/dashboard/BatchProgress';
 import RecentBatches from '../components/dashboard/RecentBatches';
 import ProviderStatus from '../components/dashboard/ProviderStatus';
 import CreditUsage from '../components/dashboard/CreditUsage';
-import RealTimeMonitoring from '../components/dashboard/RealTimeMonitoring';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -57,46 +56,44 @@ const Dashboard: React.FC = () => {
   const totalServices = Object.keys(health).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page header with action buttons */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-4 md:mb-0"
         >
-          <h1 className="text-2xl font-bold text-gray-900">
-            Dashboard
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Welcome back! Here's what's happening with your lead enrichment.
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Monitor your enrichment performance and system health
           </p>
         </motion.div>
         
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="mt-4 md:mt-0 flex space-x-3"
+          className="flex space-x-3"
         >
-          <button 
+          <button
             onClick={() => refetchStats()}
             disabled={statsLoading}
-            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 disabled:opacity-50"
+            className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${statsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          
           <Link
-            to="/import"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
+            to="/upload"
+            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
           >
             <Upload className="h-4 w-4 mr-2" />
-            New Import
+            New Enrichment
           </Link>
         </motion.div>
       </div>
 
-      {/* Service Health Alert */}
+      {/* System Health Alert */}
       <AnimatePresence>
         {!healthLoading && totalServices > 0 && servicesUp < totalServices && (
           <motion.div
@@ -147,9 +144,9 @@ const Dashboard: React.FC = () => {
                 {totalContacts.toLocaleString()}
               </p>
               <div className="flex items-center mt-2 text-sm">
-                <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-green-600 font-medium">
-                  {completedJobs.length} batches completed
+                <Users className="h-4 w-4 text-blue-500 mr-1" />
+                <span className="text-blue-600 font-medium">
+                  {totalEnriched.toLocaleString()} enriched
                 </span>
               </div>
             </div>
@@ -170,7 +167,7 @@ const Dashboard: React.FC = () => {
                 {totalEmailsFound.toLocaleString()}
               </p>
               <div className="flex items-center mt-2 text-sm">
-                <Target className="h-4 w-4 text-green-500 mr-1" />
+                <Mail className="h-4 w-4 text-green-500 mr-1" />
                 <span className="text-green-600 font-medium">
                   {totalContacts > 0 ? Math.round((totalEmailsFound / totalContacts) * 100) : 0}% hit rate
                 </span>
@@ -229,9 +226,9 @@ const Dashboard: React.FC = () => {
 
       {/* Error States */}
       <AnimatePresence>
-        {statsError && (
+        {(statsError || jobsError) && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className="bg-red-50 border border-red-200 rounded-xl p-4"
@@ -239,27 +236,19 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center">
               <XCircle className="h-5 w-5 text-red-500 mr-3" />
               <div>
-                <h4 className="text-sm font-semibold text-red-800">
-                  Dashboard Data Error
-                </h4>
+                <h4 className="text-sm font-semibold text-red-800">Error Loading Data</h4>
                 <p className="text-sm text-red-700 mt-1">
-                  {statsError}. Using cached data where available.
+                  {statsError || jobsError}
                 </p>
               </div>
-              <button
-                onClick={() => refetchStats()}
-                className="ml-auto text-sm text-red-600 hover:text-red-800 font-medium"
-              >
-                Retry
-              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Dashboard Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Current batch progress */}
+      {/* FIXED: Improved layout with proper spacing */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Current batch progress - takes up 2 columns on large screens */}
         <motion.div 
           className="lg:col-span-2"
           initial={{ opacity: 0, y: 20 }}
@@ -269,93 +258,64 @@ const Dashboard: React.FC = () => {
           <BatchProgress />
         </motion.div>
         
-        {/* Credit usage */}
+        {/* Right sidebar - Credit usage and Provider status stacked properly */}
         <motion.div
+          className="space-y-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
           <CreditUsage />
-        </motion.div>
-
-        {/* Real-Time Monitoring */}
-        <motion.div 
-          className="lg:col-span-2"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <RealTimeMonitoring />
-        </motion.div>
-        
-        {/* API Provider Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
           <ProviderStatus />
         </motion.div>
       </div>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent batches */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <RecentBatches />
-        </motion.div>
-      </div>
+      {/* Bottom Section - Recent batches */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <RecentBatches />
+      </motion.div>
 
       {/* Quick Actions Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9 }}
-        className="bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 p-6 shadow-lg"
+        transition={{ delay: 0.8 }}
+        className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-6 border border-gray-200 shadow-lg"
       >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            to="/import"
-            className="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 group"
-          >
-            <Upload className="h-8 w-8 text-primary-500 mr-3 group-hover:scale-110 transition-transform" />
-            <div>
-              <h4 className="font-semibold text-gray-900">Import Contacts</h4>
-              <p className="text-sm text-gray-600">Upload CSV files for enrichment</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-gray-400 ml-auto" />
-          </Link>
-
-          <Link
-            to="/batches"
-            className="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 group"
-          >
-            <Eye className="h-8 w-8 text-blue-500 mr-3 group-hover:scale-110 transition-transform" />
-            <div>
-              <h4 className="font-semibold text-gray-900">View Batches</h4>
-              <p className="text-sm text-gray-600">Monitor enrichment progress</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-gray-400 ml-auto" />
-          </Link>
-
-          <Link
-            to="/crm/contacts"
-            className="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 group"
-          >
-            <Users className="h-8 w-8 text-green-500 mr-3 group-hover:scale-110 transition-transform" />
-            <div>
-              <h4 className="font-semibold text-gray-900">Manage CRM</h4>
-              <p className="text-sm text-gray-600">View and organize contacts</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-gray-400 ml-auto" />
-          </Link>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div className="mb-4 md:mb-0">
+            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Common tasks and useful links
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to="/upload"
+              className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              New Upload
+            </Link>
+            <Link
+              to="/results"
+              className="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View Results
+            </Link>
+            <Link
+              to="/settings"
+              className="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Cog className="h-4 w-4 mr-2" />
+              Settings
+            </Link>
+          </div>
         </div>
       </motion.div>
     </div>

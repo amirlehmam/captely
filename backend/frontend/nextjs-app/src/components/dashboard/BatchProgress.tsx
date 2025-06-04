@@ -36,16 +36,14 @@ const BatchProgress: React.FC = () => {
 
   if (loading && !dashboardData) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
-          <div className="px-6 py-5">
-            <div className="h-6 bg-gray-100 rounded-lg animate-pulse mb-2"></div>
-            <div className="h-4 bg-gray-100 rounded-lg w-48 animate-pulse"></div>
-          </div>
-          <div className="border-t border-gray-100 p-6">
-            <div className="flex justify-center">
-              <Loader className="h-8 w-8 animate-spin text-primary-500" />
-            </div>
+      <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+        <div className="px-6 py-5">
+          <div className="h-6 bg-gray-100 rounded-lg animate-pulse mb-2"></div>
+          <div className="h-4 bg-gray-100 rounded-lg w-48 animate-pulse"></div>
+        </div>
+        <div className="border-t border-gray-100 p-6">
+          <div className="flex justify-center">
+            <Loader className="h-8 w-8 animate-spin text-primary-500" />
           </div>
         </div>
       </div>
@@ -110,7 +108,11 @@ const BatchProgress: React.FC = () => {
           <div className="flex items-center space-x-2">
             <button 
               onClick={() => setShowVerification(!showVerification)}
-              className="inline-flex items-center px-3 py-2 border border-purple-200 shadow-sm text-sm font-medium rounded-lg text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200"
+              className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                showVerification 
+                  ? 'border-purple-300 text-purple-800 bg-purple-100 hover:bg-purple-200 focus:ring-purple-500' 
+                  : 'border-purple-200 text-purple-700 bg-white hover:bg-purple-50 focus:ring-purple-500'
+              }`}
             >
               <Shield className="h-4 w-4 mr-2" />
               {showVerification ? 'Hide' : 'Show'} Verification
@@ -167,20 +169,20 @@ const BatchProgress: React.FC = () => {
           </div>
           
           {/* Stage progress */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
               <Clock className="h-4 w-4 text-gray-600 mr-2" />
               Processing Stages
             </h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
               {/* Stage 1: Import */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white p-3 rounded-lg border border-gray-200 relative">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">1. Import</span>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-green-500" />
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 space-y-1">
                   <div>Status: Completed</div>
                   <div>Duration: ~30s</div>
                   <div>Contacts: {currentBatch.total}</div>
@@ -188,37 +190,37 @@ const BatchProgress: React.FC = () => {
               </div>
 
               {/* Stage 2: Enrichment */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white p-3 rounded-lg border border-gray-200 relative">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">2. Enrichment</span>
                   {progress >= 100 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : progress > 0 ? (
-                    <Loader className="h-5 w-5 text-blue-500 animate-spin" />
+                    <Loader className="h-4 w-4 text-blue-500 animate-spin" />
                   ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
+                    <Clock className="h-4 w-4 text-gray-400" />
                   )}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 space-y-1">
                   <div>Status: {progress >= 100 ? 'Completed' : progress > 0 ? 'Processing' : 'Pending'}</div>
                   <div>Progress: {Math.round(progress)}%</div>
-                  <div>Found: {Math.round((currentBatch.emails_found || 0) / (currentBatch.total || 1) * 100)}% emails, {Math.round((currentBatch.phones_found || 0) / (currentBatch.total || 1) * 100)}% phones</div>
+                  <div>Found: {Math.round((currentBatch.emails_found || 0) / (currentBatch.total || 1) * 100)}% emails</div>
                 </div>
               </div>
 
               {/* Stage 3: Email Verification */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white p-3 rounded-lg border border-gray-200 relative">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">3. Email Verify</span>
                   {progress >= 100 && (currentBatch.emails_found || 0) > 0 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : progress >= 100 ? (
-                    <Loader className="h-5 w-5 text-orange-500 animate-spin" />
+                    <Loader className="h-4 w-4 text-orange-500 animate-spin" />
                   ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
+                    <Clock className="h-4 w-4 text-gray-400" />
                   )}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 space-y-1">
                   <div>Status: {progress >= 100 && (currentBatch.emails_found || 0) > 0 ? 'Verifying' : progress >= 100 ? 'Ready' : 'Waiting'}</div>
                   <div>Quality: Checking deliverability</div>
                   <div>Emails: {currentBatch.emails_found || 0} found</div>
@@ -226,18 +228,18 @@ const BatchProgress: React.FC = () => {
               </div>
 
               {/* Stage 4: Phone Verification */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white p-3 rounded-lg border border-gray-200 relative">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">4. Phone Verify</span>
                   {progress >= 100 && (currentBatch.phones_found || 0) > 0 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : progress >= 100 ? (
-                    <Loader className="h-5 w-5 text-purple-500 animate-spin" />
+                    <Loader className="h-4 w-4 text-purple-500 animate-spin" />
                   ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
+                    <Clock className="h-4 w-4 text-gray-400" />
                   )}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 space-y-1">
                   <div>Status: {progress >= 100 && (currentBatch.phones_found || 0) > 0 ? 'Verifying' : progress >= 100 ? 'Ready' : 'Waiting'}</div>
                   <div>Type: Mobile/Landline detection</div>
                   <div>Phones: {currentBatch.phones_found || 0} found</div>
@@ -245,16 +247,16 @@ const BatchProgress: React.FC = () => {
               </div>
 
               {/* Stage 5: Export Ready */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200 relative">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white p-3 rounded-lg border border-gray-200 relative">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">5. Export</span>
                   {progress >= 100 ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
+                    <Clock className="h-4 w-4 text-gray-400" />
                   )}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 space-y-1">
                   <div>Status: {progress >= 100 ? 'Ready' : 'Pending'}</div>
                   <div>Format: CSV/Excel/JSON</div>
                   <div>Quality: Verified data</div>
@@ -265,9 +267,10 @@ const BatchProgress: React.FC = () => {
         </div>
       </div>
 
-      {/* Verification Stats Component */}
       {showVerification && (
-        <VerificationStats jobId={currentBatch.job_id} />
+        <div className="animate-in slide-in-from-top-4 duration-300">
+          <VerificationStats jobId={currentBatch.job_id} />
+        </div>
       )}
     </div>
   );

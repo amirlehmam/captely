@@ -25,6 +25,8 @@ import toast from 'react-hot-toast';
 
 // Updated hooks for production
 import { useFileUpload, useJobs, useJob } from '../hooks/useApi';
+import { useEnrichmentConfirm } from '../hooks/useEnrichmentConfirm';
+import { EnrichmentType } from '../components/modals/EnrichmentConfirmModal';
 
 const ImportPage: React.FC = () => {
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ const ImportPage: React.FC = () => {
   const { uploadFile, uploading, progress, error: uploadError, reset } = useFileUpload();
   const { jobs, loading: jobsLoading, refetch: refetchJobs } = useJobs();
   const { job: currentJob, loading: jobLoading } = useJob(currentJobId);
+  const { confirm, EnrichmentConfirmDialog } = useEnrichmentConfirm();
 
   // Validation
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -130,7 +133,16 @@ const ImportPage: React.FC = () => {
     if (!selectedFile) return;
 
     try {
-      const result = await uploadFile(selectedFile);
+      // Show enrichment confirmation modal
+      const enrichmentType = await confirm(selectedFile.name);
+      
+      // If user cancelled the modal, enrichmentType will be null
+      if (!enrichmentType) {
+        return;
+      }
+
+      // Proceed with upload using selected enrichment type
+      const result = await uploadFile(selectedFile, enrichmentType);
       setCurrentJobId(result.job_id);
       setUploadSuccess(true);
       setSelectedFile(null);
@@ -187,6 +199,9 @@ const ImportPage: React.FC = () => {
   
   return (
     <div className="max-w-6xl mx-auto space-y-8">
+      {/* Enrichment Confirmation Modal */}
+      <EnrichmentConfirmDialog />
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -197,7 +212,7 @@ const ImportPage: React.FC = () => {
           Import Contacts
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Upload your contact list to start the enrichment process. We'll find emails, phone numbers, and verify contact information automatically.
+          Upload your contact list to start the enrichment process. Choose your enrichment options and we'll find emails, phone numbers, and verify contact information automatically.
         </p>
       </motion.div>
 

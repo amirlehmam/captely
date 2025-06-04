@@ -153,11 +153,26 @@ async def dashboard(
 )
 async def import_file(
     file: UploadFile = File(...),
+    enrich_email: str = Form("true"),
+    enrich_phone: str = Form("true"), 
     user_id: str = Depends(verify_api_token),
     session: Session = Depends(get_session),
 ):
     try:
         print(f"📁 Processing file upload: {file.filename} for user: {user_id}")
+        
+        # Parse enrichment type parameters
+        should_enrich_email = enrich_email.lower() == "true"
+        should_enrich_phone = enrich_phone.lower() == "true"
+        
+        enrichment_type_text = []
+        if should_enrich_email:
+            enrichment_type_text.append("Email")
+        if should_enrich_phone:
+            enrichment_type_text.append("Phone")
+        enrichment_type_str = " + ".join(enrichment_type_text) if enrichment_type_text else "No enrichment"
+        
+        print(f"🎯 Enrichment type requested: {enrichment_type_str}")
         
         data = await file.read()
         if file.filename.lower().endswith(".csv"):
@@ -194,7 +209,7 @@ async def import_file(
         session.commit()
         print(f"✅ Created file import job: {job_id} with {len(df)} contacts")
 
-        # Process each row and send to enrichment
+        # Process each row and send to enrichment with type specification
         for idx, row in df.iterrows():
             # Convert row to dict and normalize field names
             lead_data = row.to_dict()
@@ -204,10 +219,16 @@ async def import_file(
                 if pd.isna(value):
                     lead_data[key] = ""
             
-            # Send to the cascade enrichment task
+            # Add enrichment type preferences to the lead data
+            enrichment_config = {
+                "enrich_email": should_enrich_email,
+                "enrich_phone": should_enrich_phone
+            }
+            
+            # Send to the cascade enrichment task with enrichment configuration
             celery_app.send_task(
                 "app.tasks.cascade_enrich",
-                args=[lead_data, job_id, user_id],
+                args=[lead_data, job_id, user_id, enrichment_config],
                 queue="cascade_enrichment"
             )
 
@@ -220,8 +241,15 @@ async def import_file(
             except Exception as e:
                 print(f"⚠️ S3 upload failed: {e}")
 
-        print(f"🚀 Successfully queued {len(df)} contacts for enrichment in job: {job_id}")
-        return JSONResponse({"job_id": job_id, "total_contacts": len(df)})
+        print(f"🚀 Successfully queued {len(df)} contacts for {enrichment_type_str} enrichment in job: {job_id}")
+        return JSONResponse({
+            "job_id": job_id, 
+            "total_contacts": len(df),
+            "enrichment_type": {
+                "email": should_enrich_email,
+                "phone": should_enrich_phone
+            }
+        })
         
     except HTTPException:
         raise
