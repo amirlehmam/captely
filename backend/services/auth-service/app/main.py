@@ -4,7 +4,7 @@ import httpx
 import json
 import random
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import jwt
@@ -108,12 +108,10 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.verify(plain, hashed)
 
 def create_access_token(user_id: str) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=settings.jwt_exp_minutes)
-    payload = {
-        "sub": str(user_id),  # Ensure it's a string
-        "exp": expire
-    }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_exp_minutes)
+    to_encode = {"sub": user_id, "exp": expire}
+    encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    return encoded_jwt
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -324,7 +322,7 @@ async def cleanup_expired_codes(db: AsyncSession):
     try:
         await db.execute(
             delete(EmailVerification).where(
-                EmailVerification.expires_at < datetime.utcnow()
+                EmailVerification.expires_at < datetime.now(timezone.utc)
             )
         )
         await db.commit()
@@ -345,7 +343,7 @@ async def create_verification_code(email: str, db: AsyncSession) -> str:
     verification = EmailVerification(
         email=email,
         code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=10)  # 10 minutes expiry
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)  # 10 minutes expiry
     )
     
     db.add(verification)
@@ -833,7 +831,7 @@ async def update_user_profile(
         if "company" in profile_data:
             current_user.company = profile_data["company"]
         
-        current_user.updated_at = datetime.utcnow()
+        current_user.updated_at = datetime.now(timezone.utc)
         session.add(current_user)
         await session.commit()
         
@@ -860,7 +858,7 @@ async def change_password(
         
         # Update password
         current_user.password_hash = get_password_hash(password_data["new_password"])
-        current_user.updated_at = datetime.utcnow()
+        current_user.updated_at = datetime.now(timezone.utc)
         session.add(current_user)
         await session.commit()
         
@@ -887,7 +885,7 @@ async def get_team_members(
             "role": "admin",
             "status": "active",
             "joined_at": current_user.created_at.isoformat() if current_user.created_at else None,
-            "last_active": datetime.utcnow().isoformat()
+            "last_active": datetime.now(timezone.utc).isoformat()
         }]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -907,7 +905,7 @@ async def get_security_logs(
             "id": "1",
             "event": "Login successful",
             "ip_address": "192.168.1.1",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "status": "success"
         }]
     except Exception as e:
@@ -973,7 +971,7 @@ async def send_verification_code(
         await cleanup_expired_codes(db)
         
         # Check rate limiting (max 3 attempts per email per hour)
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
         recent_attempts = await db.execute(
             select(EmailVerification).where(
                 EmailVerification.email == data.email,
@@ -1042,7 +1040,7 @@ async def verify_email_code(
             )
         
         # Check if code is expired
-        if verification.expires_at < datetime.utcnow():
+        if verification.expires_at < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=400,
                 detail="Verification code has expired"
@@ -1178,6 +1176,7 @@ async def complete_oauth_signup(
         current_user.company = data.company
         current_user.phone = data.phone
         
+        current_user.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(current_user)
         
