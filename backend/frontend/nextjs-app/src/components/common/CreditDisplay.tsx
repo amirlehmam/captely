@@ -1,6 +1,7 @@
 import React from 'react';
 import { CreditCard, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
 import { useCreditContext } from '../../contexts/CreditContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface CreditDisplayProps {
   variant?: 'compact' | 'detailed';
@@ -12,6 +13,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
   showRefresh = true 
 }) => {
   const { creditData, loading, error, refreshCredits } = useCreditContext();
+  const { isDark } = useTheme();
 
   // Stable structure - no early returns for loading state in compact mode
   const isLowCredits = creditData ? creditData.balance < 100 : false;
@@ -25,9 +27,10 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
         {/* Credit balance - Always present to prevent flashing */}
         <div className="flex items-center space-x-2">
           <div className={`p-2 rounded-lg ${
-            error ? 'bg-red-100' :
-            isCriticalCredits ? 'bg-red-100' : 
-            isLowCredits ? 'bg-yellow-100' : 'bg-green-100'
+            error ? isDark ? 'bg-red-900/20' : 'bg-red-100' :
+            isCriticalCredits ? isDark ? 'bg-red-900/20' : 'bg-red-100' : 
+            isLowCredits ? isDark ? 'bg-yellow-900/20' : 'bg-yellow-100' : 
+            isDark ? 'bg-green-900/20' : 'bg-green-100'
           }`}>
             {error ? (
               <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -41,21 +44,22 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
           <div>
             <div className="flex items-center space-x-1">
               {loading ? (
-                <span className="text-gray-400 font-semibold">•••</span>
+                <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>•••</span>
               ) : error ? (
                 <span className="text-red-600 font-semibold">Error</span>
               ) : (
                 <span className={`font-semibold ${
-                  isCriticalCredits ? 'text-red-700' : 
-                  isLowCredits ? 'text-yellow-700' : 'text-gray-900'
+                  isCriticalCredits ? 'text-red-600' : 
+                  isLowCredits ? 'text-yellow-600' : 
+                  isDark ? 'text-white' : 'text-gray-900'
                 }`}>
                   {displayBalance.toLocaleString()}
                 </span>
               )}
-              <span className="text-xs text-gray-500">credits</span>
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>credits</span>
             </div>
             {(isLowCredits || loading) && (
-              <div className="text-xs text-gray-500">
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 {loading ? 'Loading...' : `${displayPlan} Plan`}
               </div>
             )}
@@ -69,7 +73,11 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
               onClick={refreshCredits}
               disabled={loading}
               className={`p-1 rounded transition-colors ${
-                loading ? 'text-gray-300' : 'hover:bg-gray-100 text-gray-400'
+                loading 
+                  ? isDark ? 'text-gray-600' : 'text-gray-300' 
+                  : isDark 
+                    ? 'hover:bg-gray-800 text-gray-400' 
+                    : 'hover:bg-gray-100 text-gray-400'
               }`}
               title="Refresh credit balance"
             >
@@ -80,7 +88,11 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
           <button 
             disabled={loading}
             className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-              loading ? 'text-blue-400 bg-blue-25' : 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+              loading 
+                ? isDark ? 'text-blue-400 bg-blue-900/20' : 'text-blue-400 bg-blue-25' 
+                : isDark 
+                  ? 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50' 
+                  : 'text-blue-700 bg-blue-50 hover:bg-blue-100'
             }`}
             title="Buy more credits"
           >
@@ -95,17 +107,19 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
   // Detailed variant - can show loading state since it's not in header
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+      <div className={`rounded-lg border p-4 shadow-sm ${
+        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
         <div className="animate-pulse space-y-3">
           <div className="flex items-center justify-between">
-            <div className="h-4 bg-gray-200 rounded w-24"></div>
-            <div className="h-4 w-4 bg-gray-200 rounded"></div>
+            <div className={`h-4 rounded w-24 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            <div className={`h-4 w-4 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
           </div>
           <div className="space-y-2">
-            <div className="h-6 bg-gray-200 rounded w-16"></div>
+            <div className={`h-6 rounded w-16 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
             <div className="space-y-1">
-              <div className="h-3 bg-gray-200 rounded w-full"></div>
-              <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              <div className={`h-3 rounded w-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+              <div className={`h-3 rounded w-3/4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
             </div>
           </div>
         </div>
@@ -115,17 +129,23 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
 
   if (error || !creditData) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+      <div className={`rounded-lg border p-4 shadow-sm ${
+        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
         <div className="flex items-center space-x-2">
           <AlertTriangle className="h-4 w-4 text-red-500" />
-          <span className="text-sm text-red-600">Failed to load credits</span>
+          <span className={`text-sm text-red-600 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+            Failed to load credits
+          </span>
           {showRefresh && (
             <button 
               onClick={refreshCredits}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              className={`p-1 rounded transition-colors ${
+                isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+              }`}
               title="Retry loading credits"
             >
-              <RefreshCw className="h-3 w-3 text-gray-400" />
+              <RefreshCw className={`h-3 w-3 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
             </button>
           )}
         </div>
@@ -135,16 +155,22 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
 
   // Detailed variant
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+    <div className={`rounded-lg border p-4 shadow-sm ${
+      isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+    }`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">Credit Balance</h3>
+        <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Credit Balance
+        </h3>
         {showRefresh && (
           <button 
             onClick={refreshCredits}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className={`p-1 rounded transition-colors ${
+              isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+            }`}
             title="Refresh credit balance"
           >
-            <RefreshCw className="h-4 w-4 text-gray-400" />
+            <RefreshCw className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
           </button>
         )}
       </div>
@@ -157,18 +183,19 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
               isCriticalCredits ? 'text-red-500' : 
               isLowCredits ? 'text-yellow-500' : 'text-green-500'
             }`} />
-            <span className="text-sm text-gray-600">Available</span>
+            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Available</span>
           </div>
           <span className={`text-lg font-bold ${
-            isCriticalCredits ? 'text-red-700' : 
-            isLowCredits ? 'text-yellow-700' : 'text-gray-900'
+            isCriticalCredits ? 'text-red-600' : 
+            isLowCredits ? 'text-yellow-600' : 
+            isDark ? 'text-white' : 'text-gray-900'
           }`}>
             {creditData.balance.toLocaleString()}
           </span>
         </div>
 
         {/* Usage stats */}
-        <div className="text-xs text-gray-500 space-y-1">
+        <div className={`text-xs space-y-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           <div className="flex justify-between">
             <span>Used today:</span>
             <span>{creditData.used_today}</span>
@@ -184,7 +211,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className={`w-full rounded-full h-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
           <div 
             className={`h-2 rounded-full transition-all duration-300 ${
               creditData.used_this_month / creditData.limit_monthly > 0.8 ? 'bg-red-500' :
@@ -197,11 +224,15 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
         </div>
 
         {/* Plan info */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <span className="text-xs text-gray-500">
+        <div className={`flex items-center justify-between pt-2 border-t ${
+          isDark ? 'border-gray-700' : 'border-gray-100'
+        }`}>
+          <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             {creditData.subscription.package_name} Plan
           </span>
-          <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+          <button className={`text-xs font-medium ${
+            isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+          }`}>
             Upgrade
           </button>
         </div>
@@ -209,7 +240,9 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
         {/* Low credit warning */}
         {isLowCredits && (
           <div className={`p-2 rounded-md text-xs ${
-            isCriticalCredits ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
+            isCriticalCredits 
+              ? isDark ? 'bg-red-900/20 text-red-400' : 'bg-red-50 text-red-700'
+              : isDark ? 'bg-yellow-900/20 text-yellow-400' : 'bg-yellow-50 text-yellow-700'
           }`}>
             {isCriticalCredits ? (
               <>⚠️ Critical: Only {creditData.balance} credits left!</>
