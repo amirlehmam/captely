@@ -1132,7 +1132,11 @@ class ApiService {
 
   async sendVerificationEmail(email: string): Promise<{ message: string; success: boolean }> {
     try {
-      const response = await client.post<{ message: string; success: boolean }>(`${API_CONFIG.authUrl}/auth/send-verification`, { email });
+      // Use direct /auth/ path for production to match nginx routing
+      const url = import.meta.env?.PROD || window.location.protocol === 'https:' 
+        ? 'https://captely.com/auth/send-verification'
+        : `${API_CONFIG.authUrl}/auth/send-verification`;
+      const response = await client.post<{ message: string; success: boolean }>(url, { email });
       return response;
     } catch (error) {
       throw error;
@@ -1141,7 +1145,11 @@ class ApiService {
 
   async verifyEmailCode(email: string, code: string): Promise<{ message: string; success: boolean }> {
     try {
-      const response = await client.post<{ message: string; success: boolean }>(`${API_CONFIG.authUrl}/auth/verify-email`, { email, code });
+      // Use direct /auth/ path for production to match nginx routing
+      const url = import.meta.env?.PROD || window.location.protocol === 'https:' 
+        ? 'https://captely.com/auth/verify-email'
+        : `${API_CONFIG.authUrl}/auth/verify-email`;
+      const response = await client.post<{ message: string; success: boolean }>(url, { email, code });
       return response;
     } catch (error) {
       throw error;
