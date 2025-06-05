@@ -878,6 +878,11 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "ok", "service": "analytics-service"}
 
+@app.get("/api/health")
+async def api_health_check():
+    """API health check endpoint (nginx compatibility)"""
+    return {"status": "ok", "service": "analytics-service"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 

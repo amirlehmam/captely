@@ -1205,17 +1205,20 @@ class ApiService {
     };
 
     try {
-      await client.get(`${API_CONFIG.authUrl}/health`);
+      // Auth service: /api/auth/health → /health (nginx strips /api/auth)
+      await client.get(`${API_CONFIG.authUrl}/auth/health`);
       services.auth = true;
     } catch {}
 
     try {
-      await client.get(`${API_CONFIG.importUrl}/health`);
+      // Import service: /api/import/health → /api/health (nginx forwards to service's /api/health)
+      await client.get(`${API_CONFIG.importUrl}/import/health`);
       services.import = true;
     } catch {}
 
     try {
-      await client.get(`${API_CONFIG.analyticsUrl}/health`);
+      // Analytics service: /api/analytics/health → /api/health (nginx forwards to service's /api/health)
+      await client.get(`${API_CONFIG.analyticsUrl}/analytics/health`);
       services.analytics = true;
     } catch {}
 

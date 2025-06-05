@@ -570,8 +570,8 @@ async def get_job_status(
             SELECT ij.*, 
                    COUNT(c.id) as total_processed,
                    COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_count,
-                   COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
-                   COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                   COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_found,
+                   COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as phones_found,
                    SUM(c.credits_consumed) as total_credits_used,
                    AVG(c.enrichment_score) as avg_confidence
             FROM import_jobs ij
@@ -1024,6 +1024,11 @@ async def export_job_data(
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    return {"status": "ok", "service": "import-service"}
+
+@app.get("/api/health")
+async def api_health_check():
+    """API health check endpoint (nginx compatibility)"""
     return {"status": "ok", "service": "import-service"}
 
 # ==========================================
