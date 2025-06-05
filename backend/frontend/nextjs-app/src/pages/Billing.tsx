@@ -491,11 +491,17 @@ const BillingPage: React.FC = () => {
 
   if (loading && !currentPlan) {
     return (
-      <div className="max-w-7xl mx-auto bg-white min-h-screen">
+      <div className={`max-w-7xl mx-auto min-h-screen ${
+        theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+      }`}>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-teal-600 mx-auto" />
-            <p className="mt-4 text-gray-600">{t('billing.loadingBillingInformation')}</p>
+            <Loader2 className={`w-12 h-12 animate-spin mx-auto ${
+              theme === 'dark' ? 'text-emerald-400' : 'text-teal-600'
+            }`} />
+            <p className={`mt-4 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>{t('billing.loadingBillingInformation')}</p>
           </div>
         </div>
       </div>
