@@ -1,0 +1,124 @@
+/* Layout Shift Prevention - Following Next.js Best Practices */
+/* Based on: https://medium.com/@bloodturtle/solving-layout-shift-issues-in-next-js-8dc2a114a3c0 */
+
+/* Prevent layout shifts by using contain for isolated components */
+.modal-container {
+  contain: layout style paint;
+}
+
+/* Use transform instead of changing layout properties */
+.transform-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Stable dimensions for loading states */
+.stable-dimensions {
+  min-height: inherit;
+  min-width: inherit;
+}
+
+/* Prevent font loading shifts */
+.font-swap {
+  font-display: swap;
+}
+
+/* Anti-layout-shift backdrop */
+.backdrop-anti-shift {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  contain: strict;
+}
+
+/* Stable modal positioning */
+.modal-anti-shift {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  contain: layout;
+}
+
+/* Prevent content jumping during loading */
+.loading-stable {
+  min-height: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Credit display stable dimensions */
+.credit-display-stable {
+  min-width: 200px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+/* Sidebar stable dimensions */
+.sidebar-stable {
+  width: 256px;
+  min-height: 100vh;
+}
+
+/* Header stable dimensions */
+.header-stable {
+  min-height: 64px;
+  position: sticky;
+  top: 0;
+}
+
+/* Animation performance optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-bg {
+  will-change: background-color;
+}
+
+.will-change-colors {
+  will-change: background-color, border-color, color;
+}
+
+/* Dropdown stable dimensions */
+.dropdown-stable {
+  min-width: 192px;
+  max-height: 240px;
+  position: absolute;
+}
+
+/* Prevent reflow during theme transitions */
+.theme-transition-stable * {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Prevent layout shifts in grids */
+.grid-stable {
+  display: grid;
+  min-height: 0;
+}
+
+.grid-stable > * {
+  min-width: 0;
+  min-height: 0;
+} 

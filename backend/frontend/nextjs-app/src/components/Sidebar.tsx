@@ -202,13 +202,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         </nav>
         
         {/* Credit Usage Box - Better positioned */}
-        <div className="px-4 pb-4">
-          <div className={`rounded-xl p-4 border ${
+        <div className="px-4 pb-4" style={{ minHeight: '120px' }}>
+          <div className={`rounded-xl p-4 border transition-all duration-300 ${
             isDark 
               ? 'bg-gradient-to-br from-primary-900/30 to-primary-800/30 border-primary-700/50' 
               : 'bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200'
-          }`}>
-            <div className="flex items-center justify-between mb-3">
+          }`}
+          style={{ 
+            willChange: 'background, border-color',
+            minHeight: '100px'
+          }}>
+            <div className="flex items-center justify-between mb-3" style={{ height: '20px' }}>
               <h4 className={`text-sm font-semibold ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
@@ -218,8 +222,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
                 isDark ? 'text-primary-400' : 'text-primary-600'
               }`} />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+            <div className="space-y-2" style={{ minHeight: '60px' }}>
+              <div className="flex items-center justify-between" style={{ height: '16px' }}>
                 <span className={`text-xs ${
                   isDark ? 'text-gray-400' : 'text-gray-600'
                 }`}>
@@ -227,25 +231,37 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
                 </span>
                 <span className={`text-xs font-medium ${
                   isDark ? 'text-white' : 'text-gray-900'
-                }`}>
+                }`}
+                style={{ 
+                  minWidth: '80px',
+                  textAlign: 'right',
+                  display: 'inline-block'
+                }}>
                   {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} / ${creditData?.limit_monthly || 5000}`}
                 </span>
               </div>
-              <div className={`w-full rounded-full h-2 ${
+              <div className={`w-full rounded-full h-2 overflow-hidden ${
                 isDark ? 'bg-gray-700' : 'bg-gray-200'
-              }`}>
+              }`}
+              style={{ willChange: 'background-color' }}>
                 <div 
                   className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full transition-all duration-500" 
                   style={{
                     width: creditData && creditData.limit_monthly > 0 
                       ? `${Math.min(100, (creditData.used_this_month / creditData.limit_monthly) * 100)}%`
-                      : '0%'
+                      : '0%',
+                    willChange: 'width'
                   }}
                 ></div>
               </div>
               <div className={`text-xs font-medium ${
                 isDark ? 'text-primary-400' : 'text-primary-600'
-              }`}>
+              }`}
+              style={{ 
+                height: '14px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
                 {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} used`}
               </div>
             </div>

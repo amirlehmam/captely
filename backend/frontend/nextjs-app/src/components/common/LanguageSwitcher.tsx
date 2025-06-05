@@ -97,13 +97,21 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop with improved positioning */}
             <div
               className="fixed inset-0 z-10"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                willChange: 'auto'
+              }}
               onClick={() => setIsOpen(false)}
             />
             
-            {/* Dropdown */}
+            {/* Dropdown with anti-layout-shift positioning */}
             <motion.div
               initial={{ opacity: 0, y: -8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -114,6 +122,13 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                   ? 'bg-gray-800 border-gray-700' 
                   : 'bg-white border-gray-200'
               }`}
+              style={{
+                position: 'absolute',
+                willChange: 'transform, opacity',
+                minWidth: '192px',
+                maxHeight: '240px',
+                overflowY: 'auto'
+              }}
             >
               {languages.map((lang) => (
                 <button
@@ -127,6 +142,10 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                       ? 'text-gray-200 hover:bg-gray-700' 
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
+                  style={{
+                    willChange: 'background-color',
+                    minHeight: '36px'
+                  }}
                 >
                   <div className="flex items-center space-x-3">
                     <span className="text-lg">{lang.flag}</span>

@@ -7,10 +7,12 @@ import {
   RefreshCw, Settings, X, Save, ChevronDown, ChevronUp,
   Zap, BarChart3, Activity, ArrowUpDown, Target, Globe,
   Calendar, UserPlus, MessageCircle, ExternalLink,
-  FileDown, Upload, Check, Plus, Minus
+  FileDown, Upload, Check, Plus, Minus, Sparkles,
+  Award, Briefcase, Heart, Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 import { apiService } from '../services/api';
 
@@ -79,6 +81,7 @@ interface Batch {
 
 const CRMPage: React.FC = () => {
   const { t } = useLanguage();
+  const { isDark } = useTheme();
   
   // State
   const [loading, setLoading] = useState(true);
@@ -274,11 +277,17 @@ const CRMPage: React.FC = () => {
 
   if (loading && contacts.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto bg-white min-h-screen">
+      <div className={`max-w-7xl mx-auto min-h-screen transition-colors duration-300 ${
+        isDark ? 'bg-gray-900' : 'bg-white'
+      }`}>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">{t('common.loading')}</p>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto ${
+              isDark ? 'border-emerald-400' : 'border-teal-600'
+            }`}></div>
+            <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {t('common.loading')}
+            </p>
           </div>
         </div>
       </div>
@@ -286,133 +295,349 @@ const CRMPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto bg-white min-h-screen">
-      {/* Header */}
+    <div className={`max-w-7xl mx-auto min-h-screen transition-all duration-300 ${
+      isDark 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
+    }`}>
+      {/* Enhanced Header with Better Content */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        className="mb-8 relative overflow-hidden"
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              📇 {t('crm.title')}
-            </h1>
-            <p className="text-gray-600">
-              {t('crm.subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              {t('common.refresh')}
-            </button>
+        {/* Background Pattern */}
+        <div className={`absolute inset-0 opacity-30 ${
+          isDark ? 'bg-gradient-to-r from-emerald-900/20 to-blue-900/20' : 'bg-gradient-to-r from-emerald-50 to-blue-50'
+        }`}>
+          <div className="absolute inset-0" style={{
+            backgroundImage: isDark 
+              ? 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)'
+              : 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0)',
+            backgroundSize: '20px 20px'
+          }} />
+        </div>
+        
+        <div className="relative z-10 p-8 rounded-2xl backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              {/* Main Title with Icon */}
+              <div className="flex items-center space-x-4">
+                <div className={`p-3 rounded-xl ${
+                  isDark 
+                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25' 
+                    : 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25'
+                }`}>
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className={`text-4xl font-bold mb-2 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    ✨ Contacts Management
+                  </h1>
+                  <div className="flex items-center space-x-2">
+                    <Award className={`h-5 w-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <span className={`text-lg font-medium ${
+                      isDark ? 'text-emerald-400' : 'text-emerald-600'
+                    }`}>
+                      Advanced CRM Dashboard
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Description */}
+              <div className="max-w-3xl space-y-3">
+                <p className={`text-lg leading-relaxed ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  Manage and enrich your contact database with AI-powered insights. Track lead scores, 
+                  verify email deliverability, and export to your favorite CRM platforms seamlessly.
+                </p>
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Shield className={`h-4 w-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+                      Email Verification
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className={`h-4 w-4 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                      Lead Scoring
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Target className={`h-4 w-4 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-orange-300' : 'text-orange-700'}`}>
+                      Smart Enrichment
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Heart className={`h-4 w-4 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                      CRM Integration
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            {selectedContacts.size > 0 && (
-              <>
-                <button
-                  onClick={() => handleBulkExport('hubspot')}
-                  className="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-all duration-200"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Export to HubSpot ({selectedContacts.size})
-                </button>
-                <button
-                  onClick={() => handleBulkExport('csv')}
-                  className="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-all duration-200"
-                >
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Export CSV ({selectedContacts.size})
-                </button>
-              </>
-            )}
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={`inline-flex items-center px-6 py-3 border rounded-xl font-medium transition-all duration-200 ${
+                  isDark 
+                    ? 'border-gray-600 text-gray-300 bg-gray-800 hover:bg-gray-700 disabled:opacity-50' 
+                    : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50'
+                } shadow-lg hover:shadow-xl disabled:cursor-not-allowed`}
+                style={{ willChange: 'background-color, transform' }}
+              >
+                <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {t('common.refresh')}
+              </button>
+              
+              {selectedContacts.size > 0 && (
+                <>
+                  <button
+                    onClick={() => handleBulkExport('hubspot')}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                    style={{ willChange: 'transform, box-shadow' }}
+                  >
+                    <Upload className="h-5 w-5 mr-2" />
+                    Export to HubSpot ({selectedContacts.size})
+                  </button>
+                  <button
+                    onClick={() => handleBulkExport('csv')}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                    style={{ willChange: 'transform, box-shadow' }}
+                  >
+                    <FileDown className="h-5 w-5 mr-2" />
+                    Export CSV ({selectedContacts.size})
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
+      {/* Enhanced Stats Cards with Dark Mode */}
       {stats && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8"
         >
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+          {/* Total Contacts Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-700/50 hover:shadow-blue-500/25' 
+                : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-blue-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-600 text-sm font-semibold">Total Contacts</p>
-                <p className="text-2xl font-bold text-blue-900">{stats.overview.total_contacts.toLocaleString()}</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-600 text-sm font-semibold">Enriched</p>
-                <p className="text-2xl font-bold text-green-900">{stats.overview.enriched_contacts.toLocaleString()}</p>
-                <p className="text-xs text-green-600">
-                  {((stats.overview.enriched_contacts / stats.overview.total_contacts) * 100).toFixed(1)}% success
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-blue-300' : 'text-blue-600'
+                }`}>
+                  Total Contacts
                 </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-blue-100' : 'text-blue-900'
+                }`}>
+                  {stats.overview.total_contacts.toLocaleString()}
+                </p>
+                <div className="flex items-center mt-2">
+                  <TrendingUp className={`h-4 w-4 mr-1 ${
+                    isDark ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    isDark ? 'text-blue-400' : 'text-blue-600'
+                  }`}>
+                    Database size
+                  </span>
+                </div>
               </div>
-              <Zap className="h-8 w-8 text-green-600" />
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-blue-500/20 text-blue-400' 
+                  : 'bg-blue-500/10 text-blue-600'
+              }`}>
+                <Users className="h-8 w-8" />
+              </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+          {/* Enriched Contacts Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 border-emerald-700/50 hover:shadow-emerald-500/25' 
+                : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 hover:shadow-emerald-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-600 text-sm font-semibold">Avg Lead Score</p>
-                <p className="text-2xl font-bold text-purple-900">{stats.overview.avg_lead_score.toFixed(1)}</p>
-                <div className="flex mt-1">
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-emerald-300' : 'text-emerald-600'
+                }`}>
+                  Enriched Contacts
+                </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-emerald-100' : 'text-emerald-900'
+                }`}>
+                  {stats.overview.enriched_contacts.toLocaleString()}
+                </p>
+                <div className="flex items-center mt-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    isDark 
+                      ? 'bg-emerald-500/20 text-emerald-300' 
+                      : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {((stats.overview.enriched_contacts / stats.overview.total_contacts) * 100).toFixed(1)}% success
+                  </span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-emerald-500/20 text-emerald-400' 
+                  : 'bg-emerald-500/10 text-emerald-600'
+              }`}>
+                <Zap className="h-8 w-8" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Lead Score Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-purple-900/30 to-purple-800/20 border-purple-700/50 hover:shadow-purple-500/25' 
+                : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-purple-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-purple-300' : 'text-purple-600'
+                }`}>
+                  Avg Lead Score
+                </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-purple-100' : 'text-purple-900'
+                }`}>
+                  {stats.overview.avg_lead_score.toFixed(1)}
+                </p>
+                <div className="flex items-center mt-2">
                   {getLeadScoreStars(stats.overview.avg_lead_score).map((filled, i) => (
-                    <Star key={i} className={`h-3 w-3 ${filled ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                    <Star key={i} className={`h-4 w-4 ${
+                      filled 
+                        ? 'text-yellow-400 fill-current' 
+                        : isDark ? 'text-gray-600' : 'text-gray-300'
+                    }`} />
                   ))}
                 </div>
               </div>
-              <Target className="h-8 w-8 text-purple-600" />
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-purple-500/20 text-purple-400' 
+                  : 'bg-purple-500/10 text-purple-600'
+              }`}>
+                <Target className="h-8 w-8" />
+              </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+          {/* Credits Used Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-amber-900/30 to-orange-800/20 border-amber-700/50 hover:shadow-amber-500/25' 
+                : 'bg-gradient-to-br from-amber-50 to-orange-100 border-amber-200 hover:shadow-amber-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-600 text-sm font-semibold">Credits Used</p>
-                <p className="text-2xl font-bold text-orange-900">{stats.overview.total_credits_consumed.toFixed(0)}</p>
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-amber-300' : 'text-amber-600'
+                }`}>
+                  Credits Consumed
+                </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-amber-100' : 'text-amber-900'
+                }`}>
+                  {stats.overview.total_credits_consumed.toFixed(0)}
+                </p>
+                <div className="flex items-center mt-2">
+                  <Briefcase className={`h-4 w-4 mr-1 ${
+                    isDark ? 'text-amber-400' : 'text-amber-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    isDark ? 'text-amber-400' : 'text-amber-600'
+                  }`}>
+                    Total investment
+                  </span>
+                </div>
               </div>
-              <BarChart3 className="h-8 w-8 text-orange-600" />
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-amber-500/20 text-amber-400' 
+                  : 'bg-amber-500/10 text-amber-600'
+              }`}>
+                <BarChart3 className="h-8 w-8" />
+              </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       )}
 
-      {/* Search and Filters */}
+      {/* Enhanced Search and Filters with Dark Mode */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6"
+        className={`rounded-2xl shadow-lg border p-6 mb-6 transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+            : 'bg-white border-gray-100 shadow-gray-200/50'
+        }`}
+        style={{ willChange: 'background-color, border-color' }}
       >
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
+          {/* Enhanced Search */}
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${
+                isDark ? 'text-gray-500' : 'text-gray-400'
+              }`} />
               <input
                 type="text"
-                placeholder="Search contacts..."
+                placeholder="Search contacts by name, email, company..."
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                className={`w-full pl-10 pr-4 py-3 border rounded-xl transition-all duration-200 ${
+                  isDark 
+                    ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none shadow-sm hover:shadow-md`}
+                style={{ willChange: 'border-color, box-shadow' }}
               />
             </div>
           </div>
 
-          {/* Batch Filter */}
+          {/* Enhanced Batch Filter */}
           <div className="min-w-48">
             <select
               value={batchFilter}
@@ -420,25 +645,35 @@ const CRMPage: React.FC = () => {
                 setBatchFilter(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+              className={`w-full px-4 py-3 border rounded-xl font-medium transition-all duration-200 ${
+                isDark 
+                  ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500' 
+                  : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-teal-500'
+              } focus:outline-none shadow-sm hover:shadow-md`}
+              style={{ willChange: 'border-color, box-shadow' }}
             >
-              <option value="all">All Batches</option>
+              <option value="all">📊 All Batches</option>
               {batches.map(batch => (
                 <option key={batch.id} value={batch.id}>
-                  {batch.name} ({batch.contact_count})
+                  📁 {batch.name} ({batch.contact_count})
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Advanced Filters Toggle */}
+          {/* Enhanced Filters Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
+            className={`inline-flex items-center px-6 py-3 border rounded-xl font-medium transition-all duration-200 ${
+              isDark 
+                ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+            } shadow-sm hover:shadow-md`}
+            style={{ willChange: 'background-color, box-shadow' }}
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-            {showFilters ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+            <Filter className="h-5 w-5 mr-2" />
+            Advanced Filters
+            {showFilters ? <ChevronUp className="h-5 w-5 ml-2" /> : <ChevronDown className="h-5 w-5 ml-2" />}
           </button>
         </div>
 
@@ -449,47 +684,61 @@ const CRMPage: React.FC = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4 pt-4 border-t border-gray-100"
+              className={`mt-4 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Status</label>
                   <select
                     value={statusFilter}
                     onChange={(e) => {
                       setStatusFilter(e.target.value);
                       handleFilterChange();
                     }}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className={`w-full px-3 py-2 border rounded-lg transition-all duration-200 ${
+                      isDark 
+                        ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                        : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                    } focus:outline-none`}
                   >
                     <option value="all">All Status</option>
-                    <option value="enriched">Enriched</option>
-                    <option value="not_enriched">Not Enriched</option>
-                    <option value="verified">Email Verified</option>
+                    <option value="enriched">✅ Enriched</option>
+                    <option value="not_enriched">⏳ Not Enriched</option>
+                    <option value="verified">🔒 Email Verified</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Reliability</label>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Email Reliability</label>
                   <select
                     value={emailReliabilityFilter}
                     onChange={(e) => {
                       setEmailReliabilityFilter(e.target.value);
                       handleFilterChange();
                     }}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className={`w-full px-3 py-2 border rounded-lg transition-all duration-200 ${
+                      isDark 
+                        ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                        : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                    } focus:outline-none`}
                   >
                     <option value="all">All Reliability</option>
-                    <option value="excellent">Excellent</option>
-                    <option value="good">Good</option>
-                    <option value="fair">Fair</option>
-                    <option value="poor">Poor</option>
-                    <option value="no_email">No Email</option>
+                    <option value="excellent">🟢 Excellent</option>
+                    <option value="good">🔵 Good</option>
+                    <option value="fair">🟡 Fair</option>
+                    <option value="poor">🔴 Poor</option>
+                    <option value="no_email">⚫ No Email</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Lead Score Range</label>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Lead Score Range</label>
                   <div className="flex items-center space-x-2">
                     <input
                       type="number"
@@ -497,22 +746,30 @@ const CRMPage: React.FC = () => {
                       max="100"
                       value={leadScoreMin}
                       onChange={(e) => setLeadScoreMin(Number(e.target.value))}
-                      className="w-16 px-2 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className={`w-16 px-2 py-2 border rounded text-sm transition-all duration-200 ${
+                        isDark 
+                          ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                          : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                      } focus:outline-none`}
                     />
-                    <span className="text-gray-500">to</span>
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>to</span>
                     <input
                       type="number"
                       min="0"
                       max="100"
                       value={leadScoreMax}
                       onChange={(e) => setLeadScoreMax(Number(e.target.value))}
-                      className="w-16 px-2 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className={`w-16 px-2 py-2 border rounded text-sm transition-all duration-200 ${
+                        isDark 
+                          ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                          : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                      } focus:outline-none`}
                     />
                     <button
                       onClick={handleFilterChange}
-                      className="px-3 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 transition-colors"
+                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      Apply
+                      ✨ Apply
                     </button>
                   </div>
                 </div>
@@ -522,41 +779,66 @@ const CRMPage: React.FC = () => {
         </AnimatePresence>
       </motion.div>
 
-      {/* Contacts Table */}
+      {/* Enhanced Contacts Table with Dark Mode */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+        className={`rounded-2xl shadow-lg border overflow-hidden transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+            : 'bg-white border-gray-100 shadow-gray-200/50'
+        }`}
+        style={{ willChange: 'background-color, border-color' }}
       >
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gradient-to-r from-gray-50 to-white">
+          <table className={`min-w-full divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+            <thead className={`${
+              isDark 
+                ? 'bg-gradient-to-r from-gray-800 to-gray-750' 
+                : 'bg-gradient-to-r from-gray-50 to-white'
+            }`}>
               <tr>
                 <th className="px-6 py-4 text-left">
                   <input
                     type="checkbox"
                     checked={selectedContacts.size === contacts.length && contacts.length > 0}
                     onChange={handleSelectAll}
-                    className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                    className={`h-4 w-4 rounded transition-colors ${
+                      isDark 
+                        ? 'text-emerald-500 focus:ring-emerald-500 border-gray-600 bg-gray-700' 
+                        : 'text-teal-600 focus:ring-teal-500 border-gray-300'
+                    }`}
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Contact
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  👤 Contact
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Lead Score
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  ⭐ Lead Score
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Email Reliability
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  📧 Email Reliability
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Company & Position
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  🏢 Company & Position
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Batch
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  📊 Batch
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Actions
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  ⚡ Actions
                 </th>
               </tr>
             </thead>

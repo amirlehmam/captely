@@ -28,10 +28,12 @@ import { useFileUpload, useJobs, useJob } from '../hooks/useApi';
 import { useEnrichmentConfirm } from '../hooks/useEnrichmentConfirm';
 import { EnrichmentType } from '../components/modals/EnrichmentConfirmModal';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const ImportPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, formatMessage } = useLanguage();
+  const { isDark } = useTheme();
   
   // File upload state
   const [dragActive, setDragActive] = useState(false);
@@ -200,7 +202,8 @@ const ImportPage: React.FC = () => {
     : 0;
   
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className={`min-h-screen transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} p-6`}>
+      <div className="max-w-6xl mx-auto space-y-8">
       {/* Enrichment Confirmation Modal */}
       <EnrichmentConfirmDialog />
 
@@ -210,10 +213,10 @@ const ImportPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+        <h1 className={`text-3xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
           {t('import.title')}
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className={`text-lg max-w-2xl mx-auto ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
           {t('import.subtitle')}
         </p>
       </motion.div>
@@ -226,35 +229,56 @@ const ImportPage: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
         >
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border-blue-700/50 hover:shadow-blue-500/20' 
+                : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-blue-500/20'
+            }`}
+          >
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-500 mr-3" />
+              <Users className={`h-8 w-8 mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
               <div>
-                <p className="text-sm font-semibold text-blue-700">{t('import.stats.totalProcessed')}</p>
-                <p className="text-2xl font-bold text-blue-900">{totalContactsProcessed.toLocaleString()}</p>
+                <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('import.stats.totalProcessed')}</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{totalContactsProcessed.toLocaleString()}</p>
               </div>
             </div>
-          </div>
+          </motion.div>
           
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50 hover:shadow-green-500/20' 
+                : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:shadow-green-500/20'
+            }`}
+          >
             <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-500 mr-3" />
+              <TrendingUp className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
               <div>
-                <p className="text-sm font-semibold text-green-700">{t('import.stats.avgSuccessRate')}</p>
-                <p className="text-2xl font-bold text-green-900">{avgSuccessRate.toFixed(1)}%</p>
+                <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('import.stats.avgSuccessRate')}</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{avgSuccessRate.toFixed(1)}%</p>
               </div>
             </div>
-          </div>
+          </motion.div>
           
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-700/50 hover:shadow-purple-500/20' 
+                : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 hover:shadow-purple-500/20'
+            }`}
+          >
             <div className="flex items-center">
-              <BarChart3 className="h-8 w-8 text-purple-500 mr-3" />
+              <BarChart3 className={`h-8 w-8 mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
               <div>
-                <p className="text-sm font-semibold text-purple-700">{t('import.stats.totalBatches')}</p>
-                <p className="text-2xl font-bold text-purple-900">{jobs.length}</p>
+                <p className={`text-sm font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{t('import.stats.totalBatches')}</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{jobs.length}</p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       )}
 
@@ -263,7 +287,11 @@ const ImportPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+        className={`rounded-xl shadow-lg border overflow-hidden transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+            : 'bg-white border-gray-100 shadow-gray-200/50'
+        }`}
       >
         <div className="p-8">
           {!uploadSuccess ? (
@@ -275,15 +303,23 @@ const ImportPage: React.FC = () => {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+                    className={`mb-6 border rounded-xl p-4 ${
+                      isDark 
+                        ? 'bg-red-900/20 border-red-700/50' 
+                        : 'bg-red-50 border-red-200'
+                    }`}
                   >
                     <div className="flex items-start">
                       <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
                       <div>
-                        <h4 className="text-sm font-semibold text-red-800">
+                        <h4 className={`text-sm font-semibold ${
+                          isDark ? 'text-red-300' : 'text-red-800'
+                        }`}>
                           {t('import.validation.title')}
                         </h4>
-                        <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                        <ul className={`mt-2 text-sm list-disc list-inside ${
+                          isDark ? 'text-red-400' : 'text-red-700'
+                        }`}>
                           {validationErrors.map((error, index) => (
                             <li key={index}>{error}</li>
                           ))}
@@ -298,11 +334,19 @@ const ImportPage: React.FC = () => {
               <div
                 className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
                   dragActive
-                    ? 'border-primary-500 bg-primary-50 shadow-md'
+                    ? isDark 
+                      ? 'border-primary-400 bg-primary-900/20 shadow-lg shadow-primary-500/20' 
+                      : 'border-primary-500 bg-primary-50 shadow-md'
                     : selectedFile
-                    ? 'border-green-500 bg-green-50 shadow-md'
+                    ? isDark
+                      ? 'border-green-400 bg-green-900/20 shadow-lg shadow-green-500/20'
+                      : 'border-green-500 bg-green-50 shadow-md'
                     : validationErrors.length > 0
-                    ? 'border-red-300 bg-red-50'
+                    ? isDark
+                      ? 'border-red-400 bg-red-900/20'
+                      : 'border-red-300 bg-red-50'
+                    : isDark
+                    ? 'border-gray-600 hover:border-primary-400 hover:bg-gray-700/50'
                     : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
                 }`}
                 onDragEnter={handleDrag}
@@ -320,13 +364,19 @@ const ImportPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-xl font-semibold text-gray-900">
+                      <p className={`text-xl font-semibold ${
+                        isDark ? 'text-gray-100' : 'text-gray-900'
+                      }`}>
                         {selectedFile.name}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className={`text-sm mt-1 ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
                         {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className={`text-xs mt-1 ${
+                        isDark ? 'text-gray-500' : 'text-gray-500'
+                      }`}>
                         {selectedFile.type || 'File type detected'}
                       </p>
                     </div>
@@ -351,7 +401,11 @@ const ImportPage: React.FC = () => {
                       <button
                         onClick={clearFile}
                         disabled={uploading}
-                        className="inline-flex items-center px-6 py-3 border border-gray-200 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 disabled:opacity-50"
+                        className={`inline-flex items-center px-6 py-3 border text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 disabled:opacity-50 ${
+                          isDark 
+                            ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 focus:ring-offset-gray-800' 
+                            : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                        }`}
                       >
                         <X className="h-4 w-4 mr-2" />
                         {t('import.buttons.removeFile')}
@@ -361,16 +415,24 @@ const ImportPage: React.FC = () => {
                 ) : (
                   <div className="space-y-6">
                     <div className="flex justify-center">
-                      <Upload className="h-16 w-16 text-gray-400" />
+                      <Upload className={`h-16 w-16 ${
+                        isDark ? 'text-gray-500' : 'text-gray-400'
+                      }`} />
                     </div>
                     <div>
-                      <p className="text-xl font-semibold text-gray-900">
+                      <p className={`text-xl font-semibold ${
+                        isDark ? 'text-gray-100' : 'text-gray-900'
+                      }`}>
                         {t('import.dropzone.title')}
                       </p>
-                      <p className="text-sm text-gray-600 mt-2">
+                      <p className={`text-sm mt-2 ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
                         {t('import.dropzone.subtitle')}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className={`text-xs mt-1 ${
+                        isDark ? 'text-gray-500' : 'text-gray-500'
+                      }`}>
                         {t('import.dropzone.fileTypes')}
                       </p>
                     </div>
@@ -402,14 +464,18 @@ const ImportPage: React.FC = () => {
                     className="mt-8"
                   >
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-semibold text-gray-700">
+                      <span className={`text-sm font-semibold ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         {t('import.upload.uploading')}
                       </span>
-                      <span className="text-sm font-semibold text-primary-600">
+                      <span className="text-sm font-semibold text-primary-500">
                         {progress}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div className={`w-full rounded-full h-3 overflow-hidden ${
+                      isDark ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}>
                       <motion.div
                         className="bg-gradient-to-r from-primary-500 to-primary-400 h-3 rounded-full shadow-sm"
                         initial={{ width: 0 }}
@@ -417,7 +483,9 @@ const ImportPage: React.FC = () => {
                         transition={{ duration: 0.3 }}
                       />
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">
+                    <p className={`text-xs mt-2 ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       {t('import.upload.progress')}
                     </p>
                   </motion.div>
@@ -431,16 +499,26 @@ const ImportPage: React.FC = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="mt-8 bg-red-50 border border-red-200 rounded-xl p-4"
+                    className={`mt-8 border rounded-xl p-4 ${
+                      isDark 
+                        ? 'bg-red-900/20 border-red-700/50' 
+                        : 'bg-red-50 border-red-200'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
-                        <span className="text-red-700">{formatMessage('import.upload.error', { error: uploadError })}</span>
+                        <span className={isDark ? 'text-red-300' : 'text-red-700'}>
+                          {formatMessage('import.upload.error', { error: uploadError })}
+                        </span>
                       </div>
                       <button
                         onClick={() => reset()}
-                        className="text-sm text-red-600 hover:text-red-800 font-medium"
+                        className={`text-sm font-medium transition-colors ${
+                          isDark 
+                            ? 'text-red-400 hover:text-red-300' 
+                            : 'text-red-600 hover:text-red-800'
+                        }`}
                       >
                         {t('common.retry')}
                       </button>
@@ -461,10 +539,14 @@ const ImportPage: React.FC = () => {
               </motion.div>
               
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">
+                <h3 className={`text-2xl font-bold ${
+                  isDark ? 'text-gray-100' : 'text-gray-900'
+                }`}>
                   {t('import.upload.success.title')}
                 </h3>
-                <p className="text-gray-600 mt-2">
+                <p className={`mt-2 ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                   {t('import.upload.success.subtitle')}
                 </p>
               </div>
@@ -474,38 +556,60 @@ const ImportPage: React.FC = () => {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200"
+                  className={`rounded-xl p-6 border ${
+                    isDark 
+                      ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-700/50' 
+                      : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+                  }`}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
                     <div>
-                      <div className="text-2xl font-bold text-blue-900">
+                      <div className={`text-2xl font-bold ${
+                        isDark ? 'text-blue-300' : 'text-blue-900'
+                      }`}>
                         {currentJob.total}
                       </div>
-                      <div className="text-sm font-medium text-blue-700">{t('batches.table.contacts')}</div>
+                      <div className={`text-sm font-medium ${
+                        isDark ? 'text-blue-400' : 'text-blue-700'
+                      }`}>{t('batches.table.contacts')}</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-green-900">
+                      <div className={`text-2xl font-bold ${
+                        isDark ? 'text-green-300' : 'text-green-900'
+                      }`}>
                         {currentJob.completed}
                       </div>
-                      <div className="text-sm font-medium text-green-700">Processed</div>
+                      <div className={`text-sm font-medium ${
+                        isDark ? 'text-green-400' : 'text-green-700'
+                      }`}>Processed</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-purple-900">
+                      <div className={`text-2xl font-bold ${
+                        isDark ? 'text-purple-300' : 'text-purple-900'
+                      }`}>
                         {currentJob.progress.toFixed(1)}%
                       </div>
-                      <div className="text-sm font-medium text-purple-700">{t('batches.table.progress')}</div>
+                      <div className={`text-sm font-medium ${
+                        isDark ? 'text-purple-400' : 'text-purple-700'
+                      }`}>{t('batches.table.progress')}</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-yellow-900">
+                      <div className={`text-2xl font-bold ${
+                        isDark ? 'text-yellow-300' : 'text-yellow-900'
+                      }`}>
                         {currentJob.status}
                       </div>
-                      <div className="text-sm font-medium text-yellow-700">{t('batches.table.status')}</div>
+                      <div className={`text-sm font-medium ${
+                        isDark ? 'text-yellow-400' : 'text-yellow-700'
+                      }`}>{t('batches.table.status')}</div>
                     </div>
                   </div>
                   
                   {/* Progress Bar */}
                   <div className="mt-4">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className={`w-full rounded-full h-2 ${
+                      isDark ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}>
                       <div
                         className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full transition-all duration-500"
                         style={{ width: `${currentJob.progress}%` }}
@@ -530,7 +634,11 @@ const ImportPage: React.FC = () => {
                     setUploadSuccess(false);
                     setCurrentJobId(null);
                   }}
-                  className="inline-flex items-center px-6 py-3 border border-gray-200 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
+                  className={`inline-flex items-center px-6 py-3 border text-sm font-semibold rounded-lg transition-all duration-200 ${
+                    isDark 
+                      ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {t('import.buttons.uploadAnother')}
@@ -546,44 +654,86 @@ const ImportPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8"
+        className={`border rounded-xl p-8 ${
+          isDark 
+            ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-700/50' 
+            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+        }`}
       >
-        <h3 className="text-lg font-bold text-blue-900 mb-6">
+        <h3 className={`text-lg font-bold mb-6 ${
+          isDark ? 'text-blue-300' : 'text-blue-900'
+        }`}>
           {t('import.requirements.title')}
         </h3>
         <div className="space-y-4">
-          <p className="text-blue-800 font-medium">
+          <p className={`font-medium ${
+            isDark ? 'text-blue-400' : 'text-blue-800'
+          }`}>
             {t('import.requirements.subtitle')}
           </p>
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+            <div className={`rounded-lg p-4 border ${
+              isDark 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-blue-200'
+            }`}>
+              <h4 className={`font-semibold mb-3 flex items-center ${
+                isDark ? 'text-gray-200' : 'text-blue-900'
+              }`}>
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                 {t('import.requirements.required')}
               </h4>
-              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
-                <li><code className="bg-blue-100 px-1 rounded">first_name</code></li>
-                <li><code className="bg-blue-100 px-1 rounded">last_name</code></li>
-                <li><code className="bg-blue-100 px-1 rounded">company</code></li>
+              <ul className={`list-disc list-inside text-sm space-y-1 ${
+                isDark ? 'text-gray-300' : 'text-blue-800'
+              }`}>
+                <li><code className={`px-1 rounded ${
+                  isDark ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'
+                }`}>first_name</code></li>
+                <li><code className={`px-1 rounded ${
+                  isDark ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'
+                }`}>last_name</code></li>
+                <li><code className={`px-1 rounded ${
+                  isDark ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'
+                }`}>company</code></li>
               </ul>
             </div>
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+            <div className={`rounded-lg p-4 border ${
+              isDark 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-blue-200'
+            }`}>
+              <h4 className={`font-semibold mb-3 flex items-center ${
+                isDark ? 'text-gray-200' : 'text-blue-900'
+              }`}>
                 <Clock className="h-4 w-4 text-yellow-500 mr-2" />
                 {t('import.requirements.optional')}
               </h4>
-              <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
-                <li><code className="bg-blue-100 px-1 rounded">position</code></li>
-                <li><code className="bg-blue-100 px-1 rounded">profile_url</code> (LinkedIn URL)</li>
-                <li><code className="bg-blue-100 px-1 rounded">location</code></li>
-                <li><code className="bg-blue-100 px-1 rounded">industry</code></li>
+              <ul className={`list-disc list-inside text-sm space-y-1 ${
+                isDark ? 'text-gray-300' : 'text-blue-800'
+              }`}>
+                <li><code className={`px-1 rounded ${
+                  isDark ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'
+                }`}>position</code></li>
+                <li><code className={`px-1 rounded ${
+                  isDark ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'
+                }`}>profile_url</code> (LinkedIn URL)</li>
+                <li><code className={`px-1 rounded ${
+                  isDark ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'
+                }`}>location</code></li>
+                <li><code className={`px-1 rounded ${
+                  isDark ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'
+                }`}>industry</code></li>
               </ul>
             </div>
           </div>
           <div className="pt-4">
             <button
               onClick={downloadSampleCSV}
-              className="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-semibold rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+              className={`inline-flex items-center px-4 py-2 border text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ${
+                isDark 
+                  ? 'border-blue-600 text-blue-300 bg-blue-900/20 hover:bg-blue-800/30 focus:ring-blue-500 focus:ring-offset-gray-800' 
+                  : 'border-blue-300 text-blue-700 bg-white hover:bg-blue-50 focus:ring-blue-500'
+              }`}
             >
               <Download className="h-4 w-4 mr-2" />
               {t('import.requirements.downloadSample')}
@@ -598,16 +748,28 @@ const ImportPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+          className={`rounded-xl shadow-lg border overflow-hidden transition-all duration-300 ${
+            isDark 
+              ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+              : 'bg-white border-gray-100 shadow-gray-200/50'
+          }`}
         >
-          <div className="px-8 py-6 border-b border-gray-100">
+          <div className={`px-8 py-6 border-b ${
+            isDark ? 'border-gray-700' : 'border-gray-100'
+          }`}>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className={`text-lg font-bold ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 {t('import.recentJobs.title')}
               </h3>
               <Link
                 to="/batches"
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center"
+                className={`text-sm font-medium flex items-center transition-colors ${
+                  isDark 
+                    ? 'text-primary-400 hover:text-primary-300' 
+                    : 'text-primary-600 hover:text-primary-700'
+                }`}
               >
                 {t('import.recentJobs.viewAll')}
                 <ArrowRight className="h-4 w-4 ml-1" />
@@ -618,33 +780,58 @@ const ImportPage: React.FC = () => {
             <div className="space-y-6">
               {recentJobs.map((job) => {
                 const getStatusBadge = (status: string) => {
-                  switch (status) {
-                    case 'completed':
-                      return 'bg-green-100 text-green-800 border-green-200';
-                    case 'processing':
-                      return 'bg-blue-100 text-blue-800 border-blue-200';
-                    case 'failed':
-                      return 'bg-red-100 text-red-800 border-red-200';
-                    case 'pending':
-                      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                    default:
-                      return 'bg-gray-100 text-gray-800 border-gray-200';
+                  if (isDark) {
+                    switch (status) {
+                      case 'completed':
+                        return 'bg-green-900/30 text-green-300 border-green-700/50';
+                      case 'processing':
+                        return 'bg-blue-900/30 text-blue-300 border-blue-700/50';
+                      case 'failed':
+                        return 'bg-red-900/30 text-red-300 border-red-700/50';
+                      case 'pending':
+                        return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
+                      default:
+                        return 'bg-gray-700 text-gray-300 border-gray-600';
+                    }
+                  } else {
+                    switch (status) {
+                      case 'completed':
+                        return 'bg-green-100 text-green-800 border-green-200';
+                      case 'processing':
+                        return 'bg-blue-100 text-blue-800 border-blue-200';
+                      case 'failed':
+                        return 'bg-red-100 text-red-800 border-red-200';
+                      case 'pending':
+                        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                      default:
+                        return 'bg-gray-100 text-gray-800 border-gray-200';
+                    }
                   }
                 };
                 
                 return (
                   <motion.div 
                     key={job.id} 
-                    className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200"
+                    className={`border rounded-xl p-6 transition-all duration-200 ${
+                      isDark 
+                        ? 'border-gray-700 hover:shadow-lg hover:shadow-gray-900/30 hover:border-gray-600' 
+                        : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+                    }`}
                     whileHover={{ y: -2 }}
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-semibold text-gray-900 flex items-center">
-                          <FileText className="h-4 w-4 text-gray-400 mr-2" />
+                        <h4 className={`font-semibold flex items-center ${
+                          isDark ? 'text-gray-100' : 'text-gray-900'
+                        }`}>
+                          <FileText className={`h-4 w-4 mr-2 ${
+                            isDark ? 'text-gray-500' : 'text-gray-400'
+                          }`} />
                           {job.file_name || `Job ${job.id.substring(0, 8)}`}
                         </h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className={`text-sm mt-1 ${
+                          isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
                           {new Date(job.created_at).toLocaleString()}
                         </p>
                       </div>
@@ -655,10 +842,16 @@ const ImportPage: React.FC = () => {
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="font-medium text-gray-700">{t('import.recentJobs.progress')}</span>
+                        <span className={`font-medium ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>{t('import.recentJobs.progress')}</span>
                         <div className="mt-1">
-                          <span className="font-semibold text-gray-900">{job.completed}/{job.total}</span>
-                          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                          <span className={`font-semibold ${
+                            isDark ? 'text-gray-100' : 'text-gray-900'
+                          }`}>{job.completed}/{job.total}</span>
+                          <div className={`w-full rounded-full h-2 mt-1 ${
+                            isDark ? 'bg-gray-700' : 'bg-gray-200'
+                          }`}>
                             <div
                               className={`h-2 rounded-full transition-all duration-300 ${
                                 job.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
@@ -670,18 +863,24 @@ const ImportPage: React.FC = () => {
                       </div>
                       
                       <div>
-                        <span className="font-medium text-gray-700">{t('import.recentJobs.successRate')}</span>
-                        <p className="font-semibold text-green-600">{job.success_rate?.toFixed(1) || 0}%</p>
+                        <span className={`font-medium ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>{t('import.recentJobs.successRate')}</span>
+                        <p className="font-semibold text-green-500">{job.success_rate?.toFixed(1) || 0}%</p>
                       </div>
                       
                       <div>
-                        <span className="font-medium text-gray-700">{t('import.recentJobs.emailsFound')}</span>
-                        <p className="font-semibold text-blue-600">{job.emails_found || 0}</p>
+                        <span className={`font-medium ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>{t('import.recentJobs.emailsFound')}</span>
+                        <p className="font-semibold text-blue-500">{job.emails_found || 0}</p>
                       </div>
                       
                       <div>
-                        <span className="font-medium text-gray-700">{t('import.recentJobs.creditsUsed')}</span>
-                        <p className="font-semibold text-purple-600">{job.credits_used || 0}</p>
+                        <span className={`font-medium ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>{t('import.recentJobs.creditsUsed')}</span>
+                        <p className="font-semibold text-purple-500">{job.credits_used || 0}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -691,6 +890,7 @@ const ImportPage: React.FC = () => {
           </div>
         </motion.div>
       )}
+      </div>
     </div>
   );
 };

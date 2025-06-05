@@ -10,6 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Updated hooks for production
 import { useJobs, useExport, useJob } from '../hooks/useApi';
@@ -69,6 +70,7 @@ const getStatusBadge = (status: string) => {
 
 const BatchesPage: React.FC = () => {
   const { t } = useLanguage();
+  const { isDark } = useTheme();
   
   // Hooks
   const { jobs: jobsData, loading, error, refetch } = useJobs();
@@ -185,17 +187,29 @@ const BatchesPage: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return isDark 
+          ? 'bg-green-900/30 text-green-400 border-green-700/50' 
+          : 'bg-green-100 text-green-800 border-green-200';
       case 'processing':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return isDark 
+          ? 'bg-blue-900/30 text-blue-400 border-blue-700/50' 
+          : 'bg-blue-100 text-blue-800 border-blue-200';
       case 'failed':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return isDark 
+          ? 'bg-red-900/30 text-red-400 border-red-700/50' 
+          : 'bg-red-100 text-red-800 border-red-200';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return isDark 
+          ? 'bg-yellow-900/30 text-yellow-400 border-yellow-700/50' 
+          : 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'credit_insufficient':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return isDark 
+          ? 'bg-orange-900/30 text-orange-400 border-orange-700/50' 
+          : 'bg-orange-100 text-orange-800 border-orange-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return isDark 
+          ? 'bg-gray-900/30 text-gray-400 border-gray-700/50' 
+          : 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -216,40 +230,55 @@ const BatchesPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className={`flex items-center justify-center min-h-96 transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto ${isDark ? 'border-primary-400' : 'border-primary-600'}`}></div>
+          <p className={`mt-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{t('common.loading')}</p>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen p-6`}>
       {/* Page header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('batches.title')}</h1>
-          <p className="text-gray-600 mt-1">{t('batches.subtitle')}</p>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('batches.title')}</h1>
+          <p className={`mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{t('batches.subtitle')}</p>
         </div>
         <div className="mt-4 md:mt-0 flex space-x-3">
-          <button 
+          <motion.button 
             onClick={handleRefresh}
             disabled={refreshing}
-            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 ${
+              isDark 
+                ? 'border-gray-600 text-gray-200 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 focus:ring-offset-gray-900' 
+                : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
+            }`}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             {t('common.refresh')}
-          </button>
+          </motion.button>
           
-          <Link
-            to="/import"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Package className="h-4 w-4 mr-2" />
-            {t('navigation.import')}
-          </Link>
+            <Link
+              to="/import"
+              className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
+                isDark
+                  ? 'bg-gradient-to-r from-primary-500 to-primary-400 hover:from-primary-600 hover:to-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 focus:ring-offset-gray-900'
+                  : 'bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
+              }`}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              {t('navigation.import')}
+            </Link>
+          </motion.div>
         </div>
       </div>
 
@@ -260,19 +289,27 @@ const BatchesPage: React.FC = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-red-50 border border-red-200 rounded-xl p-4"
+            className={`rounded-xl p-4 ${
+              isDark 
+                ? 'bg-red-900/20 border border-red-800/50' 
+                : 'bg-red-50 border border-red-200'
+            }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+                <AlertCircle className={`h-5 w-5 mr-3 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
                 <div>
-                  <h4 className="text-sm font-semibold text-red-800">{t('errors.generic')}</h4>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                  <h4 className={`text-sm font-semibold ${isDark ? 'text-red-300' : 'text-red-800'}`}>{t('errors.generic')}</h4>
+                  <p className={`text-sm mt-1 ${isDark ? 'text-red-200' : 'text-red-700'}`}>{error}</p>
                 </div>
               </div>
               <button
                 onClick={handleRefresh}
-                className="text-sm text-red-600 hover:text-red-800 font-medium"
+                className={`text-sm font-medium transition-colors ${
+                  isDark 
+                    ? 'text-red-300 hover:text-red-100' 
+                    : 'text-red-600 hover:text-red-800'
+                }`}
               >
                 {t('common.retry')}
               </button>
@@ -281,67 +318,108 @@ const BatchesPage: React.FC = () => {
         )}
       </AnimatePresence>
       
-      {/* Stats Overview */}
+      {/* Stats Overview - Enhanced for dark mode */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="grid grid-cols-1 md:grid-cols-4 gap-6"
       >
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <motion.div 
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
+            isDark 
+              ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border-blue-700/50 hover:shadow-blue-500/20' 
+              : 'bg-gradient-to-br from-blue-50 to-white border-blue-200 hover:shadow-blue-500/20'
+          }`}
+        >
           <div className="flex items-center">
-            <Activity className="h-8 w-8 text-blue-500 mr-3" />
+            <Activity className={`h-8 w-8 mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
             <div>
-              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.activeJobs')}</p>
-              <p className="text-2xl font-bold text-gray-900">{activeJobs.length}</p>
+              <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('dashboard.stats.activeJobs')}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{activeJobs.length}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
         
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <motion.div 
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
+            isDark 
+              ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50 hover:shadow-green-500/20' 
+              : 'bg-gradient-to-br from-green-50 to-white border-green-200 hover:shadow-green-500/20'
+          }`}
+        >
           <div className="flex items-center">
-            <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
+            <CheckCircle className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
             <div>
-              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.completedJobs')}</p>
-              <p className="text-2xl font-bold text-gray-900">{completedJobs.length}</p>
+              <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('dashboard.stats.completedJobs')}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{completedJobs.length}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
         
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <motion.div 
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
+            isDark 
+              ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-700/50 hover:shadow-purple-500/20' 
+              : 'bg-gradient-to-br from-purple-50 to-white border-purple-200 hover:shadow-purple-500/20'
+          }`}
+        >
           <div className="flex items-center">
-            <Users className="h-8 w-8 text-purple-500 mr-3" />
+            <Users className={`h-8 w-8 mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
             <div>
-              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.totalContacts')}</p>
-              <p className="text-2xl font-bold text-gray-900">{totalContacts.toLocaleString()}</p>
+              <p className={`text-sm font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{t('dashboard.stats.totalContacts')}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{totalContacts.toLocaleString()}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
         
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <motion.div 
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
+            isDark 
+              ? 'bg-gradient-to-br from-red-900/20 to-red-800/10 border-red-700/50 hover:shadow-red-500/20' 
+              : 'bg-gradient-to-br from-red-50 to-white border-red-200 hover:shadow-red-500/20'
+          }`}
+        >
           <div className="flex items-center">
-            <XCircle className="h-8 w-8 text-red-500 mr-3" />
+            <XCircle className={`h-8 w-8 mr-3 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
             <div>
-              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.failedJobs')}</p>
-              <p className="text-2xl font-bold text-gray-900">{failedJobs.length}</p>
+              <p className={`text-sm font-semibold ${isDark ? 'text-red-300' : 'text-red-700'}`}>{t('dashboard.stats.failedJobs')}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-red-100' : 'text-red-900'}`}>{failedJobs.length}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
       
-      {/* Search and Filters */}
-      <div className="bg-white shadow-lg rounded-xl border border-gray-100 p-6">
+      {/* Search and Filters - Enhanced dark mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className={`shadow-lg rounded-xl border p-6 transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+            : 'bg-white border-gray-100 shadow-gray-200/50'
+        }`}
+      >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6">
           {/* Search */}
           <div className="w-full lg:w-1/3">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+                <Search className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
               </div>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm text-gray-900 transition-all duration-200"
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg leading-5 text-sm transition-all duration-200 ${
+                  isDark 
+                    ? 'border-gray-600 bg-gray-700 placeholder-gray-400 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
+                    : 'border-gray-200 bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                }`}
                 placeholder={t('search.placeholder')}
               />
             </div>
@@ -352,7 +430,11 @@ const BatchesPage: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+              className={`px-4 py-3 border rounded-lg transition-all duration-200 ${
+                isDark 
+                  ? 'border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
+                  : 'border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+              }`}
             >
               <option value="all">{t('batches.filters.all')}</option>
               <option value="pending">{t('batches.filters.pending')}</option>
@@ -369,7 +451,11 @@ const BatchesPage: React.FC = () => {
                 setSortBy(field);
                 setSortOrder(order as 'asc' | 'desc');
               }}
-              className="px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+              className={`px-4 py-3 border rounded-lg transition-all duration-200 ${
+                isDark 
+                  ? 'border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
+                  : 'border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+              }`}
             >
               <option value="created_at_desc">{t('common.createdAt')} (newest)</option>
               <option value="created_at_asc">{t('common.createdAt')} (oldest)</option>
@@ -381,51 +467,86 @@ const BatchesPage: React.FC = () => {
             {/* Bulk Actions */}
             {selectedJobs.size > 0 && (
               <div className="flex space-x-2">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleBulkExport('csv')}
-                  className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                  className={`px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
+                    isDark 
+                      ? 'bg-green-600 text-white hover:bg-green-700' 
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
                 >
                   {t('common.export')} CSV ({selectedJobs.size})
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedJobs(new Set())}
-                  className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                  className={`px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
+                    isDark 
+                      ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                      : 'bg-gray-600 text-white hover:bg-gray-700'
+                  }`}
                 >
                   {t('common.cancel')}
-                </button>
+                </motion.button>
               </div>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
       
-      {/* Batches table */}
-      <div className="bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
+      {/* Batches table - Enhanced dark mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className={`shadow-lg overflow-hidden rounded-xl border transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+            : 'bg-white border-gray-100 shadow-gray-200/50'
+        }`}
+      >
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gradient-to-r from-gray-50 to-white">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className={`${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800' : 'bg-gradient-to-r from-gray-50 to-white'}`}>
               <tr>
                 <th className="px-6 py-4 text-left">
                   <input
                     type="checkbox"
                     checked={selectedJobs.size === filteredJobs.length && filteredJobs.length > 0}
                     onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    className={`rounded text-primary-600 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'border-gray-500 bg-gray-700' 
+                        : 'border-gray-300'
+                    }`}
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   {t('batches.table.fileName')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   {t('batches.table.status')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   {t('batches.table.progress')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   {t('batches.table.contacts')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   {t('batches.table.createdAt')}
                 </th>
                 <th className="relative px-6 py-4">
@@ -433,25 +554,39 @@ const BatchesPage: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className={`divide-y ${isDark ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'}`}>
               {currentJobs.map((job) => (
-                <tr key={job.id} className="hover:bg-gray-50 transition-colors">
+                <motion.tr 
+                  key={job.id} 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  whileHover={{ scale: 1.005 }}
+                  className={`transition-all duration-200 ${
+                    isDark 
+                      ? 'hover:bg-gray-750 hover:shadow-lg' 
+                      : 'hover:bg-gray-50 hover:shadow-lg'
+                  }`}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
                       checked={selectedJobs.has(job.id)}
                       onChange={() => handleSelectJob(job.id)}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      className={`rounded text-primary-600 focus:ring-primary-500 ${
+                        isDark 
+                          ? 'border-gray-500 bg-gray-700' 
+                          : 'border-gray-300'
+                      }`}
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                      <FileText className={`h-5 w-5 mr-3 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                           {job.file_name || `Batch ${job.id.substring(0, 8)}`}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           ID: {job.id.substring(0, 8)}
                         </div>
                       </div>
@@ -466,7 +601,7 @@ const BatchesPage: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-1">
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className={`w-full rounded-full h-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
                           <div
                             className={`h-2 rounded-full transition-all duration-300 ${
                               job.status === 'completed' ? 'bg-green-500' : 
@@ -475,49 +610,64 @@ const BatchesPage: React.FC = () => {
                             style={{ width: `${job.progress}%` }}
                           />
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className={`text-xs mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                           {job.progress.toFixed(1)}%
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     <div>
                       <div className="font-medium">{job.completed}/{job.total}</div>
                       {job.success_rate !== undefined && (
-                        <div className="text-xs text-gray-500">
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           {job.success_rate.toFixed(1)}% {t('batches.table.successRate').toLowerCase()}
                         </div>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     <div>
                       <div>{new Date(job.created_at).toLocaleDateString()}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {new Date(job.created_at).toLocaleTimeString()}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      <Link
-                        to={`/batches/${job.id}`}
-                        className="text-primary-600 hover:text-primary-900 transition-colors"
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                       >
-                        <Eye className="h-4 w-4" />
-                      </Link>
+                        <Link
+                          to={`/batches/${job.id}`}
+                          className={`transition-colors ${
+                            isDark 
+                              ? 'text-primary-400 hover:text-primary-300' 
+                              : 'text-primary-600 hover:text-primary-900'
+                          }`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </motion.div>
                       {job.status === 'completed' && (
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleExport(job.id)}
-                          className="text-green-600 hover:text-green-900 transition-colors"
+                          className={`transition-colors ${
+                            isDark 
+                              ? 'text-green-400 hover:text-green-300' 
+                              : 'text-green-600 hover:text-green-900'
+                          }`}
                         >
                           <Download className="h-4 w-4" />
-                        </button>
+                        </motion.button>
                       )}
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
@@ -525,53 +675,73 @@ const BatchesPage: React.FC = () => {
         
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white px-6 py-4 border-t border-gray-200">
+          <div className={`px-6 py-4 border-t ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
+              <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 {t('common.total')}: {filteredJobs.length} {t('batches.title').toLowerCase()}
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
+                    className={`relative inline-flex items-center px-3 py-2 rounded-l-lg border text-sm font-medium transition-all duration-200 ${
                       currentPage === 1
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
+                        ? isDark 
+                          ? 'text-gray-500 cursor-not-allowed border-gray-600 bg-gray-700'
+                          : 'text-gray-300 cursor-not-allowed border-gray-200 bg-white'
+                        : isDark
+                          ? 'text-gray-300 border-gray-600 bg-gray-700 hover:bg-gray-600 hover:text-primary-400'
+                          : 'text-gray-700 border-gray-200 bg-white hover:bg-gray-50 hover:text-primary-600'
                     }`}
                   >
                     <ChevronLeft className="h-5 w-5" />
-                  </button>
+                  </motion.button>
                   
-                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-200 bg-primary-50 text-sm font-semibold text-primary-700">
+                  <span className={`relative inline-flex items-center px-4 py-2 border text-sm font-semibold ${
+                    isDark 
+                      ? 'border-gray-600 bg-primary-900/50 text-primary-300' 
+                      : 'border-gray-200 bg-primary-50 text-primary-700'
+                  }`}>
                     {currentPage} / {totalPages || 1}
                   </span>
                   
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className={`relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
+                    className={`relative inline-flex items-center px-3 py-2 rounded-r-lg border text-sm font-medium transition-all duration-200 ${
                       currentPage === totalPages || totalPages === 0
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
+                        ? isDark 
+                          ? 'text-gray-500 cursor-not-allowed border-gray-600 bg-gray-700'
+                          : 'text-gray-300 cursor-not-allowed border-gray-200 bg-white'
+                        : isDark
+                          ? 'text-gray-300 border-gray-600 bg-gray-700 hover:bg-gray-600 hover:text-primary-400'
+                          : 'text-gray-700 border-gray-200 bg-white hover:bg-gray-50 hover:text-primary-600'
                     }`}
                   >
                     <ChevronRight className="h-5 w-5" />
-                  </button>
+                  </motion.button>
                 </nav>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Empty state */}
       {filteredJobs.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <Package className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('batches.empty.title')}</h3>
-          <p className="mt-1 text-sm text-gray-500">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`text-center py-12 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        >
+          <Package className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
+          <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('batches.empty.title')}</h3>
+          <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             {searchTerm || statusFilter !== 'all' 
               ? t('search.noResults')
               : t('batches.empty.subtitle')
@@ -579,16 +749,25 @@ const BatchesPage: React.FC = () => {
           </p>
           {!searchTerm && statusFilter === 'all' && (
             <div className="mt-6">
-              <Link
-                to="/import"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Package className="h-4 w-4 mr-2" />
-                {t('batches.empty.cta')}
-              </Link>
+                <Link
+                  to="/import"
+                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                    isDark 
+                      ? 'bg-primary-500 hover:bg-primary-600' 
+                      : 'bg-primary-600 hover:bg-primary-700'
+                  }`}
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  {t('batches.empty.cta')}
+                </Link>
+              </motion.div>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Job Details Modal/Side Panel (placeholder) */}
@@ -605,26 +784,28 @@ const BatchesPage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              className={`rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto ${
+                isDark ? 'bg-gray-800' : 'bg-white'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Job Details</h3>
+                  <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Job Details</h3>
                   <button
                     onClick={() => setShowJobDetails(null)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
                   >
                     <XCircle className="h-6 w-6" />
                   </button>
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600">
+                  <div className={`rounded-lg p-4 ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       Detailed job information would be displayed here, including:
                     </p>
-                    <ul className="mt-2 text-sm text-gray-600 list-disc list-inside">
+                    <ul className={`mt-2 text-sm list-disc list-inside ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       <li>Contact-level results</li>
                       <li>Provider performance breakdown</li>
                       <li>Quality metrics</li>

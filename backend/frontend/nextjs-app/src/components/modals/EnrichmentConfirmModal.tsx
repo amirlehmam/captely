@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Phone, Zap, CheckCircle, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface EnrichmentConfirmModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
   fileName
 }) => {
   const { t, formatMessage } = useLanguage();
+  const { isDark } = useTheme();
   
   const [enrichmentType, setEnrichmentType] = useState<EnrichmentType>({
     email: true,
@@ -49,40 +51,74 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
 
   return (
     <AnimatePresence>
-      {/* Enhanced Backdrop with higher z-index and stronger blur */}
+      {/* Enhanced Backdrop with proper positioning and anti-layout-shift */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md z-[9999]"
-        style={{ backdropFilter: 'blur(8px)' }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999]"
+        style={{ 
+          backdropFilter: 'blur(8px)',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          willChange: 'opacity'
+        }}
       />
 
-      {/* Modal with very high z-index */}
+      {/* Modal with anti-layout-shift positioning */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
         className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          willChange: 'transform, opacity'
+        }}
       >
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md mx-4 relative">
+        <div className={`rounded-2xl shadow-2xl border w-full max-w-md mx-4 relative transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-200'
+        }`}
+        style={{
+          maxWidth: '28rem',
+          width: '100%',
+          margin: '0 1rem',
+          willChange: 'transform'
+        }}>
           {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-100">
+          <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg mr-3">
                   <Zap className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     📤 {t('enrichment.modal.title')}
                   </h3>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                className={`transition-colors p-1 rounded-full ${
+                  isDark 
+                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
+                style={{ willChange: 'background-color, color' }}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -90,12 +126,18 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-6 pb-6">
             {fileName && (
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className={`mb-6 p-4 border rounded-xl ${
+                isDark 
+                  ? 'bg-blue-900/20 border-blue-700/50' 
+                  : 'bg-blue-50 border-blue-200'
+              }`}>
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-blue-500 mr-2" />
-                  <span className="text-sm font-medium text-blue-900">
+                  <span className={`text-sm font-medium ${
+                    isDark ? 'text-blue-300' : 'text-blue-900'
+                  }`}>
                     {formatMessage('enrichment.modal.fileSelected', { fileName })}
                   </span>
                 </div>
@@ -103,17 +145,24 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
             )}
 
             <div className="mb-6">
-              <h4 className="text-base font-semibold text-gray-900 mb-4">
+              <h4 className={`text-base font-semibold mb-4 ${
+                isDark ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 {t('enrichment.modal.chooseEnrichment')}
               </h4>
               
               <div className="space-y-3">
                 {/* Email Option */}
-                <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                <label className={`cursor-pointer border border-solid rounded-xl p-4 transition-all duration-200 flex items-start ${
                   enrichmentType.email 
-                    ? 'border-green-300 bg-green-50 shadow-sm' 
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                }`}>
+                    ? isDark
+                      ? 'border-green-600 bg-green-900/20 shadow-sm' 
+                      : 'border-green-300 bg-green-50 shadow-sm'
+                    : isDark
+                      ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700' 
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                }`}
+                style={{ willChange: 'background-color, border-color' }}>
                   <input
                     type="checkbox"
                     checked={enrichmentType.email}
@@ -123,7 +172,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                   <div className={`flex-shrink-0 w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
                     enrichmentType.email 
                       ? 'bg-green-500 border-green-500' 
-                      : 'border-gray-300'
+                      : isDark ? 'border-gray-500' : 'border-gray-300'
                   }`}>
                     {enrichmentType.email && (
                       <CheckCircle className="h-3 w-3 text-white" />
@@ -131,16 +180,22 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                   </div>
                   <div className="flex items-center flex-1">
                     <Mail className={`h-5 w-5 mr-3 ${
-                      enrichmentType.email ? 'text-green-600' : 'text-gray-400'
+                      enrichmentType.email 
+                        ? 'text-green-600' 
+                        : isDark ? 'text-gray-500' : 'text-gray-400'
                     }`} />
                     <div>
                       <span className={`font-medium ${
-                        enrichmentType.email ? 'text-green-900' : 'text-gray-700'
+                        enrichmentType.email 
+                          ? isDark ? 'text-green-300' : 'text-green-900'
+                          : isDark ? 'text-gray-200' : 'text-gray-700'
                       }`}>
                         ☑️ {t('enrichment.modal.email.label')}
                       </span>
                       <p className={`text-sm ${
-                        enrichmentType.email ? 'text-green-700' : 'text-gray-500'
+                        enrichmentType.email 
+                          ? isDark ? 'text-green-400' : 'text-green-700'
+                          : isDark ? 'text-gray-400' : 'text-gray-500'
                       }`}>
                         {t('enrichment.modal.email.description')}
                       </p>
@@ -149,11 +204,16 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                 </label>
 
                 {/* Phone Option */}
-                <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                <label className={`cursor-pointer border border-solid rounded-xl p-4 transition-all duration-200 flex items-start ${
                   enrichmentType.phone 
-                    ? 'border-blue-300 bg-blue-50 shadow-sm' 
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                }`}>
+                    ? isDark
+                      ? 'border-blue-600 bg-blue-900/20 shadow-sm' 
+                      : 'border-blue-300 bg-blue-50 shadow-sm'
+                    : isDark
+                      ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700' 
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                }`}
+                style={{ willChange: 'background-color, border-color' }}>
                   <input
                     type="checkbox"
                     checked={enrichmentType.phone}
@@ -163,7 +223,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                   <div className={`flex-shrink-0 w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
                     enrichmentType.phone 
                       ? 'bg-blue-500 border-blue-500' 
-                      : 'border-gray-300'
+                      : isDark ? 'border-gray-500' : 'border-gray-300'
                   }`}>
                     {enrichmentType.phone && (
                       <CheckCircle className="h-3 w-3 text-white" />
@@ -171,16 +231,22 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                   </div>
                   <div className="flex items-center flex-1">
                     <Phone className={`h-5 w-5 mr-3 ${
-                      enrichmentType.phone ? 'text-blue-600' : 'text-gray-400'
+                      enrichmentType.phone 
+                        ? 'text-blue-600' 
+                        : isDark ? 'text-gray-500' : 'text-gray-400'
                     }`} />
                     <div>
                       <span className={`font-medium ${
-                        enrichmentType.phone ? 'text-blue-900' : 'text-gray-700'
+                        enrichmentType.phone 
+                          ? isDark ? 'text-blue-300' : 'text-blue-900'
+                          : isDark ? 'text-gray-200' : 'text-gray-700'
                       }`}>
                         ☑️ {t('enrichment.modal.phone.label')}
                       </span>
                       <p className={`text-sm ${
-                        enrichmentType.phone ? 'text-blue-700' : 'text-gray-500'
+                        enrichmentType.phone 
+                          ? isDark ? 'text-blue-400' : 'text-blue-700'
+                          : isDark ? 'text-gray-400' : 'text-gray-500'
                       }`}>
                         {t('enrichment.modal.phone.description')}
                       </p>
@@ -190,10 +256,16 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
 
                 {/* Both Selected Indicator */}
                 {enrichmentType.email && enrichmentType.phone && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                  <div className={`p-3 border rounded-xl ${
+                    isDark 
+                      ? 'bg-purple-900/20 border-purple-700/50' 
+                      : 'bg-purple-50 border-purple-200'
+                  }`}>
                     <div className="flex items-center">
                       <Zap className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm font-medium text-purple-900">
+                      <span className={`text-sm font-medium ${
+                        isDark ? 'text-purple-400' : 'text-purple-900'
+                      }`}>
                         ☑️ {t('enrichment.modal.both')}
                       </span>
                     </div>
@@ -204,10 +276,16 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
 
             {/* Warning if nothing selected */}
             {!hasSelection && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <div className={`mb-4 p-3 border rounded-xl ${
+                isDark 
+                  ? 'bg-red-900/20 border-red-700/50' 
+                  : 'bg-red-50 border-red-200'
+              }`}>
                 <div className="flex items-center">
                   <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
-                  <span className="text-sm font-medium text-red-900">
+                  <span className={`text-sm font-medium ${
+                    isDark ? 'text-red-400' : 'text-red-900'
+                  }`}>
                     {t('enrichment.modal.selectAtLeastOne')}
                   </span>
                 </div>
@@ -216,11 +294,16 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+          <div className={`px-6 py-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                className={`px-4 py-2 text-sm font-medium border rounded-lg transition-all duration-200 ${
+                  isDark 
+                    ? 'text-gray-300 bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                    : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+                }`}
+                style={{ willChange: 'background-color, border-color' }}
               >
                 {t('enrichment.modal.cancel')}
               </button>
@@ -230,8 +313,11 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                 className={`px-6 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   hasSelection
                     ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
-                    : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                    : isDark 
+                      ? 'text-gray-500 bg-gray-700 cursor-not-allowed' 
+                      : 'text-gray-400 bg-gray-200 cursor-not-allowed'
                 }`}
+                style={{ willChange: 'background, box-shadow' }}
               >
                 {t('enrichment.modal.startEnrichment')}
               </button>

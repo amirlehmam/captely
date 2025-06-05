@@ -23,62 +23,89 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
 
   if (variant === 'compact') {
     return (
-      <div className="flex items-center space-x-3">
-        {/* Credit balance - Always present to prevent flashing */}
-        <div className="flex items-center space-x-2">
-          <div className={`p-2 rounded-lg ${
+      <div className="flex items-center space-x-3" style={{ minWidth: '200px', height: '40px' }}>
+        {/* Credit balance - Always present with stable dimensions to prevent flashing */}
+        <div className="flex items-center space-x-2" style={{ minWidth: '120px' }}>
+          <div className={`p-2 rounded-lg transition-colors duration-200 ${
             error ? isDark ? 'bg-red-900/20' : 'bg-red-100' :
             isCriticalCredits ? isDark ? 'bg-red-900/20' : 'bg-red-100' : 
             isLowCredits ? isDark ? 'bg-yellow-900/20' : 'bg-yellow-100' : 
             isDark ? 'bg-green-900/20' : 'bg-green-100'
-          }`}>
+          }`}
+          style={{ 
+            willChange: 'background-color',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
             {error ? (
               <AlertTriangle className="h-4 w-4 text-red-600" />
             ) : (
-              <CreditCard className={`h-4 w-4 ${
+              <CreditCard className={`h-4 w-4 transition-colors duration-200 ${
                 isCriticalCredits ? 'text-red-600' : 
                 isLowCredits ? 'text-yellow-600' : 'text-green-600'
-              }`} />
+              }`} 
+              style={{ willChange: 'color' }} />
             )}
           </div>
-          <div>
+          <div style={{ minWidth: '80px' }}>
             <div className="flex items-center space-x-1">
               {loading ? (
-                <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>•••</span>
+                <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-gray-400'}`}
+                style={{ display: 'inline-block', width: '40px' }}>•••</span>
               ) : error ? (
-                <span className="text-red-600 font-semibold">Error</span>
+                <span className="text-red-600 font-semibold" style={{ display: 'inline-block', minWidth: '40px' }}>Error</span>
               ) : (
-                <span className={`font-semibold ${
+                <span className={`font-semibold transition-colors duration-200 ${
                   isCriticalCredits ? 'text-red-600' : 
                   isLowCredits ? 'text-yellow-600' : 
                   isDark ? 'text-white' : 'text-gray-900'
-                }`}>
+                }`}
+                style={{ 
+                  willChange: 'color',
+                  display: 'inline-block',
+                  minWidth: '40px',
+                  textAlign: 'right'
+                }}>
                   {displayBalance.toLocaleString()}
                 </span>
               )}
               <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>credits</span>
             </div>
-            {(isLowCredits || loading) && (
-              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                {loading ? 'Loading...' : `${displayPlan} Plan`}
-              </div>
-            )}
+            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+            style={{ 
+              height: '14px',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              {loading ? 'Loading...' : isLowCredits ? `${displayPlan} Plan` : ''}
+            </div>
           </div>
         </div>
 
-        {/* Actions - Always present */}
-        <div className="flex items-center space-x-1">
+        {/* Actions - Always present with fixed dimensions */}
+        <div className="flex items-center space-x-1" style={{ minWidth: '70px' }}>
           {showRefresh && (
             <button 
               onClick={refreshCredits}
               disabled={loading}
-              className={`p-1 rounded transition-colors ${
+              className={`p-1 rounded transition-colors duration-200 ${
                 loading 
                   ? isDark ? 'text-gray-600' : 'text-gray-300' 
                   : isDark 
                     ? 'hover:bg-gray-800 text-gray-400' 
                     : 'hover:bg-gray-100 text-gray-400'
               }`}
+              style={{ 
+                willChange: 'background-color, color',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
               title="Refresh credit balance"
             >
               <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
@@ -87,13 +114,18 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
           
           <button 
             disabled={loading}
-            className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+            className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
               loading 
                 ? isDark ? 'text-blue-400 bg-blue-900/20' : 'text-blue-400 bg-blue-25' 
                 : isDark 
                   ? 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50' 
                   : 'text-blue-700 bg-blue-50 hover:bg-blue-100'
             }`}
+            style={{ 
+              willChange: 'background-color, color',
+              minWidth: '42px',
+              height: '24px'
+            }}
             title="Buy more credits"
           >
             <Plus className="h-3 w-3 mr-1" />
