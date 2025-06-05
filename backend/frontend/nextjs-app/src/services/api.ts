@@ -424,7 +424,7 @@ class ApiService {
   }
 
   async updateUserProfile(data: Partial<User>): Promise<User> {
-    const response = await client.put<User>(`${API_CONFIG.authUrl}/api/users/profile`, data);
+    const response = await client.put<User>(`${API_CONFIG.authUrl}/auth/users/profile`, data);
     toast.success('Profile updated successfully!');
     return response;
   }
