@@ -479,8 +479,8 @@ async def get_dashboard_analytics(
             SELECT 
                 COUNT(*) as total_contacts,
                 COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_count,
-                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_found,
-                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as phones_found,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' AND c.email != 'N/A' THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' AND c.phone != 'N/A' THEN 1 END) as phones_found,
                 AVG(c.enrichment_score) as avg_confidence,
                 SUM(c.credits_consumed) as credits_used_total,
                 COUNT(DISTINCT c.job_id) as total_jobs
@@ -499,10 +499,18 @@ async def get_dashboard_analytics(
         avg_confidence = float(stats.avg_confidence) if stats and stats.avg_confidence else 0
         credits_used_total = float(stats.credits_used_total) if stats and stats.credits_used_total else 0
         
-        # Calculate rates
+        # Calculate rates based on TOTAL CONTACTS (as requested)
         email_hit_rate = (emails_found / total_contacts * 100) if total_contacts > 0 else 0
         phone_hit_rate = (phones_found / total_contacts * 100) if total_contacts > 0 else 0
         success_rate = (enriched_count / total_contacts * 100) if total_contacts > 0 else 0
+        
+        # Add debug logging
+        print(f"📊 DASHBOARD DEBUG for user {user_id}:")
+        print(f"   - Total contacts: {total_contacts}")
+        print(f"   - Emails found: {emails_found}")
+        print(f"   - Phones found: {phones_found}")
+        print(f"   - Email hit rate: {email_hit_rate:.1f}%")
+        print(f"   - Phone hit rate: {phone_hit_rate:.1f}%")
         
         # Get recent jobs (both active and completed)
         recent_jobs_query = text("""
@@ -680,12 +688,12 @@ async def get_dashboard_analytics(
         
         return {
             "overview": {
-            "total_contacts": total_contacts,
-            "emails_found": emails_found,
-            "phones_found": phones_found,
-            "success_rate": round(success_rate, 1),
-            "email_hit_rate": round(email_hit_rate, 1),
-            "phone_hit_rate": round(phone_hit_rate, 1),
+                "total_contacts": total_contacts,
+                "emails_found": emails_found,
+                "phones_found": phones_found,
+                "success_rate": round(success_rate, 1),
+                "email_hit_rate": round(email_hit_rate, 1),
+                "phone_hit_rate": round(phone_hit_rate, 1),
                 "avg_confidence": round(avg_confidence, 1),
                 "credits_used_today": credits_used_today,
                 "credits_used_month": int(credits_used_total)
