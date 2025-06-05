@@ -160,7 +160,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                       : 'border-green-300 bg-green-50 shadow-sm'
                     : isDark
                       ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700' 
-                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                 }`}
                 style={{ willChange: 'background-color, border-color' }}>
                   <input
@@ -211,7 +211,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                       : 'border-blue-300 bg-blue-50 shadow-sm'
                     : isDark
                       ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700' 
-                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                 }`}
                 style={{ willChange: 'background-color, border-color' }}>
                   <input
@@ -315,7 +315,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                     ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
                     : isDark 
                       ? 'text-gray-500 bg-gray-700 cursor-not-allowed' 
-                      : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                    : 'text-gray-400 bg-gray-200 cursor-not-allowed'
                 }`}
                 style={{ willChange: 'background, box-shadow' }}
               >

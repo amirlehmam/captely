@@ -528,7 +528,7 @@ const BillingPage: React.FC = () => {
             : 'bg-gradient-to-r from-emerald-300/20 via-teal-300/10 to-blue-300/20'
         }`} />
         <div className="relative px-8 py-8">
-          <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
             <div className="text-center sm:text-left">
               <h1 className={`text-4xl font-bold mb-3 ${
                 theme === 'dark' 
@@ -536,12 +536,12 @@ const BillingPage: React.FC = () => {
                   : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 bg-clip-text text-transparent'
               }`}>
                 💳 {t('billing.title')}
-              </h1>
+            </h1>
               <p className={`text-lg ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
               }`}>
-                {t('billing.subtitle')}
-              </p>
+              {t('billing.subtitle')}
+            </p>
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-4 mt-4">
                 <div className={`px-4 py-2 rounded-full ${
                   theme === 'dark' 
@@ -551,7 +551,7 @@ const BillingPage: React.FC = () => {
                   theme === 'dark' ? 'border-emerald-400/30' : 'border-emerald-200'
                 }`}>
                   💰 Credit Management
-                </div>
+          </div>
                 <div className={`px-4 py-2 rounded-full ${
                   theme === 'dark' 
                     ? 'bg-blue-500/20 text-blue-300' 
@@ -573,45 +573,45 @@ const BillingPage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
                 className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
                   theme === 'dark' 
                     ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
                     : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
                 }`}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 🔄 {t('billing.refreshButton')}
-              </button>
-              <button
-                onClick={() => setShowHistory(!showHistory)}
+            </button>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
                 className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 ${
                   theme === 'dark' 
                     ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
                     : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
                 }`}
-              >
-                <History className="h-4 w-4 mr-2" />
+            >
+              <History className="h-4 w-4 mr-2" />
                 📋 {showHistory ? t('billing.hideHistory') : t('billing.showHistory')}
-              </button>
-              <button 
-                onClick={() => handleDownloadInvoice()}
-                disabled={downloadingInvoice}
+            </button>
+            <button 
+              onClick={() => handleDownloadInvoice()}
+              disabled={downloadingInvoice}
                 className={`inline-flex items-center px-4 py-2 rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
                   theme === 'dark'
                     ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
                     : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
                 } text-white`}
-              >
-                {downloadingInvoice ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-2" />
-                )}
+            >
+              {downloadingInvoice ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4 mr-2" />
+              )}
                 📄 {t('billing.downloadInvoice')}
-              </button>
+            </button>
             </div>
           </div>
         </div>
@@ -714,7 +714,7 @@ const BillingPage: React.FC = () => {
                   : 'bg-blue-100 text-blue-700 border-blue-200'
                 : theme === 'dark'
                   ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30'
-                  : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                : 'bg-yellow-100 text-yellow-700 border-yellow-200'
             }`}>
               {subscription?.status === 'active' ? '✅' : subscription?.status === 'trialing' ? '🔄' : '⚠️'} {subscription?.status || 'Unknown'}
             </span>
@@ -940,7 +940,7 @@ const BillingPage: React.FC = () => {
                     : 'bg-white text-gray-900 shadow-sm'
                   : theme === 'dark'
                     ? 'text-gray-300 hover:text-white'
-                    : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               📅 {t('billing.monthly')}
@@ -954,7 +954,7 @@ const BillingPage: React.FC = () => {
                     : 'bg-white text-gray-900 shadow-sm'
                   : theme === 'dark'
                     ? 'text-gray-300 hover:text-white'
-                    : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               💰 {t('billing.annualTwoMonthsOffered')}
@@ -1008,7 +1008,7 @@ const BillingPage: React.FC = () => {
                   ? 'border-green-500'
                   : theme === 'dark'
                     ? 'border-gray-600 hover:border-emerald-400'
-                    : 'border-gray-200 hover:border-teal-300'
+                  : 'border-gray-200 hover:border-teal-300'
               }`}
             >
                 {pack.popular && (
@@ -1127,7 +1127,7 @@ const BillingPage: React.FC = () => {
                         : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
                       : theme === 'dark'
                         ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                        : 'bg-gray-900 hover:bg-gray-800 text-white'
+                      : 'bg-gray-900 hover:bg-gray-800 text-white'
                   }`}
               >
                 {loading ? (

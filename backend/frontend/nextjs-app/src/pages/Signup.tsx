@@ -497,10 +497,6 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
         <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
           {t('auth.signup.verificationSent', 'We sent a 6-digit code to')} <strong>{formData.email}</strong>
         </p>
-        {/* Debug info - remove this later */}
-        <div className="text-xs text-gray-500 mt-1">
-          Debug: Email in state: "{formData.email}" | Auth method: {formData.authMethod}
-        </div>
       </div>
 
       <div className="space-y-4">

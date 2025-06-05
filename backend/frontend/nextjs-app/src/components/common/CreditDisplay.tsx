@@ -81,7 +81,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
               alignItems: 'center'
             }}>
               {loading ? 'Loading...' : isLowCredits ? `${displayPlan} Plan` : ''}
-            </div>
+              </div>
           </div>
         </div>
 

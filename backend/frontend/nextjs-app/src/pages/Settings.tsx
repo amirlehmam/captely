@@ -1004,7 +1004,7 @@ const SettingsPage: React.FC = () => {
                           : 'bg-blue-100 text-blue-700 border-blue-200'
                         : theme === 'dark'
                           ? 'bg-gray-500/20 text-gray-300 border-gray-400/30'
-                          : 'bg-gray-100 text-gray-700 border-gray-200'
+                        : 'bg-gray-100 text-gray-700 border-gray-200'
                     }`}>
                       {member.role === 'admin' ? '👑' : member.role === 'user' ? '👤' : '👁️'} {member.role}
                     </span>
@@ -1019,7 +1019,7 @@ const SettingsPage: React.FC = () => {
                           : 'bg-yellow-100 text-yellow-700 border-yellow-200'
                         : theme === 'dark'
                           ? 'bg-gray-500/20 text-gray-300 border-gray-400/30'
-                          : 'bg-gray-100 text-gray-700 border-gray-200'
+                        : 'bg-gray-100 text-gray-700 border-gray-200'
                     }`}>
                       {member.status === 'active' ? '🟢' : member.status === 'pending' ? '🟡' : '🔴'} {member.status}
                     </span>
@@ -1142,7 +1142,7 @@ const SettingsPage: React.FC = () => {
                           : 'bg-green-100 text-green-600'
                         : theme === 'dark'
                           ? 'bg-red-500/20 text-red-400'
-                          : 'bg-red-100 text-red-600'
+                        : 'bg-red-100 text-red-600'
                     }`}>
                       {log.status === 'success' ? (
                         <CheckCircle className="w-5 h-5" />
@@ -1866,49 +1866,49 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <div className="flex gap-8">
-        {/* Sidebar */}
-        <div className="w-64 flex-shrink-0">
+      {/* Sidebar */}
+      <div className="w-64 flex-shrink-0">
           <div className={`${
             theme === 'dark' 
               ? 'bg-gray-800 border-gray-700' 
               : 'bg-white border-gray-100'
           } rounded-xl shadow-lg border p-6`}>
-            <nav className="space-y-2">
-              {sidebarItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveSection(item.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    activeSection === item.id 
+          <nav className="space-y-2">
+            {sidebarItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  activeSection === item.id 
                       ? theme === 'dark'
                         ? 'bg-gradient-to-r from-emerald-500/20 to-indigo-500/20 text-emerald-300 border border-emerald-400/30' 
                         : 'bg-gradient-to-r from-teal-50 to-blue-50 text-teal-700 border border-teal-200'
                       : theme === 'dark'
                         ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  {item.icon}
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                {item.icon}
+                <span className="font-medium">{item.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex-1">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSection}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
+      {/* Main Content */}
+      <div className="flex-1">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeSection}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
         </div>
       </div>
     </div>

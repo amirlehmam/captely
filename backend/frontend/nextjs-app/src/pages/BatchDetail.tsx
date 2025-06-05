@@ -204,7 +204,7 @@ const BatchDetailPage: React.FC = () => {
           <AlertCircle className={`mx-auto h-12 w-12 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
           <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('batches.details.batchNotFound')}</h3>
           <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('batches.details.batchNotFoundDesc')}</p>
-          <div className="mt-6">
+        <div className="mt-6">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -217,9 +217,9 @@ const BatchDetailPage: React.FC = () => {
                     : 'bg-primary-600 hover:bg-primary-700'
                 }`}
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                {t('batches.details.backToBatches')}
-              </Link>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t('batches.details.backToBatches')}
+          </Link>
             </motion.div>
           </div>
         </div>

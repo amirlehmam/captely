@@ -526,7 +526,9 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
         db.add(user)
         
         # Clean up the verification record
-        await db.delete(verification)
+        await db.execute(
+            delete(EmailVerification).where(EmailVerification.id == verification.id)
+        )
         
         await db.commit()
         await db.refresh(user)
@@ -1052,7 +1054,9 @@ async def verify_email_code(
         # Check max attempts (5 attempts max)
         if verification.attempts > 5:
             # Delete the verification record
-            await db.delete(verification)
+            await db.execute(
+                delete(EmailVerification).where(EmailVerification.id == verification.id)
+            )
             await db.commit()
             raise HTTPException(
                 status_code=400,
