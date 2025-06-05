@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import DarkModeToggle from '../components/common/DarkModeToggle';
 
 interface LoginFormData {
   email: string;
@@ -260,9 +261,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 relative overflow-hidden">
-      {/* Language Switcher */}
-      <div className="absolute top-6 right-6 z-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-slate-900 relative overflow-hidden">
+      {/* Language & Theme Switchers */}
+      <div className="absolute top-6 right-6 z-20 flex items-center space-x-3">
+        <DarkModeToggle size="sm" />
         <LanguageSwitcher />
       </div>
       
@@ -297,17 +299,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             transition={{ delay: 0.1 }}
             className="text-center mb-8"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-lg mb-6 overflow-hidden bg-white p-2">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-lg mb-6 overflow-hidden bg-white dark:bg-gray-800 p-2">
               <img 
                 src="/logo.png" 
                 alt="Captely Logo" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {getGreeting()}!
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               {t('auth.login.subtitle')}
             </p>
           </motion.div>
@@ -317,7 +319,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-xl p-8"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
           >
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* OAuth Buttons */}
@@ -326,7 +328,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   type="button"
                   onClick={triggerGoogleSignIn}
                   disabled={loading}
-                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50"
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50"
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -341,7 +343,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   type="button"
                   onClick={handleAppleSignIn}
                   disabled={loading}
-                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-black text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 disabled:opacity-50"
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-black dark:bg-gray-900 text-sm font-medium text-white hover:bg-gray-800 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 disabled:opacity-50"
                 >
                   <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
@@ -353,16 +355,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or sign in with email</span>
+                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or sign in with email</span>
                 </div>
               </div>
 
               {/* Email field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('auth.login.emailLabel')}
                 </label>
                 <div className="relative">
@@ -371,14 +373,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    className={`w-full px-4 py-3 pl-12 bg-gray-50 dark:bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${
                       errors.email && touched.email
-                        ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                        : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:bg-red-50 dark:focus:bg-red-900/20'
+                        : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 dark:focus:border-blue-400'
                     }`}
                     placeholder="you@example.com"
                   />
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                   {formData.email && touched.email && !errors.email && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0 }}
@@ -395,7 +397,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 text-sm text-red-600 flex items-center"
+                      className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center"
                     >
                       <AlertCircle className="w-4 h-4 mr-1" />
                       {errors.email}
@@ -406,7 +408,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
               {/* Password field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('auth.login.passwordLabel')}
                 </label>
                 <div className="relative">
@@ -414,18 +416,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 dark:bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${
                       errors.password && touched.password
-                        ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                        : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:bg-red-50 dark:focus:bg-red-900/20'
+                        : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 dark:focus:border-blue-400'
                     }`}
                     placeholder="••••••••"
                   />
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -436,7 +438,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 text-sm text-red-600 flex items-center"
+                      className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center"
                     >
                       <AlertCircle className="w-4 h-4 mr-1" />
                       {errors.password}
@@ -452,15 +454,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     type="checkbox"
                     checked={formData.rememberMe}
                     onChange={(e) => handleInputChange('rememberMe', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
                   />
-                  <span className="ml-2 text-sm text-gray-700">
+                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                     {t('auth.login.rememberMe')}
                   </span>
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
                 >
                   {t('auth.login.forgotPassword')}
                 </Link>
@@ -473,9 +475,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="p-3 bg-red-50 border border-red-200 rounded-lg"
+                    className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
                   >
-                    <p className="text-sm text-red-600 flex items-center">
+                    <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-2" />
                       {errors.general}
                     </p>
@@ -487,7 +489,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               <motion.button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 ${
+                className={`w-full py-3 px-4 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 ${
                   loading ? 'opacity-75 cursor-not-allowed' : ''
                 }`}
                 whileHover={{ scale: 1.01 }}
@@ -508,11 +510,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
               {/* Sign up link */}
               <div className="text-center pt-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {t('auth.login.noAccount')}{' '}
                   <Link
                     to="/signup"
-                    className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                    className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                   >
                     {t('auth.login.createAccount')}
                   </Link>

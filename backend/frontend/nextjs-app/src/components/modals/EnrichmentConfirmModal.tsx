@@ -48,24 +48,25 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
+    <AnimatePresence>
+      {/* Enhanced Backdrop with higher z-index and stronger blur */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40"
+        className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md z-[9999]"
+        style={{ backdropFilter: 'blur(8px)' }}
       />
 
-      {/* Modal */}
+      {/* Modal with very high z-index */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
       >
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md mx-4">
+        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md mx-4 relative">
           {/* Header */}
           <div className="px-6 py-5 border-b border-gray-100">
             <div className="flex items-center justify-between">
@@ -238,7 +239,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
           </div>
         </div>
       </motion.div>
-    </>
+    </AnimatePresence>
   );
 };
 

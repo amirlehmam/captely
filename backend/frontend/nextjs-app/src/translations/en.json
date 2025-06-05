@@ -124,7 +124,8 @@
     "usage_alert_message": "At your current rate, you'll run out of credits in approximately <strong>{days} days</strong>. Consider upgrading your plan or purchasing additional credits.",
     "performance_stats": "Performance Stats",
     "email_hit_rate": "Email Hit Rate",
-    "success_rate": "Success Rate"
+    "success_rate": "Success Rate",
+    "credits_used": "Credits Used"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -184,17 +185,29 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back!",
-    "overview": "Here's what's happening with your account",
+    "overview": {
+      "batchProgress": "Batch Progress",
+      "systemHealth": "System Health",
+      "creditsUsage": "Credits Usage",
+      "recentActivity": "Recent Activity",
+      "noActivity": "No recent activity",
+      "refreshData": "Refresh Data",
+      "viewAll": "View All"
+    },
     "stats": {
       "totalContacts": "Total Contacts",
       "enrichedContacts": "Enriched Contacts",
+      "emailsFound": "Emails Found",
+      "phonesFound": "Phones Found",
       "successRate": "Success Rate",
-      "creditsRemaining": "Credits Remaining",
       "creditsUsed": "Credits Used",
-      "activeJobs": "Active Jobs",
-      "completedJobs": "Completed Jobs",
-      "pendingJobs": "Pending Jobs",
-      "failedJobs": "Failed Jobs"
+      "creditsRemaining": "Credits Remaining",
+      "currentMonth": "Current Month",
+      "lastWeek": "Last Week",
+      "performance": "Performance",
+      "improvement": "Improvement",
+      "emailHitRate": "Email Hit Rate",
+      "phoneHitRate": "Phone Hit Rate"
     },
     "recentActivity": {
       "title": "Recent Activity",
@@ -211,10 +224,18 @@
     },
     "systemHealth": {
       "title": "System Health",
-      "allSystemsOperational": "All systems operational",
-      "enrichmentService": "Enrichment Service",
-      "apiService": "API Service",
-      "dataProcessing": "Data Processing"
+      "allOperational": "All Systems Operational",
+      "providers": {
+        "apollo": "Apollo",
+        "hunterIo": "Hunter.io",
+        "clearbit": "Clearbit",
+        "leadfeeder": "Leadfeeder"
+      },
+      "status": {
+        "operational": "Operational",
+        "issues": "Issues",
+        "maintenance": "Maintenance"
+      }
     }
   },
   "enrichment": {
@@ -707,27 +728,42 @@
     "recent": "Recent searches"
   },
   "errors": {
-    "generic": "Something went wrong. Please try again.",
+    "generic": "An error occurred. Please try again.",
     "network": "Network error. Please check your connection.",
     "unauthorized": "You are not authorized to perform this action.",
-    "notFound": "The requested resource was not found.",
+    "forbidden": "Access forbidden.",
+    "not_found": "The requested resource was not found.",
     "validation": "Please check your input and try again.",
-    "fileUpload": "Failed to upload file. Please try again.",
-    "enrichment": "Enrichment failed. Please contact support.",
-    "insufficientCredits": "Insufficient credits. Please add more credits to continue.",
-    "rateLimited": "Too many requests. Please try again later.",
-    "serverError": "Server error. Please contact support if this persists."
+    "server": "Server error. Please try again later.",
+    "timeout": "Request timeout. Please try again.",
+    "file_too_large": "File is too large. Maximum size is {maxSize}.",
+    "invalid_file_type": "Invalid file type. Supported types: {types}.",
+    "required_field": "This field is required.",
+    "invalid_email": "Please enter a valid email address.",
+    "invalid_phone": "Please enter a valid phone number.",
+    "password_too_short": "Password must be at least {minLength} characters.",
+    "passwords_dont_match": "Passwords do not match.",
+    "invalid_url": "Please enter a valid URL.",
+    "invalid_date": "Please enter a valid date.",
+    "invalid_number": "Please enter a valid number.",
+    "min_value": "Value must be at least {min}.",
+    "max_value": "Value must be at most {max}.",
+    "min_length": "Must be at least {min} characters.",
+    "max_length": "Must be at most {max} characters."
   },
   "success": {
-    "fileUploaded": "File uploaded successfully!",
-    "settingsSaved": "Settings saved successfully!",
-    "enrichmentStarted": "Enrichment process started!",
-    "contactsExported": "Contacts exported successfully!",
-    "profileUpdated": "Profile updated successfully!",
-    "passwordChanged": "Password changed successfully!",
-    "integrationConnected": "Integration connected successfully!",
-    "tokenCreated": "API token created successfully!",
-    "memberInvited": "Team member invited successfully!"
+    "saved": "Saved successfully.",
+    "deleted": "Deleted successfully.",
+    "uploaded": "Uploaded successfully.",
+    "downloaded": "Downloaded successfully.",
+    "sent": "Sent successfully.",
+    "updated": "Updated successfully.",
+    "created": "Created successfully.",
+    "imported": "Imported successfully.",
+    "exported": "Exported successfully.",
+    "verified": "Verified successfully.",
+    "processed": "Processed successfully.",
+    "completed": "Completed successfully."
   },
   "footer": {
     "allRightsReserved": "All rights reserved",
@@ -745,5 +781,9 @@
       "systemUpdate": "System update",
       "teamInvite": "Team invitation"
     }
-  }
+  },
+  "import_contacts": "Import Contacts",
+  "view_batches": "View Batches",
+  "view_crm": "View CRM",
+  "quick_actions": "Quick Actions"
 } 

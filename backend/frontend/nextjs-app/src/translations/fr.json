@@ -745,5 +745,13 @@
       "systemUpdate": "Mise à jour système",
       "teamInvite": "Invitation d'équipe"
     }
-  }
+  },
+  "total_contacts": "Total Contacts",
+  "emails_found": "Emails Trouvés",
+  "phones_found": "Téléphones Trouvés",
+  "import_contacts": "Importer Contacts",
+  "view_batches": "Voir les Lots",
+  "view_crm": "Voir le CRM",
+  "quick_actions": "Actions Rapides",
+  "credits_used": "Crédits Utilisés"
 } 

@@ -10,6 +10,9 @@ import { Toaster } from 'react-hot-toast';
 // Language Context Provider - NEW
 import { LanguageProvider } from './contexts/LanguageContext';
 
+// Theme Context Provider - DARK MODE SUPPORT
+import { ThemeProvider } from './contexts/ThemeContext';
+
 // Credit Context Provider - PRODUCTION READY
 import { CreditProvider } from './contexts/CreditContext';
 
@@ -65,9 +68,10 @@ function App() {
   console.log('📄 Rendering App with authentication:', isAuthenticated);
 
   return (
-    <LanguageProvider>
-      <CreditProvider>
-        <Router>
+    <ThemeProvider>
+      <LanguageProvider>
+        <CreditProvider>
+          <Router>
           <Toaster position="top-right" />
 
           <Routes>
@@ -111,6 +115,7 @@ function App() {
         </Router>
       </CreditProvider>
     </LanguageProvider>
+    </ThemeProvider>
   );
 }
 
