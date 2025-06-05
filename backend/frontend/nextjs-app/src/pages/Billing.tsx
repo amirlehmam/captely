@@ -12,6 +12,7 @@ import {
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface Subscription {
   id: string;
@@ -94,6 +95,7 @@ interface PaymentMethod {
 
 const BillingPage: React.FC = () => {
   const { t, formatMessage } = useLanguage();
+  const { theme } = useTheme();
   
   const [loading, setLoading] = useState(true);
   const [billingType, setBillingType] = useState<'monthly' | 'annual'>('monthly');

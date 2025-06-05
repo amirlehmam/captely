@@ -252,22 +252,39 @@ const CRMPage: React.FC = () => {
     }
   };
 
-  // Helper functions
+  // Enhanced Helper functions with Dark Mode Support
   const getEmailReliabilityColor = (reliability: string) => {
-    switch (reliability) {
-      case 'excellent': return 'bg-green-100 text-green-800 border-green-200';
-      case 'good': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'fair': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'poor': return 'bg-red-100 text-red-800 border-red-200';
-      case 'no_email': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    if (isDark) {
+      switch (reliability) {
+        case 'excellent': return 'bg-green-900/30 text-green-300 border-green-700/50';
+        case 'good': return 'bg-blue-900/30 text-blue-300 border-blue-700/50';
+        case 'fair': return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
+        case 'poor': return 'bg-red-900/30 text-red-300 border-red-700/50';
+        case 'no_email': return 'bg-gray-700 text-gray-300 border-gray-600';
+        default: return 'bg-gray-700 text-gray-300 border-gray-600';
+      }
+    } else {
+      switch (reliability) {
+        case 'excellent': return 'bg-green-100 text-green-800 border-green-200';
+        case 'good': return 'bg-blue-100 text-blue-800 border-blue-200';
+        case 'fair': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        case 'poor': return 'bg-red-100 text-red-800 border-red-200';
+        case 'no_email': return 'bg-gray-100 text-gray-800 border-gray-200';
+        default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      }
     }
   };
 
   const getLeadScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 50) return 'text-yellow-600';
-    return 'text-red-600';
+    if (isDark) {
+      if (score >= 80) return 'text-green-400';
+      if (score >= 50) return 'text-yellow-400';
+      return 'text-red-400';
+    } else {
+      if (score >= 80) return 'text-green-600';
+      if (score >= 50) return 'text-yellow-600';
+      return 'text-red-600';
+    }
   };
 
   const getLeadScoreStars = (score: number) => {
@@ -842,13 +859,19 @@ const CRMPage: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className={`divide-y ${
+              isDark 
+                ? 'bg-gray-800 divide-gray-700' 
+                : 'bg-white divide-gray-100'
+            }`}>
               {contacts.map((contact) => (
                 <motion.tr
                   key={contact.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="hover:bg-gray-50 transition-colors duration-200"
+                  className={`transition-colors duration-200 ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                  }`}
                 >
                   <td className="px-6 py-5">
                     <input
@@ -1001,37 +1024,55 @@ const CRMPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-gray-700">
-              Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts)} of {totalContacts.toLocaleString()} contacts
-              {selectedContacts.size > 0 && (
-                <span className="ml-2 text-teal-600">
-                  • {selectedContacts.size} selected
+        {/* Enhanced Pagination */}
+        <div className={`px-6 py-4 border-t ${
+          isDark 
+            ? 'bg-gradient-to-r from-gray-800 to-gray-750 border-gray-700' 
+            : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
+        }`}>
+                      <div className="flex items-center justify-between">
+              <div className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                📈 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts)} of {totalContacts.toLocaleString()} contacts
+                {selectedContacts.size > 0 && (
+                  <span className={`ml-2 font-semibold ${
+                    isDark ? 'text-emerald-400' : 'text-teal-600'
+                  }`}>
+                    • {selectedContacts.size} selected ✨
+                  </span>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isDark 
+                      ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
+                  } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
+                  style={{ willChange: 'background-color, box-shadow' }}
+                >
+                  ← Previous
+                </button>
+                <span className={`px-6 py-2 text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  📄 Page {currentPage} of {totalPages}
                 </span>
-              )}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isDark 
+                      ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
+                  } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
+                  style={{ willChange: 'background-color, box-shadow' }}
+                >
+                  Next →
+                </button>
+              </div>
             </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-200"
-              >
-                Previous
-              </button>
-              <span className="px-4 py-2 text-sm font-medium text-gray-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-200"
-              >
-                Next
-              </button>
-            </div>
-          </div>
         </div>
       </motion.div>
     </div>

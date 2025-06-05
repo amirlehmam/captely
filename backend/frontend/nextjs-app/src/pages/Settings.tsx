@@ -14,6 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 interface UserProfile {
@@ -66,6 +67,7 @@ interface EnrichmentProvider {
 
 const SettingsPage: React.FC = () => {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   
   const [activeSection, setActiveSection] = useState('account');
   const [loading, setLoading] = useState(false);
@@ -143,55 +145,55 @@ const SettingsPage: React.FC = () => {
   const sidebarItems = [
     {
       id: 'account',
-      label: 'Account',
+      label: '👤 Account',
       icon: <User className="w-5 h-5" />,
       description: 'Profile and personal settings'
     },
     {
       id: 'security',
-      label: 'Security',
+      label: '🔒 Security',
       icon: <Shield className="w-5 h-5" />,
       description: 'Password and security settings'
     },
     {
       id: 'billing',
-      label: 'Billing',
+      label: '💳 Billing',
       icon: <CreditCard className="w-5 h-5" />,
       description: 'Subscription and payment'
     },
     {
       id: 'api',
-      label: 'API Keys',
+      label: '🔑 API Keys',
       icon: <Key className="w-5 h-5" />,
       description: 'Manage API access'
     },
     {
       id: 'import',
-      label: 'Import Settings',
+      label: '📥 Import Settings',
       icon: <Upload className="w-5 h-5" />,
       description: 'Import and enrichment settings'
     },
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: '🔔 Notifications',
       icon: <Bell className="w-5 h-5" />,
       description: 'Email and alert preferences'
     },
     {
       id: 'team',
-      label: 'Team',
+      label: '👥 Team',
       icon: <Users className="w-5 h-5" />,
       description: 'Team members and roles'
     },
     {
       id: 'integrations',
-      label: 'Integrations',
+      label: '🔗 Integrations',
       icon: <Webhook className="w-5 h-5" />,
       description: 'Third-party connections'
     },
     {
       id: 'export',
-      label: 'Data Export',
+      label: '📤 Data Export',
       icon: <Download className="w-5 h-5" />,
       description: 'Export and backup options'
     }
@@ -570,101 +572,167 @@ const SettingsPage: React.FC = () => {
   const renderAccountSettings = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h2>
+        <h2 className={`text-2xl font-bold mb-6 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>👤 Account Settings</h2>
         
         {/* Profile Information */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6 mb-8`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>📝 Profile Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>👤 First Name</label>
               <input
                 type="text"
                 value={profile?.first_name || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, first_name: e.target.value} : null)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none focus:ring-2`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>👤 Last Name</label>
               <input
                 type="text"
                 value={profile?.last_name || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, last_name: e.target.value} : null)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none focus:ring-2`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>📧 Email</label>
               <input
                 type="email"
                 value={profile?.email || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, email: e.target.value} : null)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none focus:ring-2`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>📱 Phone</label>
               <input
                 type="tel"
                 value={profile?.phone || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, phone: e.target.value} : null)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none focus:ring-2`}
               />
             </div>
           </div>
           <div className="mt-6">
             <button 
               onClick={handleProfileUpdate}
-              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
+              className={`px-6 py-3 rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                  : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+              } text-white`}
             >
               <Save className="w-4 h-4 mr-2 inline" />
-              Save Profile
+              💾 Save Profile
             </button>
           </div>
         </div>
 
         {/* Password Change */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>🔐 Change Password</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>🔒 Current Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm(prev => ({...prev, current_password: e.target.value}))}
-                  className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                  className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-200 ${
+                    theme === 'dark' 
+                      ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                      : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                  } focus:outline-none focus:ring-2`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${
+                    theme === 'dark' 
+                      ? 'text-gray-400 hover:text-gray-300' 
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>🔑 New Password</label>
               <input
                 type={showPassword ? "text" : "password"}
                 value={passwordForm.new_password}
                 onChange={(e) => setPasswordForm(prev => ({...prev, new_password: e.target.value}))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none focus:ring-2`}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className={`text-xs mt-1 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 Minimum 8 characters with uppercase, numbers, and special characters
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>✅ Confirm Password</label>
               <input
                 type={showPassword ? "text" : "password"}
                 value={passwordForm.confirm_password}
                 onChange={(e) => setPasswordForm(prev => ({...prev, confirm_password: e.target.value}))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none focus:ring-2`}
               />
             </div>
             <button
@@ -677,7 +745,7 @@ const SettingsPage: React.FC = () => {
               ) : (
                 <Lock className="w-4 h-4 mr-2 inline" />
               )}
-              Update Password
+              🔄 Update Password
             </button>
           </div>
         </div>
@@ -688,21 +756,35 @@ const SettingsPage: React.FC = () => {
   const renderEnrichmentSettings = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Import Settings</h2>
+        <h2 className={`text-2xl font-bold mb-6 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>📥 Import Settings</h2>
         
         {/* Auto-Enrichment Settings */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Automatic Enrichment</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6 mb-8`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>⚡ Automatic Enrichment</h3>
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Automatically Enrich New Contacts on Import</h4>
-                <p className="text-sm text-gray-600">When enabled, new contacts will be automatically enriched when you import them</p>
+                <h4 className={`font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>🔄 Automatically Enrich New Contacts on Import</h4>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>When enabled, new contacts will be automatically enriched when you import them</p>
               </div>
               <button
                 onClick={() => setEnrichmentSettings(prev => ({ ...prev, auto_enrich: !prev.auto_enrich }))}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  enrichmentSettings.auto_enrich ? 'bg-teal-600' : 'bg-gray-200'
+                  enrichmentSettings.auto_enrich 
+                    ? theme === 'dark' ? 'bg-emerald-600' : 'bg-teal-600'
+                    : theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                 }`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
@@ -712,16 +794,26 @@ const SettingsPage: React.FC = () => {
             </div>
 
             {enrichmentSettings.auto_enrich && (
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className={`p-4 rounded-lg border ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-400/30' 
+                  : 'bg-blue-50 border-blue-200'
+              }`}>
                 <div className="flex items-start">
-                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <AlertCircle className={`w-5 h-5 mt-0.5 mr-3 flex-shrink-0 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                   <div>
-                    <h5 className="font-medium text-blue-900 mb-1">Auto-Enrichment Benefits</h5>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li>• Automatically finds email addresses and phone numbers</li>
-                      <li>• Verifies contact information for accuracy</li>
-                      <li>• Saves time by processing contacts immediately</li>
-                      <li>• Uses our smart cascade system for best results</li>
+                    <h5 className={`font-medium mb-1 ${
+                      theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
+                    }`}>✨ Auto-Enrichment Benefits</h5>
+                    <ul className={`text-sm space-y-1 ${
+                      theme === 'dark' ? 'text-blue-200' : 'text-blue-700'
+                    }`}>
+                      <li>• 📧 Automatically finds email addresses and phone numbers</li>
+                      <li>• ✅ Verifies contact information for accuracy</li>
+                      <li>• ⏰ Saves time by processing contacts immediately</li>
+                      <li>• 🎯 Uses our smart cascade system for best results</li>
                     </ul>
                   </div>
                 </div>
@@ -733,28 +825,48 @@ const SettingsPage: React.FC = () => {
             <button 
               onClick={saveEnrichmentSettings}
               disabled={loading}
-              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50"
+              className={`px-6 py-3 rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50 ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                  : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+              } text-white`}
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 mr-2 inline animate-spin" />
               ) : (
                 <Save className="w-4 h-4 mr-2 inline" />
               )}
-              Save Settings
+              💾 Save Settings
             </button>
           </div>
         </div>
 
         {/* Self-Enrichment Section */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Self-Enrichment</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>🎯 Self-Enrichment</h3>
           <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
+            <div className={`p-4 rounded-lg border ${
+              theme === 'dark' 
+                ? 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-purple-400/30' 
+                : 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200'
+            }`}>
               <div className="flex items-start">
-                <Zap className="w-5 h-5 text-purple-600 mt-0.5 mr-3 flex-shrink-0" />
+                <Zap className={`w-5 h-5 mt-0.5 mr-3 flex-shrink-0 ${
+                  theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                }`} />
                 <div>
-                  <h5 className="font-medium text-purple-900 mb-1">Manual Enrichment</h5>
-                  <p className="text-sm text-purple-700">
+                  <h5 className={`font-medium mb-1 ${
+                    theme === 'dark' ? 'text-purple-300' : 'text-purple-900'
+                  }`}>⚡ Manual Enrichment</h5>
+                  <p className={`text-sm ${
+                    theme === 'dark' ? 'text-purple-200' : 'text-purple-700'
+                  }`}>
                     You can manually enrich contacts at any time from the Import page or by uploading a CSV file.
                     This gives you full control over when and which contacts to enrich.
                   </p>
@@ -768,7 +880,7 @@ const SettingsPage: React.FC = () => {
                 className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Go to Import Page
+                📥 Go to Import Page
                 <ExternalLink className="w-4 h-4 ml-2" />
               </a>
             </div>
@@ -781,95 +893,153 @@ const SettingsPage: React.FC = () => {
   const renderTeamSettings = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Team & Access Management</h2>
+        <h2 className={`text-2xl font-bold mb-6 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>👥 Team & Access Management</h2>
         
         {/* Invite Team Member */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Invite Team Member</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6 mb-8`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>✉️ Invite Team Member</h3>
           <div className="flex gap-4">
             <input
               type="email"
               placeholder="Enter email address"
               value={inviteForm.email}
               onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+              className={`flex-1 px-4 py-3 border rounded-lg transition-all duration-200 ${
+                theme === 'dark' 
+                  ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                  : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+              } focus:outline-none focus:ring-2`}
             />
             <select
               value={inviteForm.role}
               onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value as any }))}
-              className="px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+              className={`px-4 py-3 border rounded-lg transition-all duration-200 ${
+                theme === 'dark' 
+                  ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                  : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+              } focus:outline-none focus:ring-2`}
             >
-              <option value="viewer">Viewer</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              <option value="viewer">👁️ Viewer</option>
+              <option value="user">👤 User</option>
+              <option value="admin">👑 Admin</option>
             </select>
             <button
               onClick={inviteTeamMember}
               disabled={loading}
-              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50"
+              className={`px-6 py-3 rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50 ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                  : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+              } text-white`}
             >
               <UserPlus className="w-4 h-4 mr-2 inline" />
-              Send Invite
+              📤 Send Invite
             </button>
           </div>
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-700">
+          <div className={`mt-4 p-4 rounded-lg border ${
+            theme === 'dark' 
+              ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-400/30' 
+              : 'bg-blue-50 border-blue-200'
+          }`}>
+            <p className={`text-sm ${
+              theme === 'dark' ? 'text-blue-200' : 'text-blue-700'
+            }`}>
               <strong>Role Permissions:</strong><br />
-              • <strong>Viewer:</strong> Can view data and reports<br />
-              • <strong>User:</strong> Can import, enrich, and export data<br />
-              • <strong>Admin:</strong> Full access including billing and team management
+              • <strong>👁️ Viewer:</strong> Can view data and reports<br />
+              • <strong>👤 User:</strong> Can import, enrich, and export data<br />
+              • <strong>👑 Admin:</strong> Full access including billing and team management
             </p>
           </div>
         </div>
 
         {/* Team Members */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border overflow-hidden`}>
+          <div className={`p-6 border-b ${
+            theme === 'dark' ? 'border-gray-700' : 'border-gray-100'
+          }`}>
+            <h3 className={`text-lg font-semibold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>🧑‍💼 Team Members</h3>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className={`divide-y ${
+            theme === 'dark' ? 'divide-gray-700' : 'divide-gray-100'
+          }`}>
             {teamMembers.map((member) => (
               <div key={member.id} className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900">{member.name}</h4>
-                      <p className="text-sm text-gray-600">{member.email}</p>
+                      <h4 className={`font-semibold ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{member.name}</h4>
+                      <p className={`text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>{member.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
                       member.role === 'admin' 
-                        ? 'bg-purple-100 text-purple-700 border-purple-200'
+                        ? theme === 'dark' 
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-400/30'
+                          : 'bg-purple-100 text-purple-700 border-purple-200'
                         : member.role === 'user'
-                        ? 'bg-blue-100 text-blue-700 border-blue-200'
-                        : 'bg-gray-100 text-gray-700 border-gray-200'
+                        ? theme === 'dark'
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-400/30'
+                          : 'bg-blue-100 text-blue-700 border-blue-200'
+                        : theme === 'dark'
+                          ? 'bg-gray-500/20 text-gray-300 border-gray-400/30'
+                          : 'bg-gray-100 text-gray-700 border-gray-200'
                     }`}>
-                      {member.role}
+                      {member.role === 'admin' ? '👑' : member.role === 'user' ? '👤' : '👁️'} {member.role}
                     </span>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
                       member.status === 'active' 
-                        ? 'bg-green-100 text-green-700 border-green-200'
+                        ? theme === 'dark'
+                          ? 'bg-green-500/20 text-green-300 border-green-400/30'
+                          : 'bg-green-100 text-green-700 border-green-200'
                         : member.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
-                        : 'bg-gray-100 text-gray-700 border-gray-200'
+                        ? theme === 'dark'
+                          ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30'
+                          : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                        : theme === 'dark'
+                          ? 'bg-gray-500/20 text-gray-300 border-gray-400/30'
+                          : 'bg-gray-100 text-gray-700 border-gray-200'
                     }`}>
-                      {member.status}
+                      {member.status === 'active' ? '🟢' : member.status === 'pending' ? '🟡' : '🔴'} {member.status}
                     </span>
                     {member.id !== profile?.id && (
-                      <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200">
+                      <button className={`p-2 rounded-lg transition-all duration-200 ${
+                        theme === 'dark' 
+                          ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/20' 
+                          : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                      }`}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                 </div>
-                <div className="mt-3 flex items-center space-x-6 text-sm text-gray-500">
-                  <span>Joined {new Date(member.joined_at).toLocaleDateString()}</span>
+                <div className={`mt-3 flex items-center space-x-6 text-sm ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  <span>📅 Joined {new Date(member.joined_at).toLocaleDateString()}</span>
                   {member.last_active && (
-                    <span>Last active {new Date(member.last_active).toLocaleDateString()}</span>
+                    <span>⏰ Last active {new Date(member.last_active).toLocaleDateString()}</span>
                   )}
                 </div>
               </div>
@@ -883,21 +1053,35 @@ const SettingsPage: React.FC = () => {
   const renderSecuritySettings = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Security Settings</h2>
+        <h2 className={`text-2xl font-bold mb-6 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>🔒 Security Settings</h2>
         
         {/* Security Options */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Security Options</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6 mb-8`}>
+          <h3 className={`text-lg font-semibold mb-6 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>🛡️ Security Options</h3>
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
-                <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
+                <h4 className={`font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>🔐 Two-Factor Authentication</h4>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>Add an extra layer of security to your account</p>
               </div>
               <button
                 onClick={() => setSecuritySettings(prev => ({ ...prev, two_factor_enabled: !prev.two_factor_enabled }))}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  securitySettings.two_factor_enabled ? 'bg-teal-600' : 'bg-gray-200'
+                  securitySettings.two_factor_enabled 
+                    ? theme === 'dark' ? 'bg-emerald-600' : 'bg-teal-600'
+                    : theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                 }`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
@@ -908,13 +1092,19 @@ const SettingsPage: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Login Alerts</h4>
-                <p className="text-sm text-gray-600">Get notified of new login attempts</p>
+                <h4 className={`font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>🚨 Login Alerts</h4>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>Get notified of new login attempts</p>
               </div>
               <button
                 onClick={() => setSecuritySettings(prev => ({ ...prev, login_alerts: !prev.login_alerts }))}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  securitySettings.login_alerts ? 'bg-teal-600' : 'bg-gray-200'
+                  securitySettings.login_alerts 
+                    ? theme === 'dark' ? 'bg-emerald-600' : 'bg-teal-600'
+                    : theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                 }`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
@@ -926,19 +1116,33 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {/* Security Logs */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Security Events</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border overflow-hidden`}>
+          <div className={`p-6 border-b ${
+            theme === 'dark' ? 'border-gray-700' : 'border-gray-100'
+          }`}>
+            <h3 className={`text-lg font-semibold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>📊 Recent Security Events</h3>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className={`divide-y ${
+            theme === 'dark' ? 'divide-gray-700' : 'divide-gray-100'
+          }`}>
             {securityLogs.map((log) => (
               <div key={log.id} className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className={`p-2 rounded-lg ${
                       log.status === 'success' 
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-red-100 text-red-600'
+                        ? theme === 'dark'
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-green-100 text-green-600'
+                        : theme === 'dark'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-red-100 text-red-600'
                     }`}>
                       {log.status === 'success' ? (
                         <CheckCircle className="w-5 h-5" />
@@ -947,12 +1151,20 @@ const SettingsPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">{log.event}</h4>
-                      <p className="text-sm text-gray-600">IP: {log.ip_address}</p>
+                      <h4 className={`font-medium ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {log.status === 'success' ? '✅' : '❌'} {log.event}
+                      </h4>
+                      <p className={`text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>🌐 IP: {log.ip_address}</p>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(log.timestamp).toLocaleString()}
+                  <div className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    ⏰ {new Date(log.timestamp).toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -966,21 +1178,35 @@ const SettingsPage: React.FC = () => {
   const renderIntegrationSettings = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Integration Settings</h2>
+        <h2 className={`text-2xl font-bold mb-6 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>🔗 Integration Settings</h2>
         
         {/* Webhook Configuration */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Webhook Configuration</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6 mb-8`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>🎣 Webhook Configuration</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className="font-medium text-gray-900">Enable Webhooks</h4>
-                <p className="text-sm text-gray-600">Send real-time notifications to your server</p>
+                <h4 className={`font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>⚡ Enable Webhooks</h4>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>Send real-time notifications to your server</p>
               </div>
               <button
                 onClick={() => setNotifications(prev => ({ ...prev, webhook_enabled: !prev.webhook_enabled }))}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  notifications.webhook_enabled ? 'bg-teal-600' : 'bg-gray-200'
+                  notifications.webhook_enabled 
+                    ? theme === 'dark' ? 'bg-emerald-600' : 'bg-teal-600'
+                    : theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                 }`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
@@ -991,31 +1217,45 @@ const SettingsPage: React.FC = () => {
             
             {notifications.webhook_enabled && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Webhook URL</label>
+                <label className={`block text-sm font-medium mb-2 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>🌐 Webhook URL</label>
                 <input
                   type="url"
                   value={notifications.webhook_url}
                   onChange={(e) => setNotifications(prev => ({ ...prev, webhook_url: e.target.value }))}
                   placeholder="https://your-server.com/webhook"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                  className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                    theme === 'dark' 
+                      ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                      : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+                  } focus:outline-none focus:ring-2`}
                 />
               </div>
             )}
 
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <h5 className="font-medium text-gray-900 mb-2">Webhook Events</h5>
-              <div className="space-y-2 text-sm text-gray-600">
+            <div className={`p-4 rounded-lg border ${
+              theme === 'dark' 
+                ? 'bg-gray-700 border-gray-600' 
+                : 'bg-gray-50 border-gray-200'
+            }`}>
+              <h5 className={`font-medium mb-2 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>📋 Webhook Events</h5>
+              <div className={`space-y-2 text-sm ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 <label className="flex items-center">
                   <input type="checkbox" className="mr-2" defaultChecked />
-                  Enrichment completed
+                  ✨ Enrichment completed
                 </label>
                 <label className="flex items-center">
                   <input type="checkbox" className="mr-2" defaultChecked />
-                  Import finished
+                  📥 Import finished
                 </label>
                 <label className="flex items-center">
                   <input type="checkbox" className="mr-2" />
-                  Credit balance low
+                  ⚠️ Credit balance low
                 </label>
               </div>
             </div>
@@ -1023,27 +1263,55 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {/* API Settings */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">API Configuration</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>🔧 API Configuration</h3>
           <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <div className={`p-4 rounded-lg border ${
+              theme === 'dark' 
+                ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-400/30' 
+                : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+            }`}>
               <div className="flex items-start">
-                <Terminal className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                <Terminal className={`w-5 h-5 mt-0.5 mr-3 flex-shrink-0 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`} />
                 <div>
-                  <h5 className="font-medium text-blue-900 mb-1">API Endpoint</h5>
-                  <code className="text-sm text-blue-700 bg-blue-100 px-2 py-1 rounded">
+                  <h5 className={`font-medium mb-1 ${
+                    theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
+                  }`}>🌐 API Endpoint</h5>
+                  <code className={`text-sm px-2 py-1 rounded ${
+                    theme === 'dark' 
+                      ? 'text-blue-200 bg-blue-500/20' 
+                      : 'text-blue-700 bg-blue-100'
+                  }`}>
                     https://api.captely.com/v1
                   </code>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+            <div className={`p-4 rounded-lg border ${
+              theme === 'dark' 
+                ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-400/30' 
+                : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
+            }`}>
               <div className="flex items-start">
-                <Wifi className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+                <Wifi className={`w-5 h-5 mt-0.5 mr-3 flex-shrink-0 ${
+                  theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                }`} />
                 <div>
-                  <h5 className="font-medium text-green-900 mb-1">API Status</h5>
-                  <p className="text-sm text-green-700">All systems operational</p>
+                  <h5 className={`font-medium mb-1 ${
+                    theme === 'dark' ? 'text-green-300' : 'text-green-900'
+                  }`}>🟢 API Status</h5>
+                  <p className={`text-sm ${
+                    theme === 'dark' ? 'text-green-200' : 'text-green-700'
+                  }`}>All systems operational</p>
                 </div>
               </div>
             </div>
@@ -1202,21 +1470,35 @@ const SettingsPage: React.FC = () => {
   const renderApiSettings = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">API Keys & Access</h2>
+        <h2 className={`text-2xl font-bold mb-6 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>🔑 API Keys & Access</h2>
         
         {/* Generate New API Key */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate New API Key</h3>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border p-6 mb-8`}>
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>🔧 Generate New API Key</h3>
           <div className="space-y-4">
             <input
               type="text"
               placeholder="Enter API key name (e.g., 'Production App')"
               value={newApiKeyForm.name}
               onChange={(e) => setNewApiKeyForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+              className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
+                theme === 'dark' 
+                  ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
+                  : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
+              } focus:outline-none focus:ring-2`}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>🔐 Permissions</label>
               <div className="space-y-2">
                 <label className="flex items-center">
                   <input
@@ -1237,7 +1519,9 @@ const SettingsPage: React.FC = () => {
                     }}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">Read access</span>
+                  <span className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>👁️ Read access</span>
                 </label>
                 <label className="flex items-center">
                   <input
@@ -1258,21 +1542,27 @@ const SettingsPage: React.FC = () => {
                     }}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">Write access</span>
+                  <span className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>✏️ Write access</span>
                 </label>
               </div>
             </div>
             <button
               onClick={generateApiKey}
               disabled={loading}
-              className="w-full px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50"
+              className={`w-full px-6 py-3 rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50 ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                  : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+              } text-white`}
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 animate-spin mx-auto" />
               ) : (
                 <>
                   <Plus className="w-4 h-4 mr-2 inline" />
-                  Generate API Key
+                  🔑 Generate API Key
                 </>
               )}
             </button>
@@ -1280,14 +1570,28 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {/* Existing API Keys */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Your API Keys</h3>
-            <p className="text-sm text-gray-600 mt-1">Manage your API keys for accessing Captely services</p>
+        <div className={`${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        } rounded-xl shadow-lg border overflow-hidden`}>
+          <div className={`p-6 border-b ${
+            theme === 'dark' ? 'border-gray-700' : 'border-gray-100'
+          }`}>
+            <h3 className={`text-lg font-semibold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>🗝️ Your API Keys</h3>
+            <p className={`text-sm mt-1 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>Manage your API keys for accessing Captely services</p>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className={`divide-y ${
+            theme === 'dark' ? 'divide-gray-700' : 'divide-gray-100'
+          }`}>
             {apiKeys.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
+              <div className={`p-6 text-center ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 No API keys yet. Generate your first key above.
               </div>
             ) : (
@@ -1296,40 +1600,64 @@ const SettingsPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-sm font-semibold text-gray-900">{apiKey.name}</h4>
+                        <h4 className={`text-sm font-semibold ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>🔑 {apiKey.name}</h4>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
                           apiKey.status === 'active' 
-                            ? 'bg-green-100 text-green-700 border border-green-200' 
-                            : 'bg-red-100 text-red-700 border border-red-200'
+                            ? theme === 'dark'
+                              ? 'bg-green-500/20 text-green-300 border-green-400/30'
+                              : 'bg-green-100 text-green-700 border-green-200'
+                            : theme === 'dark'
+                              ? 'bg-red-500/20 text-red-300 border-red-400/30'
+                              : 'bg-red-100 text-red-700 border-red-200'
                         }`}>
-                          {apiKey.status}
+                          {apiKey.status === 'active' ? '🟢' : '🔴'} {apiKey.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>Created: {new Date(apiKey.created_at).toLocaleDateString()}</span>
+                      <div className={`flex items-center gap-4 text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <span>📅 Created: {new Date(apiKey.created_at).toLocaleDateString()}</span>
                         {apiKey.last_used && (
-                          <span>Last used: {new Date(apiKey.last_used).toLocaleDateString()}</span>
+                          <span>⏰ Last used: {new Date(apiKey.last_used).toLocaleDateString()}</span>
                         )}
                       </div>
                       <div className="mt-3 flex items-center gap-2">
-                        <code className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-mono text-gray-800 select-all">
+                        <code className={`px-3 py-2 rounded-lg text-sm font-mono select-all ${
+                          theme === 'dark' 
+                            ? 'bg-gray-700 text-gray-200' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
                           {showApiKey === apiKey.id ? apiKey.key : `${apiKey.key.substring(0, 12)}${'•'.repeat(20)}`}
                         </code>
                         <button
                           onClick={() => setShowApiKey(showApiKey === apiKey.id ? null : apiKey.id)}
-                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            theme === 'dark' 
+                              ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                          }`}
                         >
                           {showApiKey === apiKey.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                         <button
                           onClick={() => copyToClipboard(apiKey.key)}
-                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            theme === 'dark' 
+                              ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                          }`}
                         >
                           <Copy className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => revokeApiKey(apiKey.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            theme === 'dark' 
+                              ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/20' 
+                              : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                          }`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1353,11 +1681,21 @@ const SettingsPage: React.FC = () => {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Billing & Plans</h2>
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+              <h2 className={`text-2xl font-bold mb-6 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>💳 Billing & Plans</h2>
+              <div className={`rounded-xl p-6 border ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border-blue-400/30' 
+                  : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
+              }`}>
                 <div className="text-center">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Billing Management</h3>
-                  <p className="text-gray-600 mb-4">
+                  <h3 className={`text-xl font-semibold mb-2 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>💰 Billing Management</h3>
+                  <p className={`mb-4 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
                     Manage your subscription, view usage, and update payment methods
                   </p>
                   <a
@@ -1365,7 +1703,7 @@ const SettingsPage: React.FC = () => {
                     className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Go to Billing Page
+                    💳 Go to Billing Page
                     <ExternalLink className="w-4 h-4 ml-2" />
                   </a>
                 </div>
@@ -1381,22 +1719,34 @@ const SettingsPage: React.FC = () => {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Notification Settings</h2>
-              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Email Notifications</h3>
+              <h2 className={`text-2xl font-bold mb-6 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>🔔 Notification Settings</h2>
+              <div className={`${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+                  : 'bg-white border-gray-100'
+              } rounded-xl shadow-lg border p-6`}>
+                <h3 className={`text-lg font-semibold mb-6 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>📧 Email Notifications</h3>
                 <div className="space-y-4">
                   {Object.entries({
-                    email_enrichment_complete: 'Enrichment Complete',
-                    email_batch_ready: 'Batch Ready for Export',
-                    email_credits_low: 'Low Credit Warning',
-                    email_billing: 'Billing & Subscription Updates'
+                    email_enrichment_complete: '✨ Enrichment Complete',
+                    email_batch_ready: '📦 Batch Ready for Export',
+                    email_credits_low: '⚠️ Low Credit Warning',
+                    email_billing: '💳 Billing & Subscription Updates'
                   }).map(([key, label]) => (
                     <label key={key} className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">{label}</span>
+                      <span className={`text-sm font-medium ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>{label}</span>
                       <button
                         onClick={() => setNotifications(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                          notifications[key as keyof typeof notifications] ? 'bg-teal-600' : 'bg-gray-200'
+                          notifications[key as keyof typeof notifications] 
+                            ? theme === 'dark' ? 'bg-emerald-600' : 'bg-teal-600'
+                            : theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                         }`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
@@ -1410,14 +1760,18 @@ const SettingsPage: React.FC = () => {
                   <button 
                     onClick={saveNotificationSettings}
                     disabled={loading}
-                    className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50"
+                    className={`px-6 py-3 rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 disabled:opacity-50 ${
+                      theme === 'dark'
+                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                        : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+                    } text-white`}
                   >
                     {loading ? (
                       <RefreshCw className="w-4 h-4 mr-2 inline animate-spin" />
                     ) : (
                       <Save className="w-4 h-4 mr-2 inline" />
                     )}
-                    Save Preferences
+                    💾 Save Preferences
                   </button>
                 </div>
               </div>
@@ -1439,49 +1793,123 @@ const SettingsPage: React.FC = () => {
 
   if (loading && !profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="w-8 h-8 animate-spin text-teal-600" />
+      <div className={`flex items-center justify-center min-h-screen ${
+        theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
+      }`}>
+        <RefreshCw className={`w-8 h-8 animate-spin ${
+          theme === 'dark' ? 'text-emerald-400' : 'text-teal-600'
+        }`} />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto flex gap-8">
-      {/* Sidebar */}
-      <div className="w-64 flex-shrink-0">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <nav className="space-y-2">
-            {sidebarItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  activeSection === item.id 
-                    ? 'bg-gradient-to-r from-teal-50 to-blue-50 text-teal-700 border border-teal-200' 
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                {item.icon}
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
-          </nav>
+    <div className={`max-w-7xl mx-auto ${
+      theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
+    }`}>
+      {/* Enhanced Header */}
+      <div className={`relative mb-8 ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-indigo-900' 
+          : 'bg-gradient-to-br from-indigo-50 via-blue-50 to-teal-50'
+      } rounded-2xl overflow-hidden`}>
+        <div className={`absolute inset-0 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-r from-indigo-500/20 via-purple-500/10 to-emerald-500/20' 
+            : 'bg-gradient-to-r from-indigo-300/20 via-blue-300/10 to-teal-300/20'
+        }`} />
+        <div className="relative px-8 py-6">
+          <div className="text-center">
+            <h1 className={`text-4xl font-bold mb-3 ${
+              theme === 'dark' 
+                ? 'bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent' 
+                : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-600 bg-clip-text text-transparent'
+            }`}>
+              ⚙️ Settings Hub
+            </h1>
+            <p className={`text-lg ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              Comprehensive account and application configuration
+            </p>
+            <div className="flex justify-center items-center gap-6 mt-4">
+              <div className={`px-4 py-2 rounded-full ${
+                theme === 'dark' 
+                  ? 'bg-emerald-500/20 text-emerald-300' 
+                  : 'bg-emerald-100 text-emerald-700'
+              } border ${
+                theme === 'dark' ? 'border-emerald-400/30' : 'border-emerald-200'
+              }`}>
+                🔧 Advanced Configuration
+              </div>
+              <div className={`px-4 py-2 rounded-full ${
+                theme === 'dark' 
+                  ? 'bg-indigo-500/20 text-indigo-300' 
+                  : 'bg-indigo-100 text-indigo-700'
+              } border ${
+                theme === 'dark' ? 'border-indigo-400/30' : 'border-indigo-200'
+              }`}>
+                🛡️ Security & Privacy
+              </div>
+              <div className={`px-4 py-2 rounded-full ${
+                theme === 'dark' 
+                  ? 'bg-purple-500/20 text-purple-300' 
+                  : 'bg-purple-100 text-purple-700'
+              } border ${
+                theme === 'dark' ? 'border-purple-400/30' : 'border-purple-200'
+              }`}>
+                📊 Data Management
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeSection}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {renderContent()}
-          </motion.div>
-        </AnimatePresence>
+      <div className="flex gap-8">
+        {/* Sidebar */}
+        <div className="w-64 flex-shrink-0">
+          <div className={`${
+            theme === 'dark' 
+              ? 'bg-gray-800 border-gray-700' 
+              : 'bg-white border-gray-100'
+          } rounded-xl shadow-lg border p-6`}>
+            <nav className="space-y-2">
+              {sidebarItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    activeSection === item.id 
+                      ? theme === 'dark'
+                        ? 'bg-gradient-to-r from-emerald-500/20 to-indigo-500/20 text-emerald-300 border border-emerald-400/30' 
+                        : 'bg-gradient-to-r from-teal-50 to-blue-50 text-teal-700 border border-teal-200'
+                      : theme === 'dark'
+                        ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
