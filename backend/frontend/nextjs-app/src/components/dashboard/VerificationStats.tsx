@@ -30,7 +30,7 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
       setError(null);
     } catch (err) {
       console.error('Error fetching verification stats:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load verification stats');
+      setError(err instanceof Error ? err.message : t('failed_to_load_verification_stats'));
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
       setTimeout(fetchStats, 2000); // Refresh stats after 2 seconds
     } catch (err) {
       console.error('Error verifying contacts:', err);
-      setError('Failed to start verification process');
+      setError(t('failed_to_start_verification_process'));
     } finally {
       setVerifying(false);
     }
@@ -81,7 +81,7 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
           <div className="bg-red-50 border border-red-200 rounded-xl p-3">
             <div className="flex items-center">
               <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
-              <span className="text-red-700 text-sm">Failed to load verification stats: {error}</span>
+              <span className="text-red-700 text-sm">{t('failed_to_load_verification_stats')}: {error}</span>
             </div>
           </div>
         </div>
@@ -103,10 +103,10 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
         <div>
           <h3 className="text-lg leading-6 font-semibold text-gray-900 flex items-center">
             <Shield className="h-5 w-5 text-purple-600 mr-2" />
-            Verification Stats
+            {t('verification_stats')}
           </h3>
           <p className="mt-1 text-sm text-gray-600">
-            Email and phone verification quality metrics
+            {t('email_and_phone_verification_quality_metrics')}
           </p>
         </div>
         {jobId && (
@@ -116,7 +116,7 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
             className="inline-flex items-center px-3 py-2 border border-purple-200 shadow-sm text-sm font-medium rounded-lg text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${verifying ? 'animate-spin' : ''}`} />
-            {verifying ? 'Verifying...' : 'Verify Contacts'}
+            {verifying ? t('verifying') + '...' : t('verify_contacts')}
           </button>
         )}
       </div>
@@ -129,7 +129,7 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
                 <Mail className="h-5 w-5 text-blue-600 mr-2" />
-                <h4 className="text-base font-semibold text-blue-900">Email Verification</h4>
+                <h4 className="text-base font-semibold text-blue-900">{t('email_verification')}</h4>
               </div>
               <div className="text-xl font-bold text-blue-900">
                 {Math.round(emailVerificationRate)}%
@@ -138,20 +138,20 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-700">Total Emails</span>
+                <span className="text-sm text-blue-700">{t('total_emails')}</span>
                 <span className="font-semibold text-blue-900">{stats?.total_emails || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-blue-700 flex items-center">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Verified
+                  {t('verified')}
                 </span>
                 <span className="font-semibold text-green-700">{stats?.verified_emails || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-blue-700 flex items-center">
                   <XCircle className="h-3 w-3 mr-1" />
-                  Invalid
+                  {t('invalid')}
                 </span>
                 <span className="font-semibold text-red-700">{stats?.invalid_emails || 0}</span>
               </div>
@@ -163,7 +163,7 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
                 <Phone className="h-5 w-5 text-green-600 mr-2" />
-                <h4 className="text-base font-semibold text-green-900">Phone Verification</h4>
+                <h4 className="text-base font-semibold text-green-900">{t('phone_verification')}</h4>
               </div>
               <div className="text-xl font-bold text-green-900">
                 {Math.round(phoneVerificationRate)}%
@@ -172,20 +172,20 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-green-700">Total Phones</span>
+                <span className="text-sm text-green-700">{t('total_phones')}</span>
                 <span className="font-semibold text-green-900">{stats?.total_phones || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-green-700 flex items-center">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Verified
+                  {t('verified')}
                 </span>
                 <span className="font-semibold text-green-700">{stats?.verified_phones || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-green-700 flex items-center">
                   <XCircle className="h-3 w-3 mr-1" />
-                  Invalid
+                  {t('invalid')}
                 </span>
                 <span className="font-semibold text-red-700">{stats?.invalid_phones || 0}</span>
               </div>
@@ -199,29 +199,29 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
           <div>
             <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
               <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
-              Email Quality Distribution
+              {t('email_quality_distribution')}
             </h5>
             <div className="space-y-2">
               <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
-                <span className="text-sm text-green-700 font-medium">Excellent (90-100%)</span>
+                <span className="text-sm text-green-700 font-medium">{t('excellent')} (90-100%)</span>
                 <span className="font-bold text-green-900">
                   {stats?.verification_scores?.email?.excellent || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
-                <span className="text-sm text-blue-700 font-medium">Good (70-89%)</span>
+                <span className="text-sm text-blue-700 font-medium">{t('good')} (70-89%)</span>
                 <span className="font-bold text-blue-900">
                   {stats?.verification_scores?.email?.good || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-yellow-50 rounded-lg">
-                <span className="text-sm text-yellow-700 font-medium">Fair (50-69%)</span>
+                <span className="text-sm text-yellow-700 font-medium">{t('fair')} (50-69%)</span>
                 <span className="font-bold text-yellow-900">
                   {stats?.verification_scores?.email?.fair || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
-                <span className="text-sm text-red-700 font-medium">Poor (0-49%)</span>
+                <span className="text-sm text-red-700 font-medium">{t('poor')} (0-49%)</span>
                 <span className="font-bold text-red-900">
                   {stats?.verification_scores?.email?.poor || 0}
                 </span>
@@ -233,29 +233,29 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
           <div>
             <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
               <Phone className="h-4 w-4 text-green-600 mr-2" />
-              Phone Type Distribution
+              {t('phone_type_distribution')}
             </h5>
             <div className="space-y-2">
               <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
-                <span className="text-sm text-green-700 font-medium">Mobile</span>
+                <span className="text-sm text-green-700 font-medium">{t('mobile')}</span>
                 <span className="font-bold text-green-900">
                   {stats?.verification_scores?.phone?.mobile || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
-                <span className="text-sm text-blue-700 font-medium">Landline</span>
+                <span className="text-sm text-blue-700 font-medium">{t('landline')}</span>
                 <span className="font-bold text-blue-900">
                   {stats?.verification_scores?.phone?.landline || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-purple-50 rounded-lg">
-                <span className="text-sm text-purple-700 font-medium">VoIP</span>
+                <span className="text-sm text-purple-700 font-medium">{t('voip')}</span>
                 <span className="font-bold text-purple-900">
                   {stats?.verification_scores?.phone?.voip || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
-                <span className="text-sm text-red-700 font-medium">Invalid</span>
+                <span className="text-sm text-red-700 font-medium">{t('invalid')}</span>
                 <span className="font-bold text-red-900">
                   {stats?.verification_scores?.phone?.invalid || 0}
                 </span>
