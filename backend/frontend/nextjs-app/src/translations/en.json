@@ -128,7 +128,17 @@
     "email_hit_rate": "Email Hit Rate",
     "success_rate": "Success Rate",
     "credits_used": "Credits Used",
-    "processing_contacts": "Processing {completed} of {total} contacts"
+    "processing_contacts": "Processing {completed} of {total} contacts",
+    "show": "Show",
+    "verifying": "Verifying",
+    "ready": "Ready",
+    "waiting": "Waiting",
+    "pending": "Pending",
+    "type": "Type",
+    "phones": "Phones",
+    "format": "Format",
+    "of": "of",
+    "duration": "Duration"
   },
   "navigation": {
     "dashboard": "Dashboard",

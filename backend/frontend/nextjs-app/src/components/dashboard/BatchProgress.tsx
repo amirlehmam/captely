@@ -46,10 +46,10 @@ const BatchProgress: React.FC = () => {
         <div className="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-gray-50 to-white">
           <div>
             <h3 className="text-lg leading-6 font-semibold text-gray-900">
-              {t('current_batch_progress')}
+              {t('common.current_batch_progress')}
             </h3>
             <p className="mt-1 max-w-2xl text-sm text-gray-600">
-              {t('follow_the_entire_processus')}
+              {t('common.follow_the_entire_processus')}
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -62,7 +62,7 @@ const BatchProgress: React.FC = () => {
               }`}
             >
               <Shield className="h-4 w-4 mr-2" />
-              {showVerification ? t('hide') : t('show')} {t('verification')}
+              {showVerification ? t('common.hide') : t('common.show')} {t('common.verification')}
             </button>
           </div>
         </div>
@@ -85,17 +85,17 @@ const BatchProgress: React.FC = () => {
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <span className="text-red-700">{t('failed_to_load_batch_progress')}: {error}</span>
+                <span className="text-red-700">{t('common.failed_to_load_batch_progress')}: {error}</span>
               </div>
             </div>
           ) : !currentBatch ? (
             // No batch state
             <div className="text-center py-8">
               <h3 className="text-lg leading-6 font-semibold text-gray-900 mb-2">
-                {t('no_active_batches')}
+                {t('common.no_active_batches')}
               </h3>
               <p className="text-sm text-gray-600">
-                {t('start_new_enrichment_job')}
+                {t('common.start_new_enrichment_job')}
               </p>
             </div>
           ) : (
@@ -105,7 +105,7 @@ const BatchProgress: React.FC = () => {
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-3">
                                   <span className="text-sm font-medium text-gray-700">
-                  {t('processing')} {currentBatch.completed || 0} {t('of')} {currentBatch.total || 0} {t('contacts')}
+                  {t('common.processing')} {currentBatch.completed || 0} {t('common.of')} {currentBatch.total || 0} {t('common.contacts')}
                 </span>
                   <span className="text-sm font-semibold text-primary-600 bg-primary-50 px-3 py-1 rounded-full">
                     {Math.round(progress)}%
@@ -122,17 +122,17 @@ const BatchProgress: React.FC = () => {
               {/* Stats grid - keep structure stable */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
-                  <div className="text-xs font-medium text-blue-600 uppercase tracking-wide">{t('contacts')}</div>
+                  <div className="text-xs font-medium text-blue-600 uppercase tracking-wide">{t('common.contacts')}</div>
                   <div className="text-2xl font-bold text-blue-900 mt-1">{currentBatch.total || 0}</div>
                 </div>
                 <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
-                  <div className="text-xs font-medium text-indigo-600 uppercase tracking-wide">{t('completed')}</div>
+                  <div className="text-xs font-medium text-indigo-600 uppercase tracking-wide">{t('common.completed')}</div>
                   <div className="text-2xl font-bold text-indigo-900 mt-1">{currentBatch.completed || 0}</div>
                 </div>
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
                   <div className="text-xs font-medium text-orange-600 uppercase tracking-wide flex items-center">
                     <DollarSign className="h-3 w-3 mr-1" />
-                    {t('cost')}
+                    {t('common.cost')}
                   </div>
                   <div className="text-xl font-bold text-orange-900 mt-1">
                     {Math.round(currentBatch.credits_used || 0)} credits
@@ -144,26 +144,26 @@ const BatchProgress: React.FC = () => {
               <div className="mb-6">
                               <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
                 <Clock className="h-4 w-4 text-gray-600 mr-2" />
-                {t('processing_stages')}
+                {t('common.processing_stages')}
               </h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                   {/* Fixed structure for all stages */}
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">1. {t('import')}</span>
+                      <span className="text-sm font-medium text-gray-900">1. {t('common.import')}</span>
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     </div>
                     <div className="text-xs text-gray-600 space-y-1">
-                      <div>{t('status')}: {t('completed')}</div>
-                      <div>{t('duration')}: ~30s</div>
-                      <div>{t('contacts')}: {currentBatch.total || 0}</div>
+                      <div>{t('common.status')}: {t('common.completed')}</div>
+                      <div>{t('common.duration')}: ~30s</div>
+                      <div>{t('common.contacts')}: {currentBatch.total || 0}</div>
                     </div>
                   </div>
 
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">2. {t('enrichment')}</span>
+                      <span className="text-sm font-medium text-gray-900">2. {t('common.enrichment')}</span>
                       {progress >= 100 ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : progress > 0 ? (
@@ -173,15 +173,15 @@ const BatchProgress: React.FC = () => {
                       )}
                     </div>
                     <div className="text-xs text-gray-600 space-y-1">
-                      <div>{t('status')}: {progress >= 100 ? t('completed') : progress > 0 ? t('processing') : t('pending')}</div>
-                      <div>{t('progress')}: {Math.round(progress)}%</div>
-                      <div>{t('found')}: {Math.round((currentBatch.emails_found || 0) / (currentBatch.total || 1) * 100)}% {t('emails')}</div>
+                      <div>{t('common.status')}: {progress >= 100 ? t('common.completed') : progress > 0 ? t('common.processing') : t('common.pending')}</div>
+                      <div>{t('common.progress')}: {Math.round(progress)}%</div>
+                      <div>{t('common.found')}: {Math.round((currentBatch.emails_found || 0) / (currentBatch.total || 1) * 100)}% {t('common.emails')}</div>
                     </div>
                   </div>
 
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">3. {t('email_verify')}</span>
+                      <span className="text-sm font-medium text-gray-900">3. {t('common.email_verify')}</span>
                       {progress >= 100 && (currentBatch.emails_found || 0) > 0 ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : progress >= 100 ? (
@@ -191,15 +191,15 @@ const BatchProgress: React.FC = () => {
                       )}
                     </div>
                     <div className="text-xs text-gray-600 space-y-1">
-                      <div>{t('status')}: {progress >= 100 && (currentBatch.emails_found || 0) > 0 ? t('verifying') : progress >= 100 ? t('ready') : t('waiting')}</div>
-                      <div>{t('quality')}: {t('checking_deliverability')}</div>
-                      <div>{t('emails')}: {currentBatch.emails_found || 0} {t('found')}</div>
+                      <div>{t('common.status')}: {progress >= 100 && (currentBatch.emails_found || 0) > 0 ? t('common.verifying') : progress >= 100 ? t('common.ready') : t('common.waiting')}</div>
+                      <div>{t('common.quality')}: {t('common.checking_deliverability')}</div>
+                      <div>{t('common.emails')}: {currentBatch.emails_found || 0} {t('common.found')}</div>
                     </div>
                   </div>
 
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">4. {t('phone_verify')}</span>
+                      <span className="text-sm font-medium text-gray-900">4. {t('common.phone_verify')}</span>
                       {progress >= 100 && (currentBatch.phones_found || 0) > 0 ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : progress >= 100 ? (
@@ -209,15 +209,15 @@ const BatchProgress: React.FC = () => {
                       )}
                     </div>
                     <div className="text-xs text-gray-600 space-y-1">
-                      <div>{t('status')}: {progress >= 100 && (currentBatch.phones_found || 0) > 0 ? t('verifying') : progress >= 100 ? t('ready') : t('waiting')}</div>
-                      <div>{t('type')}: {t('mobile_landline_detection')}</div>
-                      <div>{t('phones')}: {currentBatch.phones_found || 0} {t('found')}</div>
+                      <div>{t('common.status')}: {progress >= 100 && (currentBatch.phones_found || 0) > 0 ? t('common.verifying') : progress >= 100 ? t('common.ready') : t('common.waiting')}</div>
+                      <div>{t('common.type')}: {t('common.mobile_landline_detection')}</div>
+                      <div>{t('common.phones')}: {currentBatch.phones_found || 0} {t('common.found')}</div>
                     </div>
                   </div>
 
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">5. {t('export')}</span>
+                      <span className="text-sm font-medium text-gray-900">5. {t('common.export')}</span>
                       {progress >= 100 ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : (
@@ -225,9 +225,9 @@ const BatchProgress: React.FC = () => {
                       )}
                     </div>
                     <div className="text-xs text-gray-600 space-y-1">
-                      <div>{t('status')}: {progress >= 100 ? t('ready') : t('pending')}</div>
-                      <div>{t('format')}: CSV/Excel/JSON</div>
-                      <div>{t('quality')}: {t('verified_data')}</div>
+                      <div>{t('common.status')}: {progress >= 100 ? t('common.ready') : t('common.pending')}</div>
+                      <div>{t('common.format')}: CSV/Excel/JSON</div>
+                      <div>{t('common.quality')}: {t('common.verified_data')}</div>
                     </div>
                   </div>
                 </div>

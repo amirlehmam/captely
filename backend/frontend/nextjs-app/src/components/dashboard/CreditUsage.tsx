@@ -26,7 +26,7 @@ const CreditUsage: React.FC = () => {
       <div className="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-primary-50 to-secondary-50">
         <div>
           <h3 className="text-lg leading-6 font-semibold text-gray-900">
-            {t('credit_usage')}
+            {t('common.credit_usage')}
           </h3>
           <p className="mt-1 max-w-2xl text-sm text-gray-600">
             {creditData?.subscription?.package_name || 'Loading...'} Plan
@@ -35,7 +35,7 @@ const CreditUsage: React.FC = () => {
         <div className="flex items-center space-x-2">
           <button className="inline-flex items-center px-4 py-2 border border-primary-200 shadow-sm text-sm font-medium rounded-lg text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
             <CreditCard className="h-4 w-4 mr-2" />
-            {t('buy_credits')}
+            {t('common.buy_credits')}
           </button>
         </div>
       </div>
@@ -119,7 +119,7 @@ const CreditUsage: React.FC = () => {
                     {usagePercent}%
                   </div>
                   <div className="text-sm text-gray-600 font-medium">
-                    {t('used')}
+                    {t('common.used')}
                   </div>
                 </div>
               </div>
@@ -128,15 +128,15 @@ const CreditUsage: React.FC = () => {
             {/* Credit stats */}
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="text-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">{t('total')}</div>
+                <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">{t('common.total')}</div>
                 <div className="text-xl font-bold text-gray-900 mt-1">{creditData?.limit_monthly?.toLocaleString() || '0'}</div>
               </div>
               <div className="text-center bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">{t('used')}</div>
+                <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">{t('common.used')}</div>
                 <div className="text-xl font-bold text-blue-900 mt-1">{usedCredits.toLocaleString()}</div>
               </div>
               <div className="text-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                <div className="text-sm font-medium text-green-600 uppercase tracking-wide">{t('left')}</div>
+                <div className="text-sm font-medium text-green-600 uppercase tracking-wide">{t('common.left')}</div>
                 <div className="text-xl font-bold text-green-900 mt-1">{creditData?.balance?.toLocaleString() || '0'}</div>
               </div>
             </div>
@@ -148,7 +148,7 @@ const CreditUsage: React.FC = () => {
                   <AlertCircle className="h-5 w-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-sm font-semibold text-yellow-800">
-                      {t('usage_alert')}
+                      {t('common.usage_alert')}
                     </h4>
                     <p className="mt-1 text-sm text-yellow-700">
                       At your current rate, you'll run out of credits in approximately <strong>{daysRemaining} days</strong>. 
@@ -162,16 +162,16 @@ const CreditUsage: React.FC = () => {
             {/* Performance stats */}
             <div className="border-t border-gray-100 pt-6">
               <h4 className="text-sm font-semibold text-gray-900 mb-4">
-                {t('performance_stats')}
+                {t('common.performance_stats')}
               </h4>
               <div className="grid grid-cols-2 gap-4">
                                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{creditData?.statistics?.email_hit_rate?.toFixed(1) || '0.0'}%</div>
-                    <div className="text-sm text-gray-600">{t('email_hit_rate')}</div>
+                    <div className="text-sm text-gray-600">{t('common.email_hit_rate')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">{creditData?.statistics?.success_rate?.toFixed(1) || '0.0'}%</div>
-                    <div className="text-sm text-gray-600">{t('success_rate')}</div>
+                    <div className="text-sm text-gray-600">{t('common.success_rate')}</div>
                   </div>
               </div>
             </div>
