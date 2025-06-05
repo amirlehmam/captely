@@ -13,10 +13,12 @@ import toast from 'react-hot-toast';
 
 import { useJob } from '../hooks/useApi';
 import { apiService, Contact, Job } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const BatchDetailPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // Hooks
   const { job, loading: jobLoading } = useJob(jobId || '');
@@ -89,9 +91,9 @@ const BatchDetailPage: React.FC = () => {
       
       setEditingContact(null);
       setEditData({});
-      toast.success('Contact updated successfully!');
+      toast.success(t('batches.details.contactUpdated'));
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update contact');
+      toast.error(err.message || t('batches.details.updateFailed'));
     } finally {
       setUpdating(null);
     }
@@ -102,9 +104,9 @@ const BatchDetailPage: React.FC = () => {
     try {
       setExporting(contactId);
       await apiService.exportContactToHubSpot(contactId);
-      toast.success('Contact exported to HubSpot!');
+      toast.success(t('batches.details.exportSuccess'));
     } catch (err: any) {
-      toast.error(err.message || 'Export failed');
+      toast.error(err.message || t('batches.details.exportFailed'));
     } finally {
       setExporting(null);
     }
@@ -116,9 +118,9 @@ const BatchDetailPage: React.FC = () => {
     try {
       setExporting('batch');
       const result = await apiService.exportJobToHubSpot(jobId);
-      toast.success(`Exported ${result.exported_count} contacts to HubSpot!`);
+      toast.success(t('batches.details.batchExportSuccess').replace('{count}', result.exported_count.toString()));
     } catch (err: any) {
-      toast.error(err.message || 'Batch export failed');
+      toast.error(err.message || t('batches.details.batchExportFailed'));
     } finally {
       setExporting(null);
     }
@@ -162,11 +164,11 @@ const BatchDetailPage: React.FC = () => {
   // Status badge helper
   const getStatusBadge = (contact: Contact) => {
     if (contact.enriched && contact.email_verified) {
-      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Verified</span>;
+      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">{t('batches.details.verified')}</span>;
     } else if (contact.enriched) {
-      return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Enriched</span>;
+      return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">{t('batches.details.enriched')}</span>;
     } else {
-      return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Pending</span>;
+      return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">{t('batches.details.pending')}</span>;
     }
   };
 
@@ -175,7 +177,7 @@ const BatchDetailPage: React.FC = () => {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading batch details...</p>
+          <p className="mt-4 text-gray-600">{t('batches.details.loadingDetails')}</p>
         </div>
       </div>
     );
@@ -185,12 +187,12 @@ const BatchDetailPage: React.FC = () => {
     return (
       <div className="text-center py-12">
         <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Batch not found</h3>
-        <p className="mt-1 text-sm text-gray-500">The requested batch could not be found.</p>
+        <h3 className="mt-2 text-sm font-medium text-gray-900">{t('batches.details.batchNotFound')}</h3>
+        <p className="mt-1 text-sm text-gray-500">{t('batches.details.batchNotFoundDesc')}</p>
         <div className="mt-6">
           <Link to="/batches" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Batches
+            {t('batches.details.backToBatches')}
           </Link>
         </div>
       </div>
@@ -207,7 +209,7 @@ const BatchDetailPage: React.FC = () => {
             className="inline-flex items-center px-3 py-2 border border-gray-200 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Batches
+            {t('batches.details.backToBatches')}
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -215,10 +217,10 @@ const BatchDetailPage: React.FC = () => {
             </h1>
             <div className="flex items-center space-x-4 mt-1">
               <span className="text-sm text-gray-600">
-                {job.total} contacts
+                {job.total} {t('batches.details.contacts').toLowerCase()}
               </span>
               <span className="text-sm text-gray-600">
-                Created {new Date(job.created_at).toLocaleDateString()}
+                {t('common.createdAt')} {new Date(job.created_at).toLocaleDateString()}
               </span>
               {getStatusBadge(job as any)}
             </div>
@@ -234,12 +236,12 @@ const BatchDetailPage: React.FC = () => {
             {exporting === 'batch' ? (
               <>
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Exporting...
+                {t('batches.details.exporting')}
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                Export to HubSpot
+                {t('batches.details.exportToHubSpot')}
               </>
             )}
           </button>
@@ -252,7 +254,7 @@ const BatchDetailPage: React.FC = () => {
           <div className="flex items-center">
             <Users className="h-8 w-8 text-blue-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-blue-700">Total Contacts</p>
+              <p className="text-sm font-semibold text-blue-700">{t('batches.details.totalContacts')}</p>
               <p className="text-2xl font-bold text-blue-900">{job.total}</p>
             </div>
           </div>
@@ -262,7 +264,7 @@ const BatchDetailPage: React.FC = () => {
           <div className="flex items-center">
             <Mail className="h-8 w-8 text-green-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-green-700">Emails Found</p>
+              <p className="text-sm font-semibold text-green-700">{t('batches.details.emailsFound')}</p>
               <p className="text-2xl font-bold text-green-900">{job.emails_found || 0}</p>
             </div>
           </div>
@@ -272,7 +274,7 @@ const BatchDetailPage: React.FC = () => {
           <div className="flex items-center">
             <Phone className="h-8 w-8 text-purple-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-purple-700">Phones Found</p>
+              <p className="text-sm font-semibold text-purple-700">{t('batches.details.phonesFound')}</p>
               <p className="text-2xl font-bold text-purple-900">{job.phones_found || 0}</p>
             </div>
           </div>
@@ -282,7 +284,7 @@ const BatchDetailPage: React.FC = () => {
           <div className="flex items-center">
             <TrendingUp className="h-8 w-8 text-yellow-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-yellow-700">Success Rate</p>
+              <p className="text-sm font-semibold text-yellow-700">{t('batches.details.successRate')}</p>
               <p className="text-2xl font-bold text-yellow-900">{job.success_rate?.toFixed(1) || 0}%</p>
             </div>
           </div>
@@ -302,7 +304,7 @@ const BatchDetailPage: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                placeholder="Search contacts by name, email, or company..."
+                placeholder={t('batches.details.searchPlaceholder')}
               />
             </div>
           </div>
@@ -313,10 +315,10 @@ const BatchDetailPage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              <option value="all">All Status</option>
-              <option value="enriched">Enriched</option>
-              <option value="not_enriched">Not Enriched</option>
-              <option value="verified">Verified</option>
+              <option value="all">{t('batches.details.allStatus')}</option>
+              <option value="enriched">{t('batches.details.enriched')}</option>
+              <option value="not_enriched">{t('batches.details.notEnriched')}</option>
+              <option value="verified">{t('batches.details.verified')}</option>
             </select>
 
             <button
@@ -331,7 +333,7 @@ const BatchDetailPage: React.FC = () => {
                 onClick={() => {/* Handle bulk actions */}}
                 className="px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               >
-                Actions ({selectedContacts.size})
+                {t('batches.details.bulkActions').replace('{count}', selectedContacts.size.toString())}
               </button>
             )}
           </div>
@@ -353,22 +355,22 @@ const BatchDetailPage: React.FC = () => {
                   />
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Contact
+                  {t('batches.details.contact')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Email & Phone
+                  {t('batches.details.emailAndPhone')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Company & Position
+                  {t('batches.details.companyAndPosition')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Status
+                  {t('common.status')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Notes
+                  {t('batches.details.notes')}
                 </th>
                 <th className="relative px-6 py-4">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('common.actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -397,14 +399,14 @@ const BatchDetailPage: React.FC = () => {
                           value={editData.first_name || ''}
                           onChange={(e) => setEditData(prev => ({ ...prev, first_name: e.target.value }))}
                           className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
-                          placeholder="First name"
+                          placeholder={t('batches.details.firstName')}
                         />
                         <input
                           type="text"
                           value={editData.last_name || ''}
                           onChange={(e) => setEditData(prev => ({ ...prev, last_name: e.target.value }))}
                           className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
-                          placeholder="Last name"
+                          placeholder={t('batches.details.lastName')}
                         />
                       </div>
                     ) : (
@@ -449,14 +451,14 @@ const BatchDetailPage: React.FC = () => {
                           value={editData.company || ''}
                           onChange={(e) => setEditData(prev => ({ ...prev, company: e.target.value }))}
                           className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
-                          placeholder="Company"
+                          placeholder={t('batches.details.company')}
                         />
                         <input
                           type="text"
                           value={editData.position || ''}
                           onChange={(e) => setEditData(prev => ({ ...prev, position: e.target.value }))}
                           className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
-                          placeholder="Position"
+                          placeholder={t('batches.details.position')}
                         />
                       </div>
                     ) : (
@@ -481,7 +483,7 @@ const BatchDetailPage: React.FC = () => {
                       {getStatusBadge(contact)}
                       {contact.enrichment_provider && (
                         <div className="text-xs text-gray-500">
-                          via {contact.enrichment_provider}
+                          {t('batches.details.via')} {contact.enrichment_provider}
                         </div>
                       )}
                     </div>
@@ -494,12 +496,12 @@ const BatchDetailPage: React.FC = () => {
                         onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
                         className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
                         rows={2}
-                        placeholder="Add notes..."
+                        placeholder={t('batches.details.addNotes')}
                       />
                     ) : (
                       <div className="text-sm text-gray-600 max-w-xs">
                         {contact.notes || (
-                          <span className="text-gray-400 italic">No notes</span>
+                          <span className="text-gray-400 italic">{t('batches.details.noNotes')}</span>
                         )}
                       </div>
                     )}
@@ -532,7 +534,7 @@ const BatchDetailPage: React.FC = () => {
                           <button
                             onClick={() => startEdit(contact)}
                             className="p-2 text-blue-600 hover:text-blue-700 rounded-lg hover:bg-blue-50"
-                            title="Edit Contact"
+                            title={t('batches.details.editContact')}
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
@@ -542,7 +544,7 @@ const BatchDetailPage: React.FC = () => {
                               onClick={() => exportToHubSpot(contact.id)}
                               disabled={exporting === contact.id}
                               className="p-2 text-orange-600 hover:text-orange-700 rounded-lg hover:bg-orange-50"
-                              title="Export to HubSpot"
+                              title={t('batches.details.exportContact')}
                             >
                               {exporting === contact.id ? (
                                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -558,7 +560,7 @@ const BatchDetailPage: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-2 text-gray-600 hover:text-gray-700 rounded-lg hover:bg-gray-50"
-                              title="View LinkedIn Profile"
+                              title={t('batches.details.viewLinkedIn')}
                             >
                               <ExternalLink className="h-4 w-4" />
                             </a>
@@ -578,7 +580,7 @@ const BatchDetailPage: React.FC = () => {
           <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
             <div className="flex items-center">
               <p className="text-sm text-gray-700">
-                Page {page} of {totalPages}
+                {t('batches.details.pageOf').replace('{current}', page.toString()).replace('{total}', totalPages.toString())}
               </p>
             </div>
             <div className="flex space-x-2">
@@ -587,14 +589,14 @@ const BatchDetailPage: React.FC = () => {
                 disabled={page === 1}
                 className="px-3 py-2 border border-gray-200 rounded text-sm disabled:opacity-50"
               >
-                Previous
+                {t('batches.details.previous')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages, page + 1))}
                 disabled={page === totalPages}
                 className="px-3 py-2 border border-gray-200 rounded text-sm disabled:opacity-50"
               >
-                Next
+                {t('batches.details.next')}
               </button>
             </div>
           </div>
@@ -605,11 +607,11 @@ const BatchDetailPage: React.FC = () => {
       {filteredContacts.length === 0 && !loading && (
         <div className="text-center py-12">
           <Users className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No contacts found</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('batches.details.noContactsFound')}</h3>
           <p className="mt-1 text-sm text-gray-500">
             {searchTerm || statusFilter !== 'all' 
-              ? 'Try adjusting your search terms or filters' 
-              : 'This batch has no contacts'
+              ? t('batches.details.adjustFilters')
+              : t('batches.details.batchHasNoContacts')
             }
           </p>
         </div>

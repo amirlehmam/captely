@@ -10,12 +10,14 @@ import {
   RefreshCw
 } from 'lucide-react';
 import api from '../../services/api';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface VerificationStatsProps {
   jobId?: string;
 }
 
 const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

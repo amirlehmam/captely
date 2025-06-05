@@ -31,12 +31,8 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       if (saved && ['en', 'fr'].includes(saved)) {
         return saved;
       }
-      // Detect browser language
-      const browserLang = navigator.language.toLowerCase();
-      if (browserLang.startsWith('fr')) {
-        return 'fr';
-      }
     }
+    // Always default to English unless explicitly set
     return 'en';
   });
 

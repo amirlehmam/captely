@@ -8,6 +8,7 @@ import {
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 interface LoginFormData {
   email: string;
@@ -260,6 +261,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 relative overflow-hidden">
+      {/* Language Switcher */}
+      <div className="absolute top-6 right-6 z-20">
+        <LanguageSwitcher />
+      </div>
+      
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
