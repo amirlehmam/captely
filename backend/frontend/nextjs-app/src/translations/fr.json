@@ -124,7 +124,11 @@
     "usage_alert_message": "À votre rythme actuel, vous n'aurez plus de crédits dans environ <strong>{days} jours</strong>. Considérez mettre à niveau votre plan ou acheter des crédits supplémentaires.",
     "performance_stats": "Statistiques de performance",
     "email_hit_rate": "Taux de réussite email",
-    "success_rate": "Taux de réussite"
+    "success_rate": "Taux de réussite",
+    "processing_contacts": "Traitement de {completed} sur {total} contacts",
+    "waiting": "En attente",
+    "ready": "Prêt",
+    "verifying": "Vérification"
   },
   "navigation": {
     "dashboard": "Tableau de bord",
@@ -211,10 +215,22 @@
     },
     "systemHealth": {
       "title": "État du système",
-      "allSystemsOperational": "Tous les systèmes sont opérationnels",
       "enrichmentService": "Service d'enrichissement",
       "apiService": "Service API",
-      "dataProcessing": "Traitement des données"
+      "dataProcessing": "Traitement des données",
+      "allSystemsOperational": "Tous les systèmes sont opérationnels",
+      "allOperational": "Tous les systèmes sont opérationnels",
+      "providers": {
+        "apollo": "Apollo",
+        "hunterIo": "Hunter.io",
+        "clearbit": "Clearbit",
+        "leadfeeder": "Leadfeeder"
+      },
+      "status": {
+        "operational": "Opérationnel",
+        "issues": "Problèmes",
+        "maintenance": "Maintenance"
+      }
     }
   },
   "enrichment": {

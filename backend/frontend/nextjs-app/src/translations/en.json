@@ -95,6 +95,8 @@
     "mobile_landline_detection": "Mobile/Landline detection",
     "verified_data": "Verified data",
     "verification_stats": "Verification Stats",
+    "current_batch_progress": "Current Batch Progress",
+    "credit_usage": "Credit Usage", 
     "email_and_phone_verification_quality_metrics": "Email and phone verification quality metrics",
     "verify_contacts": "Verify Contacts",
     "failed_to_load_verification_stats": "Failed to load verification stats",
@@ -125,7 +127,11 @@
     "performance_stats": "Performance Stats",
     "email_hit_rate": "Email Hit Rate",
     "success_rate": "Success Rate",
-    "credits_used": "Credits Used"
+    "credits_used": "Credits Used",
+    "processing_contacts": "Processing {completed} of {total} contacts",
+    "waiting": "Waiting",
+    "ready": "Ready",
+    "verifying": "Verifying"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -224,6 +230,10 @@
     },
     "systemHealth": {
       "title": "System Health",
+      "enrichmentService": "Enrichment Service",
+      "apiService": "API Service",
+      "dataProcessing": "Data Processing",
+      "allSystemsOperational": "All Systems Operational",
       "allOperational": "All Systems Operational",
       "providers": {
         "apollo": "Apollo",

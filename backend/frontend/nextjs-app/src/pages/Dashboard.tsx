@@ -124,7 +124,7 @@ const Dashboard: React.FC = () => {
     },
     {
       title: t('credits_used'),
-      value: creditData?.limit_monthly ? Math.max(0, creditData.limit_monthly - creditData.balance) : 0,
+      value: creditData?.used_this_month || 0,
       subtitle: "this month",
       icon: CreditCard,
       color: 'orange',
@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
                 <CreditCard className="h-5 w-5" />
               </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('Buy Credits')}
+                {t('buy_credits')}
               </span>
             </motion.button>
 

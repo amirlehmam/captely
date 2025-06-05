@@ -10,12 +10,14 @@ import {
   RefreshCw
 } from 'lucide-react';
 import api from '../../services/api';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface VerificationStatsProps {
   jobId?: string;
 }
 
 const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,10 +57,10 @@ const VerificationStats: React.FC<VerificationStatsProps> = ({ jobId }) => {
         <div>
           <h3 className="text-lg leading-6 font-semibold text-gray-900 flex items-center">
             <Shield className="h-5 w-5 text-purple-600 mr-2" />
-            Verification Stats
+            {t('verification_stats')}
           </h3>
           <p className="mt-1 text-sm text-gray-600">
-            Email and phone verification quality metrics
+            {t('email_and_phone_verification_quality_metrics')}
           </p>
         </div>
       </div>

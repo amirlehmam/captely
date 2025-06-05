@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Upload, ArrowDownUp, 
-  Settings, CreditCard, LogOut, Database, PieChart, Key,
-  UserPlus, Activity, Megaphone, ChevronDown, ChevronRight
+  Settings, CreditCard, LogOut, Database, Key
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCreditContext } from '../contexts/CreditContext';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -14,6 +13,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const { t } = useLanguage();
+  const { creditData, loading: creditLoading } = useCreditContext();
   
   const navItems = [
     { 
@@ -31,14 +31,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
       icon: <Upload className="w-5 h-5" />, 
       label: t('navigation.import')
     },
-  ];
-
-  const crmItems = [
-    {
-      path: '/crm',
-      icon: <UserPlus className="w-4 h-4" />,
+    { 
+      path: '/crm', 
+      icon: <Users className="w-5 h-5" />, 
       label: t('navigation.contacts')
-    }
+    },
   ];
 
   const otherItems = [
@@ -64,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     },
   ];
 
-  const [crmExpanded, setCrmExpanded] = useState(false);
+
   const [userInfo, setUserInfo] = useState({
     name: 'Loading...',
     plan: 'Free',
@@ -125,11 +122,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         {/* Logo */}
         <div className="flex flex-col items-center justify-center px-4 mb-8 py-6">
           <img
-            className="h-16 w-auto mb-3"
+            className="h-24 w-auto mb-3"
             src="/logo.png"
             alt="Captely"
           />
-          <span className="text-lg font-bold text-gray-900 text-center">Captely</span>
+          <span className="text-base font-semibold text-gray-900 text-center">Captely</span>
         </div>
         
         <nav className="mt-5 flex-1 px-2 space-y-1">
@@ -151,52 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
             </NavLink>
           ))}
 
-          {/* CRM Section */}
-          <div className="pt-4">
-            <button
-              onClick={() => setCrmExpanded(!crmExpanded)}
-              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-all duration-200"
-            >
-              <div className="flex items-center">
-                <Users className="w-5 h-5" />
-                <span className="ml-3">{t('navigation.crm')}</span>
-              </div>
-              {crmExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-            
-            <AnimatePresence>
-              {crmExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-1 ml-4 space-y-1 overflow-hidden"
-                >
-                  {crmItems.map((item) => (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className={({ isActive }) => 
-                        `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                          isActive 
-                            ? 'bg-primary-50 text-primary-700' 
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        }`
-                      }
-                    >
-                      {item.icon}
-                      <span className="ml-3">{item.label}</span>
-                    </NavLink>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+
 
           {/* Other Items */}
           <div className="pt-4 space-y-1">
@@ -223,19 +175,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         <div className="mt-8 mx-2">
           <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 border border-primary-200">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">{t('billing.creditsRemaining')}</h4>
+              <h4 className="text-sm font-semibold text-gray-900">{t('credits_used')}</h4>
               <CreditCard className="h-4 w-4 text-primary-600" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600">{t('billing.usage')}</span>
-                <span className="text-xs font-medium text-gray-900">4,982 / 5,000</span>
+                <span className="text-xs text-gray-600">Usage</span>
+                <span className="text-xs font-medium text-gray-900">
+                  {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} / ${creditData?.limit_monthly || 5000}`}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full" style={{width: '99.6%'}}></div>
+                <div 
+                  className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full" 
+                  style={{
+                    width: creditData && creditData.limit_monthly > 0 
+                      ? `${Math.min(100, (creditData.used_this_month / creditData.limit_monthly) * 100)}%`
+                      : '0%'
+                  }}
+                ></div>
               </div>
               <div className="text-xs text-primary-600 font-medium">
-                18 {t('billing.creditsRemaining').toLowerCase()}
+                {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} used`}
               </div>
             </div>
           </div>
