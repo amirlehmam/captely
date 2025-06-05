@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
                 <CreditCard className="h-5 w-5" />
               </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('buy_credits')}
+                {t('Buy Credits')}
               </span>
             </motion.button>
 
