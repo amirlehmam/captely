@@ -402,6 +402,41 @@
       "viewProgress": "View Progress",
       "uploadAnother": "Upload Another File",
       "removeFile": "Remove"
+    },
+    "tabs": {
+      "fileUpload": "File Upload",
+      "manualEntry": "Manual Entry"
+    },
+    "manual": {
+      "title": "Add Contacts Manually",
+      "subtitle": "Enter contact details one by one and build your batch",
+      "validation": {
+        "title": "Contact Validation Errors",
+        "firstName": "First name is required",
+        "lastName": "Last name is required", 
+        "company": "Company is required"
+      },
+      "form": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "company": "Company",
+        "position": "Position",
+        "location": "Location",
+        "industry": "Industry"
+      },
+      "buttons": {
+        "addContact": "Add Contact",
+        "clearAll": "Clear All",
+        "startEnrichment": "Start Enrichment ({count} contacts)",
+        "startingEnrichment": "Starting enrichment..."
+      },
+      "contactAdded": "Contact added successfully!",
+      "contactRemoved": "Contact removed",
+      "allContactsCleared": "All contacts cleared",
+      "contactsAdded": "{count} contacts added",
+      "noContactsToEnrich": "No contacts to enrich",
+      "enrichmentStarted": "Enrichment started for {count} contacts!",
+      "enrichmentFailed": "Failed to start enrichment"
     }
   },
   "batches": {

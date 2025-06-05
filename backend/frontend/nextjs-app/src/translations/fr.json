@@ -335,6 +335,41 @@
       "viewProgress": "Voir la progression",
       "uploadAnother": "Téléverser un autre fichier",
       "removeFile": "Supprimer"
+    },
+    "tabs": {
+      "fileUpload": "Téléversement de fichier",
+      "manualEntry": "Saisie manuelle"
+    },
+    "manual": {
+      "title": "Ajouter des contacts manuellement",
+      "subtitle": "Saisissez les détails de contact un par un et construisez votre lot",
+      "validation": {
+        "title": "Erreurs de validation du contact",
+        "firstName": "Le prénom est requis",
+        "lastName": "Le nom de famille est requis",
+        "company": "L'entreprise est requise"
+      },
+      "form": {
+        "firstName": "Prénom",
+        "lastName": "Nom de famille",
+        "company": "Entreprise",
+        "position": "Poste",
+        "location": "Localisation",
+        "industry": "Secteur"
+      },
+      "buttons": {
+        "addContact": "Ajouter un contact",
+        "clearAll": "Tout effacer",
+        "startEnrichment": "Démarrer l'enrichissement ({count} contacts)",
+        "startingEnrichment": "Démarrage de l'enrichissement..."
+      },
+      "contactAdded": "Contact ajouté avec succès!",
+      "contactRemoved": "Contact supprimé",
+      "allContactsCleared": "Tous les contacts effacés",
+      "contactsAdded": "{count} contacts ajoutés",
+      "noContactsToEnrich": "Aucun contact à enrichir",
+      "enrichmentStarted": "Enrichissement démarré pour {count} contacts!",
+      "enrichmentFailed": "Échec du démarrage de l'enrichissement"
     }
   },
   "batches": {

@@ -268,7 +268,122 @@ async def import_file(
             detail=f"File processing failed: {str(e)}"
         )
 
-# 2) JSON batch endpoint (from extension or other clients)
+# 2) Manual contacts endpoint
+class ManualContact(BaseModel):
+    first_name: str
+    last_name: str
+    company: str
+    position: str = ""
+    location: str = ""
+    industry: str = ""
+
+class ManualContactsBatch(BaseModel):
+    contacts: list[ManualContact]
+    enrichment_config: dict = None
+
+@app.post(
+    "/api/imports/manual",
+    status_code=status.HTTP_201_CREATED,
+)
+async def import_manual_contacts(
+    batch: ManualContactsBatch,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session),
+):
+    """Import manually entered contacts for enrichment"""
+    try:
+        print(f"📝 Processing manual contact import for user: {user_id}")
+        print(f"🎯 Manual contacts count: {len(batch.contacts)}")
+        
+        # Parse enrichment type parameters
+        enrichment_config = batch.enrichment_config or {}
+        should_enrich_email = enrichment_config.get("email", True)
+        should_enrich_phone = enrichment_config.get("phone", True)
+        
+        enrichment_type_text = []
+        if should_enrich_email:
+            enrichment_type_text.append("Email")
+        if should_enrich_phone:
+            enrichment_type_text.append("Phone")
+        enrichment_type_str = " + ".join(enrichment_type_text) if enrichment_type_text else "No enrichment"
+        
+        print(f"🎯 Enrichment type requested: {enrichment_type_str}")
+        
+        if not batch.contacts:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No contacts provided"
+            )
+
+        job_id = str(uuid.uuid4())
+        
+        # Create import job record
+        job_insert_sql = text("""
+            INSERT INTO import_jobs (id, user_id, total, status, file_name, created_at, updated_at)
+            VALUES (:job_id, :user_id, :total, :status, :file_name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+        
+        session.execute(job_insert_sql, {
+            "job_id": job_id,
+            "user_id": user_id,
+            "total": len(batch.contacts),
+            "status": "processing",
+            "file_name": f"Manual Import - {len(batch.contacts)} contacts"
+        })
+        session.commit()
+        print(f"✅ Created manual import job: {job_id} with {len(batch.contacts)} contacts")
+
+        # Process each manually entered contact
+        for contact in batch.contacts:
+            # Convert contact to dict and prepare for enrichment
+            lead_data = {
+                "first_name": contact.first_name.strip(),
+                "last_name": contact.last_name.strip(),
+                "company": contact.company.strip(),
+                "position": contact.position.strip() if contact.position else "",
+                "location": contact.location.strip() if contact.location else "",
+                "industry": contact.industry.strip() if contact.industry else "",
+            }
+            
+            # Add enrichment type preferences to the lead data
+            enrichment_config_dict = {
+                "enrich_email": should_enrich_email,
+                "enrich_phone": should_enrich_phone
+            }
+            
+            # Send to the cascade enrichment task with enrichment configuration
+            celery_app.send_task(
+                "app.tasks.cascade_enrich",
+                args=[lead_data, job_id, user_id, enrichment_config_dict],
+                queue="cascade_enrichment"
+            )
+
+        print(f"🚀 Successfully queued {len(batch.contacts)} manual contacts for {enrichment_type_str} enrichment in job: {job_id}")
+        return JSONResponse({
+            "job_id": job_id, 
+            "total_contacts": len(batch.contacts),
+            "enrichment_type": {
+                "email": should_enrich_email,
+                "phone": should_enrich_phone
+            }
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in import_manual_contacts: {e}")
+        try:
+            if session is not None:
+                session.rollback()
+        except Exception as rollback_error:
+            print(f"🔍 Rollback error: {rollback_error}")
+            pass  # Ignore rollback errors to prevent double exception
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Manual contact import failed: {str(e)}"
+        )
+
+# 3) JSON batch endpoint (from extension or other clients)
 class LeadsBatch(BaseModel):
     leads: list[dict]
 

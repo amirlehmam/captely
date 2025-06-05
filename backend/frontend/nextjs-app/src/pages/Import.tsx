@@ -18,7 +18,12 @@ import {
   Clock,
   AlertTriangle,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Plus,
+  UserPlus,
+  Building,
+  Trash2,
+  Edit3
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -30,6 +35,17 @@ import { EnrichmentType } from '../components/modals/EnrichmentConfirmModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
+// Type for manual contacts
+interface ManualContact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  company: string;
+  position?: string;
+  location?: string;
+  industry?: string;
+}
+
 const ImportPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, formatMessage } = useLanguage();
@@ -40,6 +56,20 @@ const ImportPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  
+  // Manual contact entry state
+  const [manualContacts, setManualContacts] = useState<ManualContact[]>([]);
+  const [currentContact, setCurrentContact] = useState<Partial<ManualContact>>({
+    first_name: '',
+    last_name: '',
+    company: '',
+    position: '',
+    location: '',
+    industry: ''
+  });
+  const [manualContactErrors, setManualContactErrors] = useState<string[]>([]);
+  const [isStartingManualEnrichment, setIsStartingManualEnrichment] = useState(false);
+  const [activeTab, setActiveTab] = useState<'upload' | 'manual'>('upload');
   
   // Hooks
   const { uploadFile, uploading, progress, error: uploadError, reset } = useFileUpload();
@@ -194,6 +224,120 @@ const ImportPage: React.FC = () => {
     toast.success(t('success.fileUploaded'));
   };
 
+  // Manual contact functions
+  const validateManualContact = (contact: Partial<ManualContact>): string[] => {
+    const errors: string[] = [];
+    
+    if (!contact.first_name?.trim()) {
+      errors.push(t('import.manual.validation.firstName'));
+    }
+    if (!contact.last_name?.trim()) {
+      errors.push(t('import.manual.validation.lastName'));
+    }
+    if (!contact.company?.trim()) {
+      errors.push(t('import.manual.validation.company'));
+    }
+    
+    return errors;
+  };
+
+  const addManualContact = () => {
+    const errors = validateManualContact(currentContact);
+    setManualContactErrors(errors);
+    
+    if (errors.length > 0) {
+      return;
+    }
+    
+    const newContact: ManualContact = {
+      id: Date.now().toString(),
+      first_name: currentContact.first_name!.trim(),
+      last_name: currentContact.last_name!.trim(),
+      company: currentContact.company!.trim(),
+      position: currentContact.position?.trim() || '',
+      location: currentContact.location?.trim() || '',
+      industry: currentContact.industry?.trim() || ''
+    };
+    
+    setManualContacts(prev => [...prev, newContact]);
+    setCurrentContact({
+      first_name: '',
+      last_name: '',
+      company: '',
+      position: '',
+      location: '',
+      industry: ''
+    });
+    setManualContactErrors([]);
+    
+    toast.success(t('import.manual.contactAdded'));
+  };
+
+  const removeManualContact = (id: string) => {
+    setManualContacts(prev => prev.filter(contact => contact.id !== id));
+    toast.success(t('import.manual.contactRemoved'));
+  };
+
+  const clearAllManualContacts = () => {
+    setManualContacts([]);
+    toast.success(t('import.manual.allContactsCleared'));
+  };
+
+  const startManualEnrichment = async () => {
+    if (manualContacts.length === 0) {
+      toast.error(t('import.manual.noContactsToEnrich'));
+      return;
+    }
+
+    try {
+      setIsStartingManualEnrichment(true);
+      
+      // Show enrichment confirmation modal
+      const enrichmentType = await confirm(`${manualContacts.length} manually added contacts`);
+      
+      if (!enrichmentType) {
+        setIsStartingManualEnrichment(false);
+        return;
+      }
+
+      // Send manual contacts to backend for enrichment
+      const response = await fetch('/api/import/api/imports/manual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt')}`
+        },
+        body: JSON.stringify({
+          contacts: manualContacts,
+          enrichment_config: enrichmentType
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start manual enrichment');
+      }
+
+      const result = await response.json();
+      setCurrentJobId(result.job_id);
+      setUploadSuccess(true);
+      setManualContacts([]);
+      refetchJobs();
+      
+      toast.success(formatMessage('import.manual.enrichmentStarted', { count: manualContacts.length }));
+      
+      // Auto-navigate to batches page after 3 seconds
+      setTimeout(() => {
+        navigate(`/batches`);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Manual enrichment failed:', error);
+      toast.error(t('import.manual.enrichmentFailed'));
+    } finally {
+      setIsStartingManualEnrichment(false);
+    }
+  };
+
   // Calculate recent stats
   const recentJobs = jobs.slice(0, 5);
   const totalContactsProcessed = jobs.reduce((sum, job) => sum + job.completed, 0);
@@ -282,7 +426,7 @@ const ImportPage: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Upload Section */}
+      {/* Tabs for Upload vs Manual Entry */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -293,10 +437,61 @@ const ImportPage: React.FC = () => {
             : 'bg-white border-gray-100 shadow-gray-200/50'
         }`}
       >
+        {/* Tab Navigation */}
+        <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <nav className="flex space-x-8 px-8 pt-6" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'upload'
+                  ? isDark
+                    ? 'border-primary-400 text-primary-400'
+                    : 'border-primary-500 text-primary-600'
+                  : isDark
+                    ? 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center">
+                <Upload className="h-4 w-4 mr-2" />
+                {t('import.tabs.fileUpload')}
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('manual')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'manual'
+                  ? isDark
+                    ? 'border-primary-400 text-primary-400'
+                    : 'border-primary-500 text-primary-600'
+                  : isDark
+                    ? 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center">
+                <UserPlus className="h-4 w-4 mr-2" />
+                {t('import.tabs.manualEntry')}
+                {manualContacts.length > 0 && (
+                  <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                    isDark ? 'bg-primary-900/50 text-primary-300' : 'bg-primary-100 text-primary-800'
+                  }`}>
+                    {manualContacts.length}
+                  </span>
+                )}
+              </div>
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
         <div className="p-8">
           {!uploadSuccess ? (
             <>
-              {/* Validation Errors */}
+              {/* File Upload Tab */}
+              {activeTab === 'upload' && (
+                <>
+                  {/* Validation Errors */}
               <AnimatePresence>
                 {validationErrors.length > 0 && (
                   <motion.div
@@ -526,6 +721,289 @@ const ImportPage: React.FC = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+                </>
+              )}
+
+              {/* Manual Entry Tab */}
+              {activeTab === 'manual' && (
+                <>
+                  {/* Manual Contact Validation Errors */}
+                  <AnimatePresence>
+                    {manualContactErrors.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={`mb-6 border rounded-xl p-4 ${
+                          isDark 
+                            ? 'bg-red-900/20 border-red-700/50' 
+                            : 'bg-red-50 border-red-200'
+                        }`}
+                      >
+                        <div className="flex items-start">
+                          <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
+                          <div>
+                            <h4 className={`text-sm font-semibold ${
+                              isDark ? 'text-red-300' : 'text-red-800'
+                            }`}>
+                              {t('import.manual.validation.title')}
+                            </h4>
+                            <ul className={`mt-2 text-sm list-disc list-inside ${
+                              isDark ? 'text-red-400' : 'text-red-700'
+                            }`}>
+                              {manualContactErrors.map((error, index) => (
+                                <li key={index}>{error}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Manual Entry Form */}
+                  <div className={`border-2 border-dashed rounded-xl p-8 ${
+                    isDark 
+                      ? 'border-gray-600 bg-gray-700/50' 
+                      : 'border-gray-300 bg-gray-50'
+                  }`}>
+                    <div className="text-center mb-6">
+                      <UserPlus className={`h-12 w-12 mx-auto mb-3 ${
+                        isDark ? 'text-gray-500' : 'text-gray-400'
+                      }`} />
+                      <h3 className={`text-lg font-semibold ${
+                        isDark ? 'text-gray-100' : 'text-gray-900'
+                      }`}>
+                        {t('import.manual.title')}
+                      </h3>
+                      <p className={`text-sm mt-1 ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        {t('import.manual.subtitle')}
+                      </p>
+                    </div>
+
+                    {/* Contact Form */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {t('import.manual.form.firstName')} *
+                        </label>
+                        <input
+                          type="text"
+                          value={currentContact.first_name || ''}
+                          onChange={(e) => setCurrentContact(prev => ({ ...prev, first_name: e.target.value }))}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            isDark 
+                              ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder="John"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {t('import.manual.form.lastName')} *
+                        </label>
+                        <input
+                          type="text"
+                          value={currentContact.last_name || ''}
+                          onChange={(e) => setCurrentContact(prev => ({ ...prev, last_name: e.target.value }))}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            isDark 
+                              ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder="Doe"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {t('import.manual.form.company')} *
+                        </label>
+                        <input
+                          type="text"
+                          value={currentContact.company || ''}
+                          onChange={(e) => setCurrentContact(prev => ({ ...prev, company: e.target.value }))}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            isDark 
+                              ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder="TechCorp Inc"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {t('import.manual.form.position')}
+                        </label>
+                        <input
+                          type="text"
+                          value={currentContact.position || ''}
+                          onChange={(e) => setCurrentContact(prev => ({ ...prev, position: e.target.value }))}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            isDark 
+                              ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder="CEO"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {t('import.manual.form.location')}
+                        </label>
+                        <input
+                          type="text"
+                          value={currentContact.location || ''}
+                          onChange={(e) => setCurrentContact(prev => ({ ...prev, location: e.target.value }))}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            isDark 
+                              ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder="San Francisco, CA"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {t('import.manual.form.industry')}
+                        </label>
+                        <input
+                          type="text"
+                          value={currentContact.industry || ''}
+                          onChange={(e) => setCurrentContact(prev => ({ ...prev, industry: e.target.value }))}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                            isDark 
+                              ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder="Technology"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Add Contact Button */}
+                    <div className="text-center">
+                      <button
+                        onClick={addManualContact}
+                        className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t('import.manual.buttons.addContact')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Manual Contacts List */}
+                  {manualContacts.length > 0 && (
+                    <div className="mt-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className={`text-lg font-semibold ${
+                          isDark ? 'text-gray-100' : 'text-gray-900'
+                        }`}>
+                          {formatMessage('import.manual.contactsAdded', { count: manualContacts.length })}
+                        </h4>
+                        <button
+                          onClick={clearAllManualContacts}
+                          className={`text-sm font-medium transition-colors ${
+                            isDark 
+                              ? 'text-red-400 hover:text-red-300' 
+                              : 'text-red-600 hover:text-red-800'
+                          }`}
+                        >
+                          {t('import.manual.buttons.clearAll')}
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {manualContacts.map((contact) => (
+                          <motion.div
+                            key={contact.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className={`flex items-center justify-between p-4 border rounded-lg ${
+                              isDark 
+                                ? 'bg-gray-700 border-gray-600' 
+                                : 'bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-4">
+                              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                                isDark ? 'bg-primary-900/50 text-primary-300' : 'bg-primary-100 text-primary-700'
+                              }`}>
+                                <Users className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className={`font-medium ${
+                                  isDark ? 'text-gray-100' : 'text-gray-900'
+                                }`}>
+                                  {contact.first_name} {contact.last_name}
+                                </p>
+                                <p className={`text-sm ${
+                                  isDark ? 'text-gray-400' : 'text-gray-600'
+                                }`}>
+                                  {contact.company}
+                                  {contact.position && ` • ${contact.position}`}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeManualContact(contact.id)}
+                              className={`p-2 rounded-full transition-colors ${
+                                isDark 
+                                  ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20' 
+                                  : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+                              }`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* Start Enrichment Button */}
+                      <div className="mt-6 text-center">
+                        <button
+                          onClick={startManualEnrichment}
+                          disabled={isStartingManualEnrichment}
+                          className="inline-flex items-center px-8 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-all duration-200"
+                        >
+                          {isStartingManualEnrichment ? (
+                            <>
+                              <Loader className="h-5 w-5 mr-2 animate-spin" />
+                              {t('import.manual.buttons.startingEnrichment')}
+                            </>
+                          ) : (
+                            <>
+                              <ArrowRight className="h-5 w-5 mr-2" />
+                              {formatMessage('import.manual.buttons.startEnrichment', { count: manualContacts.length })}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </>
           ) : (
             /* Success State */
