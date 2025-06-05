@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Search, Menu } from 'lucide-react';
 import CreditDisplay from './common/CreditDisplay';
+import LanguageSwitcher from './common/LanguageSwitcher';
 
 const Header: React.FC = () => {
   const [userName, setUserName] = useState('User');
@@ -53,7 +54,10 @@ const Header: React.FC = () => {
           </div>
 
           {/* Right side items */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
+            {/* Language Switcher */}
+            <LanguageSwitcher variant="minimal" />
+            
             {/* Credit Display - PRODUCTION READY */}
             <CreditDisplay variant="compact" />
             

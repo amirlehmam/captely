@@ -1,0 +1,551 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "browse": "Browse",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "refresh": "Refresh",
+    "retry": "Try Again",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "actions": "Actions",
+    "settings": "Settings",
+    "help": "Help",
+    "contact": "Contact",
+    "about": "About",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register",
+    "welcome": "Welcome",
+    "goodMorning": "Good morning",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "position": "Position",
+    "location": "Location",
+    "industry": "Industry",
+    "status": "Status",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "lastSeen": "Last Seen",
+    "active": "Active",
+    "inactive": "Inactive",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "total": "Total",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "import": "Import",
+    "batches": "Batches",
+    "contacts": "Contacts",
+    "exports": "Exports",
+    "billing": "Billing",
+    "settings": "Settings",
+    "credits": "Credits",
+    "crm": "CRM",
+    "integrations": "Integrations",
+    "apiTokens": "API Tokens",
+    "team": "Team"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "subtitle": "Welcome back! Please sign in to your account",
+      "emailLabel": "Email Address",
+      "passwordLabel": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot your password?",
+      "signInButton": "Sign In",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create one here",
+      "invalidCredentials": "Invalid email or password",
+      "loginSuccess": "Login successful!",
+      "emailRequired": "Email is required",
+      "passwordRequired": "Password is required"
+    },
+    "signup": {
+      "title": "Create Account",
+      "subtitle": "Get started with your free account",
+      "firstNameLabel": "First Name",
+      "lastNameLabel": "Last Name",
+      "emailLabel": "Email Address",
+      "passwordLabel": "Password",
+      "confirmPasswordLabel": "Confirm Password",
+      "createAccountButton": "Create Account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in here",
+      "passwordMismatch": "Passwords do not match",
+      "accountCreated": "Account created successfully!",
+      "termsAccept": "I agree to the Terms of Service and Privacy Policy"
+    },
+    "forgotPassword": {
+      "title": "Reset Password",
+      "subtitle": "Enter your email to receive reset instructions",
+      "emailLabel": "Email Address",
+      "sendInstructions": "Send Instructions",
+      "backToLogin": "Back to login",
+      "emailSent": "Reset instructions sent to your email",
+      "emailNotFound": "No account found with this email"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back!",
+    "overview": "Here's what's happening with your account",
+    "stats": {
+      "totalContacts": "Total Contacts",
+      "enrichedContacts": "Enriched Contacts",
+      "successRate": "Success Rate",
+      "creditsRemaining": "Credits Remaining",
+      "activeJobs": "Active Jobs",
+      "completedJobs": "Completed Jobs",
+      "pendingJobs": "Pending Jobs",
+      "failedJobs": "Failed Jobs"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "noActivity": "No recent activity",
+      "viewAll": "View All Activity"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "subtitle": "Common tasks and useful links",
+      "newUpload": "New Upload",
+      "viewResults": "View Results",
+      "exportData": "Export Data",
+      "manageTeam": "Manage Team"
+    },
+    "systemHealth": {
+      "title": "System Health",
+      "allSystemsOperational": "All systems operational",
+      "enrichmentService": "Enrichment Service",
+      "apiService": "API Service",
+      "dataProcessing": "Data Processing"
+    }
+  },
+  "enrichment": {
+    "modal": {
+      "title": "Import CSV & Enrichment",
+      "fileSelected": "File selected: {fileName}",
+      "chooseEnrichment": "Choose your enrichment options:",
+      "email": {
+        "label": "Email",
+        "description": "Find and verify email addresses"
+      },
+      "phone": {
+        "label": "Phone",
+        "description": "Find and verify phone numbers"
+      },
+      "both": "Both - Complete enrichment enabled",
+      "selectAtLeastOne": "Please select at least one enrichment option",
+      "cancel": "Cancel",
+      "startEnrichment": "Start Enrichment"
+    },
+    "types": {
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed",
+      "queued": "Queued",
+      "running": "Running",
+      "paused": "Paused",
+      "cancelled": "Cancelled"
+    },
+    "providers": {
+      "dropcontact": "Dropcontact",
+      "apollo": "Apollo",
+      "hunter": "Hunter",
+      "clearbit": "Clearbit",
+      "icypeas": "Icypeas"
+    }
+  },
+  "import": {
+    "title": "Import Contacts",
+    "subtitle": "Upload your contact list to start the enrichment process. Choose your enrichment options and we'll find emails, phone numbers, and verify contact information automatically.",
+    "dropzone": {
+      "title": "Drop your CSV or Excel file here",
+      "subtitle": "or click to browse files",
+      "fileTypes": "Supports .csv, .xlsx, .xls files up to 50MB"
+    },
+    "upload": {
+      "uploading": "Uploading and starting enrichment...",
+      "progress": "Your file is being processed and enrichment tasks are being queued...",
+      "success": {
+        "title": "Upload Successful!",
+        "subtitle": "Your file has been uploaded and enrichment has started"
+      },
+      "error": "Upload failed: {error}"
+    },
+    "validation": {
+      "title": "File Validation Errors",
+      "csvOrExcel": "Please upload a CSV or Excel file (.csv, .xlsx, .xls)",
+      "maxSize": "File size must be less than 50MB",
+      "notEmpty": "File appears to be empty"
+    },
+    "requirements": {
+      "title": "CSV Format Requirements",
+      "subtitle": "Your CSV file should include the following columns (headers are required):",
+      "required": "Required Fields:",
+      "optional": "Optional Fields:",
+      "downloadSample": "Download Sample CSV"
+    },
+    "stats": {
+      "totalProcessed": "Total Processed",
+      "avgSuccessRate": "Avg Success Rate",
+      "totalBatches": "Total Batches"
+    },
+    "recentJobs": {
+      "title": "Recent Import Jobs",
+      "viewAll": "View All",
+      "progress": "Progress:",
+      "successRate": "Success Rate:",
+      "emailsFound": "Emails Found:",
+      "creditsUsed": "Credits Used:"
+    },
+    "buttons": {
+      "startEnrichment": "Start Enrichment",
+      "viewProgress": "View Progress",
+      "uploadAnother": "Upload Another File",
+      "removeFile": "Remove"
+    }
+  },
+  "batches": {
+    "title": "Import Batches",
+    "subtitle": "Track and manage your contact enrichment batches",
+    "table": {
+      "fileName": "File Name",
+      "status": "Status",
+      "progress": "Progress",
+      "contacts": "Contacts",
+      "successRate": "Success Rate",
+      "creditsUsed": "Credits Used",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "emailsFound": "Emails Found",
+      "phonesFound": "Phones Found",
+      "duration": "Duration",
+      "completedAt": "Completed At"
+    },
+    "filters": {
+      "all": "All Batches",
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed",
+      "queued": "Queued"
+    },
+    "empty": {
+      "title": "No batches yet",
+      "subtitle": "Upload your first contact list to get started",
+      "cta": "Upload Contacts"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "downloadResults": "Download Results",
+      "retry": "Retry",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "pause": "Pause",
+      "resume": "Resume"
+    },
+    "details": {
+      "overview": "Overview",
+      "contacts": "Contacts",
+      "logs": "Logs",
+      "settings": "Settings"
+    }
+  },
+  "contacts": {
+    "title": "Contacts",
+    "subtitle": "Manage and view your enriched contacts",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "position": "Position",
+      "status": "Status",
+      "lastEnriched": "Last Enriched",
+      "source": "Source",
+      "confidence": "Confidence",
+      "verified": "Verified"
+    },
+    "filters": {
+      "all": "All Contacts",
+      "enriched": "Enriched",
+      "needsEnrichment": "Needs Enrichment",
+      "verified": "Verified",
+      "unverified": "Unverified"
+    },
+    "actions": {
+      "enrich": "Enrich",
+      "verify": "Verify",
+      "export": "Export",
+      "merge": "Merge",
+      "addToCrm": "Add to CRM"
+    },
+    "empty": {
+      "title": "No contacts found",
+      "subtitle": "Import your first contact list to get started",
+      "cta": "Import Contacts"
+    }
+  },
+  "crm": {
+    "title": "CRM",
+    "subtitle": "Manage your customer relationships",
+    "contacts": {
+      "title": "Contacts",
+      "addContact": "Add Contact",
+      "editContact": "Edit Contact",
+      "deleteContact": "Delete Contact",
+      "contactDetails": "Contact Details"
+    },
+    "companies": {
+      "title": "Companies",
+      "addCompany": "Add Company",
+      "editCompany": "Edit Company",
+      "deleteCompany": "Delete Company"
+    },
+    "deals": {
+      "title": "Deals",
+      "addDeal": "Add Deal",
+      "editDeal": "Edit Deal",
+      "deleteDeal": "Delete Deal",
+      "dealValue": "Deal Value",
+      "stage": "Stage",
+      "probability": "Probability"
+    },
+    "activities": {
+      "title": "Activities",
+      "addActivity": "Add Activity",
+      "call": "Call",
+      "email": "Email",
+      "meeting": "Meeting",
+      "task": "Task",
+      "note": "Note"
+    }
+  },
+  "billing": {
+    "title": "Billing & Credits",
+    "subtitle": "Manage your subscription and credits",
+    "currentPlan": "Current Plan",
+    "creditsRemaining": "Credits Remaining",
+    "usage": "Usage",
+    "history": "Billing History",
+    "addCredits": "Add Credits",
+    "changePlan": "Change Plan",
+    "paymentMethod": "Payment Method",
+    "nextBilling": "Next Billing Date",
+    "cancelSubscription": "Cancel Subscription",
+    "upgradeNow": "Upgrade Now",
+    "plans": {
+      "free": "Free",
+      "starter": "Starter",
+      "professional": "Professional",
+      "enterprise": "Enterprise"
+    },
+    "features": {
+      "contacts": "Contacts per month",
+      "enrichment": "Email & Phone enrichment",
+      "verification": "Email verification",
+      "apiAccess": "API access",
+      "support": "Support",
+      "integrations": "Integrations",
+      "teamMembers": "Team members"
+    },
+    "creditHistory": {
+      "title": "Credit History",
+      "purchased": "Purchased",
+      "used": "Used",
+      "remaining": "Remaining",
+      "transaction": "Transaction",
+      "amount": "Amount",
+      "date": "Date"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": {
+      "title": "Profile Settings",
+      "personalInfo": "Personal Information",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "company": "Company",
+      "position": "Position",
+      "timezone": "Timezone",
+      "language": "Language",
+      "avatar": "Profile Picture"
+    },
+    "security": {
+      "title": "Security Settings",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "twoFactor": "Two-Factor Authentication",
+      "enable2FA": "Enable 2FA",
+      "disable2FA": "Disable 2FA",
+      "activeSessions": "Active Sessions",
+      "revokeSession": "Revoke Session"
+    },
+    "notifications": {
+      "title": "Notification Preferences",
+      "emailNotifications": "Email Notifications",
+      "jobCompletion": "Job Completion Alerts",
+      "creditWarnings": "Credit Warnings",
+      "weeklySummary": "Weekly Summary",
+      "systemUpdates": "System Updates",
+      "marketingEmails": "Marketing Emails"
+    },
+    "enrichment": {
+      "title": "Enrichment Settings",
+      "autoEnrich": "Automatic Enrichment",
+      "minimumConfidence": "Minimum Confidence Level",
+      "providers": "Enrichment Providers",
+      "priority": "Provider Priority",
+      "retryFailed": "Retry Failed Enrichments"
+    },
+    "api": {
+      "title": "API Settings",
+      "apiKeys": "API Keys",
+      "createKey": "Create API Key",
+      "revokeKey": "Revoke Key",
+      "keyName": "Key Name",
+      "permissions": "Permissions",
+      "lastUsed": "Last Used",
+      "documentation": "API Documentation"
+    },
+    "team": {
+      "title": "Team Management",
+      "inviteMembers": "Invite Team Members",
+      "membersList": "Team Members",
+      "roles": "Roles & Permissions",
+      "removeMember": "Remove Member",
+      "changeRole": "Change Role"
+    },
+    "integrations": {
+      "title": "Integrations",
+      "connected": "Connected",
+      "available": "Available",
+      "configure": "Configure",
+      "disconnect": "Disconnect",
+      "webhook": "Webhook URL",
+      "zapier": "Zapier",
+      "salesforce": "Salesforce",
+      "hubspot": "HubSpot"
+    }
+  },
+  "integrations": {
+    "title": "Integrations",
+    "subtitle": "Connect with your favorite tools and platforms",
+    "categories": {
+      "crm": "CRM Systems",
+      "marketing": "Marketing Tools",
+      "productivity": "Productivity",
+      "analytics": "Analytics",
+      "communication": "Communication"
+    },
+    "status": {
+      "connected": "Connected",
+      "available": "Available",
+      "comingSoon": "Coming Soon"
+    },
+    "actions": {
+      "connect": "Connect",
+      "configure": "Configure",
+      "disconnect": "Disconnect",
+      "reconnect": "Reconnect"
+    }
+  },
+  "apiTokens": {
+    "title": "API Tokens",
+    "subtitle": "Manage your API access tokens",
+    "createToken": "Create New Token",
+    "tokenName": "Token Name",
+    "permissions": "Permissions",
+    "expiresAt": "Expires At",
+    "lastUsed": "Last Used",
+    "neverUsed": "Never used",
+    "revoke": "Revoke",
+    "copy": "Copy",
+    "regenerate": "Regenerate",
+    "documentation": "View API Documentation"
+  },
+  "search": {
+    "placeholder": "Search leads, companies, campaigns...",
+    "noResults": "No results found",
+    "suggestions": "Suggestions",
+    "recent": "Recent searches"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "notFound": "The requested resource was not found.",
+    "validation": "Please check your input and try again.",
+    "fileUpload": "Failed to upload file. Please try again.",
+    "enrichment": "Enrichment failed. Please contact support.",
+    "insufficientCredits": "Insufficient credits. Please add more credits to continue.",
+    "rateLimited": "Too many requests. Please try again later.",
+    "serverError": "Server error. Please contact support if this persists."
+  },
+  "success": {
+    "fileUploaded": "File uploaded successfully!",
+    "settingsSaved": "Settings saved successfully!",
+    "enrichmentStarted": "Enrichment process started!",
+    "contactsExported": "Contacts exported successfully!",
+    "profileUpdated": "Profile updated successfully!",
+    "passwordChanged": "Password changed successfully!",
+    "integrationConnected": "Integration connected successfully!",
+    "tokenCreated": "API token created successfully!",
+    "memberInvited": "Team member invited successfully!"
+  },
+  "footer": {
+    "allRightsReserved": "All rights reserved",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "contactUs": "Contact Us"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications",
+    "types": {
+      "jobCompleted": "Job completed",
+      "lowCredits": "Low credits warning",
+      "systemUpdate": "System update",
+      "teamInvite": "Team invitation"
+    }
+  }
+} 

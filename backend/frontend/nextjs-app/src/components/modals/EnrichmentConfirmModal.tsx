@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Phone, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface EnrichmentConfirmModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
   onConfirm,
   fileName
 }) => {
+  const { t, formatMessage } = useLanguage();
+  
   const [enrichmentType, setEnrichmentType] = useState<EnrichmentType>({
     email: true,
     phone: true
@@ -72,11 +75,8 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    📤 IMPORT CSV & SCRAPING
+                    📤 {t('enrichment.modal.title')}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Le traitement n'est plus automatique à l'import
-                  </p>
                 </div>
               </div>
               <button
@@ -95,7 +95,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-blue-500 mr-2" />
                   <span className="text-sm font-medium text-blue-900">
-                    Fichier sélectionné: {fileName}
+                    {formatMessage('enrichment.modal.fileSelected', { fileName })}
                   </span>
                 </div>
               </div>
@@ -103,7 +103,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
 
             <div className="mb-6">
               <h4 className="text-base font-semibold text-gray-900 mb-4">
-                Souhaitez-vous enrichir avec :
+                {t('enrichment.modal.chooseEnrichment')}
               </h4>
               
               <div className="space-y-3">
@@ -136,12 +136,12 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                       <span className={`font-medium ${
                         enrichmentType.email ? 'text-green-900' : 'text-gray-700'
                       }`}>
-                        ☑️ Email
+                        ☑️ {t('enrichment.modal.email.label')}
                       </span>
                       <p className={`text-sm ${
                         enrichmentType.email ? 'text-green-700' : 'text-gray-500'
                       }`}>
-                        Rechercher et vérifier les adresses email
+                        {t('enrichment.modal.email.description')}
                       </p>
                     </div>
                   </div>
@@ -176,12 +176,12 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                       <span className={`font-medium ${
                         enrichmentType.phone ? 'text-blue-900' : 'text-gray-700'
                       }`}>
-                        ☑️ Téléphone
+                        ☑️ {t('enrichment.modal.phone.label')}
                       </span>
                       <p className={`text-sm ${
                         enrichmentType.phone ? 'text-blue-700' : 'text-gray-500'
                       }`}>
-                        Rechercher et vérifier les numéros de téléphone
+                        {t('enrichment.modal.phone.description')}
                       </p>
                     </div>
                   </div>
@@ -193,7 +193,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                     <div className="flex items-center">
                       <Zap className="h-4 w-4 text-purple-600 mr-2" />
                       <span className="text-sm font-medium text-purple-900">
-                        ☑️ Les deux - Enrichissement complet activé
+                        ☑️ {t('enrichment.modal.both')}
                       </span>
                     </div>
                   </div>
@@ -207,7 +207,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                 <div className="flex items-center">
                   <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
                   <span className="text-sm font-medium text-red-900">
-                    Veuillez sélectionner au moins une option d'enrichissement
+                    {t('enrichment.modal.selectAtLeastOne')}
                   </span>
                 </div>
               </div>
@@ -221,7 +221,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
               >
-                Annuler
+                {t('enrichment.modal.cancel')}
               </button>
               <button
                 onClick={handleSubmit}
@@ -232,7 +232,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                     : 'text-gray-400 bg-gray-200 cursor-not-allowed'
                 }`}
               >
-                Démarrer l'enrichissement
+                {t('enrichment.modal.startEnrichment')}
               </button>
             </div>
           </div>

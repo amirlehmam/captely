@@ -27,9 +27,11 @@ import toast from 'react-hot-toast';
 import { useFileUpload, useJobs, useJob } from '../hooks/useApi';
 import { useEnrichmentConfirm } from '../hooks/useEnrichmentConfirm';
 import { EnrichmentType } from '../components/modals/EnrichmentConfirmModal';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ImportPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t, formatMessage } = useLanguage();
   
   // File upload state
   const [dragActive, setDragActive] = useState(false);
@@ -66,22 +68,22 @@ const ImportPage: React.FC = () => {
                        file.name.toLowerCase().endsWith('.xls');
     
     if (!isValidType) {
-      errors.push('Please upload a CSV or Excel file (.csv, .xlsx, .xls)');
+      errors.push(t('import.validation.csvOrExcel'));
     }
     
     // Check file size (max 50MB)
     const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
-      errors.push('File size must be less than 50MB');
+      errors.push(t('import.validation.maxSize'));
     }
     
     // Check if file is not empty
     if (file.size === 0) {
-      errors.push('File appears to be empty');
+      errors.push(t('import.validation.notEmpty'));
     }
     
     return errors;
-  }, []);
+  }, [t]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -187,7 +189,7 @@ const ImportPage: React.FC = () => {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
     
-    toast.success('Sample CSV downloaded!');
+    toast.success(t('success.fileUploaded'));
   };
 
   // Calculate recent stats
@@ -209,10 +211,10 @@ const ImportPage: React.FC = () => {
         className="text-center"
       >
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Import Contacts
+          {t('import.title')}
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Upload your contact list to start the enrichment process. Choose your enrichment options and we'll find emails, phone numbers, and verify contact information automatically.
+          {t('import.subtitle')}
         </p>
       </motion.div>
 
@@ -228,7 +230,7 @@ const ImportPage: React.FC = () => {
             <div className="flex items-center">
               <Users className="h-8 w-8 text-blue-500 mr-3" />
               <div>
-                <p className="text-sm font-semibold text-blue-700">Total Processed</p>
+                <p className="text-sm font-semibold text-blue-700">{t('import.stats.totalProcessed')}</p>
                 <p className="text-2xl font-bold text-blue-900">{totalContactsProcessed.toLocaleString()}</p>
               </div>
             </div>
@@ -238,7 +240,7 @@ const ImportPage: React.FC = () => {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-green-500 mr-3" />
               <div>
-                <p className="text-sm font-semibold text-green-700">Avg Success Rate</p>
+                <p className="text-sm font-semibold text-green-700">{t('import.stats.avgSuccessRate')}</p>
                 <p className="text-2xl font-bold text-green-900">{avgSuccessRate.toFixed(1)}%</p>
               </div>
             </div>
@@ -248,7 +250,7 @@ const ImportPage: React.FC = () => {
             <div className="flex items-center">
               <BarChart3 className="h-8 w-8 text-purple-500 mr-3" />
               <div>
-                <p className="text-sm font-semibold text-purple-700">Total Batches</p>
+                <p className="text-sm font-semibold text-purple-700">{t('import.stats.totalBatches')}</p>
                 <p className="text-2xl font-bold text-purple-900">{jobs.length}</p>
               </div>
             </div>
@@ -279,7 +281,7 @@ const ImportPage: React.FC = () => {
                       <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
                       <div>
                         <h4 className="text-sm font-semibold text-red-800">
-                          File Validation Errors
+                          {t('import.validation.title')}
                         </h4>
                         <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
                           {validationErrors.map((error, index) => (
@@ -337,12 +339,12 @@ const ImportPage: React.FC = () => {
                         {uploading ? (
                           <>
                             <Loader className="h-4 w-4 mr-2 animate-spin" />
-                            Uploading...
+                            {t('import.upload.uploading')}
                           </>
                         ) : (
                           <>
                             <Upload className="h-4 w-4 mr-2" />
-                            Start Enrichment
+                            {t('import.buttons.startEnrichment')}
                           </>
                         )}
                       </button>
@@ -352,7 +354,7 @@ const ImportPage: React.FC = () => {
                         className="inline-flex items-center px-6 py-3 border border-gray-200 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 disabled:opacity-50"
                       >
                         <X className="h-4 w-4 mr-2" />
-                        Remove
+                        {t('import.buttons.removeFile')}
                       </button>
                     </div>
                   </div>
@@ -363,13 +365,13 @@ const ImportPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xl font-semibold text-gray-900">
-                        Drop your CSV or Excel file here
+                        {t('import.dropzone.title')}
                       </p>
                       <p className="text-sm text-gray-600 mt-2">
-                        or click to browse files
+                        {t('import.dropzone.subtitle')}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Supports .csv, .xlsx, .xls files up to 50MB
+                        {t('import.dropzone.fileTypes')}
                       </p>
                     </div>
                     <input
@@ -384,7 +386,7 @@ const ImportPage: React.FC = () => {
                       className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 cursor-pointer transition-all duration-200"
                     >
                       <Upload className="h-4 w-4 mr-2" />
-                      Browse Files
+                      {t('common.browse')}
                     </label>
                   </div>
                 )}
@@ -401,7 +403,7 @@ const ImportPage: React.FC = () => {
                   >
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-sm font-semibold text-gray-700">
-                        Uploading and starting enrichment...
+                        {t('import.upload.uploading')}
                       </span>
                       <span className="text-sm font-semibold text-primary-600">
                         {progress}%
@@ -416,7 +418,7 @@ const ImportPage: React.FC = () => {
                       />
                     </div>
                     <p className="text-xs text-gray-600 mt-2">
-                      Your file is being processed and enrichment tasks are being queued...
+                      {t('import.upload.progress')}
                     </p>
                   </motion.div>
                 )}
@@ -434,13 +436,13 @@ const ImportPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
-                        <span className="text-red-700">Upload failed: {uploadError}</span>
+                        <span className="text-red-700">{formatMessage('import.upload.error', { error: uploadError })}</span>
                       </div>
                       <button
                         onClick={() => reset()}
                         className="text-sm text-red-600 hover:text-red-800 font-medium"
                       >
-                        Try Again
+                        {t('common.retry')}
                       </button>
                     </div>
                   </motion.div>
@@ -460,10 +462,10 @@ const ImportPage: React.FC = () => {
               
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">
-                  Upload Successful!
+                  {t('import.upload.success.title')}
                 </h3>
                 <p className="text-gray-600 mt-2">
-                  Your file has been uploaded and enrichment has started
+                  {t('import.upload.success.subtitle')}
                 </p>
               </div>
               
@@ -479,7 +481,7 @@ const ImportPage: React.FC = () => {
                       <div className="text-2xl font-bold text-blue-900">
                         {currentJob.total}
                       </div>
-                      <div className="text-sm font-medium text-blue-700">Total Contacts</div>
+                      <div className="text-sm font-medium text-blue-700">{t('batches.table.contacts')}</div>
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-green-900">
@@ -491,13 +493,13 @@ const ImportPage: React.FC = () => {
                       <div className="text-2xl font-bold text-purple-900">
                         {currentJob.progress.toFixed(1)}%
                       </div>
-                      <div className="text-sm font-medium text-purple-700">Progress</div>
+                      <div className="text-sm font-medium text-purple-700">{t('batches.table.progress')}</div>
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-yellow-900">
                         {currentJob.status}
                       </div>
-                      <div className="text-sm font-medium text-yellow-700">Status</div>
+                      <div className="text-sm font-medium text-yellow-700">{t('batches.table.status')}</div>
                     </div>
                   </div>
                   
@@ -519,7 +521,7 @@ const ImportPage: React.FC = () => {
                   className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 transition-all duration-200"
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  View Progress
+                  {t('import.buttons.viewProgress')}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
                 
@@ -531,7 +533,7 @@ const ImportPage: React.FC = () => {
                   className="inline-flex items-center px-6 py-3 border border-gray-200 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload Another File
+                  {t('import.buttons.uploadAnother')}
                 </button>
               </div>
             </div>
@@ -547,17 +549,17 @@ const ImportPage: React.FC = () => {
         className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8"
       >
         <h3 className="text-lg font-bold text-blue-900 mb-6">
-          CSV Format Requirements
+          {t('import.requirements.title')}
         </h3>
         <div className="space-y-4">
           <p className="text-blue-800 font-medium">
-            Your CSV file should include the following columns (headers are required):
+            {t('import.requirements.subtitle')}
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-white rounded-lg p-4 border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                Required Fields:
+                {t('import.requirements.required')}
               </h4>
               <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
                 <li><code className="bg-blue-100 px-1 rounded">first_name</code></li>
@@ -568,7 +570,7 @@ const ImportPage: React.FC = () => {
             <div className="bg-white rounded-lg p-4 border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
                 <Clock className="h-4 w-4 text-yellow-500 mr-2" />
-                Optional Fields:
+                {t('import.requirements.optional')}
               </h4>
               <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
                 <li><code className="bg-blue-100 px-1 rounded">position</code></li>
@@ -584,7 +586,7 @@ const ImportPage: React.FC = () => {
               className="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-semibold rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
             >
               <Download className="h-4 w-4 mr-2" />
-              Download Sample CSV
+              {t('import.requirements.downloadSample')}
             </button>
           </div>
         </div>
@@ -601,13 +603,13 @@ const ImportPage: React.FC = () => {
           <div className="px-8 py-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900">
-                Recent Import Jobs
+                {t('import.recentJobs.title')}
               </h3>
               <Link
                 to="/batches"
                 className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center"
               >
-                View All
+                {t('import.recentJobs.viewAll')}
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
@@ -653,7 +655,7 @@ const ImportPage: React.FC = () => {
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="font-medium text-gray-700">Progress:</span>
+                        <span className="font-medium text-gray-700">{t('import.recentJobs.progress')}</span>
                         <div className="mt-1">
                           <span className="font-semibold text-gray-900">{job.completed}/{job.total}</span>
                           <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
@@ -668,17 +670,17 @@ const ImportPage: React.FC = () => {
                       </div>
                       
                       <div>
-                        <span className="font-medium text-gray-700">Success Rate:</span>
+                        <span className="font-medium text-gray-700">{t('import.recentJobs.successRate')}</span>
                         <p className="font-semibold text-green-600">{job.success_rate?.toFixed(1) || 0}%</p>
                       </div>
                       
                       <div>
-                        <span className="font-medium text-gray-700">Emails Found:</span>
+                        <span className="font-medium text-gray-700">{t('import.recentJobs.emailsFound')}</span>
                         <p className="font-semibold text-blue-600">{job.emails_found || 0}</p>
                       </div>
                       
                       <div>
-                        <span className="font-medium text-gray-700">Credits Used:</span>
+                        <span className="font-medium text-gray-700">{t('import.recentJobs.creditsUsed')}</span>
                         <p className="font-semibold text-purple-600">{job.credits_used || 0}</p>
                       </div>
                     </div>

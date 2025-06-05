@@ -1,0 +1,551 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "view": "Voir",
+    "download": "Télécharger",
+    "upload": "Téléverser",
+    "browse": "Parcourir",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "import": "Importer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "close": "Fermer",
+    "refresh": "Actualiser",
+    "retry": "Réessayer",
+    "success": "Succès",
+    "error": "Erreur",
+    "warning": "Avertissement",
+    "info": "Information",
+    "yes": "Oui",
+    "no": "Non",
+    "ok": "OK",
+    "actions": "Actions",
+    "settings": "Paramètres",
+    "help": "Aide",
+    "contact": "Contact",
+    "about": "À propos",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "welcome": "Bienvenue",
+    "goodMorning": "Bonjour",
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "company": "Entreprise",
+    "position": "Poste",
+    "location": "Localisation",
+    "industry": "Secteur",
+    "status": "Statut",
+    "createdAt": "Créé le",
+    "updatedAt": "Mis à jour le",
+    "lastSeen": "Dernière visite",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
+    "total": "Total",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois-ci",
+    "lastMonth": "Le mois dernier"
+  },
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "import": "Importer",
+    "batches": "Lots",
+    "contacts": "Contacts",
+    "exports": "Exports",
+    "billing": "Facturation",
+    "settings": "Paramètres",
+    "credits": "Crédits",
+    "crm": "CRM",
+    "integrations": "Intégrations",
+    "apiTokens": "Jetons API",
+    "team": "Équipe"
+  },
+  "auth": {
+    "login": {
+      "title": "Se connecter",
+      "subtitle": "Bon retour ! Veuillez vous connecter à votre compte",
+      "emailLabel": "Adresse email",
+      "passwordLabel": "Mot de passe",
+      "rememberMe": "Se souvenir de moi",
+      "forgotPassword": "Mot de passe oublié ?",
+      "signInButton": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "createAccount": "Créez-en un ici",
+      "invalidCredentials": "Email ou mot de passe invalide",
+      "loginSuccess": "Connexion réussie !",
+      "emailRequired": "L'email est requis",
+      "passwordRequired": "Le mot de passe est requis"
+    },
+    "signup": {
+      "title": "Créer un compte",
+      "subtitle": "Commencez avec votre compte gratuit",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom de famille",
+      "emailLabel": "Adresse email",
+      "passwordLabel": "Mot de passe",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "createAccountButton": "Créer un compte",
+      "haveAccount": "Vous avez déjà un compte ?",
+      "signIn": "Connectez-vous ici",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "accountCreated": "Compte créé avec succès !",
+      "termsAccept": "J'accepte les Conditions d'utilisation et la Politique de confidentialité"
+    },
+    "forgotPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "subtitle": "Entrez votre email pour recevoir les instructions de réinitialisation",
+      "emailLabel": "Adresse email",
+      "sendInstructions": "Envoyer les instructions",
+      "backToLogin": "Retour à la connexion",
+      "emailSent": "Instructions de réinitialisation envoyées à votre email",
+      "emailNotFound": "Aucun compte trouvé avec cet email"
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bon retour !",
+    "overview": "Voici ce qui se passe avec votre compte",
+    "stats": {
+      "totalContacts": "Contacts totaux",
+      "enrichedContacts": "Contacts enrichis",
+      "successRate": "Taux de réussite",
+      "creditsRemaining": "Crédits restants",
+      "activeJobs": "Tâches actives",
+      "completedJobs": "Tâches terminées",
+      "pendingJobs": "Tâches en attente",
+      "failedJobs": "Tâches échouées"
+    },
+    "recentActivity": {
+      "title": "Activité récente",
+      "noActivity": "Aucune activité récente",
+      "viewAll": "Voir toute l'activité"
+    },
+    "quickActions": {
+      "title": "Actions rapides",
+      "subtitle": "Tâches courantes et liens utiles",
+      "newUpload": "Nouvel import",
+      "viewResults": "Voir les résultats",
+      "exportData": "Exporter les données",
+      "manageTeam": "Gérer l'équipe"
+    },
+    "systemHealth": {
+      "title": "État du système",
+      "allSystemsOperational": "Tous les systèmes sont opérationnels",
+      "enrichmentService": "Service d'enrichissement",
+      "apiService": "Service API",
+      "dataProcessing": "Traitement des données"
+    }
+  },
+  "enrichment": {
+    "modal": {
+      "title": "Import CSV & Enrichissement",
+      "fileSelected": "Fichier sélectionné : {fileName}",
+      "chooseEnrichment": "Souhaitez-vous enrichir avec :",
+      "email": {
+        "label": "Email",
+        "description": "Rechercher et vérifier les adresses email"
+      },
+      "phone": {
+        "label": "Téléphone", 
+        "description": "Rechercher et vérifier les numéros de téléphone"
+      },
+      "both": "Les deux - Enrichissement complet activé",
+      "selectAtLeastOne": "Veuillez sélectionner au moins une option d'enrichissement",
+      "cancel": "Annuler",
+      "startEnrichment": "Démarrer l'enrichissement"
+    },
+    "types": {
+      "email": "Email",
+      "phone": "Téléphone"
+    },
+    "status": {
+      "pending": "En attente",
+      "processing": "En traitement",
+      "completed": "Terminé",
+      "failed": "Échoué",
+      "queued": "En file d'attente",
+      "running": "En cours",
+      "paused": "En pause",
+      "cancelled": "Annulé"
+    },
+    "providers": {
+      "dropcontact": "Dropcontact",
+      "apollo": "Apollo",
+      "hunter": "Hunter",
+      "clearbit": "Clearbit",
+      "icypeas": "Icypeas"
+    }
+  },
+  "import": {
+    "title": "Importer des contacts",
+    "subtitle": "Téléversez votre liste de contacts pour démarrer le processus d'enrichissement. Choisissez vos options d'enrichissement et nous trouverons automatiquement les emails, numéros de téléphone, et vérifierons les informations de contact.",
+    "dropzone": {
+      "title": "Déposez votre fichier CSV ou Excel ici",
+      "subtitle": "ou cliquez pour parcourir les fichiers",
+      "fileTypes": "Supporte les fichiers .csv, .xlsx, .xls jusqu'à 50MB"
+    },
+    "upload": {
+      "uploading": "Téléversement et démarrage de l'enrichissement...",
+      "progress": "Votre fichier est en cours de traitement et les tâches d'enrichissement sont en file d'attente...",
+      "success": {
+        "title": "Téléversement réussi !",
+        "subtitle": "Votre fichier a été téléversé et l'enrichissement a commencé"
+      },
+      "error": "Échec du téléversement : {error}"
+    },
+    "validation": {
+      "title": "Erreurs de validation du fichier",
+      "csvOrExcel": "Veuillez téléverser un fichier CSV ou Excel (.csv, .xlsx, .xls)",
+      "maxSize": "La taille du fichier doit être inférieure à 50MB",
+      "notEmpty": "Le fichier semble être vide"
+    },
+    "requirements": {
+      "title": "Exigences du format CSV",
+      "subtitle": "Votre fichier CSV doit inclure les colonnes suivantes (les en-têtes sont obligatoires) :",
+      "required": "Champs obligatoires :",
+      "optional": "Champs optionnels :",
+      "downloadSample": "Télécharger un CSV d'exemple"
+    },
+    "stats": {
+      "totalProcessed": "Total traité",
+      "avgSuccessRate": "Taux de réussite moyen",
+      "totalBatches": "Total des lots"
+    },
+    "recentJobs": {
+      "title": "Travaux d'import récents",
+      "viewAll": "Voir tout",
+      "progress": "Progression :",
+      "successRate": "Taux de réussite :",
+      "emailsFound": "Emails trouvés :",
+      "creditsUsed": "Crédits utilisés :"
+    },
+    "buttons": {
+      "startEnrichment": "Démarrer l'enrichissement",
+      "viewProgress": "Voir la progression",
+      "uploadAnother": "Téléverser un autre fichier",
+      "removeFile": "Supprimer"
+    }
+  },
+  "batches": {
+    "title": "Lots d'import",
+    "subtitle": "Suivez et gérez vos lots d'enrichissement de contacts",
+    "table": {
+      "fileName": "Nom du fichier",
+      "status": "Statut",
+      "progress": "Progression",
+      "contacts": "Contacts",
+      "successRate": "Taux de réussite",
+      "creditsUsed": "Crédits utilisés",
+      "createdAt": "Créé le",
+      "actions": "Actions",
+      "emailsFound": "Emails trouvés",
+      "phonesFound": "Téléphones trouvés",
+      "duration": "Durée",
+      "completedAt": "Terminé le"
+    },
+    "filters": {
+      "all": "Tous les lots",
+      "pending": "En attente",
+      "processing": "En traitement",
+      "completed": "Terminé",
+      "failed": "Échoué",
+      "queued": "En file d'attente"
+    },
+    "empty": {
+      "title": "Aucun lot pour le moment",
+      "subtitle": "Téléversez votre première liste de contacts pour commencer",
+      "cta": "Téléverser des contacts"
+    },
+    "actions": {
+      "viewDetails": "Voir les détails",
+      "downloadResults": "Télécharger les résultats",
+      "retry": "Réessayer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre"
+    },
+    "details": {
+      "overview": "Vue d'ensemble",
+      "contacts": "Contacts",
+      "logs": "Journaux",
+      "settings": "Paramètres"
+    }
+  },
+  "contacts": {
+    "title": "Contacts",
+    "subtitle": "Gérez et visualisez vos contacts enrichis",
+    "table": {
+      "name": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "company": "Entreprise",
+      "position": "Position",
+      "status": "Statut",
+      "lastEnriched": "Dernier enrichissement",
+      "source": "Source",
+      "confidence": "Confiance",
+      "verified": "Vérifié"
+    },
+    "filters": {
+      "all": "Tous les contacts",
+      "enriched": "Enrichis",
+      "needsEnrichment": "Nécessitent un enrichissement",
+      "verified": "Vérifiés",
+      "unverified": "Non vérifiés"
+    },
+    "actions": {
+      "enrich": "Enrichir",
+      "verify": "Vérifier",
+      "export": "Exporter",
+      "merge": "Fusionner",
+      "addToCrm": "Ajouter au CRM"
+    },
+    "empty": {
+      "title": "Aucun contact trouvé",
+      "subtitle": "Importez votre première liste de contacts pour commencer",
+      "cta": "Importer des contacts"
+    }
+  },
+  "crm": {
+    "title": "CRM",
+    "subtitle": "Gérez vos relations clients",
+    "contacts": {
+      "title": "Contacts",
+      "addContact": "Ajouter un contact",
+      "editContact": "Modifier le contact",
+      "deleteContact": "Supprimer le contact",
+      "contactDetails": "Détails du contact"
+    },
+    "companies": {
+      "title": "Entreprises",
+      "addCompany": "Ajouter une entreprise",
+      "editCompany": "Modifier l'entreprise",
+      "deleteCompany": "Supprimer l'entreprise"
+    },
+    "deals": {
+      "title": "Affaires",
+      "addDeal": "Ajouter une affaire",
+      "editDeal": "Modifier l'affaire",
+      "deleteDeal": "Supprimer l'affaire",
+      "dealValue": "Valeur de l'affaire",
+      "stage": "Étape",
+      "probability": "Probabilité"
+    },
+    "activities": {
+      "title": "Activités",
+      "addActivity": "Ajouter une activité",
+      "call": "Appel",
+      "email": "Email",
+      "meeting": "Réunion",
+      "task": "Tâche",
+      "note": "Note"
+    }
+  },
+  "billing": {
+    "title": "Facturation et crédits",
+    "subtitle": "Gérez votre abonnement et vos crédits",
+    "currentPlan": "Plan actuel",
+    "creditsRemaining": "Crédits restants",
+    "usage": "Utilisation",
+    "history": "Historique de facturation",
+    "addCredits": "Ajouter des crédits",
+    "changePlan": "Changer de plan",
+    "paymentMethod": "Méthode de paiement",
+    "nextBilling": "Prochaine facturation",
+    "cancelSubscription": "Annuler l'abonnement",
+    "upgradeNow": "Mettre à niveau maintenant",
+    "plans": {
+      "free": "Gratuit",
+      "starter": "Débutant",
+      "professional": "Professionnel",
+      "enterprise": "Entreprise"
+    },
+    "features": {
+      "contacts": "Contacts par mois",
+      "enrichment": "Enrichissement email et téléphone",
+      "verification": "Vérification email",
+      "apiAccess": "Accès API",
+      "support": "Support",
+      "integrations": "Intégrations",
+      "teamMembers": "Membres d'équipe"
+    },
+    "creditHistory": {
+      "title": "Historique des crédits",
+      "purchased": "Achetés",
+      "used": "Utilisés",
+      "remaining": "Restants",
+      "transaction": "Transaction",
+      "amount": "Montant",
+      "date": "Date"
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "profile": {
+      "title": "Paramètres de profil",
+      "personalInfo": "Informations personnelles",
+      "firstName": "Prénom",
+      "lastName": "Nom de famille",
+      "email": "Adresse email",
+      "phone": "Numéro de téléphone",
+      "company": "Entreprise",
+      "position": "Poste",
+      "timezone": "Fuseau horaire",
+      "language": "Langue",
+      "avatar": "Photo de profil"
+    },
+    "security": {
+      "title": "Paramètres de sécurité",
+      "changePassword": "Changer le mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "twoFactor": "Authentification à deux facteurs",
+      "enable2FA": "Activer 2FA",
+      "disable2FA": "Désactiver 2FA",
+      "activeSessions": "Sessions actives",
+      "revokeSession": "Révoquer la session"
+    },
+    "notifications": {
+      "title": "Préférences de notification",
+      "emailNotifications": "Notifications email",
+      "jobCompletion": "Alertes de fin de tâche",
+      "creditWarnings": "Avertissements de crédits",
+      "weeklySummary": "Résumé hebdomadaire",
+      "systemUpdates": "Mises à jour système",
+      "marketingEmails": "Emails marketing"
+    },
+    "enrichment": {
+      "title": "Paramètres d'enrichissement",
+      "autoEnrich": "Enrichissement automatique",
+      "minimumConfidence": "Niveau de confiance minimum",
+      "providers": "Fournisseurs d'enrichissement",
+      "priority": "Priorité des fournisseurs",
+      "retryFailed": "Réessayer les enrichissements échoués"
+    },
+    "api": {
+      "title": "Paramètres API",
+      "apiKeys": "Clés API",
+      "createKey": "Créer une clé API",
+      "revokeKey": "Révoquer la clé",
+      "keyName": "Nom de la clé",
+      "permissions": "Permissions",
+      "lastUsed": "Dernière utilisation",
+      "documentation": "Documentation API"
+    },
+    "team": {
+      "title": "Gestion d'équipe",
+      "inviteMembers": "Inviter des membres",
+      "membersList": "Membres de l'équipe",
+      "roles": "Rôles et permissions",
+      "removeMember": "Supprimer le membre",
+      "changeRole": "Changer le rôle"
+    },
+    "integrations": {
+      "title": "Intégrations",
+      "connected": "Connecté",
+      "available": "Disponible",
+      "configure": "Configurer",
+      "disconnect": "Déconnecter",
+      "webhook": "URL Webhook",
+      "zapier": "Zapier",
+      "salesforce": "Salesforce",
+      "hubspot": "HubSpot"
+    }
+  },
+  "integrations": {
+    "title": "Intégrations",
+    "subtitle": "Connectez-vous avec vos outils et plateformes préférés",
+    "categories": {
+      "crm": "Systèmes CRM",
+      "marketing": "Outils marketing",
+      "productivity": "Productivité",
+      "analytics": "Analytique",
+      "communication": "Communication"
+    },
+    "status": {
+      "connected": "Connecté",
+      "available": "Disponible",
+      "comingSoon": "Bientôt disponible"
+    },
+    "actions": {
+      "connect": "Connecter",
+      "configure": "Configurer",
+      "disconnect": "Déconnecter",
+      "reconnect": "Reconnecter"
+    }
+  },
+  "apiTokens": {
+    "title": "Jetons API",
+    "subtitle": "Gérez vos jetons d'accès API",
+    "createToken": "Créer un nouveau jeton",
+    "tokenName": "Nom du jeton",
+    "permissions": "Permissions",
+    "expiresAt": "Expire le",
+    "lastUsed": "Dernière utilisation",
+    "neverUsed": "Jamais utilisé",
+    "revoke": "Révoquer",
+    "copy": "Copier",
+    "regenerate": "Régénérer",
+    "documentation": "Voir la documentation API"
+  },
+  "search": {
+    "placeholder": "Rechercher prospects, entreprises, campagnes...",
+    "noResults": "Aucun résultat trouvé",
+    "suggestions": "Suggestions",
+    "recent": "Recherches récentes"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "network": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "unauthorized": "Vous n'êtes pas autorisé à effectuer cette action.",
+    "notFound": "La ressource demandée n'a pas été trouvée.",
+    "validation": "Veuillez vérifier votre saisie et réessayer.",
+    "fileUpload": "Échec du téléversement du fichier. Veuillez réessayer.",
+    "enrichment": "L'enrichissement a échoué. Veuillez contacter le support.",
+    "insufficientCredits": "Crédits insuffisants. Veuillez ajouter des crédits pour continuer.",
+    "rateLimited": "Trop de requêtes. Veuillez réessayer plus tard.",
+    "serverError": "Erreur serveur. Veuillez contacter le support si cela persiste."
+  },
+  "success": {
+    "fileUploaded": "Fichier téléversé avec succès !",
+    "settingsSaved": "Paramètres enregistrés avec succès !",
+    "enrichmentStarted": "Processus d'enrichissement démarré !",
+    "contactsExported": "Contacts exportés avec succès !",
+    "profileUpdated": "Profil mis à jour avec succès !",
+    "passwordChanged": "Mot de passe modifié avec succès !",
+    "integrationConnected": "Intégration connectée avec succès !",
+    "tokenCreated": "Jeton API créé avec succès !",
+    "memberInvited": "Membre d'équipe invité avec succès !"
+  },
+  "footer": {
+    "allRightsReserved": "Tous droits réservés",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "contactUs": "Nous contacter"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "noNotifications": "Aucune notification",
+    "types": {
+      "jobCompleted": "Tâche terminée",
+      "lowCredits": "Avertissement crédits faibles",
+      "systemUpdate": "Mise à jour système",
+      "teamInvite": "Invitation d'équipe"
+    }
+  }
+} 

@@ -7,6 +7,9 @@ import {
 } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
+// Language Context Provider - NEW
+import { LanguageProvider } from './contexts/LanguageContext';
+
 // Credit Context Provider - PRODUCTION READY
 import { CreditProvider } from './contexts/CreditContext';
 
@@ -62,50 +65,52 @@ function App() {
   console.log('📄 Rendering App with authentication:', isAuthenticated);
 
   return (
-    <CreditProvider>
-      <Router>
-        <Toaster position="top-right" />
+    <LanguageProvider>
+      <CreditProvider>
+        <Router>
+          <Toaster position="top-right" />
 
-        <Routes>
-          {/* Public */}
-          {!isAuthenticated && (
-            <>
-              <Route
-                path="/login"
-                element={<LoginPage onLogin={handleLogin} />}
-              />
-              <Route path="/signup" element={<SignupPage onLogin={handleLogin} />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </>
-          )}
+          <Routes>
+            {/* Public */}
+            {!isAuthenticated && (
+              <>
+                <Route
+                  path="/login"
+                  element={<LoginPage onLogin={handleLogin} />}
+                />
+                <Route path="/signup" element={<SignupPage onLogin={handleLogin} />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </>
+            )}
 
-          {/* Protected */}
-          {isAuthenticated && (
-            <>
-              <Route element={<Layout onLogout={handleLogout} />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/batches" element={<BatchesPage />} />
-                <Route path="/batches/:jobId" element={<BatchDetailPage />} />
-                <Route path="/import" element={<ImportPage />} />
-                <Route path="/integrations" element={<IntegrationsPage />} />
-                <Route path="/api-tokens" element={<ApiTokensPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/billing" element={<BillingPage />} />
-                
-                {/* CRM Routes */}
-                <Route path="/crm" element={<CRMPage />} />
-                
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="/signup" element={<Navigate to="/" replace />} />
-              <Route path="/forgot-password" element={<Navigate to="/" replace />} />
-            </>
-          )}
-        </Routes>
-      </Router>
-    </CreditProvider>
+            {/* Protected */}
+            {isAuthenticated && (
+              <>
+                <Route element={<Layout onLogout={handleLogout} />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/batches" element={<BatchesPage />} />
+                  <Route path="/batches/:jobId" element={<BatchDetailPage />} />
+                  <Route path="/import" element={<ImportPage />} />
+                  <Route path="/integrations" element={<IntegrationsPage />} />
+                  <Route path="/api-tokens" element={<ApiTokensPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/billing" element={<BillingPage />} />
+                  
+                  {/* CRM Routes */}
+                  <Route path="/crm" element={<CRMPage />} />
+                  
+                  <Route path="*" element={<NotFoundPage />} />
+                </Route>
+                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/signup" element={<Navigate to="/" replace />} />
+                <Route path="/forgot-password" element={<Navigate to="/" replace />} />
+              </>
+            )}
+          </Routes>
+        </Router>
+      </CreditProvider>
+    </LanguageProvider>
   );
 }
 
