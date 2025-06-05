@@ -227,7 +227,19 @@
       "privacyPolicy": "Privacy Policy",
       "marketingEmails": "Send me tips, product updates and special offers",
       "creatingAccount": "Creating account...",
-      "completeSignup": "Complete signup"
+      "completeSignup": "Complete signup",
+      "verifyEmail": "Verify your email address",
+      "verificationSent": "We sent a 6-digit code to",
+      "verificationCode": "Verification Code",
+      "verify": "Verify",
+      "resend": "Resend",
+      "resending": "Resending...",
+      "verificationCodeSent": "Verification code sent to your email!",
+      "verificationCodeFailed": "Failed to send verification code",
+      "emailVerified": "Email verified successfully!",
+      "invalidCode": "Invalid verification code",
+      "passwordsMatch": "Passwords match",
+      "passwordsDontMatch": "Passwords do not match"
     },
     "forgotPassword": {
       "title": "Reset Password",

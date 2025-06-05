@@ -30,11 +30,15 @@ interface SignupPageProps {
   onLogin: () => void;
 }
 
-// Professional email domains validation
+// Professional email domains validation - Enhanced with more domains
 const GENERIC_EMAIL_DOMAINS = [
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
   'icloud.com', 'live.com', 'msn.com', 'ymail.com', 'protonmail.com',
-  'mail.com', 'gmx.com', 'tutanota.com', 'zoho.com', 'fastmail.com'
+  'mail.com', 'gmx.com', 'tutanota.com', 'zoho.com', 'fastmail.com',
+  'me.com', 'mac.com', 'yandex.com', 'rediffmail.com', 'inbox.com',
+  'mail.ru', 'rambler.ru', 'qq.com', '163.com', 'sina.com',
+  'web.de', 't-online.de', 'freenet.de', 'orange.fr', 'laposte.net',
+  'free.fr', 'wanadoo.fr', 'hotmail.fr', 'yahoo.fr', 'sfr.fr'
 ];
 
 // Mock confetti for now - will be replaced with real implementation
@@ -67,6 +71,14 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
   const [errors, setErrors] = useState<Partial<SignupFormData>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof SignupFormData, boolean>>>({});
+  
+  // Enhanced features
+  const [emailVerificationStep, setEmailVerificationStep] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: '' });
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+  const [resendingCode, setResendingCode] = useState(false);
 
   useEffect(() => {
     // Mouse tracking for subtle parallax effect
@@ -117,6 +129,99 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
     }
     
     return '';
+  };
+
+  // Password strength checker
+  const checkPasswordStrength = (password: string) => {
+    let score = 0;
+    let feedback = '';
+    
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+    
+    if (score < 3) {
+      feedback = 'Weak - Add more characters, numbers, and symbols';
+    } else if (score < 5) {
+      feedback = 'Medium - Consider adding uppercase letters and symbols';
+    } else {
+      feedback = 'Strong - Great password!';
+    }
+    
+    return { score, feedback };
+  };
+
+  // Send email verification code
+  const sendVerificationCode = async (email: string) => {
+    try {
+      setIsValidatingEmail(true);
+      
+      const response = await fetch('/auth/send-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to send verification code');
+      }
+
+      toast.success(t('auth.signup.verificationCodeSent', 'Verification code sent to your email!'));
+      setEmailVerificationStep(true);
+    } catch (error: any) {
+      toast.error(error.message || t('auth.signup.verificationCodeFailed', 'Failed to send verification code'));
+    } finally {
+      setIsValidatingEmail(false);
+    }
+  };
+
+  // Verify email code
+  const verifyEmailCode = async () => {
+    try {
+      const response = await fetch('/auth/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          code: verificationCode 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Invalid verification code');
+      }
+
+      setEmailVerified(true);
+      setEmailVerificationStep(false);
+      toast.success(t('auth.signup.emailVerified', 'Email verified successfully!'));
+      return true;
+    } catch (error: any) {
+      toast.error(error.message || t('auth.signup.invalidCode', 'Invalid verification code'));
+      return false;
+    }
+  };
+
+  // Resend verification code
+  const resendVerificationCode = async () => {
+    try {
+      setResendingCode(true);
+      await sendVerificationCode(formData.email);
+    } catch (error) {
+      // Error already handled in sendVerificationCode
+    } finally {
+      setResendingCode(false);
+    }
   };
 
   const validateStep = (step: number): boolean => {
@@ -185,6 +290,28 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+
+    // Enhanced validation and feedback
+    if (field === 'password' && typeof value === 'string') {
+      setPasswordStrength(checkPasswordStrength(value));
+    }
+
+    if (field === 'confirmPassword' && typeof value === 'string') {
+      if (formData.password && value !== formData.password) {
+        setErrors(prev => ({ ...prev, confirmPassword: t('auth.signup.passwordMismatch', 'Passwords do not match') }));
+      } else if (value === formData.password && value.length > 0) {
+        setErrors(prev => ({ ...prev, confirmPassword: '' }));
+      }
+    }
+
+    if (field === 'email' && typeof value === 'string') {
+      const emailError = validateProfessionalEmail(value);
+      if (emailError) {
+        setErrors(prev => ({ ...prev, email: emailError }));
+      } else {
+        setErrors(prev => ({ ...prev, email: '' }));
+      }
     }
   };
 
@@ -288,9 +415,14 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
     }
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(2);
+      // OAuth users skip email verification (Google/Apple emails are already verified)
+      if (formData.authMethod === 'email' && !emailVerified) {
+        await sendVerificationCode(formData.email);
+      } else {
+        setCurrentStep(2);
+      }
     }
   };
 
@@ -370,6 +502,71 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
       setLoading(false);
     }
   };
+
+  const renderEmailVerification = () => (
+    <motion.div
+      key="emailVerification"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-6"
+    >
+      <div className="text-center mb-6">
+        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} mb-2`}>
+          {t('auth.signup.verifyEmail', 'Verify your email address')}
+        </h3>
+        <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
+          {t('auth.signup.verificationSent', 'We sent a 6-digit code to')} <strong>{formData.email}</strong>
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+            {t('auth.signup.verificationCode', 'Verification Code')}
+          </label>
+          <input
+            type="text"
+            value={verificationCode}
+            onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            className={`w-full px-4 py-3 text-center text-2xl font-mono tracking-widest border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 text-gray-100 border-gray-600 focus:ring-emerald-500 focus:border-emerald-500' 
+                : 'bg-gray-50 text-gray-900 border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+            }`}
+            placeholder="000000"
+            maxLength={6}
+          />
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={() => verifyEmailCode()}
+            disabled={verificationCode.length !== 6}
+            className={`flex-1 py-3 px-4 font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+              theme === 'dark' 
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {t('auth.signup.verify', 'Verify')}
+          </button>
+          
+          <button
+            onClick={resendVerificationCode}
+            disabled={resendingCode}
+            className={`px-4 py-3 border font-medium rounded-lg transition-all duration-200 ${
+              theme === 'dark' 
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            {resendingCode ? t('auth.signup.resending', 'Resending...') : t('auth.signup.resend', 'Resend')}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
 
   const renderStep1 = () => (
           <motion.div
@@ -653,29 +850,65 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                 {t('auth.signup.passwordLabel', 'Password')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                    errors.password && touched.password
-                      ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                      : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
-                  }`}
-                  placeholder="••••••••"
-                />
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.password && touched.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
+                                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    className={`w-full px-4 py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                      theme === 'dark' 
+                        ? 'bg-gray-700 text-gray-100 border-gray-600 placeholder-gray-400' 
+                        : 'bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500'
+                    } ${
+                      errors.password && touched.password
+                        ? (theme === 'dark' ? 'border-red-500 focus:ring-red-500' : 'border-red-300 focus:ring-red-500')
+                        : (theme === 'dark' ? 'focus:ring-emerald-500 focus:border-emerald-500' : 'focus:ring-blue-500 focus:border-blue-500')
+                    }`}
+                    placeholder="••••••••"
+                  />
+                  <Lock className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${
+                      theme === 'dark' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                
+                {/* Password Strength Indicator */}
+                {formData.password && (
+                  <div className="mt-2">
+                    <div className="flex space-x-1 mb-2">
+                      {[1, 2, 3, 4, 5, 6].map((level) => (
+                        <div
+                          key={level}
+                          className={`h-1 flex-1 rounded ${
+                            level <= passwordStrength.score
+                              ? (passwordStrength.score < 3 ? 'bg-red-500' : 
+                                 passwordStrength.score < 5 ? 'bg-yellow-500' : 'bg-green-500')
+                              : (theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200')
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className={`text-xs ${
+                      passwordStrength.score < 3 ? 'text-red-500' : 
+                      passwordStrength.score < 5 ? 'text-yellow-500' : 'text-green-500'
+                    }`}>
+                      {passwordStrength.feedback}
+                    </p>
+                  </div>
+                )}
+                
+                {errors.password && touched.password && (
+                  <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
+                    {errors.password}
+                  </p>
+                )}
             </div>
 
             <div>
@@ -683,29 +916,67 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                 {t('auth.signup.confirmPasswordLabel', 'Confirm Password')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className={`w-full px-4 py-3 pl-12 pr-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                    errors.confirmPassword && touched.confirmPassword
-                      ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                      : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
-                  }`}
-                  placeholder="••••••••"
-                />
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.confirmPassword && touched.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
-              )}
+                                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    className={`w-full px-4 py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                      theme === 'dark' 
+                        ? 'bg-gray-700 text-gray-100 border-gray-600 placeholder-gray-400' 
+                        : 'bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500'
+                    } ${
+                      errors.confirmPassword && touched.confirmPassword
+                        ? (theme === 'dark' ? 'border-red-500 focus:ring-red-500' : 'border-red-300 focus:ring-red-500')
+                        : formData.confirmPassword && formData.password && formData.confirmPassword === formData.password
+                        ? (theme === 'dark' ? 'border-green-500 focus:ring-green-500' : 'border-green-300 focus:ring-green-500')
+                        : (theme === 'dark' ? 'focus:ring-emerald-500 focus:border-emerald-500' : 'focus:ring-blue-500 focus:border-blue-500')
+                    }`}
+                    placeholder="••••••••"
+                  />
+                  <Lock className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
+                  
+                  {/* Match indicator */}
+                  {formData.confirmPassword && formData.password && (
+                    <div className={`absolute right-12 top-1/2 transform -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full ${
+                      formData.confirmPassword === formData.password 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-red-100 text-red-600'
+                    }`}>
+                      {formData.confirmPassword === formData.password ? '✓' : '✗'}
+                    </div>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${
+                      theme === 'dark' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                
+                {/* Password match feedback */}
+                {formData.confirmPassword && formData.password && (
+                  <p className={`mt-1 text-xs ${
+                    formData.confirmPassword === formData.password 
+                      ? 'text-green-600' 
+                      : 'text-red-600'
+                  }`}>
+                    {formData.confirmPassword === formData.password 
+                      ? t('auth.signup.passwordsMatch', 'Passwords match') 
+                      : t('auth.signup.passwordsDontMatch', 'Passwords do not match')}
+                  </p>
+                )}
+                
+                {errors.confirmPassword && touched.confirmPassword && (
+                  <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
+                    {errors.confirmPassword}
+                  </p>
+                )}
             </div>
               </div>
       )}
@@ -851,7 +1122,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
             className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-8 transition-colors duration-300`}
           >
             <AnimatePresence mode="wait">
-              {currentStep === 1 ? renderStep1() : renderStep2()}
+              {emailVerificationStep ? renderEmailVerification() : 
+               currentStep === 1 ? renderStep1() : renderStep2()}
             </AnimatePresence>
 
             {/* Navigation buttons */}

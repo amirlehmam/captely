@@ -30,6 +30,8 @@ import LoginPage from './pages/Login';
 import SignupPage from './pages/Signup';
 import ForgotPasswordPage from './pages/ForgotPassword';
 import NotFoundPage from './pages/NotFound';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 // CRM Pages - New unified CRM system
 import CRMPage from './pages/CRM';
@@ -75,6 +77,10 @@ function App() {
           <Toaster position="top-right" />
 
           <Routes>
+            {/* Legal pages - always accessible */}
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
             {/* Public */}
             {!isAuthenticated && (
               <>

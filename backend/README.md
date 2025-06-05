@@ -61,6 +61,14 @@ Captely is built as a microservices architecture with the following components:
 - **Weekly Summaries**: Automated performance reports
 - **Preference Management**: User-controlled notification settings
 
+### ✉️ Email Verification System
+- **Professional Email Only**: Blocks personal emails (Gmail, Yahoo, etc.) for B2B focus
+- **Real Email Verification**: 6-digit codes sent via Resend service
+- **OAuth Bypass**: Google/Apple signups skip verification (already verified)
+- **Rate Limiting**: 3 attempts per hour to prevent abuse
+- **10-Minute Expiry**: Security-focused code expiration
+- **Beautiful Emails**: Professional verification emails with Captely branding
+
 ### 📤 Advanced Export System
 - **Multiple Formats**: CSV, Excel, JSON export options
 - **CRM Integration**: HubSpot, Salesforce connector framework
@@ -111,6 +119,10 @@ SMTP_USERNAME=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
 FROM_EMAIL=noreply@captely.com
 FROM_NAME=Captely
+
+# Email Verification Service (Resend)
+# Sign up at https://resend.com and get your API key
+RESEND_API_KEY=your_resend_api_key
 
 # AWS S3 (optional for file storage)
 AWS_ACCESS_KEY_ID=your_aws_key

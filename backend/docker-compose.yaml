@@ -48,6 +48,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-placeholder-google-client-id}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-placeholder-google-client-secret}
+      - RESEND_API_KEY=${RESEND_API_KEY:-re_123456789}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped

@@ -2,6 +2,8 @@ import asyncio
 import secrets
 import httpx
 import json
+import random
+import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -20,7 +22,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, EmailStr, field_validator
 from pydantic_settings import BaseSettings
-from sqlalchemy import select, text
+from sqlalchemy import select, text, delete
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     create_async_engine
@@ -30,8 +32,9 @@ from passlib.hash import bcrypt
 from fastapi.responses import HTMLResponse
 from uuid import UUID
 import uvicorn
+import resend
 
-from app.models import User, ApiKey, Base  # Your SQLAlchemy Base/metadata
+from app.models import User, ApiKey, EmailVerification, Base  # Your SQLAlchemy Base/metadata
 from common.db import async_engine, AsyncSessionLocal
 
 # 1. SETTINGS
@@ -43,6 +46,8 @@ class Settings(BaseSettings):
     # OAuth settings - these will read from VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
     vite_google_client_id: str = "placeholder-google-client-id"
     google_client_secret: str = "placeholder-google-client-secret"
+    # Email settings
+    resend_api_key: str = "re_123456789"  # Will be overridden by env var
     cors_origins: List[str] = ["http://localhost:5173",
                                "http://localhost:3000",
                                "http://localhost:8000",
@@ -61,6 +66,25 @@ class Settings(BaseSettings):
         return self.vite_google_client_id
 
 settings = Settings()
+
+# Initialize Resend
+resend.api_key = settings.resend_api_key
+
+# Professional email domains validation - Enhanced with more domains
+GENERIC_EMAIL_DOMAINS = [
+    'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+    'icloud.com', 'live.com', 'msn.com', 'ymail.com', 'protonmail.com',
+    'mail.com', 'gmx.com', 'tutanota.com', 'zoho.com', 'fastmail.com',
+    'me.com', 'mac.com', 'yandex.com', 'rediffmail.com', 'inbox.com',
+    'mail.ru', 'rambler.ru', 'qq.com', '163.com', 'sina.com',
+    'web.de', 't-online.de', 'freenet.de', 'orange.fr', 'laposte.net',
+    'free.fr', 'wanadoo.fr', 'hotmail.fr', 'yahoo.fr', 'sfr.fr'
+]
+
+def validate_professional_email(email: str) -> bool:
+    """Validate that email is from a professional domain"""
+    domain = email.split('@')[1].lower() if '@' in email else ''
+    return domain not in GENERIC_EMAIL_DOMAINS
 
 # 2. DATABASE
 # Use common module's database engine instead of creating a new one here
@@ -189,6 +213,18 @@ class OAuthCompleteIn(BaseModel):
     phone: str
     auth_method: str
 
+# Email verification models
+class EmailVerificationRequest(BaseModel):
+    email: EmailStr
+
+class EmailVerificationCode(BaseModel):
+    email: EmailStr
+    code: str
+
+class VerificationResponse(BaseModel):
+    message: str
+    success: bool
+
 # Google OAuth verification function
 async def verify_google_token(credential: str) -> dict:
     """Verify Google ID token and extract user info"""
@@ -229,6 +265,87 @@ async def verify_apple_token(authorization: dict, user_info: dict) -> dict:
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Apple token verification failed: {str(e)}")
+
+# Email service functions
+async def send_verification_email(email: str, code: str) -> bool:
+    """Send verification email using Resend"""
+    try:
+        params = {
+            "from": "Captely <onboarding@resend.dev>",  # Using Resend test domain
+            "to": [email],
+            "subject": "🔐 Verify your Captely account",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #059669; margin: 0;">Captely</h1>
+                    <p style="color: #6b7280; margin: 5px 0;">Professional Contact Enrichment</p>
+                </div>
+                
+                <div style="background: #f9fafb; border-radius: 8px; padding: 30px; margin: 20px 0;">
+                    <h2 style="color: #111827; margin: 0 0 20px 0;">Verify your email address</h2>
+                    <p style="color: #4b5563; margin: 0 0 20px 0;">
+                        Welcome to Captely! Please use the verification code below to complete your account setup:
+                    </p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <div style="background: #059669; color: white; display: inline-block; padding: 15px 30px; border-radius: 8px; font-size: 24px; font-weight: bold; letter-spacing: 3px;">
+                            {code}
+                        </div>
+                    </div>
+                    
+                    <p style="color: #6b7280; font-size: 14px; margin: 20px 0 0 0;">
+                        This code will expire in 10 minutes. If you didn't request this verification, please ignore this email.
+                    </p>
+                </div>
+                
+                <div style="text-align: center; color: #9ca3af; font-size: 12px; margin-top: 30px;">
+                    <p>© 2025 Captely. All rights reserved.</p>
+                </div>
+            </div>
+            """
+        }
+        
+        response = resend.Emails.send(params)
+        print(f"Email sent successfully to {email}: {response}")
+        return True
+        
+    except Exception as e:
+        print(f"Failed to send email to {email}: {str(e)}")
+        return False
+
+async def cleanup_expired_codes(db: AsyncSession):
+    """Clean up expired verification codes"""
+    try:
+        await db.execute(
+            delete(EmailVerification).where(
+                EmailVerification.expires_at < datetime.utcnow()
+            )
+        )
+        await db.commit()
+    except Exception as e:
+        print(f"Error cleaning up expired codes: {e}")
+
+async def create_verification_code(email: str, db: AsyncSession) -> str:
+    """Create and store a new verification code"""
+    # Clean up any existing codes for this email
+    await db.execute(
+        delete(EmailVerification).where(EmailVerification.email == email)
+    )
+    
+    # Generate 6-digit code
+    code = str(random.randint(100000, 999999))
+    
+    # Store new verification code
+    verification = EmailVerification(
+        email=email,
+        code=code,
+        expires_at=datetime.utcnow() + timedelta(minutes=10)  # 10 minutes expiry
+    )
+    
+    db.add(verification)
+    await db.commit()
+    
+    return code
 
 # 5. APP & CORS
 app = FastAPI(title="Captely Auth Service")
@@ -357,6 +474,28 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
     try:
         print(f"Signup attempt for email: {data.email}")
         
+        # Validate professional email for regular signups
+        if not validate_professional_email(data.email):
+            raise HTTPException(
+                status_code=400, 
+                detail="Please use your professional email address (not Gmail, Yahoo, etc.)"
+            )
+        
+        # Check email verification status
+        verification_result = await db.execute(
+            select(EmailVerification).where(
+                EmailVerification.email == data.email,
+                EmailVerification.verified == True
+            ).order_by(EmailVerification.created_at.desc())
+        )
+        
+        verification = verification_result.scalar_one_or_none()
+        if not verification:
+            raise HTTPException(
+                status_code=400, 
+                detail="Email not verified. Please verify your email first."
+            )
+        
         # unique email
         existing = await db.execute(select(User).where(User.email == data.email))
         existing_user = existing.scalar_one_or_none()
@@ -374,9 +513,15 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
             company=data.company,
             phone=data.phone,
             credits=5000,  # Professional plan: 5000 credits for new users
-            total_spent=0
+            total_spent=0,
+            email_verified=True,  # Email is verified
+            auth_provider='email'
         )
         db.add(user)
+        
+        # Clean up the verification record
+        await db.delete(verification)
+        
         await db.commit()
         await db.refresh(user)
 
@@ -791,6 +936,134 @@ async def update_setting(
         raise HTTPException(status_code=500, detail=str(e))
 
 # Add OAuth endpoints after existing routes
+
+# Email verification endpoints
+@app.post("/auth/send-verification", response_model=VerificationResponse)
+async def send_verification_code(
+    data: EmailVerificationRequest, 
+    db: AsyncSession = Depends(get_db)
+):
+    """Send verification code to email"""
+    try:
+        # Validate professional email
+        if not validate_professional_email(data.email):
+            raise HTTPException(
+                status_code=400, 
+                detail="Please use your professional email address (not Gmail, Yahoo, etc.)"
+            )
+        
+        # Check if user already exists
+        existing = await db.execute(select(User).where(User.email == data.email))
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Clean up expired codes
+        await cleanup_expired_codes(db)
+        
+        # Check rate limiting (max 3 attempts per email per hour)
+        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        recent_attempts = await db.execute(
+            select(EmailVerification).where(
+                EmailVerification.email == data.email,
+                EmailVerification.created_at > one_hour_ago
+            )
+        )
+        
+        if len(recent_attempts.scalars().all()) >= 3:
+            raise HTTPException(
+                status_code=429, 
+                detail="Too many verification attempts. Please try again later."
+            )
+        
+        # Generate and send code
+        code = await create_verification_code(data.email, db)
+        
+        # Send email
+        if await send_verification_email(data.email, code):
+            return VerificationResponse(
+                message="Verification code sent successfully",
+                success=True
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to send verification email"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in send_verification_code: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/auth/verify-email", response_model=VerificationResponse)
+async def verify_email_code(
+    data: EmailVerificationCode,
+    db: AsyncSession = Depends(get_db)
+):
+    """Verify email with code"""
+    try:
+        # Clean up expired codes
+        await cleanup_expired_codes(db)
+        
+        # Find the verification record
+        result = await db.execute(
+            select(EmailVerification).where(
+                EmailVerification.email == data.email,
+                EmailVerification.verified == False
+            ).order_by(EmailVerification.created_at.desc())
+        )
+        
+        verification = result.scalar_one_or_none()
+        
+        if not verification:
+            raise HTTPException(
+                status_code=400,
+                detail="No pending verification found for this email"
+            )
+        
+        # Check if code is expired
+        if verification.expires_at < datetime.utcnow():
+            raise HTTPException(
+                status_code=400,
+                detail="Verification code has expired"
+            )
+        
+        # Increment attempts
+        verification.attempts += 1
+        
+        # Check max attempts (5 attempts max)
+        if verification.attempts > 5:
+            # Delete the verification record
+            await db.delete(verification)
+            await db.commit()
+            raise HTTPException(
+                status_code=400,
+                detail="Too many failed attempts. Please request a new code."
+            )
+        
+        # Check if code matches
+        if verification.code != data.code:
+            await db.commit()  # Save the incremented attempts
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid verification code"
+            )
+        
+        # Mark as verified
+        verification.verified = True
+        await db.commit()
+        
+        return VerificationResponse(
+            message="Email verified successfully",
+            success=True
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in verify_email_code: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/auth/oauth/signup")
 async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
