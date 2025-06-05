@@ -127,7 +127,17 @@
     "performance_stats": "Statistiques de performance",
     "email_hit_rate": "Taux de réussite email",
     "success_rate": "Taux de réussite",
-    "processing_contacts": "Traitement de {completed} sur {total} contacts"
+    "processing_contacts": "Traitement de {completed} sur {total} contacts",
+    "show": "Afficher",
+    "verifying": "Vérification",
+    "ready": "Prêt",
+    "waiting": "En attente",
+    "pending": "En attente",
+    "type": "Type",
+    "phones": "Téléphones",
+    "format": "Format",
+    "of": "sur",
+    "duration": "Durée"
   },
   "navigation": {
     "dashboard": "Tableau de bord",
