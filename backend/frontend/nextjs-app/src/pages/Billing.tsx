@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Subscription {
   id: string;
@@ -92,6 +93,8 @@ interface PaymentMethod {
 }
 
 const BillingPage: React.FC = () => {
+  const { t, formatMessage } = useLanguage();
+  
   const [loading, setLoading] = useState(true);
   const [billingType, setBillingType] = useState<'monthly' | 'annual'>('monthly');
   const [selectedProPlan, setSelectedProPlan] = useState<string | null>(null);
@@ -113,7 +116,7 @@ const BillingPage: React.FC = () => {
   const creditPacks = [
     {
       id: 'pack-500',
-      name: '500 Credits',
+      name: t('billing.creditPacks.pack500'),
       credits: 500,
       price_monthly: 25,
       price_annual: 240, // 12 * 20 (20% discount)
@@ -123,7 +126,7 @@ const BillingPage: React.FC = () => {
     },
     {
       id: 'pack-1500',
-      name: '1,500 Credits',
+      name: t('billing.creditPacks.pack1500'),
       credits: 1500,
       price_monthly: 70,
       price_annual: 672, // 12 * 56 (20% discount)
@@ -133,7 +136,7 @@ const BillingPage: React.FC = () => {
     },
     {
       id: 'pack-3000',
-      name: '3,000 Credits',
+      name: t('billing.creditPacks.pack3000'),
       credits: 3000,
       price_monthly: 130,
       price_annual: 1248, // 12 * 104 (20% discount)
@@ -143,7 +146,7 @@ const BillingPage: React.FC = () => {
     },
     {
       id: 'pack-5000',
-      name: '5,000 Credits',
+      name: t('billing.creditPacks.pack5000'),
       credits: 5000,
       price_monthly: 200,
       price_annual: 1920, // 12 * 160 (20% discount)
@@ -153,7 +156,7 @@ const BillingPage: React.FC = () => {
     },
     {
       id: 'pack-10000',
-      name: '10,000 Credits',
+      name: t('billing.creditPacks.pack10000'),
       credits: 10000,
       price_monthly: 380,
       price_annual: 3648, // 12 * 304 (20% discount)
@@ -163,7 +166,7 @@ const BillingPage: React.FC = () => {
     },
     {
       id: 'pack-20000',
-      name: '20,000 Credits',
+      name: t('billing.creditPacks.pack20000'),
       credits: 20000,
       price_monthly: 720,
       price_annual: 6912, // 12 * 576 (20% discount)
@@ -292,9 +295,9 @@ const BillingPage: React.FC = () => {
     setRefreshing(true);
     try {
       await fetchAllBillingData();
-      toast.success('Billing data refreshed');
+      toast.success(t('billing.billingDataRefreshed'));
     } catch (error) {
-      toast.error('Failed to refresh data');
+      toast.error(t('billing.failedToRefreshData'));
     } finally {
       setRefreshing(false);
     }
@@ -307,33 +310,33 @@ const BillingPage: React.FC = () => {
       // Create subscription through billing service - Mock implementation
       // await apiService.createSubscription(packageId, billingCycle === 'annual' ? 'yearly' : 'monthly');
       
-      toast.success('Redirecting to checkout...');
+      toast.success(t('billing.redirectingToCheckout'));
       
       // In production, this would redirect to Stripe Checkout or open a payment modal
       setTimeout(() => {
-        toast.success('Subscription updated successfully!');
+        toast.success(t('billing.subscriptionUpdatedSuccessfully'));
         fetchAllBillingData();
       }, 2000);
       
     } catch (error) {
-      toast.error('Failed to initiate upgrade');
+      toast.error(t('billing.failedToInitiateUpgrade'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelSubscription = async () => {
-    if (!subscription || !confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of the billing period.')) {
+    if (!subscription || !confirm(t('billing.confirmCancelSubscription'))) {
       return;
     }
 
     try {
       setLoading(true);
       // await apiService.cancelSubscription(subscription.id);
-      toast.success('Subscription canceled. You will retain access until the end of the billing period.');
+      toast.success(t('billing.subscriptionCanceled'));
       await fetchAllBillingData();
     } catch (error) {
-      toast.error('Failed to cancel subscription');
+      toast.error(t('billing.failedToCancelSubscription'));
     } finally {
       setLoading(false);
     }
@@ -365,9 +368,9 @@ const BillingPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      toast.success('Invoice downloaded successfully');
+      toast.success(t('billing.invoiceDownloadedSuccessfully'));
     } catch (error) {
-      toast.error('Failed to download invoice');
+      toast.error(t('billing.failedToDownloadInvoice'));
     } finally {
       setDownloadingInvoice(false);
     }
@@ -376,7 +379,7 @@ const BillingPage: React.FC = () => {
   const handleAddPaymentMethod = async () => {
     try {
       // In production, this would open Stripe's payment method setup
-      toast.success('Redirecting to secure payment setup...');
+      toast.success(t('billing.redirectingToSecurePaymentSetup'));
       
       // Mock adding a payment method
       setTimeout(() => {
@@ -395,15 +398,15 @@ const BillingPage: React.FC = () => {
         
         setPaymentMethods([...paymentMethods, newPaymentMethod]);
         setShowAddPaymentMethod(false);
-        toast.success('Payment method added successfully');
+        toast.success(t('billing.paymentMethodAddedSuccessfully'));
       }, 2000);
     } catch (error) {
-      toast.error('Failed to add payment method');
+      toast.error(t('billing.failedToAddPaymentMethod'));
     }
   };
 
   const handleRemovePaymentMethod = async (paymentMethodId: string) => {
-    if (!confirm('Are you sure you want to remove this payment method?')) {
+    if (!confirm(t('billing.confirmRemovePaymentMethod'))) {
       return;
     }
 
@@ -411,9 +414,9 @@ const BillingPage: React.FC = () => {
       setLoading(true);
       // In production, this would call the API to remove the payment method
       setPaymentMethods(paymentMethods.filter(pm => pm.id !== paymentMethodId));
-      toast.success('Payment method removed successfully');
+      toast.success(t('billing.paymentMethodRemovedSuccessfully'));
     } catch (error) {
-      toast.error('Failed to remove payment method');
+      toast.error(t('billing.failedToRemovePaymentMethod'));
     } finally {
       setLoading(false);
     }
@@ -427,9 +430,9 @@ const BillingPage: React.FC = () => {
         ...pm,
         is_default: pm.id === paymentMethodId
       })));
-      toast.success('Default payment method updated');
+      toast.success(t('billing.defaultPaymentMethodUpdated'));
     } catch (error) {
-      toast.error('Failed to update default payment method');
+      toast.error(t('billing.failedToUpdateDefaultPaymentMethod'));
     } finally {
       setLoading(false);
     }
@@ -490,7 +493,7 @@ const BillingPage: React.FC = () => {
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-teal-600 mx-auto" />
-            <p className="mt-4 text-gray-600">Loading billing information...</p>
+            <p className="mt-4 text-gray-600">{t('billing.loadingBillingInformation')}</p>
           </div>
         </div>
       </div>
@@ -508,10 +511,10 @@ const BillingPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Billing & Credits
+              {t('billing.title')}
             </h1>
             <p className="text-gray-600 mt-2">
-              Manage your subscription and monitor credit usage
+              {t('billing.subtitle')}
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -521,14 +524,14 @@ const BillingPage: React.FC = () => {
               className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('billing.refreshButton')}
             </button>
             <button
               onClick={() => setShowHistory(!showHistory)}
               className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
             >
               <History className="h-4 w-4 mr-2" />
-              {showHistory ? 'Hide' : 'Show'} History
+              {showHistory ? t('billing.hideHistory') : t('billing.showHistory')}
             </button>
             <button 
               onClick={() => handleDownloadInvoice()}
@@ -540,7 +543,7 @@ const BillingPage: React.FC = () => {
               ) : (
                 <FileText className="h-4 w-4 mr-2" />
               )}
-              Download Invoice
+              {t('billing.downloadInvoice')}
             </button>
           </div>
         </div>
@@ -555,7 +558,9 @@ const BillingPage: React.FC = () => {
         <div className="flex items-start space-x-4">
           <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Credit Consumption Logic</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              {t('billing.creditConsumptionLogicTitle')}
+            </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <p className="text-sm text-gray-700 flex items-center">
@@ -590,9 +595,11 @@ const BillingPage: React.FC = () => {
                 <Crown className="w-6 h-6 text-teal-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Current Plan</h3>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {t('billing.currentPlanTitle')}
+                </h3>
                 <p className="text-sm text-gray-600">
-                  {subscription?.billing_cycle === 'annual' ? 'Annual' : 'Monthly'} subscription
+                  {subscription?.billing_cycle === 'annual' ? t('billing.annualSubscription') : t('billing.monthlySubscription')}
                 </p>
               </div>
             </div>
@@ -619,12 +626,14 @@ const BillingPage: React.FC = () => {
                   ? (currentPlan?.price_annual || 0) / 12 
                   : currentPlan?.price_monthly}
               </span>
-              <span className="text-sm text-gray-600">/month</span>
+              <span className="text-sm text-gray-600">/{t('billing.month')}</span>
             </div>
             
             <div className="pt-4 border-t border-teal-200 space-y-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Next billing date</span>
+                <span className="text-gray-600">
+                  {t('billing.nextBillingDate')}
+                </span>
                 <span className="font-medium text-gray-900">
                   {subscription?.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
                 </span>
@@ -637,7 +646,7 @@ const BillingPage: React.FC = () => {
                   className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Manage Payment Methods
+                  {t('billing.managePaymentMethods')}
                 </button>
                 <button
                   onClick={() => handleDownloadInvoice()}
@@ -649,7 +658,7 @@ const BillingPage: React.FC = () => {
                   ) : (
                     <FileText className="w-4 h-4 mr-2" />
                   )}
-                  See / Download Invoices
+                  {t('billing.seeDownloadInvoices')}
                 </button>
             </div>
               
@@ -658,7 +667,7 @@ const BillingPage: React.FC = () => {
                   onClick={handleCancelSubscription}
                   className="text-sm text-red-600 hover:text-red-700 font-medium"
             >
-                  Cancel subscription
+                  {t('billing.cancelSubscription')}
             </button>
               )}
             </div>
@@ -673,21 +682,27 @@ const BillingPage: React.FC = () => {
         className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Payment Methods</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {t('billing.paymentMethodsTitle')}
+          </h3>
           <button
             onClick={() => setShowAddPaymentMethod(true)}
             className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Payment Method
+            {t('billing.addPaymentMethod')}
           </button>
         </div>
 
         {paymentMethods.length === 0 ? (
           <div className="text-center py-8">
             <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600">No payment methods on file</p>
-            <p className="text-sm text-gray-500 mt-1">Add a payment method to continue your subscription</p>
+            <p className="text-gray-600">
+              {t('billing.noPaymentMethods')}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {t('billing.addPaymentMethodDescription')}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -712,12 +727,12 @@ const BillingPage: React.FC = () => {
                         </span>
                         {method.is_default && (
                           <span className="px-2 py-1 bg-teal-600 text-white text-xs rounded-full">
-                            Default
+                            {t('billing.default')}
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-gray-600">
-                        Expires {method.exp_month}/{method.exp_year}
+                        {t('billing.expires')} {method.exp_month}/{method.exp_year}
                       </p>
                     </div>
                   </div>
@@ -727,7 +742,7 @@ const BillingPage: React.FC = () => {
                         onClick={() => handleSetDefaultPaymentMethod(method.id)}
                         className="text-sm text-teal-600 hover:text-teal-700 font-medium"
                       >
-                        Set as default
+                        {t('billing.setAsDefault')}
                       </button>
                     )}
                     <button
@@ -756,7 +771,7 @@ const BillingPage: React.FC = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Monthly
+              {t('billing.monthly')}
             </button>
             <button
               onClick={() => setBillingType('annual')}
@@ -766,7 +781,7 @@ const BillingPage: React.FC = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Annual (2 months offered!)
+              {t('billing.annualTwoMonthsOffered')}
             </button>
           </div>
         </div>
@@ -779,8 +794,12 @@ const BillingPage: React.FC = () => {
         className="mb-8"
       >
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Credit Pack</h2>
-          <p className="text-gray-600">Select the perfect credit volume for your needs</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {t('billing.chooseCreditPackTitle')}
+          </h2>
+          <p className="text-gray-600">
+            {t('billing.chooseCreditPackSubtitle')}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -807,7 +826,7 @@ const BillingPage: React.FC = () => {
                 {pack.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <span className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold">
-                    MOST POPULAR
+                    {t('billing.mostPopular')}
                   </span>
                 </div>
               )}
@@ -815,7 +834,7 @@ const BillingPage: React.FC = () => {
                 {isCurrentPack && (
                 <div className="absolute -top-3 right-4">
                   <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                    CURRENT
+                    {t('billing.current')}
                   </span>
                 </div>
               )}
@@ -827,15 +846,15 @@ const BillingPage: React.FC = () => {
                         <span className="text-3xl font-bold text-gray-900">
                         €{monthlyPrice.toFixed(0)}
                         </span>
-                      <span className="text-gray-600">/month</span>
+                      <span className="text-gray-600">/{t('billing.month')}</span>
                       
                       {billingType === 'annual' && savings > 0 && (
                         <div className="mt-2">
                           <p className="text-sm text-green-600 font-medium">
-                            Save €{savings.toFixed(0)}/year
+                            {t('billing.save')} €{savings.toFixed(0)}/{t('billing.year')}
                           </p>
                           <p className="text-xs text-green-500">
-                            2 months offered!
+                            {t('billing.twoMonthsOffered')}
                           </p>
                       </div>
                     )}
@@ -843,30 +862,30 @@ const BillingPage: React.FC = () => {
                   
                     <p className="text-sm text-gray-600 mt-2">
                       {billingType === 'annual' ? (pack.credits * 12).toLocaleString() : pack.credits.toLocaleString()} 
-                      {billingType === 'annual' ? ' credits/year' : ' credits/month'}
+                      {billingType === 'annual' ? t('billing.creditsPerYear') : t('billing.creditsPerMonth')}
                     </p>
                 </div>
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center text-sm text-gray-600">
                       <Mail className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />
-                      {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} emails
+                      {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} {t('billing.emails')}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Phone className="w-4 h-4 text-purple-500 mr-2 flex-shrink-0" />
-                      {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} phones
+                      {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} {t('billing.phones')}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      API access & integrations
+                      {t('billing.apiAccessIntegrations')}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      Chrome extension
+                      {t('billing.chromeExtension')}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      Email support
+                      {t('billing.emailSupport')}
                     </div>
                   </div>
 
@@ -884,15 +903,15 @@ const BillingPage: React.FC = () => {
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                     ) : isCurrentPack ? (
-                      'Current Pack'
+                      t('billing.currentPack')
                 ) : (
-                      'Buy This Pack'
+                      t('billing.buyThisPack')
                 )}
               </button>
                   
                   {billingType === 'annual' && (
                     <p className="text-xs text-center text-gray-500 mt-2">
-                      Billed €{totalPrice.toFixed(0)} annually
+                      {formatMessage('billing.billedAnnually', { amount: totalPrice.toFixed(0) })}
                     </p>
                   )}
                 </div>
@@ -912,8 +931,12 @@ const BillingPage: React.FC = () => {
             className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-8"
           >
             <div className="p-6 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Enrichment History</h3>
-              <p className="text-sm text-gray-600 mt-1">Recent credit usage and enrichment results</p>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t('billing.enrichmentHistoryTitle')}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('billing.enrichmentHistorySubtitle')}
+              </p>
             </div>
             
             <div className="overflow-x-auto">
@@ -921,25 +944,25 @@ const BillingPage: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
+                      {t('billing.contact')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                      {t('billing.type')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      {t('billing.status')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Credits
+                      {t('billing.credits')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Source
+                      {t('billing.source')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      {t('billing.date')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Result
+                      {t('billing.result')}
                     </th>
                   </tr>
                 </thead>
@@ -1003,11 +1026,13 @@ const BillingPage: React.FC = () => {
         <div className="flex items-start space-x-4">
           <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">How Credits Work</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {t('billing.howCreditsWorkTitle')}
+            </h3>
             <div className="space-y-2 text-sm text-gray-700">
-              <p>• <strong>1 email found = 1 credit</strong> - When we successfully find an email address</p>
-              <p>• <strong>1 phone found = 10 credits</strong> - When we successfully find a phone number</p>
-              <p>• <strong>No result = No charge</strong> - Credits are only deducted for successful enrichments</p>
+              <p>• <strong>{t('billing.oneEmailOneCredit')}</strong> - {t('billing.emailCreditDescription')}</p>
+              <p>• <strong>{t('billing.onePhoneTenCredits')}</strong> - {t('billing.phoneCreditDescription')}</p>
+              <p>• <strong>{t('billing.noResultNoCharge')}</strong> - {t('billing.creditDeductionDescription')}</p>
             </div>
           </div>
         </div>
@@ -1031,7 +1056,9 @@ const BillingPage: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Add Payment Method</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {t('billing.addPaymentMethodTitle')}
+                </h2>
                 <button
                   onClick={() => setShowAddPaymentMethod(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
@@ -1045,9 +1072,11 @@ const BillingPage: React.FC = () => {
                   <div className="flex items-start">
                     <Lock className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
                     <div>
-                      <h5 className="font-medium text-blue-900 mb-1">Secure Payment</h5>
+                      <h5 className="font-medium text-blue-900 mb-1">
+                        {t('billing.securePaymentTitle')}
+                      </h5>
                       <p className="text-sm text-blue-700">
-                        Your payment information is encrypted and processed securely through Stripe.
+                        {t('billing.securePaymentDescription')}
                       </p>
                     </div>
                   </div>
@@ -1057,12 +1086,12 @@ const BillingPage: React.FC = () => {
                   onClick={handleAddPaymentMethod}
                   className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
                 >
-                  Continue to Stripe Checkout
+                  {t('billing.continueToStripeCheckout')}
                   <ExternalLink className="w-4 h-4 ml-2 inline" />
                 </button>
 
                 <p className="text-xs text-center text-gray-500">
-                  By adding a payment method, you agree to our terms of service and privacy policy.
+                  {t('billing.agreeTerms')}
                 </p>
               </div>
             </motion.div>

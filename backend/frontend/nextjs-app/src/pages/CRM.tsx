@@ -10,6 +10,7 @@ import {
   FileDown, Upload, Check, Plus, Minus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 import { apiService } from '../services/api';
 
@@ -77,6 +78,8 @@ interface Batch {
 }
 
 const CRMPage: React.FC = () => {
+  const { t } = useLanguage();
+  
   // State
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -275,7 +278,7 @@ const CRMPage: React.FC = () => {
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading CRM contacts...</p>
+            <p className="mt-4 text-gray-600">{t('common.loading')}</p>
           </div>
         </div>
       </div>
@@ -293,10 +296,10 @@ const CRMPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              📇 Contacts CRM
+              📇 {t('crm.title')}
             </h1>
             <p className="text-gray-600">
-              Unified view of all your enriched contacts from all batches
+              {t('crm.subtitle')}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -306,7 +309,7 @@ const CRMPage: React.FC = () => {
               className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('common.refresh')}
             </button>
             
             {selectedContacts.size > 0 && (

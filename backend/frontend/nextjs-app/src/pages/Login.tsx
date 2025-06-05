@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface LoginFormData {
   email: string;
@@ -39,6 +40,8 @@ declare global {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -60,69 +63,79 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     password: false
   });
 
+  // Auto-focus email on mount
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    // Mouse tracking for subtle parallax effect
+    emailInputRef.current?.focus();
+    
+    // Load remembered email
+    const rememberedEmail = localStorage.getItem('rememberEmail');
+    if (rememberedEmail) {
+      setFormData(prev => ({ ...prev, email: rememberedEmail, rememberMe: true }));
+    }
+  }, []);
+
+  // Mouse movement effect
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) * 10 - 5,
-        y: (e.clientY / window.innerHeight) * 10 - 5
-      });
+      setMousePosition({ x: e.clientX, y: e.clientY });
     };
+
     window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
-    // Load Google OAuth
-    const loadGoogleOAuth = () => {
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = initializeGoogleOAuth;
-      document.head.appendChild(script);
+  // Google OAuth setup
+  useEffect(() => {
+    // Load Google OAuth script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+          auto_select: false,
+        });
+      }
     };
-
-    // Load Apple Sign-In
-    const loadAppleSignIn = () => {
-      const script = document.createElement('script');
-      script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    };
-
-    loadGoogleOAuth();
-    loadAppleSignIn();
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, []);
 
-  const initializeGoogleOAuth = () => {
+  const triggerGoogleSignIn = () => {
     if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder-google-client-id',
-        callback: handleGoogleSignIn,
-        auto_select: false,
-        cancel_on_tap_outside: true
-      });
+      window.google.accounts.id.prompt();
     }
   };
 
-  const handleGoogleSignIn = async (response: any) => {
+  const handleGoogleResponse = async (response: any) => {
     try {
       setLoading(true);
       
-      // Send the Google ID token to backend for verification and login
+      // Send the Google JWT token to your backend
       const result = await apiService.oauthSignup('google', {
         credential: response.credential
       });
       
-      // Success - user is logged in
-      toast.success('Welcome back! 🎉');
+      toast.success(t('auth.login.loginSuccess'));
       onLogin();
       navigate('/');
     } catch (error: any) {
-      toast.error(error.message || 'Google sign-in failed');
+      setErrors(prev => ({
+        ...prev,
+        general: error.message || t('auth.login.invalidCredentials')
+      }));
+      toast.error(t('auth.login.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -130,58 +143,50 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const handleAppleSignIn = async () => {
     try {
-      if (!window.AppleID) {
-        toast.error('Apple Sign-In is not available. Please try again.');
-        return;
-      }
-
       setLoading(true);
       
+      if (!window.AppleID) {
+        throw new Error('Apple ID not loaded');
+      }
+
       const response = await window.AppleID.auth.signIn({
-        scope: 'name email',
+        clientId: import.meta.env.VITE_APPLE_CLIENT_ID,
         redirectURI: window.location.origin + '/auth/apple/callback',
-        state: 'login'
+        scope: 'name email',
+        state: 'login',
+        usePopup: true,
       });
 
-      // Send Apple authorization to backend
+      // Send response to your backend
       const result = await apiService.oauthSignup('apple', {
         authorization: response.authorization,
         user: response.user
       });
-
-      // Success - user is logged in
-      toast.success('Welcome back! 🎉');
+      
+      toast.success(t('auth.login.loginSuccess'));
       onLogin();
       navigate('/');
     } catch (error: any) {
-      toast.error(error.message || 'Apple sign-in failed');
+      setErrors(prev => ({
+        ...prev,
+        general: error.message || t('auth.login.invalidCredentials')
+      }));
+      toast.error(t('auth.login.invalidCredentials'));
     } finally {
       setLoading(false);
     }
   };
 
-  const triggerGoogleSignIn = () => {
-    if (window.google) {
-      window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed()) {
-          toast.error('Google Sign-In popup was blocked. Please allow popups.');
-        }
-      });
-    } else {
-      toast.error('Google Sign-In is not available. Please try again.');
-    }
-  };
-
   const validateEmail = (email: string): string => {
-    if (!email) return 'Email is required';
+    if (!email) return t('auth.login.emailRequired');
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return 'Please enter a valid email';
+    if (!emailRegex.test(email)) return t('errors.validation');
     return '';
   };
 
   const validatePassword = (password: string): string => {
-    if (!password) return 'Password is required';
-    if (password.length < 8) return 'Password must be at least 8 characters';
+    if (!password) return t('auth.login.passwordRequired');
+    if (password.length < 8) return t('errors.validation');
     return '';
   };
 
@@ -223,7 +228,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       await apiService.login(formData.email, formData.password);
       
       // Success
-      toast.success('Welcome back! Redirecting...', {
+      toast.success(t('auth.login.loginSuccess'), {
         duration: 2000
       });
       
@@ -237,10 +242,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     } catch (error: any) {
       setErrors(prev => ({
         ...prev,
-        general: error.message || 'Invalid email or password'
+        general: error.message || t('auth.login.invalidCredentials')
       }));
       
-      toast.error('Login failed. Please check your credentials.');
+      toast.error(t('auth.login.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -248,34 +253,30 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
+    if (hour < 12) return t('common.goodMorning');
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
-      {/* Subtle background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full blur-3xl opacity-30"
-          animate={{
-            x: mousePosition.x,
-            y: mousePosition.y,
-          }}
-          transition={{ type: 'spring', stiffness: 50 }}
-        />
-        <motion.div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-100 rounded-full blur-3xl opacity-30"
-          animate={{
-            x: -mousePosition.x,
-            y: -mousePosition.y,
-          }}
-          transition={{ type: 'spring', stiffness: 50 }}
-        />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-40 w-80 h-80 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Main content */}
+      {/* Interactive cursor effect */}
+      <div 
+        className="fixed w-6 h-6 rounded-full bg-blue-400 opacity-30 pointer-events-none z-50 transition-all duration-100 ease-out"
+        style={{
+          left: mousePosition.x - 12,
+          top: mousePosition.y - 12,
+          background: `radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0) 70%)`
+        }}
+      />
+
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -301,7 +302,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {getGreeting()}!
             </h1>
             <p className="text-gray-600">
-              Welcome back to Captely
+              {t('auth.login.subtitle')}
             </p>
           </motion.div>
 
@@ -356,10 +357,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {/* Email field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email address
+                  {t('auth.login.emailLabel')}
                 </label>
                 <div className="relative">
                   <input
+                    ref={emailInputRef}
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
@@ -399,7 +401,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {/* Password field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
+                  {t('auth.login.passwordLabel')}
                 </label>
                 <div className="relative">
                   <input
@@ -447,14 +449,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm text-gray-700">
-                    Remember me
+                    {t('auth.login.rememberMe')}
                   </span>
                 </label>
                 <Link
                   to="/forgot-password"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
                 >
-                  Forgot password?
+                  {t('auth.login.forgotPassword')}
                 </Link>
               </div>
 
@@ -488,39 +490,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Signing in...</span>
+                    <span>{t('common.loading')}</span>
                   </>
                 ) : (
                   <>
                     <LogIn className="w-5 h-5" />
-                    <span>Sign in</span>
+                    <span>{t('auth.login.signInButton')}</span>
                   </>
                 )}
               </motion.button>
 
               {/* Sign up link */}
-              <div className="text-center pt-4 border-t border-gray-200">
-                <span className="text-sm text-gray-600">
-                  Don't have an account?{' '}
-                </span>
-                <Link
-                  to="/signup"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  Sign up for free
-                </Link>
+              <div className="text-center pt-4">
+                <p className="text-sm text-gray-600">
+                  {t('auth.login.noAccount')}{' '}
+                  <Link
+                    to="/signup"
+                    className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    {t('auth.login.createAccount')}
+                  </Link>
+                </p>
               </div>
             </form>
-          </motion.div>
-
-          {/* Footer */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8 text-center text-sm text-gray-500"
-          >
-            <p>© 2025 Captely. All rights reserved.</p>
           </motion.div>
         </motion.div>
       </div>

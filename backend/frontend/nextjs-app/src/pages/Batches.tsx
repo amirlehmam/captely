@@ -5,10 +5,11 @@ import {
   CheckCircle, XCircle, Clock, AlertTriangle, FileDown, Package,
   RefreshCw, Eye, ExternalLink, MoreVertical, Trash2, Pause,
   Play, BarChart3, TrendingUp, Users, Mail, Phone, Zap,
-  AlertCircle, Info, Calendar, Timer
+  AlertCircle, Info, Calendar, Timer, Activity, Loader, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Updated hooks for production
 import { useJobs, useExport, useJob } from '../hooks/useApi';
@@ -67,6 +68,8 @@ const getStatusBadge = (status: string) => {
 };
 
 const BatchesPage: React.FC = () => {
+  const { t } = useLanguage();
+  
   // Hooks
   const { jobs: jobsData, loading, error, refetch } = useJobs();
   const { exportData, exporting, error: exportError } = useExport();
@@ -89,7 +92,7 @@ const BatchesPage: React.FC = () => {
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
-    toast.success('Batches refreshed');
+    toast.success(t('success.settingsSaved'));
   };
 
   const handleExport = async (jobId: string, format: 'csv' | 'excel' | 'json' = 'csv') => {
@@ -102,7 +105,7 @@ const BatchesPage: React.FC = () => {
 
   const handleBulkExport = async (format: 'csv' | 'excel' | 'json' = 'csv') => {
     if (selectedJobs.size === 0) {
-      toast.error('Please select jobs to export');
+      toast.error(t('errors.validation'));
       return;
     }
 
@@ -112,7 +115,7 @@ const BatchesPage: React.FC = () => {
     });
 
     if (completedSelectedJobs.length === 0) {
-      toast.error('No completed jobs selected for export');
+      toast.error(t('errors.validation'));
       return;
     }
 
@@ -121,7 +124,7 @@ const BatchesPage: React.FC = () => {
     }
     
     setSelectedJobs(new Set());
-    toast.success(`Exported ${completedSelectedJobs.length} batches`);
+    toast.success(t('success.contactsExported'));
   };
 
   const handleSelectAll = () => {
@@ -179,12 +182,44 @@ const BatchesPage: React.FC = () => {
   const failedJobs = jobs.filter(job => job.status === 'failed');
   const totalContacts = jobs.reduce((sum, job) => sum + job.total, 0);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'processing':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'credit_insufficient':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'processing':
+        return <Loader className="h-4 w-4 animate-spin" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4" />;
+      case 'pending':
+        return <Clock className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading batches...</p>
+          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -195,8 +230,8 @@ const BatchesPage: React.FC = () => {
       {/* Page header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Import Batches</h1>
-          <p className="text-gray-600 mt-1">View and export your enriched contact data</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('batches.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('batches.subtitle')}</p>
         </div>
         <div className="mt-4 md:mt-0 flex space-x-3">
           <button 
@@ -205,7 +240,7 @@ const BatchesPage: React.FC = () => {
             className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('common.refresh')}
           </button>
           
           <Link
@@ -213,7 +248,7 @@ const BatchesPage: React.FC = () => {
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
           >
             <Package className="h-4 w-4 mr-2" />
-            New Import
+            {t('navigation.import')}
           </Link>
         </div>
       </div>
@@ -231,7 +266,7 @@ const BatchesPage: React.FC = () => {
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
                 <div>
-                  <h4 className="text-sm font-semibold text-red-800">Failed to load batches</h4>
+                  <h4 className="text-sm font-semibold text-red-800">{t('errors.generic')}</h4>
                   <p className="text-sm text-red-700 mt-1">{error}</p>
                 </div>
               </div>
@@ -239,7 +274,7 @@ const BatchesPage: React.FC = () => {
                 onClick={handleRefresh}
                 className="text-sm text-red-600 hover:text-red-800 font-medium"
               >
-                Retry
+                {t('common.retry')}
               </button>
             </div>
           </motion.div>
@@ -247,87 +282,51 @@ const BatchesPage: React.FC = () => {
       </AnimatePresence>
       
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 shadow-lg"
-        >
-          <div className="flex items-center justify-between">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
+      >
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center">
+            <Activity className="h-8 w-8 text-blue-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Batches</p>
-              <p className="text-3xl font-bold text-blue-900 mt-2">{jobs.length}</p>
-              <div className="flex items-center mt-2 text-sm">
-                <BarChart3 className="h-4 w-4 text-blue-500 mr-1" />
-                <span className="text-blue-600 font-medium">{totalContacts.toLocaleString()} contacts</span>
-              </div>
+              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.activeJobs')}</p>
+              <p className="text-2xl font-bold text-gray-900">{activeJobs.length}</p>
             </div>
-            <Package className="w-12 h-12 text-blue-500" />
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200 shadow-lg"
-        >
-          <div className="flex items-center justify-between">
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center">
+            <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Completed</p>
-              <p className="text-3xl font-bold text-green-900 mt-2">{completedJobs.length}</p>
-              <div className="flex items-center mt-2 text-sm">
-                <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-green-600 font-medium">
-                  {jobs.length > 0 ? Math.round((completedJobs.length / jobs.length) * 100) : 0}% success rate
-                </span>
-              </div>
+              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.completedJobs')}</p>
+              <p className="text-2xl font-bold text-gray-900">{completedJobs.length}</p>
             </div>
-            <CheckCircle className="w-12 h-12 text-green-500" />
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-200 shadow-lg"
-        >
-          <div className="flex items-center justify-between">
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center">
+            <Users className="h-8 w-8 text-purple-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Active</p>
-              <p className="text-3xl font-bold text-yellow-900 mt-2">{activeJobs.length}</p>
-              <div className="flex items-center mt-2 text-sm">
-                <Zap className="h-4 w-4 text-yellow-500 mr-1" />
-                <span className="text-yellow-600 font-medium">Currently processing</span>
-              </div>
+              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.totalContacts')}</p>
+              <p className="text-2xl font-bold text-gray-900">{totalContacts.toLocaleString()}</p>
             </div>
-            <Clock className="w-12 h-12 text-yellow-500" />
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200 shadow-lg"
-        >
-          <div className="flex items-center justify-between">
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center">
+            <XCircle className="h-8 w-8 text-red-500 mr-3" />
             <div>
-              <p className="text-sm font-semibold text-purple-700 uppercase tracking-wide">Total Emails</p>
-              <p className="text-3xl font-bold text-purple-900 mt-2">
-                {jobs.reduce((sum, job) => sum + (job.emails_found || 0), 0).toLocaleString()}
-              </p>
-              <div className="flex items-center mt-2 text-sm">
-                <Mail className="h-4 w-4 text-purple-500 mr-1" />
-                <span className="text-purple-600 font-medium">Enriched contacts</span>
-              </div>
+              <p className="text-sm font-semibold text-gray-600">{t('dashboard.stats.failedJobs')}</p>
+              <p className="text-2xl font-bold text-gray-900">{failedJobs.length}</p>
             </div>
-            <Mail className="w-12 h-12 text-purple-500" />
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
       
       {/* Search and Filters */}
       <div className="bg-white shadow-lg rounded-xl border border-gray-100 p-6">
@@ -343,7 +342,7 @@ const BatchesPage: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm text-gray-900 transition-all duration-200"
-                placeholder="Search batches by name or ID..."
+                placeholder={t('search.placeholder')}
               />
             </div>
           </div>
@@ -355,12 +354,12 @@ const BatchesPage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="credit_insufficient">Credit Issues</option>
+              <option value="all">{t('batches.filters.all')}</option>
+              <option value="pending">{t('batches.filters.pending')}</option>
+              <option value="processing">{t('batches.filters.processing')}</option>
+              <option value="completed">{t('batches.filters.completed')}</option>
+              <option value="failed">{t('batches.filters.failed')}</option>
+              <option value="credit_insufficient">{t('errors.insufficientCredits')}</option>
             </select>
             
             <select
@@ -372,11 +371,11 @@ const BatchesPage: React.FC = () => {
               }}
               className="px-4 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
             >
-              <option value="created_at_desc">Newest First</option>
-              <option value="created_at_asc">Oldest First</option>
-              <option value="total_desc">Most Contacts</option>
-              <option value="completed_desc">Most Processed</option>
-              <option value="success_rate_desc">Highest Success Rate</option>
+              <option value="created_at_desc">{t('common.createdAt')} (newest)</option>
+              <option value="created_at_asc">{t('common.createdAt')} (oldest)</option>
+              <option value="total_desc">{t('batches.table.contacts')} (most)</option>
+              <option value="completed_desc">{t('batches.table.progress')} (highest)</option>
+              <option value="success_rate_desc">{t('batches.table.successRate')} (highest)</option>
             </select>
 
             {/* Bulk Actions */}
@@ -386,13 +385,13 @@ const BatchesPage: React.FC = () => {
                   onClick={() => handleBulkExport('csv')}
                   className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                 >
-                  Export CSV ({selectedJobs.size})
+                  {t('common.export')} CSV ({selectedJobs.size})
                 </button>
                 <button
                   onClick={() => setSelectedJobs(new Set())}
                   className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
                 >
-                  Clear
+                  {t('common.cancel')}
                 </button>
               </div>
             )}
@@ -415,34 +414,29 @@ const BatchesPage: React.FC = () => {
                   />
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Batch Details
+                  {t('batches.table.fileName')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Status
+                  {t('batches.table.status')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Progress
+                  {t('batches.table.progress')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Results
+                  {t('batches.table.contacts')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Date
+                  {t('batches.table.createdAt')}
                 </th>
                 <th className="relative px-6 py-4">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('batches.table.actions')}</span>
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-white divide-y divide-gray-200">
               {currentJobs.map((job) => (
-                <motion.tr 
-                  key={job.id} 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all duration-200 group"
-                >
-                  <td className="px-6 py-5">
+                <tr key={job.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
                       checked={selectedJobs.has(job.id)}
@@ -450,187 +444,137 @@ const BatchesPage: React.FC = () => {
                       className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                   </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-semibold text-gray-900">
-                        {job.file_name || `Batch Import`}
-                      </div>
-                      <div className="text-xs text-gray-500 font-mono">
-                        ID: {job.id.substring(0, 8)}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {job.total.toLocaleString()} contacts
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="mr-3">
-                        {getStatusIcon(job.status)}
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(job.status)}`}>
-                        {job.status.charAt(0).toUpperCase() + job.status.slice(1).replace('_', ' ')}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="w-48">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-gray-600">{job.completed}/{job.total}</span>
-                        <span className="font-semibold text-gray-900">{job.progress.toFixed(1)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-500 ${
-                            job.status === 'completed' 
-                              ? 'bg-green-500' 
-                              : job.status === 'failed'
-                              ? 'bg-red-500'
-                              : 'bg-blue-500'
-                          } ${job.status === 'processing' ? 'animate-pulse' : ''}`}
-                          style={{ width: `${job.progress}%` }}
-                        />
+                      <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {job.file_name || `Batch ${job.id.substring(0, 8)}`}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ID: {job.id.substring(0, 8)}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm">
-                        <Mail className="h-3 w-3 text-green-500 mr-1" />
-                        <span className="text-gray-600 mr-2">Emails:</span>
-                        <span className="font-semibold text-gray-900">{job.emails_found || 0}</span>
-                      </div>
-                      <div className="flex items-center text-sm">
-                        <Phone className="h-3 w-3 text-blue-500 mr-1" />
-                        <span className="text-gray-600 mr-2">Phones:</span>
-                        <span className="font-semibold text-gray-900">{job.phones_found || 0}</span>
-                      </div>
-                      <div className={`text-xs font-bold px-2 py-1 rounded-full inline-block ${
-                        (job.success_rate || 0) >= 80 
-                          ? 'text-green-700 bg-green-100' 
-                          : (job.success_rate || 0) >= 50 
-                            ? 'text-yellow-700 bg-yellow-100' 
-                            : 'text-red-700 bg-red-100'
-                      }`}>
-                        {job.success_rate?.toFixed(1) || 0}% Success
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(job.status)}`}>
+                      {getStatusIcon(job.status)}
+                      <span className="ml-1">{t(`enrichment.status.${job.status}`)}</span>
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-1">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              job.status === 'completed' ? 'bg-green-500' : 
+                              job.status === 'failed' ? 'bg-red-500' : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${job.progress}%` }}
+                          />
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          {job.progress.toFixed(1)}%
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-700">
-                      {new Date(job.created_at).toLocaleDateString()}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(job.created_at).toLocaleTimeString()}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div>
+                      <div className="font-medium">{job.completed}/{job.total}</div>
+                      {job.success_rate !== undefined && (
+                        <div className="text-xs text-gray-500">
+                          {job.success_rate.toFixed(1)}% {t('batches.table.successRate').toLowerCase()}
+                        </div>
+                      )}
                     </div>
                   </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div>
+                      <div>{new Date(job.created_at).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(job.created_at).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      {/* View Details */}
                       <Link
                         to={`/batches/${job.id}`}
-                        className="p-2 text-blue-600 hover:text-blue-700 rounded-lg hover:bg-blue-50 transition-all duration-200"
-                        title="View Batch Details"
+                        className="text-primary-600 hover:text-primary-900 transition-colors"
                       >
                         <Eye className="h-4 w-4" />
                       </Link>
-
-                      {/* Export Actions */}
                       {job.status === 'completed' && (
-                        <>
-                          <button 
-                            onClick={() => handleExport(job.id, 'csv')}
-                            disabled={exporting === job.id}
-                            className="p-2 text-green-600 hover:text-green-700 rounded-lg hover:bg-green-50 transition-all duration-200"
-                            title="Export as CSV"
-                          >
-                            {exporting === job.id ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                          </button>
-                          
-                          <button 
-                            onClick={() => handleExport(job.id, 'excel')}
-                            disabled={exporting === job.id}
-                            className="p-2 text-blue-600 hover:text-blue-700 rounded-lg hover:bg-blue-50 transition-all duration-200"
-                            title="Export as Excel"
-                          >
-                            <FileDown className="h-4 w-4" />
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleExport(job.id)}
+                          className="text-green-600 hover:text-green-900 transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
                       )}
-
-                      {/* More Actions */}
-                      <button 
-                        className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200"
-                        title="More Options"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
                     </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
         </div>
         
         {/* Pagination */}
-        <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-4 flex items-center justify-between border-t border-gray-100">
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700">
-                Showing <span className="font-bold">{indexOfFirstJob + 1}</span> to <span className="font-bold">
-                  {Math.min(indexOfLastJob, filteredJobs.length)}
-                </span> of <span className="font-bold">{filteredJobs.length}</span> results
-              </p>
-            </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className={`relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
-                    currentPage === 1
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
-                  }`}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                
-                <span className="relative inline-flex items-center px-4 py-2 border border-gray-200 bg-primary-50 text-sm font-semibold text-primary-700">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
-                
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages || totalPages === 0}
-                  className={`relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
-                    currentPage === totalPages || totalPages === 0
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
-                  }`}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              </nav>
+        {totalPages > 1 && (
+          <div className="bg-white px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                {t('common.total')}: {filteredJobs.length} {t('batches.title').toLowerCase()}
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
+                      currentPage === 1
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
+                    }`}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  
+                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-200 bg-primary-50 text-sm font-semibold text-primary-700">
+                    {currentPage} / {totalPages || 1}
+                  </span>
+                  
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className={`relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium transition-all duration-200 ${
+                      currentPage === totalPages || totalPages === 0
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
+                    }`}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </nav>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Empty state */}
       {filteredJobs.length === 0 && !loading && (
         <div className="text-center py-12">
           <Package className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No batches found</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('batches.empty.title')}</h3>
           <p className="mt-1 text-sm text-gray-500">
             {searchTerm || statusFilter !== 'all' 
-              ? 'Try adjusting your search terms or filters' 
-              : 'Start by importing some contacts'
+              ? t('search.noResults')
+              : t('batches.empty.subtitle')
             }
           </p>
           {!searchTerm && statusFilter === 'all' && (
@@ -640,7 +584,7 @@ const BatchesPage: React.FC = () => {
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
               >
                 <Package className="h-4 w-4 mr-2" />
-                Import Contacts
+                {t('batches.empty.cta')}
               </Link>
             </div>
           )}

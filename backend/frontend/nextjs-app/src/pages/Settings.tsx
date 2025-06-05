@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 interface UserProfile {
   id: string;
@@ -63,6 +65,8 @@ interface EnrichmentProvider {
 }
 
 const SettingsPage: React.FC = () => {
+  const { t } = useLanguage();
+  
   const [activeSection, setActiveSection] = useState('account');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
