@@ -216,7 +216,7 @@ const Dashboard: React.FC = () => {
                 isDark ? 'bg-purple-900/20 text-purple-400' : 'bg-purple-100 text-purple-600'
               } group-hover:${isDark ? 'bg-purple-900/30' : 'bg-purple-200'}`}>
                 <CreditCard className="h-5 w-5" />
-              </div>
+      </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                 {t('buy_credits')}
               </span>
@@ -263,15 +263,15 @@ const Dashboard: React.FC = () => {
           ) : (
             // Actual stats cards with descriptive text
             statsCards.map((card, index) => (
-              <motion.div
+        <motion.div
                 key={card.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -4, scale: 1.02 }}
                 className={`${isDark ? 'bg-gray-800' : card.bgColor} rounded-xl p-6 border ${card.borderColor} shadow-lg hover:shadow-xl transition-all duration-300`}
-              >
-                <div className="flex items-center justify-between">
+        >
+          <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : card.iconColor} uppercase tracking-wide`}>
                       {card.title}
@@ -291,8 +291,8 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className={`flex-shrink-0 ${isDark ? 'text-gray-400' : card.iconColor}`}>
                     <card.icon className="h-8 w-8" />
-                  </div>
-                </div>
+              </div>
+            </div>
               </motion.div>
             ))
           )}
@@ -304,15 +304,15 @@ const Dashboard: React.FC = () => {
           <div className="lg:col-span-2">
             <BatchProgress />
           </div>
-          
+
           {/* Right Column - Credit Usage & System Health */}
           <div className="space-y-8">
             <CreditUsage />
 
             {/* System Health */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
             >
@@ -329,25 +329,25 @@ const Dashboard: React.FC = () => {
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {t('dashboard.systemHealth.enrichmentService')}
                       </span>
-                    </div>
+            </div>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                       {t('common.active')}
                     </span>
-                  </div>
+          </div>
                   
-                  <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Wifi className="h-5 w-5 text-green-500" />
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {t('dashboard.systemHealth.apiService')}
-                      </span>
-                    </div>
+                </span>
+              </div>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                       {t('common.active')}
                     </span>
-                  </div>
+          </div>
                   
-                  <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Wifi className="h-5 w-5 text-green-500" />
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -356,9 +356,9 @@ const Dashboard: React.FC = () => {
                     </div>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                       {t('common.active')}
-                    </span>
-                  </div>
-                </div>
+                </span>
+              </div>
+            </div>
                 
                 <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="flex items-center">
@@ -366,10 +366,10 @@ const Dashboard: React.FC = () => {
                     <span className="text-sm font-medium text-green-800 dark:text-green-400">
                       {t('dashboard.systemHealth.allSystemsOperational')}
                     </span>
-                  </div>
-                </div>
+          </div>
+      </div>
               </div>
-            </motion.div>
+        </motion.div>
           </div>
         </div>
       </div>

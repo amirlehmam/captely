@@ -201,6 +201,9 @@
       "viewAll": "View All"
     },
     "stats": {
+      "activeJobs": "Active Jobs",
+      "completedJobs": "Completed Jobs",
+      "failedJobs": "Failed Jobs",
       "totalContacts": "Total Contacts",
       "enrichedContacts": "Enriched Contacts",
       "emailsFound": "Emails Found",
@@ -339,7 +342,7 @@
     }
   },
   "batches": {
-    "title": "Import Batches",
+    "title": "Batches",
     "subtitle": "Track and manage your contact enrichment batches",
     "table": {
       "fileName": "File Name",

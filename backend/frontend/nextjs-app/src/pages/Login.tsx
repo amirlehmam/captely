@@ -91,11 +91,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   // Google OAuth setup
   useEffect(() => {
     // Load Google OAuth script
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
 
     script.onload = () => {
       if (window.google) {
@@ -150,7 +150,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       if (!window.AppleID) {
         throw new Error('Apple ID not loaded');
       }
-
+      
       const response = await window.AppleID.auth.signIn({
         clientId: import.meta.env.VITE_APPLE_CLIENT_ID,
         redirectURI: window.location.origin + '/auth/apple/callback',
@@ -164,7 +164,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         authorization: response.authorization,
         user: response.user
       });
-      
+
       toast.success(t('auth.login.loginSuccess'));
       onLogin();
       navigate('/');
@@ -267,7 +267,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <DarkModeToggle size="sm" />
         <LanguageSwitcher />
       </div>
-      
+
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
@@ -512,12 +512,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               <div className="text-center pt-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {t('auth.login.noAccount')}{' '}
-                  <Link
-                    to="/signup"
+                <Link
+                  to="/signup"
                     className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                  >
+                >
                     {t('auth.login.createAccount')}
-                  </Link>
+                </Link>
                 </p>
               </div>
             </form>
