@@ -159,24 +159,13 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
     try {
       setIsValidatingEmail(true);
       
-      const response = await fetch('/auth/send-verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to send verification code');
-      }
+      await apiService.sendVerificationEmail(email);
 
       toast.success(t('auth.signup.verificationCodeSent', 'Verification code sent to your email!'));
       setEmailVerificationStep(true);
     } catch (error: any) {
-      toast.error(error.message || t('auth.signup.verificationCodeFailed', 'Failed to send verification code'));
+      const errorMessage = error.data?.detail || error.message || t('auth.signup.verificationCodeFailed', 'Failed to send verification code');
+      toast.error(errorMessage);
     } finally {
       setIsValidatingEmail(false);
     }
@@ -185,29 +174,15 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
   // Verify email code
   const verifyEmailCode = async () => {
     try {
-      const response = await fetch('/auth/verify-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: formData.email, 
-          code: verificationCode 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Invalid verification code');
-      }
+      await apiService.verifyEmailCode(formData.email, verificationCode);
 
       setEmailVerified(true);
       setEmailVerificationStep(false);
       toast.success(t('auth.signup.emailVerified', 'Email verified successfully!'));
       return true;
     } catch (error: any) {
-      toast.error(error.message || t('auth.signup.invalidCode', 'Invalid verification code'));
+      const errorMessage = error.data?.detail || error.message || t('auth.signup.invalidCode', 'Invalid verification code');
+      toast.error(errorMessage);
       return false;
     }
   };

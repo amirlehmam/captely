@@ -1116,6 +1116,28 @@ class ApiService {
     }
   }
 
+  // ==========================================
+  // EMAIL VERIFICATION FOR SIGNUP
+  // ==========================================
+
+  async sendVerificationEmail(email: string): Promise<{ message: string; success: boolean }> {
+    try {
+      const response = await client.post<{ message: string; success: boolean }>(`${API_CONFIG.authUrl}/auth/send-verification`, { email });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async verifyEmailCode(email: string, code: string): Promise<{ message: string; success: boolean }> {
+    try {
+      const response = await client.post<{ message: string; success: boolean }>(`${API_CONFIG.authUrl}/auth/verify-email`, { email, code });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async createApiToken(name: string): Promise<{ id: string; token: string }> {
     return this.createApiKey(name);
   }
