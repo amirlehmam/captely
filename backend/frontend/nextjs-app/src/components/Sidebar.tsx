@@ -123,13 +123,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
       <div className="flex flex-col flex-grow pt-5 bg-white overflow-y-auto border-r border-gray-200">
         {/* Logo */}
-        <div className="flex items-center flex-shrink-0 px-4 mb-8">
+        <div className="flex flex-col items-center justify-center px-4 mb-8 py-6">
           <img
-            className="h-12 w-auto"
+            className="h-16 w-auto mb-3"
             src="/logo.png"
             alt="Captely"
           />
-          <span className="ml-3 text-xl font-bold text-gray-900">Captely</span>
+          <span className="text-lg font-bold text-gray-900 text-center">Captely</span>
         </div>
         
         <nav className="mt-5 flex-1 px-2 space-y-1">
