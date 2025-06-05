@@ -561,6 +561,7 @@ const ImportPage: React.FC = () => {
               </h4>
               <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
                 <li><code className="bg-blue-100 px-1 rounded">first_name</code></li>
+                <li><code className="bg-blue-100 px-1 rounded">last_name</code></li>
                 <li><code className="bg-blue-100 px-1 rounded">company</code></li>
               </ul>
             </div>
@@ -570,7 +571,6 @@ const ImportPage: React.FC = () => {
                 Optional Fields:
               </h4>
               <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
-                <li><code className="bg-blue-100 px-1 rounded">last_name</code></li>
                 <li><code className="bg-blue-100 px-1 rounded">position</code></li>
                 <li><code className="bg-blue-100 px-1 rounded">profile_url</code> (LinkedIn URL)</li>
                 <li><code className="bg-blue-100 px-1 rounded">location</code></li>
