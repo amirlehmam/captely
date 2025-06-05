@@ -509,7 +509,11 @@ const BatchDetailPage: React.FC = () => {
                   key={contact.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all duration-200"
+                  className={`transition-all duration-200 ${
+                    isDark 
+                      ? 'hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-750' 
+                      : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-white'
+                  }`}
                 >
                   <td className="px-6 py-4">
                     <input
@@ -591,14 +595,22 @@ const BatchDetailPage: React.FC = () => {
                           type="text"
                           value={editData.company || ''}
                           onChange={(e) => setEditData(prev => ({ ...prev, company: e.target.value }))}
-                          className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
+                          className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
+                            isDark 
+                              ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
+                              : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                          }`}
                           placeholder={t('batches.details.company')}
                         />
                         <input
                           type="text"
                           value={editData.position || ''}
                           onChange={(e) => setEditData(prev => ({ ...prev, position: e.target.value }))}
-                          className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
+                          className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
+                            isDark 
+                              ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
+                              : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                          }`}
                           placeholder={t('batches.details.position')}
                         />
                       </div>
@@ -635,14 +647,18 @@ const BatchDetailPage: React.FC = () => {
                       <textarea
                         value={editData.notes || ''}
                         onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
-                        className="block w-full border border-gray-200 rounded px-2 py-1 text-sm"
+                        className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
+                          isDark 
+                            ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
+                            : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                        }`}
                         rows={2}
                         placeholder={t('batches.details.addNotes')}
                       />
                     ) : (
-                      <div className="text-sm text-gray-600 max-w-xs">
+                      <div className={`text-sm max-w-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                         {contact.notes || (
-                          <span className="text-gray-400 italic">{t('batches.details.noNotes')}</span>
+                          <span className={`italic ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('batches.details.noNotes')}</span>
                         )}
                       </div>
                     )}
@@ -655,7 +671,11 @@ const BatchDetailPage: React.FC = () => {
                           <button
                             onClick={() => saveEdit(contact.id)}
                             disabled={updating === contact.id}
-                            className="p-2 text-green-600 hover:text-green-700 rounded-lg hover:bg-green-50"
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-green-400 hover:text-green-300 hover:bg-green-900/20' 
+                                : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                            }`}
                           >
                             {updating === contact.id ? (
                               <RefreshCw className="h-4 w-4 animate-spin" />
@@ -665,7 +685,11 @@ const BatchDetailPage: React.FC = () => {
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="p-2 text-gray-600 hover:text-gray-700 rounded-lg hover:bg-gray-50"
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -674,7 +698,11 @@ const BatchDetailPage: React.FC = () => {
                         <>
                           <button
                             onClick={() => startEdit(contact)}
-                            className="p-2 text-blue-600 hover:text-blue-700 rounded-lg hover:bg-blue-50"
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
+                                : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                            }`}
                             title={t('batches.details.editContact')}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -684,7 +712,11 @@ const BatchDetailPage: React.FC = () => {
                             <button
                               onClick={() => exportToHubSpot(contact.id)}
                               disabled={exporting === contact.id}
-                              className="p-2 text-orange-600 hover:text-orange-700 rounded-lg hover:bg-orange-50"
+                              className={`p-2 rounded-lg transition-all duration-200 ${
+                                isDark 
+                                  ? 'text-orange-400 hover:text-orange-300 hover:bg-orange-900/20' 
+                                  : 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
+                              }`}
                               title={t('batches.details.exportContact')}
                             >
                               {exporting === contact.id ? (
@@ -700,7 +732,11 @@ const BatchDetailPage: React.FC = () => {
                               href={contact.profile_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-2 text-gray-600 hover:text-gray-700 rounded-lg hover:bg-gray-50"
+                              className={`p-2 rounded-lg transition-all duration-200 ${
+                                isDark 
+                                  ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                  : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'
+                              }`}
                               title={t('batches.details.viewLinkedIn')}
                             >
                               <ExternalLink className="h-4 w-4" />

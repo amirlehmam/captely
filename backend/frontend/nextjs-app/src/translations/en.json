@@ -216,7 +216,18 @@
       "appleSignupFailed": "Apple sign-up failed",
       "appleNotAvailable": "Apple Sign-In is not available. Please try again.",
       "fillRequiredFields": "Please fill in all required fields and agree to the terms",
-      "signupFailed": "Signup failed. Please try again."
+      "signupFailed": "Signup failed. Please try again.",
+      "completeProfile": "Complete your profile",
+      "profileDescription": "Tell us a bit about yourself and your company",
+      "companyLabel": "Company Name",
+      "phoneLabel": "Phone Number",
+      "termsPrefix": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "and": "and",
+      "privacyPolicy": "Privacy Policy",
+      "marketingEmails": "Send me tips, product updates and special offers",
+      "creatingAccount": "Creating account...",
+      "completeSignup": "Complete signup"
     },
     "forgotPassword": {
       "title": "Reset Password",

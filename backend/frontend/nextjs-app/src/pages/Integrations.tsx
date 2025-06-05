@@ -246,7 +246,7 @@ const IntegrationsPage: React.FC = () => {
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
                 🔗 Integrations Hub
-              </h1>
+        </h1>
               <div className="flex items-center space-x-2">
                 <Zap className={`h-5 w-5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
                 <span className={`text-lg font-medium ${
@@ -481,7 +481,7 @@ const IntegrationsPage: React.FC = () => {
                     : 'border-primary-500 text-primary-600 bg-primary-50 rounded-t-lg px-4'
                   : isDark
                     ? 'border-transparent text-gray-400 hover:text-purple-400 hover:border-purple-300'
-                    : 'border-transparent text-gray-600 hover:text-primary-600 hover:border-primary-300'
+                  : 'border-transparent text-gray-600 hover:text-primary-600 hover:border-primary-300'
               }`}
             >
               {tab === 'disconnected' ? '⚡ Available' : 
@@ -541,7 +541,7 @@ const IntegrationsPage: React.FC = () => {
                         : 'bg-green-100 text-green-800 border-green-200'
                       : isDark
                         ? 'bg-gray-700 text-gray-300 border-gray-600'
-                        : 'bg-gray-100 text-gray-800 border-gray-200'
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
                   }`}>
                     {integration.status === 'connected' ? '✅ Connected' : '⏳ Available'}
                   </div>

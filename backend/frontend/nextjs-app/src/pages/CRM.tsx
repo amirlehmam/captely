@@ -869,8 +869,10 @@ const CRMPage: React.FC = () => {
                   key={contact.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className={`transition-colors duration-200 ${
-                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                  className={`transition-all duration-200 ${
+                    isDark 
+                      ? 'hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-750' 
+                      : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-white'
                   }`}
                 >
                   <td className="px-6 py-5">
@@ -878,7 +880,11 @@ const CRMPage: React.FC = () => {
                       type="checkbox"
                       checked={selectedContacts.has(contact.id)}
                       onChange={() => handleSelectContact(contact.id)}
-                      className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                      className={`h-4 w-4 rounded transition-colors ${
+                        isDark 
+                          ? 'text-emerald-500 focus:ring-emerald-500 border-gray-600 bg-gray-700' 
+                          : 'text-teal-600 focus:ring-teal-500 border-gray-300 bg-white'
+                      }`}
                     />
                   </td>
                   
@@ -890,21 +896,29 @@ const CRMPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className={`text-sm font-medium ${
+                          isDark ? 'text-gray-100' : 'text-gray-900'
+                        }`}>
                           {contact.first_name} {contact.last_name}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className={`text-sm ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           <div className="flex items-center space-x-3">
                             {contact.email && (
                               <div className="flex items-center">
-                                <Mail className="h-3 w-3 mr-1 text-gray-400" />
+                                <Mail className={`h-3 w-3 mr-1 ${
+                                  isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`} />
                                 <span className="truncate max-w-48">{contact.email}</span>
                                 {contact.email_verified && <CheckCircle className="h-3 w-3 ml-1 text-green-500" />}
                               </div>
                             )}
                             {contact.phone && (
                               <div className="flex items-center">
-                                <Phone className="h-3 w-3 mr-1 text-gray-400" />
+                                <Phone className={`h-3 w-3 mr-1 ${
+                                  isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`} />
                                 <span>{contact.phone}</span>
                                 {contact.phone_verified && <CheckCircle className="h-3 w-3 ml-1 text-green-500" />}
                               </div>
@@ -934,14 +948,20 @@ const CRMPage: React.FC = () => {
                         {contact.email_reliability.charAt(0).toUpperCase() + contact.email_reliability.slice(1)}
                       </span>
                     ) : (
-                      <span className="text-sm text-gray-500">No email</span>
+                      <span className={`text-sm ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>No email</span>
                     )}
                   </td>
 
                   <td className="px-6 py-5">
                     <div>
-                      <div className="text-sm font-medium text-gray-900 flex items-center">
-                        <Building2 className="h-4 w-4 mr-2 text-gray-400" />
+                      <div className={`text-sm font-medium flex items-center ${
+                        isDark ? 'text-gray-100' : 'text-gray-900'
+                      }`}>
+                        <Building2 className={`h-4 w-4 mr-2 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
                         {contact.company || 'Unknown'}
                       </div>
                       {editingContact === contact.id ? (
@@ -950,15 +970,23 @@ const CRMPage: React.FC = () => {
                           value={editForm.position}
                           onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
                           placeholder="Job title..."
-                          className="mt-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1 w-full"
+                          className={`mt-1 text-sm border rounded px-2 py-1 w-full transition-all duration-200 ${
+                            isDark 
+                              ? 'text-gray-100 bg-gray-700 border-gray-600 placeholder-gray-400' 
+                              : 'text-gray-600 bg-white border-gray-300 placeholder-gray-500'
+                          }`}
                         />
                       ) : (
-                        <div className="text-sm text-gray-600">
+                        <div className={`text-sm ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           {contact.position || 'No position'}
                         </div>
                       )}
                       {contact.location && (
-                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                        <div className={`text-xs flex items-center mt-1 ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           <MapPin className="h-3 w-3 mr-1" />
                           {contact.location}
                         </div>
@@ -967,12 +995,18 @@ const CRMPage: React.FC = () => {
                   </td>
 
                   <td className="px-6 py-5">
-                    <div className="text-sm text-gray-600">
+                    <div className={`text-sm ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
                       <div className="flex items-center">
-                        <Activity className="h-3 w-3 mr-1 text-gray-400" />
+                        <Activity className={`h-3 w-3 mr-1 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
                         {contact.batch_name || 'Unknown'}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className={`text-xs mt-1 ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
                         {contact.batch_created_at ? new Date(contact.batch_created_at).toLocaleDateString() : '-'}
                       </div>
                     </div>
@@ -984,14 +1018,22 @@ const CRMPage: React.FC = () => {
                         <>
                           <button
                             onClick={() => handleEditContact(contact.id)}
-                            className="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50 transition-all duration-200"
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-green-400 hover:text-green-300 hover:bg-green-900/20' 
+                                : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                            }`}
                             title="Save Changes"
                           >
                             <Save className="h-4 w-4" />
                           </button>
                           <button
                             onClick={handleCancelEdit}
-                            className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                            }`}
                             title="Cancel"
                           >
                             <X className="h-4 w-4" />
@@ -1001,7 +1043,11 @@ const CRMPage: React.FC = () => {
                         <>
                           <button
                             onClick={() => handleEditContact(contact.id)}
-                            className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                            }`}
                             title="Edit Contact"
                           >
                             <Edit className="h-4 w-4" />
@@ -1009,7 +1055,11 @@ const CRMPage: React.FC = () => {
                           
                           <button
                             onClick={() => handleSingleExport(contact.id)}
-                            className="text-orange-500 hover:text-orange-600 p-2 rounded-lg hover:bg-orange-50 transition-all duration-200"
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-orange-400 hover:text-orange-300 hover:bg-orange-900/20' 
+                                : 'text-orange-500 hover:text-orange-600 hover:bg-orange-50'
+                            }`}
                             title="Export to HubSpot"
                           >
                             <Upload className="h-4 w-4" />

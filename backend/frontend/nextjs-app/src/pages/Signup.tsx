@@ -517,29 +517,43 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
       className="space-y-6"
     >
       <div className="text-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete your profile</h3>
-        <p className="text-gray-600 text-sm">Tell us a bit about yourself and your company</p>
+        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} mb-2`}>
+          {t('auth.signup.completeProfile', 'Complete your profile')}
+        </h3>
+        <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
+          {t('auth.signup.profileDescription', 'Tell us a bit about yourself and your company')}
+        </p>
       </div>
 
       {/* Email display (read-only) */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-        <div className="flex items-center px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg">
-          <Mail className="w-5 h-5 text-gray-400 mr-3" />
-          <span className="text-gray-900">{formData.email}</span>
-          {formData.authMethod !== 'email' && (
-            <span className="ml-auto px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-              {formData.authMethod === 'google' ? 'Google' : 'Apple'} Connected
-            </span>
-          )}
+              <div>
+          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+            {t('auth.signup.emailLabel', 'Email Address')}
+          </label>
+          <div className={`flex items-center px-4 py-3 border rounded-lg ${
+            theme === 'dark' 
+              ? 'bg-gray-700 border-gray-600' 
+              : 'bg-gray-50 border-gray-300'
+          }`}>
+            <Mail className={`w-5 h-5 mr-3 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
+            <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{formData.email}</span>
+            {formData.authMethod !== 'email' && (
+              <span className={`ml-auto px-2 py-1 text-xs rounded-full ${
+                theme === 'dark' 
+                  ? 'bg-green-900/30 text-green-400' 
+                  : 'bg-green-100 text-green-700'
+              }`}>
+                {formData.authMethod === 'google' ? t('auth.signup.googleConnected', 'Google Connected') : t('auth.signup.appleConnected', 'Apple Connected')}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Name fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-            First Name <span className="text-red-500">*</span>
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                  {t('auth.signup.firstNameLabel', 'First Name')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -561,8 +575,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-            Last Name <span className="text-red-500">*</span>
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                  {t('auth.signup.lastNameLabel', 'Last Name')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -585,8 +599,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
       {/* Company field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-          Company Name <span className="text-red-500">*</span>
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                {t('auth.signup.companyLabel', 'Company Name')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -609,8 +623,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
       {/* Phone field */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Phone Number <span className="text-red-500">*</span>
+        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+          {t('auth.signup.phoneLabel', 'Phone Number')} <span className="text-red-500">*</span>
         </label>
         <div className="relative">
           <input
@@ -635,8 +649,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
       {formData.authMethod === 'email' && (
         <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password <span className="text-red-500">*</span>
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                {t('auth.signup.passwordLabel', 'Password')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -665,8 +679,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password <span className="text-red-500">*</span>
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                {t('auth.signup.confirmPasswordLabel', 'Confirm Password')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -712,16 +726,20 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                 <span className={`ml-2 text-sm ${
                   errors.agreeToTerms && touched.agreeToTerms
                     ? 'text-red-700'
-                    : 'text-gray-700'
+                    : (theme === 'dark' ? 'text-gray-300' : 'text-gray-700')
                 }`}>
-                  I agree to the{' '}
-            <a href="/terms" target="_blank" className="text-blue-600 hover:text-blue-700">
-              Terms of Service
-            </a>
-                  {' '}and{' '}
-            <a href="/privacy" target="_blank" className="text-blue-600 hover:text-blue-700">
-              Privacy Policy
-            </a>
+                  {t('auth.signup.termsPrefix', 'I agree to the')}{' '}
+                  <a href="/terms" target="_blank" className={`${
+                    theme === 'dark' ? 'text-emerald-400 hover:text-emerald-300' : 'text-blue-600 hover:text-blue-700'
+                  }`}>
+                    {t('auth.signup.termsOfService', 'Terms of Service')}
+                  </a>
+                  {' '}{t('auth.signup.and', 'and')}{' '}
+                  <a href="/privacy" target="_blank" className={`${
+                    theme === 'dark' ? 'text-emerald-400 hover:text-emerald-300' : 'text-blue-600 hover:text-blue-700'
+                  }`}>
+                    {t('auth.signup.privacyPolicy', 'Privacy Policy')}
+                  </a>
                 </span>
               </label>
               {errors.agreeToTerms && touched.agreeToTerms && (
@@ -735,8 +753,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                   onChange={(e) => handleInputChange('marketingEmails', e.target.checked)}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
                 />
-                <span className="ml-2 text-sm text-gray-700">
-                  Send me tips, product updates and special offers
+                <span className={`ml-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {t('auth.signup.marketingEmails', 'Send me tips, product updates and special offers')}
                 </span>
               </label>
             </div>
@@ -844,10 +862,12 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                   animate={{ opacity: 1, x: 0 }}
                   type="button"
                   onClick={handlePrevStep}
-                  className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+                  className={`flex items-center transition-colors ${
+                    theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 >
                   <ChevronLeft className="w-5 h-5 mr-1" />
-                  Back
+                  {t('common.back', 'Back')}
                 </motion.button>
               
               <motion.button
@@ -861,11 +881,11 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Creating account...</span>
+                    <span>{t('auth.signup.creatingAccount', 'Creating account...')}</span>
                   </>
                   ) : (
                   <>
-                    <span>Complete signup</span>
+                    <span>{t('auth.signup.completeSignup', 'Complete signup')}</span>
                     <CheckCircle className="w-5 h-5" />
                   </>
                 )}

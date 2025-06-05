@@ -267,17 +267,17 @@ const BatchesPage: React.FC = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Link
-              to="/import"
+          <Link
+            to="/import"
               className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
                 isDark
                   ? 'bg-gradient-to-r from-primary-500 to-primary-400 hover:from-primary-600 hover:to-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 focus:ring-offset-gray-900'
                   : 'bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
               }`}
-            >
-              <Package className="h-4 w-4 mr-2" />
-              {t('navigation.import')}
-            </Link>
+          >
+            <Package className="h-4 w-4 mr-2" />
+            {t('navigation.import')}
+          </Link>
           </motion.div>
         </div>
       </div>
@@ -647,9 +647,9 @@ const BatchesPage: React.FC = () => {
                               ? 'text-primary-400 hover:text-primary-300' 
                               : 'text-primary-600 hover:text-primary-900'
                           }`}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Link>
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
                       </motion.div>
                       {job.status === 'completed' && (
                         <motion.button
@@ -753,17 +753,17 @@ const BatchesPage: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link
-                  to="/import"
+              <Link
+                to="/import"
                   className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
                     isDark 
                       ? 'bg-primary-500 hover:bg-primary-600' 
                       : 'bg-primary-600 hover:bg-primary-700'
                   }`}
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  {t('batches.empty.cta')}
-                </Link>
+              >
+                <Package className="h-4 w-4 mr-2" />
+                {t('batches.empty.cta')}
+              </Link>
               </motion.div>
             </div>
           )}
