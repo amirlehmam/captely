@@ -270,6 +270,8 @@ async def verify_apple_token(authorization: dict, user_info: dict) -> dict:
 async def send_verification_email(email: str, code: str) -> bool:
     """Send verification email using Resend"""
     try:
+        print(f"🔧 Preparing email for {email} with code {code}")
+        
         params = {
             "from": "Captely <noreply@captely.com>",  # Using verified domain
             "to": [email],
@@ -305,12 +307,16 @@ async def send_verification_email(email: str, code: str) -> bool:
             """
         }
         
+        print(f"📨 Sending email FROM: {params['from']} TO: {params['to']}")
+        print(f"🔑 Resend API Key: {resend.api_key[:10]}...{resend.api_key[-4:]}")
+        
         response = resend.Emails.send(params)
-        print(f"Email sent successfully to {email}: {response}")
+        print(f"✅ Email sent successfully to {email}: {response}")
         return True
         
     except Exception as e:
-        print(f"Failed to send email to {email}: {str(e)}")
+        print(f"❌ Failed to send email to {email}: {str(e)}")
+        print(f"🔧 Error type: {type(e).__name__}")
         return False
 
 async def cleanup_expired_codes(db: AsyncSession):
@@ -945,8 +951,12 @@ async def send_verification_code(
 ):
     """Send verification code to email"""
     try:
-        # Validate professional email
-        if not validate_professional_email(data.email):
+        # Validate professional email with debug logging
+        is_valid = validate_professional_email(data.email)
+        print(f"📧 Email validation for {data.email}: {is_valid}")
+        if not is_valid:
+            domain = data.email.split('@')[1].lower() if '@' in data.email else ''
+            print(f"❌ Rejected domain: {domain}")
             raise HTTPException(
                 status_code=400, 
                 detail="Please use your professional email address (not Gmail, Yahoo, etc.)"
@@ -978,13 +988,20 @@ async def send_verification_code(
         # Generate and send code
         code = await create_verification_code(data.email, db)
         
-        # Send email
-        if await send_verification_email(data.email, code):
+        # Send email with debug logging
+        print(f"📤 Attempting to send verification email to: {data.email}")
+        print(f"🔑 Generated code: {code}")
+        
+        email_sent = await send_verification_email(data.email, code)
+        print(f"✅ Email sent successfully: {email_sent}")
+        
+        if email_sent:
             return VerificationResponse(
                 message="Verification code sent successfully",
                 success=True
             )
         else:
+            print(f"❌ Failed to send email to {data.email}")
             raise HTTPException(
                 status_code=500,
                 detail="Failed to send verification email"
