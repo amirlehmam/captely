@@ -281,7 +281,7 @@ CREATE TABLE IF NOT EXISTS export_logs (
 -- Packages table with exact pricing structure
 CREATE TABLE IF NOT EXISTS packages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR NOT NULL,
+    name VARCHAR NOT NULL UNIQUE,
     display_name VARCHAR NOT NULL,
     plan_type plan_type NOT NULL,
     credits_monthly INTEGER NOT NULL,
@@ -398,7 +398,7 @@ CREATE TABLE IF NOT EXISTS billing_transactions (
 -- Credit packages
 CREATE TABLE IF NOT EXISTS credit_packages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR NOT NULL,
+    name VARCHAR NOT NULL UNIQUE,
     credits INTEGER NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     discount_percentage DECIMAL(5,2) DEFAULT 0,
