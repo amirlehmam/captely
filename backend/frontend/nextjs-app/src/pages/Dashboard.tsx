@@ -84,7 +84,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Quick Actions - Moved to top and made smaller */}
-      <motion.div
+        <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -135,16 +135,16 @@ const Dashboard: React.FC = () => {
               {t('common.settings')}
             </span>
           </Link>
-        </div>
-      </motion.div>
+            </div>
+          </motion.div>
 
       {/* Stats Grid */}
-      <motion.div
+        <motion.div
         initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-      >
+        >
         <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
@@ -154,7 +154,7 @@ const Dashboard: React.FC = () => {
               <p className="text-3xl font-bold text-gray-900">
                 {formatNumber(stats?.overview?.total_contacts || 0)}
               </p>
-            </div>
+              </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <Users className="h-6 w-6 text-blue-600" />
             </div>
@@ -175,7 +175,7 @@ const Dashboard: React.FC = () => {
               <p className="text-3xl font-bold text-gray-900">
                 {formatNumber(stats?.overview?.emails_found || 0)}
               </p>
-            </div>
+              </div>
             <div className="p-3 bg-green-100 rounded-lg">
               <Mail className="h-6 w-6 text-green-600" />
             </div>
@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
               <p className="text-3xl font-bold text-gray-900">
                 {formatNumber(stats?.overview?.phones_found || 0)}
               </p>
-            </div>
+              </div>
             <div className="p-3 bg-purple-100 rounded-lg">
               <Phone className="h-6 w-6 text-purple-600" />
             </div>
@@ -217,7 +217,7 @@ const Dashboard: React.FC = () => {
               <p className="text-3xl font-bold text-gray-900">
                 {formatNumber(creditData?.used_this_month || 0)}
               </p>
-            </div>
+              </div>
             <div className="p-3 bg-yellow-100 rounded-lg">
               <TrendingUp className="h-6 w-6 text-yellow-600" />
             </div>
@@ -226,9 +226,9 @@ const Dashboard: React.FC = () => {
             <ArrowUp className="h-4 w-4 text-green-500" />
             <span className="text-green-600 font-medium">+{creditData?.used_this_month || 0}</span>
             <span className="text-gray-500 ml-1">{t('common.thisMonth')}</span>
-          </div>
-        </div>
-      </motion.div>
+              </div>
+            </div>
+          </motion.div>
 
       {/* Main Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -240,11 +240,11 @@ const Dashboard: React.FC = () => {
         {/* Right Column - Credit Usage & System Health */}
         <div className="space-y-8">
           <CreditUsage />
-          
+
           {/* System Health */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
           >
@@ -298,10 +298,10 @@ const Dashboard: React.FC = () => {
                   <span className="text-sm font-medium text-green-800">
                     {t('dashboard.systemHealth.allSystemsOperational')}
                   </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          </div>
+          </div>
+        </div>
+      </motion.div>
         </div>
       </div>
     </div>
