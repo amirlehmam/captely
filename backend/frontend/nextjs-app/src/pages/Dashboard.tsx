@@ -90,48 +90,48 @@ const Dashboard: React.FC = () => {
   // Enhanced stats cards with safe defaults to prevent flashing
   const statsCards = [
     {
-      title: t('total_contacts'),
+      title: t('dashboard.stats.totalContacts'),
       value: stats?.overview?.total_contacts || 0,
-      subtitle: "batch completed",
+      subtitle: t('common.completed'),
       icon: Users,
       color: 'blue',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-      textColor: 'text-blue-900',
-      borderColor: 'border-blue-200'
+      bgColor: isDark ? 'bg-blue-900/20' : 'bg-blue-50',
+      iconColor: isDark ? 'text-blue-400' : 'text-blue-600',
+      textColor: isDark ? 'text-blue-300' : 'text-blue-900',
+      borderColor: isDark ? 'border-blue-700/50' : 'border-blue-200'
     },
     {
-      title: t('emails_found'),
+      title: t('dashboard.stats.emailsFound'),
       value: stats?.overview?.emails_found || 0,
-      subtitle: `${Math.round((stats?.overview?.email_hit_rate || 0))}% hit rate`,
+      subtitle: `${Math.round((stats?.overview?.email_hit_rate || 0))}% ${t('common.hit_rate')}`,
       icon: Mail,
       color: 'green',
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600',
-      textColor: 'text-green-900',
-      borderColor: 'border-green-200'
+      bgColor: isDark ? 'bg-green-900/20' : 'bg-green-50',
+      iconColor: isDark ? 'text-green-400' : 'text-green-600',
+      textColor: isDark ? 'text-green-300' : 'text-green-900',
+      borderColor: isDark ? 'border-green-700/50' : 'border-green-200'
     },
     {
-      title: t('phones_found'),
+      title: t('dashboard.stats.phonesFound'),
       value: stats?.overview?.phones_found || 0,
-      subtitle: `${Math.round((stats?.overview?.phone_hit_rate || 0))}% hit rate`,
+      subtitle: `${Math.round((stats?.overview?.phone_hit_rate || 0))}% ${t('common.hit_rate')}`,
       icon: Phone,
       color: 'purple',
-      bgColor: 'bg-purple-50',
-      iconColor: 'text-purple-600',
-      textColor: 'text-purple-900',
-      borderColor: 'border-purple-200'
+      bgColor: isDark ? 'bg-purple-900/20' : 'bg-purple-50',
+      iconColor: isDark ? 'text-purple-400' : 'text-purple-600',
+      textColor: isDark ? 'text-purple-300' : 'text-purple-900',
+      borderColor: isDark ? 'border-purple-700/50' : 'border-purple-200'
     },
     {
-      title: t('credits_used'),
+      title: t('dashboard.stats.creditsUsed'),
       value: creditData?.used_this_month || 0,
-      subtitle: "this month",
+      subtitle: t('common.this_month'),
       icon: CreditCard,
       color: 'orange',
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600',
-      textColor: 'text-orange-900',
-      borderColor: 'border-orange-200'
+      bgColor: isDark ? 'bg-orange-900/20' : 'bg-orange-50',
+      iconColor: isDark ? 'text-orange-400' : 'text-orange-600',
+      textColor: isDark ? 'text-orange-300' : 'text-orange-900',
+      borderColor: isDark ? 'border-orange-700/50' : 'border-orange-200'
     }
   ];
 
@@ -154,7 +154,7 @@ const Dashboard: React.FC = () => {
         <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border shadow-sm p-6`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {t('quick_actions')}
+              {t('dashboard.quickActions.title')}
             </h3>
             <div className="flex items-center text-sm text-gray-500">
               <Zap className="h-4 w-4 mr-1" />
@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
                 <Upload className="h-5 w-5" />
               </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('import_contacts')}
+                {t('dashboard.quickActions.newUpload')}
               </span>
             </motion.button>
 
@@ -198,7 +198,7 @@ const Dashboard: React.FC = () => {
                 <ListChecks className="h-5 w-5" />
               </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('view_batches')}
+                {t('dashboard.quickActions.viewResults')}
               </span>
             </motion.button>
 
@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
                 <CreditCard className="h-5 w-5" />
       </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('buy_credits')}
+                {t('common.buy_credits')}
               </span>
             </motion.button>
 
@@ -238,7 +238,7 @@ const Dashboard: React.FC = () => {
                 <Database className="h-5 w-5" />
               </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('view_crm')}
+                {t('navigation.contacts')}
               </span>
             </motion.button>
           </div>
@@ -249,14 +249,16 @@ const Dashboard: React.FC = () => {
           {initialLoading && statsLoading ? (
             // Loading state for stats - maintain grid structure
             Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg animate-pulse">
+              <div key={index} className={`rounded-xl p-6 border shadow-lg animate-pulse ${
+                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-24 mb-3"></div>
-                    <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    <div className={`h-4 rounded w-24 mb-3 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                    <div className={`h-8 rounded w-16 mb-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                    <div className={`h-3 rounded w-20 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
                   </div>
-                  <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                  <div className={`h-8 w-8 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
                 </div>
               </div>
             ))
@@ -269,18 +271,18 @@ const Dashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -4, scale: 1.02 }}
-                className={`${isDark ? 'bg-gray-800' : card.bgColor} rounded-xl p-6 border ${card.borderColor} shadow-lg hover:shadow-xl transition-all duration-300`}
+                className={`${card.bgColor} rounded-xl p-6 border ${card.borderColor} shadow-lg hover:shadow-xl transition-all duration-300`}
         >
           <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : card.iconColor} uppercase tracking-wide`}>
+                    <p className={`text-sm font-medium ${card.iconColor} uppercase tracking-wide`}>
                       {card.title}
                     </p>
-                    <p className={`text-3xl font-bold ${isDark ? 'text-white' : card.textColor} mt-2 mb-1`}>
+                    <p className={`text-3xl font-bold ${card.textColor} mt-2 mb-1`}>
                       {card.value.toLocaleString()}
                     </p>
                     {/* Descriptive subtitle */}
-                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} flex items-center`}>
+                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'} flex items-center`}>
                       <div className={`w-2 h-2 rounded-full ${
                         card.color === 'blue' ? 'bg-blue-400' :
                         card.color === 'green' ? 'bg-green-400' :
@@ -289,7 +291,7 @@ const Dashboard: React.FC = () => {
                       {card.subtitle}
                     </p>
                   </div>
-                  <div className={`flex-shrink-0 ${isDark ? 'text-gray-400' : card.iconColor}`}>
+                  <div className={`flex-shrink-0 ${card.iconColor}`}>
                     <card.icon className="h-8 w-8" />
               </div>
             </div>

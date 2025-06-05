@@ -138,7 +138,10 @@
     "phones": "Phones",
     "format": "Format",
     "of": "of",
-    "duration": "Duration"
+    "duration": "Duration",
+    "hit_rate": "hit rate",
+    "this_month": "this month",
+    "active": "Active"
   },
   "navigation": {
     "dashboard": "Dashboard",

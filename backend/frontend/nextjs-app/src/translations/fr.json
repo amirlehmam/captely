@@ -137,7 +137,10 @@
     "phones": "Téléphones",
     "format": "Format",
     "of": "sur",
-    "duration": "Durée"
+    "duration": "Durée",
+    "hit_rate": "taux de réussite",
+    "this_month": "ce mois",
+    "active": "Actif"
   },
   "navigation": {
     "dashboard": "Tableau de bord",

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCreditContext } from '../contexts/CreditContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -13,6 +14,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const { t } = useLanguage();
+  const { isDark } = useTheme();
   const { creditData, loading: creditLoading } = useCreditContext();
   
   const navItems = [
@@ -117,9 +119,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
 
   return (
     <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
-      <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
+      <div className={`flex flex-col flex-grow border-r transition-colors duration-300 ${
+        isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
         {/* Logo Section with 360 animation */}
-        <div className="flex flex-col items-center justify-center px-6 py-8 border-b border-gray-100">
+        <div className={`flex flex-col items-center justify-center px-6 py-8 border-b ${
+          isDark ? 'border-gray-700' : 'border-gray-100'
+        }`}>
           <div className="cursor-pointer mb-4">
             <style>{`
               @keyframes spin-continuous {
@@ -136,7 +142,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
               alt="Captely"
             />
           </div>
-          <span className="text-lg font-semibold text-gray-900 text-center">Captely</span>
+          <span className={`text-lg font-semibold text-center ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            Captely
+          </span>
         </div>
         
         {/* Navigation */}
@@ -149,8 +159,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
               className={({ isActive }) => 
                 `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? isDark 
+                      ? 'bg-primary-900/30 text-primary-300 shadow-sm border border-primary-700/50' 
+                      : 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100'
+                    : isDark
+                      ? 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
             >
@@ -161,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
 
           {/* Separator with better spacing */}
           <div className="py-3">
-            <div className="border-t border-gray-200"></div>
+            <div className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}></div>
           </div>
 
           {/* Other Items with consistent spacing */}
@@ -172,8 +186,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
               className={({ isActive }) => 
                 `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? isDark 
+                      ? 'bg-primary-900/30 text-primary-300 shadow-sm border border-primary-700/50' 
+                      : 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100'
+                    : isDark
+                      ? 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
             >
@@ -185,19 +203,37 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         
         {/* Credit Usage Box - Better positioned */}
         <div className="px-4 pb-4">
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 border border-primary-200">
+          <div className={`rounded-xl p-4 border ${
+            isDark 
+              ? 'bg-gradient-to-br from-primary-900/30 to-primary-800/30 border-primary-700/50' 
+              : 'bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200'
+          }`}>
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">{t('common.credit_usage')}</h4>
-              <CreditCard className="h-4 w-4 text-primary-600" />
+              <h4 className={`text-sm font-semibold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                {t('common.credit_usage')}
+              </h4>
+              <CreditCard className={`h-4 w-4 ${
+                isDark ? 'text-primary-400' : 'text-primary-600'
+              }`} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600">Usage</span>
-                <span className="text-xs font-medium text-gray-900">
+                <span className={`text-xs ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Usage
+                </span>
+                <span className={`text-xs font-medium ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
                   {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} / ${creditData?.limit_monthly || 5000}`}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className={`w-full rounded-full h-2 ${
+                isDark ? 'bg-gray-700' : 'bg-gray-200'
+              }`}>
                 <div 
                   className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full transition-all duration-500" 
                   style={{
@@ -207,7 +243,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
                   }}
                 ></div>
               </div>
-              <div className="text-xs text-primary-600 font-medium">
+              <div className={`text-xs font-medium ${
+                isDark ? 'text-primary-400' : 'text-primary-600'
+              }`}>
                 {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} used`}
               </div>
             </div>
@@ -215,22 +253,30 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         </div>
       
         {/* User Section - Proper spacing from credit box */}
-        <div className="border-t border-gray-200 p-4">
+        <div className={`border-t p-4 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 flex items-center justify-center">
               <span className="text-sm font-medium text-white">{userInfo.initials}</span>
             </div>
             <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className={`text-sm font-medium truncate ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
                 {userInfo.name}
               </p>
-              <p className="text-xs font-medium text-gray-500">
+              <p className={`text-xs font-medium ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 {userInfo.plan} {t('billing.currentPlan').toLowerCase()}
               </p>
             </div>
             <button 
               onClick={onLogout}
-              className="ml-2 flex-shrink-0 p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+              className={`ml-2 flex-shrink-0 p-2 rounded-full transition-all duration-200 ${
+                isDark 
+                  ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
               title="Logout"
             >
               <LogOut className="h-5 w-5" />
