@@ -509,79 +509,159 @@ const BillingPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto bg-white min-h-screen">
-      {/* Page Header */}
+    <div className={`max-w-7xl mx-auto min-h-screen ${
+      theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+    }`}>
+      {/* Enhanced Header */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        className={`relative mb-8 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-emerald-900' 
+            : 'bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50'
+        } rounded-2xl overflow-hidden`}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {t('billing.title')}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {t('billing.subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              {t('billing.refreshButton')}
-            </button>
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
-            >
-              <History className="h-4 w-4 mr-2" />
-              {showHistory ? t('billing.hideHistory') : t('billing.showHistory')}
-            </button>
-            <button 
-              onClick={() => handleDownloadInvoice()}
-              disabled={downloadingInvoice}
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50"
-            >
-              {downloadingInvoice ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <FileText className="h-4 w-4 mr-2" />
-              )}
-              {t('billing.downloadInvoice')}
-            </button>
+        <div className={`absolute inset-0 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-r from-emerald-500/20 via-teal-500/10 to-blue-500/20' 
+            : 'bg-gradient-to-r from-emerald-300/20 via-teal-300/10 to-blue-300/20'
+        }`} />
+        <div className="relative px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div className="text-center sm:text-left">
+              <h1 className={`text-4xl font-bold mb-3 ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-400 bg-clip-text text-transparent' 
+                  : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 bg-clip-text text-transparent'
+              }`}>
+                💳 {t('billing.title')}
+              </h1>
+              <p className={`text-lg ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                {t('billing.subtitle')}
+              </p>
+              <div className="flex flex-wrap justify-center sm:justify-start items-center gap-4 mt-4">
+                <div className={`px-4 py-2 rounded-full ${
+                  theme === 'dark' 
+                    ? 'bg-emerald-500/20 text-emerald-300' 
+                    : 'bg-emerald-100 text-emerald-700'
+                } border ${
+                  theme === 'dark' ? 'border-emerald-400/30' : 'border-emerald-200'
+                }`}>
+                  💰 Credit Management
+                </div>
+                <div className={`px-4 py-2 rounded-full ${
+                  theme === 'dark' 
+                    ? 'bg-blue-500/20 text-blue-300' 
+                    : 'bg-blue-100 text-blue-700'
+                } border ${
+                  theme === 'dark' ? 'border-blue-400/30' : 'border-blue-200'
+                }`}>
+                  📊 Usage Analytics
+                </div>
+                <div className={`px-4 py-2 rounded-full ${
+                  theme === 'dark' 
+                    ? 'bg-purple-500/20 text-purple-300' 
+                    : 'bg-purple-100 text-purple-700'
+                } border ${
+                  theme === 'dark' ? 'border-purple-400/30' : 'border-purple-200'
+                }`}>
+                  🔐 Secure Billing
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                    : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                🔄 {t('billing.refreshButton')}
+              </button>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                    : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <History className="h-4 w-4 mr-2" />
+                📋 {showHistory ? t('billing.hideHistory') : t('billing.showHistory')}
+              </button>
+              <button 
+                onClick={() => handleDownloadInvoice()}
+                disabled={downloadingInvoice}
+                className={`inline-flex items-center px-4 py-2 rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
+                  theme === 'dark'
+                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                    : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+                } text-white`}
+              >
+                {downloadingInvoice ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
+                📄 {t('billing.downloadInvoice')}
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Credit Consumption Info Box - MODIFIED */}
+      {/* Credit Consumption Info Box */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8"
+        className={`rounded-xl border p-6 mb-8 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-400/30' 
+            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+        }`}
       >
         <div className="flex items-start space-x-4">
-          <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+          <Info className={`w-6 h-6 flex-shrink-0 mt-1 ${
+            theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+          }`} />
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              {t('billing.creditConsumptionLogicTitle')}
+            <h3 className={`text-lg font-semibold mb-3 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              💡 {t('billing.creditConsumptionLogicTitle')}
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <p className="text-sm text-gray-700 flex items-center">
-                  <Zap className="w-4 h-4 text-blue-500 mr-2" />
-                  <strong>1 email found = 1 credit</strong>
+                <p className={`text-sm flex items-center ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <Zap className={`w-4 h-4 mr-2 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
+                  }`} />
+                  <strong>📧 1 email found = 1 credit</strong>
                 </p>
-                <p className="text-sm text-gray-700 flex items-center">
-                  <Zap className="w-4 h-4 text-purple-500 mr-2" />
-                  <strong>1 phone found = 10 credits</strong>
+                <p className={`text-sm flex items-center ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <Zap className={`w-4 h-4 mr-2 ${
+                    theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                  }`} />
+                  <strong>📱 1 phone found = 10 credits</strong>
                 </p>
-                <p className="text-sm text-gray-700 flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  No result = No charge
+                <p className={`text-sm flex items-center ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <CheckCircle className={`w-4 h-4 mr-2 ${
+                    theme === 'dark' ? 'text-green-400' : 'text-green-500'
+                  }`} />
+                  <strong>❌ No result = No charge</strong>
                 </p>
               </div>
             </div>
@@ -589,93 +669,131 @@ const BillingPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Current Plan & Credits Overview - MODIFIED */}
+      {/* Current Plan & Credits Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
-        {/* Current Plan - ENHANCED WITH NEW BUTTONS */}
+        {/* Current Plan */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-xl border border-teal-200 p-6"
+          className={`rounded-xl border p-6 ${
+            theme === 'dark' 
+              ? 'bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border-emerald-400/30' 
+              : 'bg-gradient-to-br from-teal-50 to-blue-50 border-teal-200'
+          }`}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-teal-100 rounded-lg">
-                <Crown className="w-6 h-6 text-teal-600" />
+              <div className={`p-2 rounded-lg ${
+                theme === 'dark' ? 'bg-emerald-500/20' : 'bg-teal-100'
+              }`}>
+                <Crown className={`w-6 h-6 ${
+                  theme === 'dark' ? 'text-emerald-400' : 'text-teal-600'
+                }`} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  {t('billing.currentPlanTitle')}
+                <h3 className={`text-lg font-bold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  👑 {t('billing.currentPlanTitle')}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>
                   {subscription?.billing_cycle === 'annual' ? t('billing.annualSubscription') : t('billing.monthlySubscription')}
                 </p>
               </div>
             </div>
             <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
               subscription?.status === 'active' 
-                ? 'bg-green-100 text-green-700 border-green-200'
+                ? theme === 'dark'
+                  ? 'bg-green-500/20 text-green-300 border-green-400/30'
+                  : 'bg-green-100 text-green-700 border-green-200'
                 : subscription?.status === 'trialing'
-                ? 'bg-blue-100 text-blue-700 border-blue-200'
-                : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                ? theme === 'dark'
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-400/30'
+                  : 'bg-blue-100 text-blue-700 border-blue-200'
+                : theme === 'dark'
+                  ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30'
+                  : 'bg-yellow-100 text-yellow-700 border-yellow-200'
             }`}>
-              {subscription?.status || 'Unknown'}
+              {subscription?.status === 'active' ? '✅' : subscription?.status === 'trialing' ? '🔄' : '⚠️'} {subscription?.status || 'Unknown'}
             </span>
           </div>
           
           <div className="space-y-4">
             <div>
-              <h4 className="text-2xl font-bold text-gray-900">{currentPlan?.display_name}</h4>
-              <p className="text-gray-600">{currentPlan?.credits_monthly?.toLocaleString()} credits/month</p>
+              <h4 className={`text-2xl font-bold ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>{currentPlan?.display_name}</h4>
+              <p className={`${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>💳 {currentPlan?.credits_monthly?.toLocaleString()} credits/month</p>
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-3xl font-bold text-teal-600">
+              <span className={`text-3xl font-bold ${
+                theme === 'dark' ? 'text-emerald-400' : 'text-teal-600'
+              }`}>
                 €{subscription?.billing_cycle === 'annual' 
                   ? (currentPlan?.price_annual || 0) / 12 
                   : currentPlan?.price_monthly}
               </span>
-              <span className="text-sm text-gray-600">/{t('billing.month')}</span>
+              <span className={`text-sm ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>/{t('billing.month')}</span>
             </div>
             
-            <div className="pt-4 border-t border-teal-200 space-y-4">
+            <div className={`pt-4 border-t space-y-4 ${
+              theme === 'dark' ? 'border-emerald-400/30' : 'border-teal-200'
+            }`}>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">
-                  {t('billing.nextBillingDate')}
+                <span className={`${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  📅 {t('billing.nextBillingDate')}
                 </span>
-                <span className="font-medium text-gray-900">
+                <span className={`font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
                   {subscription?.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
                 </span>
               </div>
               
-              {/* NEW BUTTONS */}
+              {/* Management Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setShowAddPaymentMethod(true)}
                   className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {t('billing.managePaymentMethods')}
+                  💳 {t('billing.managePaymentMethods')}
                 </button>
                 <button
                   onClick={() => handleDownloadInvoice()}
                   disabled={downloadingInvoice}
-                  className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                  className={`flex-1 inline-flex items-center justify-center px-4 py-2 rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                      : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+                  } text-white`}
                 >
                   {downloadingInvoice ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <FileText className="w-4 h-4 mr-2" />
                   )}
-                  {t('billing.seeDownloadInvoices')}
+                  📄 {t('billing.seeDownloadInvoices')}
                 </button>
             </div>
               
               {subscription?.status === 'active' && (
             <button 
                   onClick={handleCancelSubscription}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  className={`text-sm font-medium ${
+                    theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
+                  }`}
             >
-                  {t('billing.cancelSubscription')}
+                  ❌ {t('billing.cancelSubscription')}
             </button>
               )}
             </div>
@@ -687,28 +805,44 @@ const BillingPage: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8"
+        className={`rounded-xl shadow-lg border p-6 mb-8 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
+            : 'bg-white border-gray-100'
+        }`}
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {t('billing.paymentMethodsTitle')}
+          <h3 className={`text-lg font-semibold ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
+            💳 {t('billing.paymentMethodsTitle')}
           </h3>
           <button
             onClick={() => setShowAddPaymentMethod(true)}
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200"
+            className={`inline-flex items-center px-4 py-2 rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 ${
+              theme === 'dark'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+            } text-white`}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {t('billing.addPaymentMethod')}
+            ➕ {t('billing.addPaymentMethod')}
           </button>
         </div>
 
         {paymentMethods.length === 0 ? (
           <div className="text-center py-8">
-            <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600">
+            <CreditCard className={`w-12 h-12 mx-auto mb-3 ${
+              theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+            }`} />
+            <p className={`${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>
               {t('billing.noPaymentMethods')}
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className={`text-sm mt-1 ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               {t('billing.addPaymentMethodDescription')}
             </p>
           </div>
@@ -719,28 +853,44 @@ const BillingPage: React.FC = () => {
                 key={method.id}
                 className={`border rounded-lg p-4 transition-all duration-200 ${
                   method.is_default 
-                    ? 'border-teal-500 bg-teal-50' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? theme === 'dark'
+                      ? 'border-emerald-500 bg-emerald-500/10' 
+                      : 'border-teal-500 bg-teal-50'
+                    : theme === 'dark'
+                      ? 'border-gray-600 hover:border-gray-500 bg-gray-800/50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-white rounded-lg border border-gray-200">
+                    <div className={`p-2 rounded-lg border ${
+                      theme === 'dark' 
+                        ? 'bg-gray-700 border-gray-600' 
+                        : 'bg-white border-gray-200'
+                    }`}>
                       {getCardBrandIcon(method.brand)}
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-900">
-                          •••• {method.last_four}
+                        <span className={`font-medium ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          💳 •••• {method.last_four}
                         </span>
                         {method.is_default && (
-                          <span className="px-2 py-1 bg-teal-600 text-white text-xs rounded-full">
-                            {t('billing.default')}
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            theme === 'dark'
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-teal-600 text-white'
+                          }`}>
+                            ⭐ {t('billing.default')}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">
-                        {t('billing.expires')} {method.exp_month}/{method.exp_year}
+                      <p className={`text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        ⏰ {t('billing.expires')} {method.exp_month}/{method.exp_year}
                       </p>
                     </div>
                   </div>
@@ -748,14 +898,22 @@ const BillingPage: React.FC = () => {
                     {!method.is_default && (
                       <button
                         onClick={() => handleSetDefaultPaymentMethod(method.id)}
-                        className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                        className={`text-sm font-medium ${
+                          theme === 'dark' 
+                            ? 'text-emerald-400 hover:text-emerald-300' 
+                            : 'text-teal-600 hover:text-teal-700'
+                        }`}
                       >
-                        {t('billing.setAsDefault')}
+                        ⭐ {t('billing.setAsDefault')}
                       </button>
                     )}
                     <button
                       onClick={() => handleRemovePaymentMethod(method.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                      className={`p-2 rounded-lg transition-all duration-200 ${
+                        theme === 'dark' 
+                          ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/20' 
+                          : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                      }`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -770,42 +928,56 @@ const BillingPage: React.FC = () => {
       {/* Billing Type Toggle */}
       <div className="mb-8">
         <div className="flex items-center justify-center">
-          <div className="bg-gray-100 rounded-lg p-1 inline-flex">
+          <div className={`rounded-lg p-1 inline-flex ${
+            theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
+          }`}>
             <button
               onClick={() => setBillingType('monthly')}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                 billingType === 'monthly'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark'
+                    ? 'bg-gray-700 text-white shadow-sm'
+                    : 'bg-white text-gray-900 shadow-sm'
+                  : theme === 'dark'
+                    ? 'text-gray-300 hover:text-white'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {t('billing.monthly')}
+              📅 {t('billing.monthly')}
             </button>
             <button
               onClick={() => setBillingType('annual')}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                 billingType === 'annual'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark'
+                    ? 'bg-gray-700 text-white shadow-sm'
+                    : 'bg-white text-gray-900 shadow-sm'
+                  : theme === 'dark'
+                    ? 'text-gray-300 hover:text-white'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {t('billing.annualTwoMonthsOffered')}
+              💰 {t('billing.annualTwoMonthsOffered')}
             </button>
           </div>
         </div>
       </div>
 
-      {/* CREDIT PACKS - REPLACE THE OLD PLANS */}
+      {/* Credit Packs */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {t('billing.chooseCreditPackTitle')}
+          <h2 className={`text-2xl font-bold mb-2 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
+            💎 {t('billing.chooseCreditPackTitle')}
           </h2>
-          <p className="text-gray-600">
+          <p className={`${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+          }`}>
             {t('billing.chooseCreditPackSubtitle')}
           </p>
         </div>
@@ -823,18 +995,30 @@ const BillingPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className={`relative bg-white rounded-xl shadow-lg border-2 transition-all duration-300 ${
+              className={`relative rounded-xl shadow-lg border-2 transition-all duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-br from-gray-800 to-gray-900' 
+                  : 'bg-white'
+              } ${
                   pack.popular 
-                  ? 'border-teal-500 shadow-xl scale-105' 
+                  ? theme === 'dark'
+                    ? 'border-emerald-500 shadow-xl scale-105' 
+                    : 'border-teal-500 shadow-xl scale-105'
                     : isCurrentPack
                   ? 'border-green-500'
-                  : 'border-gray-200 hover:border-teal-300'
+                  : theme === 'dark'
+                    ? 'border-gray-600 hover:border-emerald-400'
+                    : 'border-gray-200 hover:border-teal-300'
               }`}
             >
                 {pack.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-4 py-1 rounded-full text-xs font-bold">
-                    {t('billing.mostPopular')}
+                  <span className={`px-4 py-1 rounded-full text-xs font-bold text-white ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-r from-emerald-600 to-emerald-500'
+                      : 'bg-gradient-to-r from-teal-600 to-teal-500'
+                  }`}>
+                    ⭐ {t('billing.mostPopular')}
                   </span>
                 </div>
               )}
@@ -842,58 +1026,90 @@ const BillingPage: React.FC = () => {
                 {isCurrentPack && (
                 <div className="absolute -top-3 right-4">
                   <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                    {t('billing.current')}
+                    ✅ {t('billing.current')}
                   </span>
                 </div>
               )}
 
               <div className="p-6">
                 <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900">{pack.name}</h3>
+                    <h3 className={`text-xl font-bold ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>💎 {pack.name}</h3>
                   <div className="mt-4">
-                        <span className="text-3xl font-bold text-gray-900">
+                        <span className={`text-3xl font-bold ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
                         €{monthlyPrice.toFixed(0)}
                         </span>
-                      <span className="text-gray-600">/{t('billing.month')}</span>
+                      <span className={`${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>/{t('billing.month')}</span>
                       
                       {billingType === 'annual' && savings > 0 && (
                         <div className="mt-2">
-                          <p className="text-sm text-green-600 font-medium">
-                            {t('billing.save')} €{savings.toFixed(0)}/{t('billing.year')}
+                          <p className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                          }`}>
+                            💰 {t('billing.save')} €{savings.toFixed(0)}/{t('billing.year')}
                           </p>
-                          <p className="text-xs text-green-500">
-                            {t('billing.twoMonthsOffered')}
+                          <p className={`text-xs ${
+                            theme === 'dark' ? 'text-green-300' : 'text-green-500'
+                          }`}>
+                            🎉 {t('billing.twoMonthsOffered')}
                           </p>
                       </div>
                     )}
                   </div>
                   
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className={`text-sm mt-2 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
                       {billingType === 'annual' ? (pack.credits * 12).toLocaleString() : pack.credits.toLocaleString()} 
                       {billingType === 'annual' ? t('billing.creditsPerYear') : t('billing.creditsPerMonth')}
                     </p>
                 </div>
 
                   <div className="space-y-3 mb-6">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />
-                      {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} {t('billing.emails')}
+                    <div className={`flex items-center text-sm ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      <Mail className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                        theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
+                      }`} />
+                      📧 {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} {t('billing.emails')}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="w-4 h-4 text-purple-500 mr-2 flex-shrink-0" />
-                      {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} {t('billing.phones')}
+                    <div className={`flex items-center text-sm ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      <Phone className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                        theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                      }`} />
+                      📱 {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} {t('billing.phones')}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      {t('billing.apiAccessIntegrations')}
+                    <div className={`flex items-center text-sm ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                        theme === 'dark' ? 'text-green-400' : 'text-green-500'
+                      }`} />
+                      🔗 {t('billing.apiAccessIntegrations')}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      {t('billing.chromeExtension')}
+                    <div className={`flex items-center text-sm ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                        theme === 'dark' ? 'text-green-400' : 'text-green-500'
+                      }`} />
+                      🌐 {t('billing.chromeExtension')}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      {t('billing.emailSupport')}
+                    <div className={`flex items-center text-sm ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                        theme === 'dark' ? 'text-green-400' : 'text-green-500'
+                      }`} />
+                      💬 {t('billing.emailSupport')}
                     </div>
                   </div>
 
@@ -902,24 +1118,32 @@ const BillingPage: React.FC = () => {
                     disabled={isCurrentPack || loading}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
                       isCurrentPack
-                      ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+                      ? theme === 'dark'
+                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-600 cursor-not-allowed'
                         : pack.popular
-                      ? 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gray-900 hover:bg-gray-800 text-white'
+                      ? theme === 'dark'
+                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
+                      : theme === 'dark'
+                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                        : 'bg-gray-900 hover:bg-gray-800 text-white'
                   }`}
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                     ) : isCurrentPack ? (
-                      t('billing.currentPack')
+                      `✅ ${t('billing.currentPack')}`
                 ) : (
-                      t('billing.buyThisPack')
+                      `🛒 ${t('billing.buyThisPack')}`
                 )}
               </button>
                   
                   {billingType === 'annual' && (
-                    <p className="text-xs text-center text-gray-500 mt-2">
-                      {formatMessage('billing.billedAnnually', { amount: totalPrice.toFixed(0) })}
+                    <p className={`text-xs text-center mt-2 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      💳 {formatMessage('billing.billedAnnually', { amount: totalPrice.toFixed(0) })}
                     </p>
                   )}
                 </div>
