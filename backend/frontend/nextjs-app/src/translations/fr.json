@@ -204,6 +204,8 @@
     "stats": {
       "totalContacts": "Contacts totaux",
       "enrichedContacts": "Contacts enrichis",
+      "emailsFound": "Emails trouvés",
+      "phonesFound": "Téléphones trouvés",
       "successRate": "Taux de réussite",
       "creditsRemaining": "Crédits restants",
       "creditsUsed": "Crédits utilisés",
