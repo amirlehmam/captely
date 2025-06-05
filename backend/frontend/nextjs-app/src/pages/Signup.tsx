@@ -159,6 +159,10 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
     try {
       setIsValidatingEmail(true);
       
+      // Debug logging
+      console.log('🔧 Frontend Debug: Sending verification to email:', email);
+      console.log('🔧 Frontend Debug: formData.email:', formData.email);
+      
       await apiService.sendVerificationEmail(email);
 
       toast.success(t('auth.signup.verificationCodeSent', 'Verification code sent to your email!'));
@@ -493,6 +497,10 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
         <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
           {t('auth.signup.verificationSent', 'We sent a 6-digit code to')} <strong>{formData.email}</strong>
         </p>
+        {/* Debug info - remove this later */}
+        <div className="text-xs text-gray-500 mt-1">
+          Debug: Email in state: "{formData.email}" | Auth method: {formData.authMethod}
+        </div>
       </div>
 
       <div className="space-y-4">
