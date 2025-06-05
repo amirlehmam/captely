@@ -11,7 +11,7 @@ const BatchProgress: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showVerification, setShowVerification] = useState(false);
+  const [showVerification, setShowVerification] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
@@ -72,7 +72,7 @@ const BatchProgress: React.FC = () => {
               }`}
             >
               <Shield className="h-4 w-4 mr-2" />
-              {showVerification ? t('common.hide') : t('common.show')} {t('common.verification')}
+              {showVerification ? `${t('common.hide')} ${t('common.verification')}` : `${t('common.show')} ${t('common.verification')}`}
             </button>
           </div>
         </div>
