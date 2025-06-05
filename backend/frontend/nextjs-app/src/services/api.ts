@@ -47,8 +47,18 @@ const getDefaultUrl = (service: string): string => {
   const isProduction = import.meta.env?.PROD || window.location.protocol === 'https:';
   
   if (isProduction) {
-    // Production URLs using HTTPS and domain - NO service prefix since nginx handles routing
-    return `https://captely.com`;
+    // Production URLs - use /api/ prefix to match nginx routing
+    const serviceMap: Record<string, string> = {
+      auth: 'https://captely.com',  // Special case: auth uses both /auth/ and /api/auth/
+      import: 'https://captely.com/api',
+      credit: 'https://captely.com/api',
+      export: 'https://captely.com/api',
+      analytics: 'https://captely.com/api',
+      notification: 'https://captely.com/api',
+      billing: 'https://captely.com/api',
+      crm: 'https://captely.com/api'
+    };
+    return serviceMap[service] || 'https://captely.com/api';
   } else {
     // Development URLs
     const portMap: Record<string, number> = {
