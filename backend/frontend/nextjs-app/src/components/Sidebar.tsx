@@ -125,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         {/* Logo */}
         <div className="flex items-center flex-shrink-0 px-4 mb-8">
           <img
-            className="h-8 w-auto"
+            className="h-12 w-auto"
             src="/logo.png"
             alt="Captely"
           />
@@ -218,6 +218,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
             ))}
           </div>
         </nav>
+        
+        {/* Credit Usage Box */}
+        <div className="mt-8 mx-2">
+          <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 border border-primary-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">{t('billing.creditsRemaining')}</h4>
+              <CreditCard className="h-4 w-4 text-primary-600" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-600">{t('billing.usage')}</span>
+                <span className="text-xs font-medium text-gray-900">4,982 / 5,000</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full" style={{width: '99.6%'}}></div>
+              </div>
+              <div className="text-xs text-primary-600 font-medium">
+                18 {t('billing.creditsRemaining').toLowerCase()}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* User Section */}

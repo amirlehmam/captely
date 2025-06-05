@@ -25,22 +25,15 @@ const Dashboard: React.FC = () => {
 
   // Hooks for data fetching
   const { 
-    stats, 
-    loading: statsLoading, 
-    error: statsError,
+    loading: statsLoading,
     refetch: refetchStats 
   } = useDashboardStats();
 
   const { 
-    jobs, 
-    loading: jobsLoading, 
-    error: jobsError 
+    jobs
   } = useJobs();
 
-  const {
-    health,
-    loading: healthLoading
-  } = useServiceHealth();
+  useServiceHealth(); // Keep hook to maintain data fetching
 
   useEffect(() => {
     // Auto-refresh stats every 30 seconds
@@ -51,13 +44,7 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [refetchStats]);
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat().format(num);
-  };
 
-  const formatPercentage = (num: number) => {
-    return `${num.toFixed(1)}%`;
-  };
 
   const recentJobs = jobs.slice(0, 3);
 
@@ -82,243 +69,148 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-primary-600 to-primary-500 rounded-xl p-8 text-white"
-      >
-        <h1 className="text-3xl font-bold mb-2">
-          {t('dashboard.welcome')}
-        </h1>
-        <p className="text-primary-100 text-lg">
-          {t('dashboard.overview')}
-        </p>
-      </motion.div>
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Batch Progress & Credit Usage */}
+        <div className="lg:col-span-2 space-y-8">
+          <BatchProgress />
+          <CreditUsage />
+        </div>
+        
+        {/* Right Column - Provider Status & System Health */}
+        <div className="space-y-8">
+          <ProviderStatus />
+          
+          {/* System Health */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+          >
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t('dashboard.systemHealth.title')}
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Wifi className="h-5 w-5 text-green-500" />
+                    <span className="text-sm font-medium text-gray-900">
+                      {t('dashboard.systemHealth.enrichmentService')}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {t('common.active')}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Wifi className="h-5 w-5 text-green-500" />
+                    <span className="text-sm font-medium text-gray-900">
+                      {t('dashboard.systemHealth.apiService')}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {t('common.active')}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Wifi className="h-5 w-5 text-green-500" />
+                    <span className="text-sm font-medium text-gray-900">
+                      {t('dashboard.systemHealth.dataProcessing')}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {t('common.active')}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <span className="text-sm font-medium text-green-800">
+                    {t('dashboard.systemHealth.allSystemsOperational')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
-      {/* Stats Grid */}
+      {/* Recent Activity */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        transition={{ delay: 0.3 }}
+        className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
       >
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                {t('dashboard.stats.totalContacts')}
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {formatNumber(stats?.total_contacts || 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <ArrowUp className="h-4 w-4 text-green-500" />
-            <span className="text-green-600 font-medium">+12%</span>
-            <span className="text-gray-500 ml-1">{t('common.thisMonth')}</span>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t('dashboard.recentActivity.title')}
+            </h3>
+            <Link
+              to="/batches"
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center"
+            >
+              {t('dashboard.recentActivity.viewAll')}
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                {t('dashboard.stats.enrichedContacts')}
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {formatNumber(stats?.enriched_contacts || 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <ArrowUp className="h-4 w-4 text-green-500" />
-            <span className="text-green-600 font-medium">+8%</span>
-            <span className="text-gray-500 ml-1">{t('common.thisWeek')}</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                {t('dashboard.stats.successRate')}
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {formatPercentage(stats?.success_rate || 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <ArrowUp className="h-4 w-4 text-green-500" />
-            <span className="text-green-600 font-medium">+2.1%</span>
-            <span className="text-gray-500 ml-1">{t('common.today')}</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                {t('dashboard.stats.creditsRemaining')}
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {formatNumber(stats?.credits_remaining || 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <Zap className="h-6 w-6 text-yellow-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <ArrowDown className="h-4 w-4 text-red-500" />
-            <span className="text-red-600 font-medium">-156</span>
-            <span className="text-gray-500 ml-1">{t('common.today')}</span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Recent Activity & System Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Jobs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
-        >
-          <div className="px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {t('dashboard.recentActivity.title')}
-              </h3>
-              <Link
-                to="/batches"
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center"
-              >
-                {t('dashboard.recentActivity.viewAll')}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </div>
-          </div>
-          <div className="p-6">
-            {recentJobs.length > 0 ? (
-              <div className="space-y-4">
-                {recentJobs.map((job) => (
-                  <div key={job.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        {job.status === 'completed' ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : job.status === 'processing' ? (
-                          <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
-                        ) : job.status === 'failed' ? (
-                          <XCircle className="h-5 w-5 text-red-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-yellow-500" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {job.file_name || `Job ${job.id.substring(0, 8)}`}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(job.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
+        <div className="p-6">
+          {recentJobs.length > 0 ? (
+            <div className="space-y-4">
+              {recentJobs.map((job) => (
+                <div key={job.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      {job.status === 'completed' ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : job.status === 'processing' ? (
+                        <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
+                      ) : job.status === 'failed' ? (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-yellow-500" />
+                      )}
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
-                        {t(`enrichment.status.${job.status}`)}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {job.completed}/{job.total} {t('common.total').toLowerCase()}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {job.file_name || `Job ${job.id.substring(0, 8)}`}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(job.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">{t('dashboard.recentActivity.noActivity')}</p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* System Health */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
-        >
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {t('dashboard.systemHealth.title')}
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Wifi className="h-5 w-5 text-green-500" />
-                  <span className="text-sm font-medium text-gray-900">
-                    {t('dashboard.systemHealth.enrichmentService')}
-                  </span>
+                  <div className="text-right">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
+                      {t(`enrichment.status.${job.status}`)}
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {job.completed}/{job.total} {t('common.total').toLowerCase()}
+                    </p>
+                  </div>
                 </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {t('common.active')}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Wifi className="h-5 w-5 text-green-500" />
-                  <span className="text-sm font-medium text-gray-900">
-                    {t('dashboard.systemHealth.apiService')}
-                  </span>
-                </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {t('common.active')}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Wifi className="h-5 w-5 text-green-500" />
-                  <span className="text-sm font-medium text-gray-900">
-                    {t('dashboard.systemHealth.dataProcessing')}
-                  </span>
-                </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {t('common.active')}
-                </span>
-              </div>
+              ))}
             </div>
-            
-            <div className="mt-6 p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-sm font-medium text-green-800">
-                  {t('dashboard.systemHealth.allSystemsOperational')}
-                </span>
-              </div>
+          ) : (
+            <div className="text-center py-8">
+              <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">{t('dashboard.recentActivity.noActivity')}</p>
             </div>
-          </div>
-        </motion.div>
-      </div>
+          )}
+        </div>
+      </motion.div>
 
       {/* Quick Actions */}
       <motion.div
