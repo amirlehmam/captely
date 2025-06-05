@@ -878,7 +878,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
             transition={{ delay: 0.4 }}
             className="mt-8 text-center text-sm text-gray-500"
           >
-            <p>© 2024 Captely. All rights reserved.</p>
+            <p>© 2025 Captely. All rights reserved.</p>
           </motion.div>
         </motion.div>
       </div>

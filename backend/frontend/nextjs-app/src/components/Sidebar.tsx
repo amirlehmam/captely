@@ -6,80 +6,76 @@ import {
   UserPlus, Activity, Megaphone, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SidebarProps {
   onLogout: () => void;
 }
 
-const navItems = [
-  { 
-    path: '/', 
-    icon: <LayoutDashboard className="w-5 h-5" />, 
-    label: 'Dashboard' 
-  },
-  { 
-    path: '/batches', 
-    icon: <Database className="w-5 h-5" />, 
-    label: 'Batches' 
-  },
-  { 
-    path: '/import', 
-    icon: <Upload className="w-5 h-5" />, 
-    label: 'Import' 
-  },
-];
-
-const crmItems = [
-  {
-    path: '/crm',
-    icon: <UserPlus className="w-4 h-4" />,
-    label: 'Contacts'
-  }
-];
-
-const otherItems = [
-  { 
-    path: '/integrations', 
-    icon: <ArrowDownUp className="w-5 h-5" />, 
-    label: 'Integrations' 
-  },
-  {
-    path: '/api-tokens',
-    icon: <Key className="w-5 h-5" />,
-    label: 'API Tokens'
-  },
-  { 
-    path: '/settings', 
-    icon: <Settings className="w-5 h-5" />, 
-    label: 'Settings' 
-  },
-  { 
-    path: '/billing', 
-    icon: <CreditCard className="w-5 h-5" />, 
-    label: 'Billing' 
-  },
-];
-
 const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
-  const [crmExpanded, setCrmExpanded] = useState(true);
-  const [userCredits, setUserCredits] = useState({ balance: 5000, used_this_month: 0, limit_monthly: 5000 });
-  const [userInfo, setUserInfo] = useState({ name: 'Loading...', plan: 'Professional', initials: 'L' });
+  const { t } = useLanguage();
+  
+  const navItems = [
+    { 
+      path: '/', 
+      icon: <LayoutDashboard className="w-5 h-5" />, 
+      label: t('navigation.dashboard')
+    },
+    { 
+      path: '/batches', 
+      icon: <Database className="w-5 h-5" />, 
+      label: t('navigation.batches')
+    },
+    { 
+      path: '/import', 
+      icon: <Upload className="w-5 h-5" />, 
+      label: t('navigation.import')
+    },
+  ];
+
+  const crmItems = [
+    {
+      path: '/crm',
+      icon: <UserPlus className="w-4 h-4" />,
+      label: t('navigation.contacts')
+    }
+  ];
+
+  const otherItems = [
+    { 
+      path: '/integrations', 
+      icon: <ArrowDownUp className="w-5 h-5" />, 
+      label: t('navigation.integrations')
+    },
+    {
+      path: '/api-tokens',
+      icon: <Key className="w-5 h-5" />,
+      label: t('navigation.apiTokens')
+    },
+    { 
+      path: '/settings', 
+      icon: <Settings className="w-5 h-5" />, 
+      label: t('navigation.settings')
+    },
+    { 
+      path: '/billing', 
+      icon: <CreditCard className="w-5 h-5" />, 
+      label: t('navigation.billing')
+    },
+  ];
+
+  const [crmExpanded, setCrmExpanded] = useState(false);
+  const [userInfo, setUserInfo] = useState({
+    name: 'Loading...',
+    plan: 'Free',
+    initials: 'U'
+  });
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserInfo = async () => {
       try {
         const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
         if (!token) return;
-
-        // Fetch user credits
-        const creditsResponse = await fetch(`${import.meta.env.VITE_IMPORT_URL || 'http://localhost:8002'}/api/user/credits`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (creditsResponse.ok) {
-          const creditsData = await creditsResponse.json();
-          setUserCredits(creditsData);
-        }
 
         // Fetch user profile
         const profileResponse = await fetch(`${import.meta.env.VITE_AUTH_URL || 'http://localhost:8001'}/auth/me`, {
@@ -91,61 +87,49 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           const firstName = profileData.first_name || '';
           const lastName = profileData.last_name || '';
           const fullName = `${firstName} ${lastName}`.trim() || 'User';
-          const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'U';
+          const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || 'U';
+
+          // Fetch subscription info
+          const subscriptionResponse = await fetch(`${import.meta.env.VITE_BILLING_URL || 'http://localhost:8004'}/billing/subscription`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
           
-          setUserInfo({ 
-            name: fullName, 
-            plan: 'Professional',
+          let planName = t('billing.plans.free');
+          if (subscriptionResponse.ok) {
+            const subscriptionData = await subscriptionResponse.json();
+            planName = subscriptionData.plan_name || t('billing.plans.free');
+          }
+
+          setUserInfo({
+            name: fullName,
+            plan: planName,
             initials: initials
           });
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        // Keep loading state or fallback
-        setUserInfo({ name: 'User', plan: 'Professional', initials: 'U' });
+        console.error('Error fetching user info:', error);
+        setUserInfo({
+          name: 'User',
+          plan: t('billing.plans.free'),
+          initials: 'U'
+        });
       }
     };
 
-    fetchUserData();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchUserData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const creditPercentage = userCredits.limit_monthly > 0 
-    ? ((userCredits.balance / userCredits.limit_monthly) * 100) 
-    : 100;
+    fetchUserInfo();
+  }, [t]);
 
   return (
-    <div className="hidden md:flex w-64 flex-shrink-0 flex-col bg-white border-r border-gray-200 fixed h-full">
-      <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-        <div className="flex items-center justify-center h-24 px-4 mb-6">
-          <img 
-            src="/logo.png" 
-            alt="Captely" 
-            className="h-20 w-auto object-contain"
+    <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
+      <div className="flex flex-col flex-grow pt-5 bg-white overflow-y-auto border-r border-gray-200">
+        {/* Logo */}
+        <div className="flex items-center flex-shrink-0 px-4 mb-8">
+          <img
+            className="h-8 w-auto"
+            src="/logo.png"
+            alt="Captely"
           />
-        </div>
-        
-        {/* Credits remaining */}
-        <div className="mx-4 my-6 p-4 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-xl border border-primary-100">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Credits
-            </span>
-            <span className="text-sm font-bold text-primary-600">
-              {userCredits.balance.toLocaleString()}
-            </span>
-          </div>
-          <div className="w-full bg-white rounded-full h-2 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(creditPercentage, 100)}%` }}
-            ></div>
-          </div>
-          <div className="mt-2 text-xs text-right text-gray-600">
-            {Math.round(creditPercentage)}% remaining
-          </div>
+          <span className="ml-3 text-xl font-bold text-gray-900">Captely</span>
         </div>
         
         <nav className="mt-5 flex-1 px-2 space-y-1">
@@ -175,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
             >
               <div className="flex items-center">
                 <Users className="w-5 h-5" />
-                <span className="ml-3">CRM</span>
+                <span className="ml-3">{t('navigation.crm')}</span>
               </div>
               {crmExpanded ? (
                 <ChevronDown className="w-4 h-4" />
@@ -247,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
               {userInfo.name}
             </p>
             <p className="text-xs font-medium text-gray-500">
-              {userInfo.plan} Plan
+              {userInfo.plan} {t('billing.currentPlan').toLowerCase()}
             </p>
           </div>
           <button 

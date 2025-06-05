@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Search, Menu } from 'lucide-react';
 import CreditDisplay from './common/CreditDisplay';
 import LanguageSwitcher from './common/LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Header: React.FC = () => {
   const [userName, setUserName] = useState('User');
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -47,7 +49,7 @@ const Header: React.FC = () => {
               </div>
               <input
                 type="search"
-                placeholder="Search leads, companies, campaigns..."
+                placeholder={t('search.placeholder')}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 text-sm"
               />
             </div>
@@ -67,7 +69,7 @@ const Header: React.FC = () => {
             </button>
             
             <div className="hidden md:flex items-center space-x-2 text-sm">
-              <span className="text-gray-500">Good morning,</span>
+              <span className="text-gray-500">{t('common.goodMorning')},</span>
               <span className="text-gray-900 font-medium">{userName}</span>
             </div>
           </div>
