@@ -15,6 +15,9 @@ services:
       - "8001:8000"
     volumes:
       - ./services/common:/app/common
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -216,4 +219,7 @@ services:
       - notification-service
       - billing-service
       - crm-service
-    restart: unless-stopped 
+    restart: unless-stopped
+
+volumes:
+  postgres_data: 
