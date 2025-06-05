@@ -111,7 +111,20 @@
     "good": "Bon",
     "fair": "Correct",
     "poor": "Faible",
-    "voip": "VoIP"
+    "voip": "VoIP",
+    "failed_to_load_credit_info": "Échec du chargement des informations de crédit",
+    "retry": "Réessayer",
+    "credit_usage": "Utilisation des crédits",
+    "plan": "Plan {0}",
+    "buy_credits": "Acheter des crédits",
+    "remaining": "Restant",
+    "used": "Utilisé",
+    "left": "Restant",
+    "usage_alert": "Alerte d'utilisation",
+    "usage_alert_message": "À votre rythme actuel, vous n'aurez plus de crédits dans environ <strong>{days} jours</strong>. Considérez mettre à niveau votre plan ou acheter des crédits supplémentaires.",
+    "performance_stats": "Statistiques de performance",
+    "email_hit_rate": "Taux de réussite email",
+    "success_rate": "Taux de réussite"
   },
   "navigation": {
     "dashboard": "Tableau de bord",
