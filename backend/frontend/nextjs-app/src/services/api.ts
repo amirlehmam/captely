@@ -47,8 +47,8 @@ const getDefaultUrl = (service: string): string => {
   const isProduction = import.meta.env?.PROD || window.location.protocol === 'https:';
   
   if (isProduction) {
-    // Production URLs using HTTPS and domain - removed /api prefix to prevent double /api
-    return `https://captely.com/${service}`;
+    // Production URLs using HTTPS and domain - NO service prefix since nginx handles routing
+    return `https://captely.com`;
   } else {
     // Development URLs
     const portMap: Record<string, number> = {
