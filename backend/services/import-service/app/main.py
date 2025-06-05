@@ -1925,8 +1925,8 @@ async def get_crm_contacts_stats(
             SELECT 
                 COUNT(*) as total_contacts,
                 COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_contacts,
-                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as contacts_with_email,
-                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as contacts_with_phone,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as contacts_with_email,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as contacts_with_phone,
                 COUNT(CASE WHEN c.email_verified = true THEN 1 END) as verified_emails,
                 COUNT(CASE WHEN c.phone_verified = true THEN 1 END) as verified_phones,
                 

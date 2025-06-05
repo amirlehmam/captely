@@ -128,7 +128,7 @@ async def get_user_dashboard(
         SELECT 
             enrichment_provider,
             COUNT(*) as contacts_processed,
-            COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+            COUNT(CASE WHEN email IS NOT NULL AND email != '' THEN 1 END) as emails_found,
             AVG(enrichment_score) as avg_confidence,
             SUM(credits_consumed) as credits_used
         FROM contacts 
@@ -161,7 +161,7 @@ async def get_user_dashboard(
             ij.completed,
             ij.status,
             COUNT(c.id) as processed_contacts,
-            COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+            COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_found,
             AVG(c.enrichment_score) as avg_confidence,
             SUM(c.credits_consumed) as credits_used
         FROM import_jobs ij
@@ -195,7 +195,7 @@ async def get_user_dashboard(
         SELECT 
             DATE(c.created_at) as date,
             COUNT(*) as contacts_processed,
-            COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
+            COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_found,
             SUM(c.credits_consumed) as credits_used
         FROM contacts c
         WHERE c.job_id IN (
@@ -337,7 +337,7 @@ async def get_enrichment_statistics(
         SELECT 
             industry,
             COUNT(*) as contacts,
-            COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
+            COUNT(CASE WHEN email IS NOT NULL AND email != '' THEN 1 END) as emails_found,
             AVG(enrichment_score) as avg_confidence
         FROM contacts c
         WHERE c.job_id IN (
@@ -407,8 +407,8 @@ async def get_job_analytics(job_id: str, session: AsyncSession = Depends(get_asy
         stats_query = """
             SELECT 
                 COUNT(*) as total_contacts,
-                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails_found,
-                COUNT(CASE WHEN phone IS NOT NULL THEN 1 END) as phones_found,
+                COUNT(CASE WHEN email IS NOT NULL AND email != '' THEN 1 END) as emails_found,
+                COUNT(CASE WHEN phone IS NOT NULL AND phone != '' THEN 1 END) as phones_found,
                 COUNT(CASE WHEN enriched = true THEN 1 END) as enriched_count,
                 AVG(CASE WHEN enrichment_score IS NOT NULL THEN enrichment_score END) as avg_confidence,
                 SUM(credits_consumed) as total_credits_used
@@ -518,8 +518,8 @@ async def get_dashboard_analytics(
                 ij.id, ij.status, ij.total, ij.completed, ij.file_name,
                 ij.created_at, ij.updated_at,
                 COUNT(c.id) as actual_completed,
-                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
-                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as phones_found,
                 SUM(c.credits_consumed) as credits_used
             FROM import_jobs ij
             LEFT JOIN contacts c ON ij.id = c.job_id
@@ -574,8 +574,8 @@ async def get_dashboard_analytics(
             SELECT 
                 c.enrichment_provider,
                 COUNT(*) as total_requests,
-                COUNT(CASE WHEN c.email IS NOT NULL THEN 1 END) as emails_found,
-                COUNT(CASE WHEN c.phone IS NOT NULL THEN 1 END) as phones_found,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' THEN 1 END) as phones_found,
                 AVG(c.enrichment_score) as avg_confidence,
                 AVG(c.credits_consumed) as avg_cost,
                 MAX(c.created_at) as last_used

@@ -446,7 +446,7 @@ async def send_weekly_summaries(
         stats_query = """
             SELECT 
                 COUNT(*) as contacts,
-                COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as emails,
+                COUNT(CASE WHEN email IS NOT NULL AND email != '' THEN 1 END) as emails,
                 SUM(credits_consumed) as credits
             FROM contacts 
             WHERE job_id IN (
