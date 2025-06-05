@@ -182,6 +182,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
       setEmailVerified(true);
       setEmailVerificationStep(false);
+      setCurrentStep(2);
       toast.success(t('auth.signup.emailVerified', 'Email verified successfully!'));
       return true;
     } catch (error: any) {
@@ -736,17 +737,23 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                      theme === 'dark' 
+                        ? 'bg-gray-700 text-gray-100 border-gray-600 placeholder-gray-400' 
+                        : 'bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500'
+                    } ${
                       errors.firstName && touched.firstName
-                        ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                        : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                        ? (theme === 'dark' ? 'border-red-500 focus:ring-red-500' : 'border-red-300 focus:ring-red-500')
+                        : (theme === 'dark' ? 'focus:ring-emerald-500 focus:border-emerald-500' : 'focus:ring-blue-500 focus:border-blue-500')
                     }`}
                     placeholder="John"
                   />
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                 </div>
                 {errors.firstName && touched.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                  <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.firstName}</p>
                 )}
               </div>
 
@@ -759,16 +766,20 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                      theme === 'dark' 
+                        ? 'bg-gray-700 text-gray-100 border-gray-600 placeholder-gray-400' 
+                        : 'bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500'
+                    } ${
                       errors.lastName && touched.lastName
-                        ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                        : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                        ? (theme === 'dark' ? 'border-red-500 focus:ring-red-500' : 'border-red-300 focus:ring-red-500')
+                        : (theme === 'dark' ? 'focus:ring-emerald-500 focus:border-emerald-500' : 'focus:ring-blue-500 focus:border-blue-500')
                     }`}
                     placeholder="Doe"
                   />
                 </div>
                 {errors.lastName && touched.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                  <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.lastName}</p>
                 )}
               </div>
             </div>
@@ -783,17 +794,23 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
             type="text"
             value={formData.company}
             onChange={(e) => handleInputChange('company', e.target.value)}
-                  className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 text-gray-100 border-gray-600 placeholder-gray-400' 
+                      : 'bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500'
+                  } ${
               errors.company && touched.company
-                      ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                      : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                      ? (theme === 'dark' ? 'border-red-500 focus:ring-red-500' : 'border-red-300 focus:ring-red-500')
+                      : (theme === 'dark' ? 'focus:ring-emerald-500 focus:border-emerald-500' : 'focus:ring-blue-500 focus:border-blue-500')
                   }`}
             placeholder="Acme Inc."
                 />
-          <Building2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Building2 className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+            theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+          }`} />
         </div>
         {errors.company && touched.company && (
-          <p className="mt-1 text-sm text-red-600">{errors.company}</p>
+          <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.company}</p>
                 )}
               </div>
 
@@ -807,17 +824,23 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
             type="tel"
             value={formData.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
-            className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+            className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 text-gray-100 border-gray-600 placeholder-gray-400' 
+                : 'bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500'
+            } ${
               errors.phone && touched.phone
-                ? 'border-red-300 focus:ring-red-500 focus:bg-red-50'
-                : 'border-gray-300 focus:ring-blue-500 focus:bg-white focus:border-blue-500'
+                ? (theme === 'dark' ? 'border-red-500 focus:ring-red-500' : 'border-red-300 focus:ring-red-500')
+                : (theme === 'dark' ? 'focus:ring-emerald-500 focus:border-emerald-500' : 'focus:ring-blue-500 focus:border-blue-500')
             }`}
             placeholder="+1 (555) 123-4567"
           />
-          <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Phone className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+            theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+          }`} />
         </div>
         {errors.phone && touched.phone && (
-          <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+          <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.phone}</p>
               )}
             </div>
 
@@ -967,15 +990,19 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                   type="checkbox"
                   checked={formData.agreeToTerms}
                   onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
-                  className={`w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 ${
+                  className={`w-4 h-4 rounded focus:ring-2 mt-1 transition-colors ${
+                    theme === 'dark'
+                      ? 'text-emerald-600 bg-gray-700 border-gray-600 focus:ring-emerald-500'
+                      : 'text-blue-600 bg-white border-gray-300 focus:ring-blue-500'
+                  } ${
                     errors.agreeToTerms && touched.agreeToTerms
-                      ? 'border-red-500 ring-2 ring-red-200'
+                      ? (theme === 'dark' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-red-500 ring-2 ring-red-200')
                       : ''
                   }`}
                 />
                 <span className={`ml-2 text-sm ${
                   errors.agreeToTerms && touched.agreeToTerms
-                    ? 'text-red-700'
+                    ? (theme === 'dark' ? 'text-red-400' : 'text-red-700')
                     : (theme === 'dark' ? 'text-gray-300' : 'text-gray-700')
                 }`}>
                   {t('auth.signup.termsPrefix', 'I agree to the')}{' '}
@@ -993,7 +1020,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                 </span>
               </label>
               {errors.agreeToTerms && touched.agreeToTerms && (
-                <p className="ml-6 text-sm text-red-600 font-medium">{errors.agreeToTerms}</p>
+                <p className={`ml-6 text-sm font-medium ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.agreeToTerms}</p>
               )}
 
               <label className="flex items-start">
@@ -1001,7 +1028,11 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                   type="checkbox"
                   checked={formData.marketingEmails}
                   onChange={(e) => handleInputChange('marketingEmails', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                  className={`w-4 h-4 rounded focus:ring-2 mt-1 transition-colors ${
+                    theme === 'dark'
+                      ? 'text-emerald-600 bg-gray-700 border-gray-600 focus:ring-emerald-500'
+                      : 'text-blue-600 bg-white border-gray-300 focus:ring-blue-500'
+                  }`}
                 />
                 <span className={`ml-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                   {t('auth.signup.marketingEmails', 'Send me tips, product updates and special offers')}

@@ -49,7 +49,7 @@ const getDefaultUrl = (service: string): string => {
   if (isProduction) {
     // Production URLs - use /api/ prefix to match nginx routing
     const serviceMap: Record<string, string> = {
-      auth: 'https://captely.com',  // Special case: auth uses both /auth/ and /api/auth/
+      auth: 'https://captely.com/api',  // Fixed: auth should use /api prefix
       import: 'https://captely.com/api',
       credit: 'https://captely.com/api',
       export: 'https://captely.com/api',
