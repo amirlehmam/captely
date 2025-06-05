@@ -271,7 +271,7 @@ async def send_verification_email(email: str, code: str) -> bool:
     """Send verification email using Resend"""
     try:
         params = {
-            "from": "Captely <aeonthings@gmail.com>",  # Using your verified email for testing
+            "from": "Captely <noreply@captely.com>",  # Using verified domain
             "to": [email],
             "subject": "🔐 Verify your Captely account",
             "html": f"""
