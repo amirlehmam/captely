@@ -20,14 +20,14 @@ const Logo: React.FC<LogoProps> = ({
 }) => {
   const { isDark } = useTheme();
 
-  // Size configurations
+  // Size configurations - MUCH LARGER SIZES
   const sizeClasses = {
     xs: 'w-8 h-8',
     sm: 'w-12 h-12', 
     md: 'w-16 h-16',
     lg: 'w-20 h-20',
     xl: 'w-24 h-24',
-    xxl: 'w-32 h-32'
+    xxl: 'w-48 h-48'  // Made much larger - 192px instead of 128px
   };
 
   const textSizes = {
@@ -118,8 +118,8 @@ const Logo: React.FC<LogoProps> = ({
             filter: 'brightness(1.2) contrast(1.3) drop-shadow(0 2px 8px rgba(0,0,0,0.1))',
             width: 'auto',
             height: 'auto',
-            maxWidth: '200px',
-            minWidth: '140px',
+            maxWidth: '350px',  // Much larger max width
+            minWidth: '250px',  // Much larger min width  
             backgroundColor: 'transparent',
             mixBlendMode: 'multiply'
           }}
