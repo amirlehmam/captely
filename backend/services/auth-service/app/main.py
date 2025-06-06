@@ -734,6 +734,14 @@ async def api_tokens_page(
 async def health():
     return {"status": "ok"}
 
+@app.get("/auth/health", summary="Auth service health check")
+async def auth_health():
+    return {"status": "ok", "service": "auth"}
+
+@app.get("/api/health", summary="API health check")
+async def api_health():
+    return {"status": "ok", "service": "auth"}
+
 @app.get("/extension/get-token", response_model=ApiKeyOut)
 async def generate_extension_token():
     """
