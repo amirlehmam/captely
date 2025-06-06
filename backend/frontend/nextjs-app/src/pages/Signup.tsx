@@ -1086,8 +1086,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
             className="text-center mb-8"
           >
             <Logo 
-              size="lg" 
-              variant="default" 
+              size="xxl" 
+              variant="minimal" 
               animated={true}
               showText={false}
               className="mb-6"

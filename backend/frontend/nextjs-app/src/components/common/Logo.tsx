@@ -97,7 +97,7 @@ const Logo: React.FC<LogoProps> = ({
     );
   }
 
-  // Default variant - with container background
+  // Default variant - with transparent background and larger size
   return (
     <div 
       className={`inline-flex flex-col items-center ${onClick ? 'cursor-pointer' : ''} ${className}`}
@@ -105,15 +105,24 @@ const Logo: React.FC<LogoProps> = ({
     >
       {animated && <style>{spinAnimation}</style>}
       <div className={`
-        rounded-2xl shadow-lg overflow-hidden p-3
-        ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}
+        rounded-2xl overflow-hidden p-2
         ${animationClasses}
         transition-all duration-300
+        bg-transparent
       `}>
         <img
           src={logoSrc}
           alt="Captely"
-          className={`${sizeClasses[size]} ${animated ? 'logo-spin-effect' : ''} object-contain transition-transform duration-300`}
+          className={`${sizeClasses[size]} ${animated ? 'logo-spin-effect' : ''} object-contain transition-transform duration-300 w-auto h-auto max-w-none`}
+          style={{ 
+            filter: 'brightness(1.2) contrast(1.3) drop-shadow(0 2px 8px rgba(0,0,0,0.1))',
+            width: 'auto',
+            height: 'auto',
+            maxWidth: '200px',
+            minWidth: '140px',
+            backgroundColor: 'transparent',
+            mixBlendMode: 'multiply'
+          }}
         />
       </div>
       {showText && (
