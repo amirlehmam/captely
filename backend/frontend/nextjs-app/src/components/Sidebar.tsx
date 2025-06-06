@@ -124,14 +124,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
       }`}>
         {/* Logo Section with enhanced styling */}
-        <div className={`flex flex-col items-center justify-center px-6 py-8 border-b ${
+        <div className={`flex flex-col items-center justify-center px-6 py-6 border-b ${
           isDark ? 'border-gray-700' : 'border-gray-100'
         }`}>
           <Logo 
-            size="lg" 
-            variant="compact" 
+            size="xxl" 
+            variant="minimal" 
             animated={true}
-            showText={true}
+            showText={false}
             className="transition-all duration-300"
           />
         </div>
