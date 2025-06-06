@@ -145,55 +145,55 @@ const SettingsPage: React.FC = () => {
   const sidebarItems = [
     {
       id: 'account',
-      label: '👤 Account',
+      label: 'Account',
       icon: <User className="w-5 h-5" />,
       description: 'Profile and personal settings'
     },
     {
       id: 'security',
-      label: '🔒 Security',
+      label: 'Security',
       icon: <Shield className="w-5 h-5" />,
       description: 'Password and security settings'
     },
     {
       id: 'billing',
-      label: '💳 Billing',
+      label: 'Billing',
       icon: <CreditCard className="w-5 h-5" />,
       description: 'Subscription and payment'
     },
     {
       id: 'api',
-      label: '🔑 API Keys',
+      label: 'API Keys',
       icon: <Key className="w-5 h-5" />,
       description: 'Manage API access'
     },
     {
       id: 'import',
-      label: '📥 Import Settings',
+      label: 'Import Settings',
       icon: <Upload className="w-5 h-5" />,
       description: 'Import and enrichment settings'
     },
     {
       id: 'notifications',
-      label: '🔔 Notifications',
+      label: 'Notifications',
       icon: <Bell className="w-5 h-5" />,
       description: 'Email and alert preferences'
     },
     {
       id: 'team',
-      label: '👥 Team',
+      label: 'Team',
       icon: <Users className="w-5 h-5" />,
       description: 'Team members and roles'
     },
     {
       id: 'integrations',
-      label: '🔗 Integrations',
+      label: 'Integrations',
       icon: <Webhook className="w-5 h-5" />,
       description: 'Third-party connections'
     },
     {
       id: 'export',
-      label: '📤 Data Export',
+      label: 'Data Export',
       icon: <Download className="w-5 h-5" />,
       description: 'Export and backup options'
     }
@@ -1825,7 +1825,7 @@ const SettingsPage: React.FC = () => {
                 ? 'bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent' 
                 : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-600 bg-clip-text text-transparent'
             }`}>
-              ⚙️ Settings Hub
+              Settings Hub
             </h1>
             <p className={`text-lg ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
