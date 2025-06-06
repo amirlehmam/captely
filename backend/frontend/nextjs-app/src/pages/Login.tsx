@@ -298,14 +298,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-center mb-8"
+            className="text-center mb-6"
           >
             <Logo 
-              size="xxl" 
+              size="auth" 
               variant="minimal" 
               animated={true}
               showText={false}
-              className="mb-6"
+              className="mb-4"
             />
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {getGreeting()}!

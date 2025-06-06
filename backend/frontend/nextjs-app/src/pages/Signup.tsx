@@ -1083,14 +1083,14 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
+            className="text-center mb-6"
           >
             <Logo 
-              size="xxl" 
+              size="auth" 
               variant="minimal" 
               animated={true}
               showText={false}
-              className="mb-6"
+              className="mb-4"
             />
             <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} mb-2`}>
               {t('auth.signup.title', 'Create your account')}
