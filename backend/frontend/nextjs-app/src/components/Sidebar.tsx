@@ -7,6 +7,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCreditContext } from '../contexts/CreditContext';
 import { useTheme } from '../contexts/ThemeContext';
+import Logo from './common/Logo';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -122,31 +123,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
       <div className={`flex flex-col flex-grow border-r transition-colors duration-300 ${
         isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
       }`}>
-        {/* Logo Section with 360 animation */}
+        {/* Logo Section with enhanced styling */}
         <div className={`flex flex-col items-center justify-center px-6 py-8 border-b ${
           isDark ? 'border-gray-700' : 'border-gray-100'
         }`}>
-          <div className="cursor-pointer mb-4">
-            <style>{`
-              @keyframes spin-continuous {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-              }
-              .logo-spin:hover {
-                animation: spin-continuous 1s linear infinite;
-              }
-            `}</style>
-            <img
-              className="logo-spin h-20 w-auto transition-transform duration-300 ease-in-out"
-              src="/logo.png"
-              alt="Captely"
-            />
-          </div>
-          <span className={`text-lg font-semibold text-center ${
-            isDark ? 'text-white' : 'text-gray-900'
-          }`}>
-            Captely
-          </span>
+          <Logo 
+            size="lg" 
+            variant="compact" 
+            animated={true}
+            showText={true}
+            className="transition-all duration-300"
+          />
         </div>
         
         {/* Navigation */}

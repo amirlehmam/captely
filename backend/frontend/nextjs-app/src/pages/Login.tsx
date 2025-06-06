@@ -10,6 +10,7 @@ import apiService from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import DarkModeToggle from '../components/common/DarkModeToggle';
+import Logo from '../components/common/Logo';
 
 interface LoginFormData {
   email: string;
@@ -299,13 +300,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             transition={{ delay: 0.1 }}
             className="text-center mb-8"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-lg mb-6 overflow-hidden bg-white dark:bg-gray-800 p-2">
-              <img 
-                src="/logo.png" 
-                alt="Captely Logo" 
-                className="w-full h-full object-contain"
-              />
-            </div>
+            <Logo 
+              size="lg" 
+              variant="default" 
+              animated={true}
+              showText={false}
+              className="mb-6"
+            />
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {getGreeting()}!
             </h1>

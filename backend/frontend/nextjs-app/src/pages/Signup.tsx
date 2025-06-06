@@ -12,6 +12,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import DarkModeToggle from '../components/common/DarkModeToggle';
+import Logo from '../components/common/Logo';
 
 interface SignupFormData {
   firstName: string;
@@ -1084,13 +1085,13 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-8"
           >
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-lg mb-6 overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-2`}>
-              <img 
-                src="/logo.png" 
-                alt="Captely Logo" 
-                className="w-full h-full object-contain"
-              />
-            </div>
+            <Logo 
+              size="lg" 
+              variant="default" 
+              animated={true}
+              showText={false}
+              className="mb-6"
+            />
             <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} mb-2`}>
               {t('auth.signup.title', 'Create your account')}
             </h1>
