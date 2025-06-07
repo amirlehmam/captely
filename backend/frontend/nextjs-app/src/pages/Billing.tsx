@@ -181,7 +181,7 @@ const BillingPage: React.FC = () => {
 
   const fetchBillingDashboard = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/api/billing/dashboard`);
+      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/dashboard`);
       if (!response.ok) throw new Error('Failed to fetch billing dashboard');
       
       const data = await response.json();
@@ -197,7 +197,7 @@ const BillingPage: React.FC = () => {
   const fetchPackages = async () => {
     try {
       // Fetch all packages
-      const packagesResponse = await fetch(`${import.meta.env.VITE_BILLING_URL}/api/packages`);
+      const packagesResponse = await fetch(`${import.meta.env.VITE_BILLING_URL}/packages`);
       if (!packagesResponse.ok) throw new Error('Failed to fetch packages');
       
       const packagesData = await packagesResponse.json();
@@ -209,7 +209,7 @@ const BillingPage: React.FC = () => {
 
   const fetchCreditUsage = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_IMPORT_URL}/api/user/credits`);
+      const response = await fetch(`${import.meta.env.VITE_IMPORT_URL}/user/credits`);
       if (!response.ok) throw new Error('Failed to fetch credit usage');
       
       const data = await response.json();
@@ -246,7 +246,7 @@ const BillingPage: React.FC = () => {
   const fetchEnrichmentHistory = async () => {
     try {
       // Fetch real enrichment history from analytics service
-      const response = await fetch(`${import.meta.env.VITE_ANALYTICS_URL}/api/analytics/enrichment-history`);
+      const response = await fetch(`${import.meta.env.VITE_ANALYTICS_URL}/enrichment-history`);
       if (!response.ok) {
         // Fallback to mock data if analytics service isn't available
         console.warn('Analytics service unavailable, using enrichment data from billing service');
@@ -262,7 +262,7 @@ const BillingPage: React.FC = () => {
 
   const fetchBillingHistory = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/api/billing/history`);
+      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/history`);
       if (!response.ok) throw new Error('Failed to fetch billing history');
       
       const data = await response.json();

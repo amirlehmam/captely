@@ -89,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || 'U';
 
           // Fetch subscription info
-          const subscriptionResponse = await fetch(`${import.meta.env.VITE_BILLING_URL || 'http://localhost:8004'}/billing/subscription`, {
+          const subscriptionResponse = await fetch(`${import.meta.env.VITE_BILLING_URL || 'http://localhost:8004'}/subscription`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           

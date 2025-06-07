@@ -83,7 +83,7 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
                        import.meta.env?.VITE_IMPORT_URL || 
                        'http://localhost:8002';
 
-      const response = await fetch(`${importUrl}/api/user/credits`, {
+      const response = await fetch(`${importUrl}/user/credits`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
