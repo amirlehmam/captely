@@ -392,13 +392,13 @@ async def api_health_check():
 
 # ====== PACKAGE ENDPOINTS ======
 
-@app.get("/api/packages", response_model=List[PackageResponse])
+@app.get("/api/billing/packages", response_model=List[PackageResponse])
 async def get_packages(db: Session = Depends(get_db)):
     """Get all available packages"""
     packages = db.query(Package).filter(Package.is_active == True).all()
     return [PackageResponse.model_validate(pkg) for pkg in packages]
 
-@app.get("/api/packages/pro-plans")
+@app.get("/api/billing/packages/pro-plans")
 async def get_pro_plans(db: Session = Depends(get_db)):
     """Get all Pro plan options"""
     pro_plans = db.query(Package).filter(
@@ -422,7 +422,7 @@ async def get_pro_plans(db: Session = Depends(get_db)):
 
 # ====== SUBSCRIPTION ENDPOINTS ======
 
-@app.post("/api/subscriptions/create-checkout")
+@app.post("/api/billing/subscriptions/create-checkout")
 async def create_subscription_checkout(
     package_id: str,
     billing_cycle: str,
@@ -475,7 +475,7 @@ async def create_subscription_checkout(
         logger.error(f"Error creating checkout session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
 
-@app.get("/api/subscription", response_model=SubscriptionResponse)
+@app.get("/api/billing/subscription", response_model=SubscriptionResponse)
 async def get_current_subscription(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -491,7 +491,7 @@ async def get_current_subscription(
     
     return SubscriptionResponse.model_validate(subscription)
 
-@app.post("/api/subscription/cancel")
+@app.post("/api/billing/subscription/cancel")
 async def cancel_subscription(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -522,7 +522,7 @@ async def cancel_subscription(
 
 # ====== PAYMENT METHOD ENDPOINTS ======
 
-@app.get("/api/payment-methods", response_model=List[PaymentMethodResponse])
+@app.get("/api/billing/payment-methods", response_model=List[PaymentMethodResponse])
 async def get_payment_methods(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -534,7 +534,7 @@ async def get_payment_methods(
     
     return [PaymentMethodResponse.model_validate(pm) for pm in payment_methods]
 
-@app.post("/api/payment-methods/setup-intent")
+@app.post("/api/billing/payment-methods/setup-intent")
 async def create_payment_method_setup_intent(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -562,7 +562,7 @@ async def create_payment_method_setup_intent(
         logger.error(f"Error creating setup intent: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create setup intent: {str(e)}")
 
-@app.delete("/api/payment-methods/{payment_method_id}")
+@app.delete("/api/billing/payment-methods/{payment_method_id}")
 async def remove_payment_method(
     payment_method_id: str,
     user_id: str = Depends(get_current_user_id),
@@ -657,7 +657,7 @@ async def get_billing_dashboard(
 
 # ====== CUSTOMER PORTAL ======
 
-@app.post("/api/customer-portal")
+@app.post("/api/billing/customer-portal")
 async def create_customer_portal_session(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -936,7 +936,7 @@ async def handle_setup_intent_succeeded(setup_intent, db: Session):
 
 # ====== ENRICHMENT ENDPOINTS ======
 
-@app.post("/api/enrichment/process", response_model=EnrichmentResult)
+@app.post("/api/billing/enrichment/process", response_model=EnrichmentResult)
 async def process_enrichment(
     request: EnrichmentRequest,
     user_id: str = Depends(get_current_user_id),

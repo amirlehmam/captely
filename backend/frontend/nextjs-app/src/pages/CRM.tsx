@@ -351,7 +351,7 @@ const CRMPage: React.FC = () => {
                   <h1 className={`text-4xl font-bold mb-2 ${
                     isDark ? 'text-white' : 'text-gray-900'
                   }`}>
-                    Contacts Management
+                    Contacts Management 
                   </h1>
                   <div className="flex items-center space-x-2">
                     <Award className={`h-5 w-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
