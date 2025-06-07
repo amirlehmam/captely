@@ -529,11 +529,11 @@ class ApiService {
   // ==========================================
 
   async getCreditData(): Promise<CreditData> {
-    return client.get<CreditData>(`${API_CONFIG.creditUrl}/api/credits/info`);
+    return client.get<CreditData>(`${API_CONFIG.importUrl}/user/credits`);
   }
 
   async deductCredits(credits: number, reason: string): Promise<{ success: boolean; new_balance: number }> {
-    return client.post(`${API_CONFIG.importUrl}/api/credits/deduct`, {
+    return client.post(`${API_CONFIG.importUrl}/credits/deduct`, {
       credits,
       operation_type: 'enrichment',
       reason
@@ -541,7 +541,7 @@ class ApiService {
   }
 
   async refundCredits(credits: number, reason: string): Promise<{ success: boolean; new_balance: number }> {
-    return client.post(`${API_CONFIG.importUrl}/api/credits/refund`, {
+    return client.post(`${API_CONFIG.importUrl}/credits/refund`, {
       credits,
       reason
     });
@@ -621,7 +621,7 @@ class ApiService {
           reject(new Error('Upload timeout'));
         });
 
-        xhr.open('POST', `${API_CONFIG.importUrl}/api/imports/file`);
+        xhr.open('POST', `${API_CONFIG.importUrl}/imports/file`);
         
         if (token) {
           xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -637,11 +637,11 @@ class ApiService {
   }
 
   async getJobs(): Promise<{ jobs: Job[] }> {
-    return client.get<{ jobs: Job[] }>(`${API_CONFIG.importUrl}/api/jobs`);
+    return client.get<{ jobs: Job[] }>(`${API_CONFIG.importUrl}/jobs`);
   }
 
   async getJob(jobId: string): Promise<Job> {
-    return client.get<Job>(`${API_CONFIG.importUrl}/api/jobs/${jobId}`);
+    return client.get<Job>(`${API_CONFIG.importUrl}/jobs/${jobId}`);
   }
 
   async getJobContacts(jobId: string, page: number = 1, limit: number = 50): Promise<{
@@ -651,7 +651,7 @@ class ApiService {
     limit: number;
     total_pages: number;
   }> {
-    return client.get(`${API_CONFIG.importUrl}/api/jobs/${jobId}/contacts`, {
+    return client.get(`${API_CONFIG.importUrl}/jobs/${jobId}/contacts`, {
       page,
       limit
     });
@@ -664,7 +664,7 @@ class ApiService {
   async exportData(jobId: string, format: 'csv' | 'excel' | 'json' = 'csv'): Promise<Blob> {
     try {
       const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
-      const response = await fetch(`${API_CONFIG.importUrl}/api/jobs/${jobId}/export?format=${format}`, {
+      const response = await fetch(`${API_CONFIG.importUrl}/jobs/${jobId}/export?format=${format}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -687,7 +687,7 @@ class ApiService {
   // ==========================================
 
   async getContact(contactId: string): Promise<Contact> {
-    return client.get<Contact>(`${API_CONFIG.importUrl}/api/contacts/${contactId}`);
+    return client.get<Contact>(`${API_CONFIG.importUrl}/contacts/${contactId}`);
   }
 
   async updateContact(contactId: string, data: {
@@ -699,7 +699,7 @@ class ApiService {
     location?: string;
     industry?: string;
   }): Promise<Contact> {
-    const response = await client.put<Contact>(`${API_CONFIG.importUrl}/api/contacts/${contactId}`, data);
+    const response = await client.put<Contact>(`${API_CONFIG.importUrl}/contacts/${contactId}`, data);
     toast.success('Contact updated successfully!');
     return response;
   }
@@ -718,7 +718,7 @@ class ApiService {
         platform_contact_id: string;
         contact_data: any;
         message: string;
-      }>(`${API_CONFIG.importUrl}/api/contacts/${contactId}/export/hubspot`);
+      }>(`${API_CONFIG.importUrl}/contacts/${contactId}/export/hubspot`);
       toast.success('Contact exported to HubSpot successfully!');
       return response;
     } catch (error: any) {
@@ -747,7 +747,7 @@ class ApiService {
         exported_contacts: any[];
         failed_contacts: any[];
         message: string;
-      }>(`${API_CONFIG.importUrl}/api/jobs/${jobId}/export/hubspot`);
+      }>(`${API_CONFIG.importUrl}/jobs/${jobId}/export/hubspot`);
       toast.success('Batch exported to HubSpot successfully!');
       return response;
     } catch (error: any) {
@@ -776,7 +776,7 @@ class ApiService {
     limit: number;
     total_pages: number;
   }> {
-    return client.get(`${API_CONFIG.importUrl}/api/export/logs`, {
+    return client.get(`${API_CONFIG.importUrl}/export/logs`, {
       page,
       limit
     });
@@ -797,7 +797,7 @@ class ApiService {
     score: number;
     reason: string;
   }> {
-    return client.post(`${API_CONFIG.importUrl}/api/verification/email`, { email });
+    return client.post(`${API_CONFIG.importUrl}/verification/email`, { email });
   }
 
   async verifyPhone(phone: string, country_hint?: string): Promise<{
@@ -813,7 +813,7 @@ class ApiService {
     score: number;
     reason: string;
   }> {
-    return client.post(`${API_CONFIG.importUrl}/api/verification/phone`, { 
+    return client.post(`${API_CONFIG.importUrl}/verification/phone`, { 
       phone, 
       country_hint 
     });
@@ -841,7 +841,7 @@ class ApiService {
     total_cost: number;
     processing_time: number;
   }> {
-    return client.post(`${API_CONFIG.importUrl}/api/enrichment/single`, contactData);
+    return client.post(`${API_CONFIG.importUrl}/enrichment/single`, contactData);
   }
 
   async getEnrichmentProviderStats(): Promise<{
@@ -859,7 +859,7 @@ class ApiService {
       total_cost_saved: number;
     };
   }> {
-    return client.get(`${API_CONFIG.importUrl}/api/enrichment/provider-stats`);
+    return client.get(`${API_CONFIG.importUrl}/enrichment/provider-stats`);
   }
 
   async verifyExistingContacts(jobId: string): Promise<{
@@ -867,7 +867,7 @@ class ApiService {
     job_id: string;
     verified_count: number;
   }> {
-    return client.post(`${API_CONFIG.importUrl}/api/verification/job/${jobId}/verify`);
+    return client.post(`${API_CONFIG.importUrl}/verification/job/${jobId}/verify`);
   }
 
   async getVerificationStats(jobId?: string): Promise<{
@@ -893,8 +893,8 @@ class ApiService {
     };
   }> {
     const endpoint = jobId 
-      ? `${API_CONFIG.importUrl}/api/verification/stats/${jobId}`
-      : `${API_CONFIG.importUrl}/api/verification/stats`;
+      ? `${API_CONFIG.importUrl}/verification/stats/${jobId}`
+      : `${API_CONFIG.importUrl}/verification/stats`;
     return client.get(endpoint);
   }
 
@@ -924,7 +924,7 @@ class ApiService {
     total_pages: number;
     filters_applied: any;
   }> {
-    return client.get(`${API_CONFIG.crmUrl}/api/contacts`, params);
+    return client.get(`${API_CONFIG.crmUrl}/contacts`, params);
   }
 
   async getCrmContactsStats(): Promise<{
@@ -950,7 +950,7 @@ class ApiService {
       poor: number;
     };
   }> {
-    return client.get(`${API_CONFIG.crmUrl}/api/contacts/stats/enrichment`);
+    return client.get(`${API_CONFIG.crmUrl}/contacts/stats/enrichment`);
   }
 
   async getCrmBatches(): Promise<{
@@ -962,7 +962,7 @@ class ApiService {
       enriched_count: number;
     }>;
   }> {
-    return client.get(`${API_CONFIG.crmUrl}/api/contacts/recent`);
+    return client.get(`${API_CONFIG.crmUrl}/contacts/recent`);
   }
 
   async bulkExportCrmContacts(
@@ -970,7 +970,7 @@ class ApiService {
     exportType: 'hubspot' | 'csv' = 'hubspot'
   ): Promise<any> {
     try {
-      const response = await client.post(`${API_CONFIG.crmUrl}/api/contacts/bulk-export`, {
+      const response = await client.post(`${API_CONFIG.crmUrl}/contacts/bulk-export`, {
         contact_ids: contactIds,
         export_type: exportType
       });
@@ -1022,42 +1022,42 @@ class ApiService {
   // ==========================================
 
   async getCurrentSubscription(): Promise<any> {
-    return client.get(`${API_CONFIG.billingUrl}/api/billing/subscription`);
+    return client.get(`${API_CONFIG.billingUrl}/billing/subscription`);
   }
 
   async getTeamMembers(): Promise<any[]> {
-    return client.get(`${API_CONFIG.billingUrl}/api/billing/team-members`);
+    return client.get(`${API_CONFIG.billingUrl}/billing/team-members`);
   }
 
   async createCheckoutSession(packageId: string, billingCycle: 'monthly' | 'annual'): Promise<{ checkout_url: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/api/billing/subscriptions/create-checkout`, {
+    return client.post(`${API_CONFIG.billingUrl}/billing/subscriptions/create-checkout`, {
       package_id: packageId,
       billing_cycle: billingCycle
     });
   }
 
   async cancelSubscription(): Promise<{ success: boolean; message: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/api/billing/subscription/cancel`, {});
+    return client.post(`${API_CONFIG.billingUrl}/billing/subscription/cancel`, {});
   }
 
   async createCustomerPortalSession(): Promise<{ portal_url: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/api/billing/customer-portal`, {});
+    return client.post(`${API_CONFIG.billingUrl}/billing/customer-portal`, {});
   }
 
   async getPaymentMethods(): Promise<any[]> {
-    return client.get(`${API_CONFIG.billingUrl}/api/billing/payment-methods`);
+    return client.get(`${API_CONFIG.billingUrl}/billing/payment-methods`);
   }
 
   async createPaymentMethodSetupIntent(): Promise<{ client_secret: string; setup_intent_id: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/api/billing/payment-methods/setup-intent`, {});
+    return client.post(`${API_CONFIG.billingUrl}/billing/payment-methods/setup-intent`, {});
   }
 
   async removePaymentMethod(paymentMethodId: string): Promise<{ success: boolean; message: string }> {
-    return client.delete(`${API_CONFIG.billingUrl}/api/billing/payment-methods/${paymentMethodId}`);
+    return client.delete(`${API_CONFIG.billingUrl}/billing/payment-methods/${paymentMethodId}`);
   }
 
   async setDefaultPaymentMethod(paymentMethodId: string): Promise<{ success: boolean; message: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/api/billing/payment-methods/${paymentMethodId}/set-default`, {});
+    return client.post(`${API_CONFIG.billingUrl}/billing/payment-methods/${paymentMethodId}/set-default`, {});
   }
 
   async getSecurityLogs(): Promise<any[]> {
@@ -1220,13 +1220,13 @@ class ApiService {
 
     try {
       // Import service: /api/import/health → /health (nginx strips /api/import)
-      await client.get(`${API_CONFIG.importUrl}/api/health`);
+      await client.get(`${API_CONFIG.importUrl}/health`);
       services.import = true;
     } catch {}
 
     try {
       // Analytics service: /api/analytics/health → /health (nginx strips /api/analytics)
-      await client.get(`${API_CONFIG.analyticsUrl}/api/health`);
+      await client.get(`${API_CONFIG.analyticsUrl}/health`);
       services.analytics = true;
     } catch {}
 

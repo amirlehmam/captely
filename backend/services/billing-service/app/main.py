@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from .models import (
     Base, Package, UserSubscription, CreditBalance, CreditAllocation, 
-    EnrichmentHistory, PaymentMethod, BillingTransaction, CreditPackage, User,
+    EnrichmentHistory, PaymentMethod, BillingTransaction, CreditPackage,
     PlanType, BillingCycle, SubscriptionStatus, EnrichmentType, EnrichmentStatus
 )
 from .schemas import (
