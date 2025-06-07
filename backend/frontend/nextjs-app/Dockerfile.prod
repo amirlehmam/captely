@@ -3,9 +3,10 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Accept build arguments for OAuth
+# Accept build arguments for OAuth and Stripe
 ARG VITE_GOOGLE_CLIENT_ID
 ARG VITE_APPLE_CLIENT_ID
+ARG VITE_STRIPE_PUBLISHABLE_KEY
 
 # Copy package files
 COPY package*.json ./
@@ -25,9 +26,10 @@ ENV VITE_CRM_URL=https://captely.com/api/crm
 ENV VITE_EXPORT_URL=https://captely.com/api/export
 ENV VITE_BILLING_URL=https://captely.com/api/billing
 
-# Set OAuth environment variables from build args
+# Set OAuth and Stripe environment variables from build args
 ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
 ENV VITE_APPLE_CLIENT_ID=${VITE_APPLE_CLIENT_ID}
+ENV VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
 
 # Build the application
 RUN npm run build
