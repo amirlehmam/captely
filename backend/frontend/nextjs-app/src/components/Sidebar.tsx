@@ -133,7 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
             animated={true}
             showText={false}
             className="transition-all duration-300"
-          />
+            />
         </div>
         
         {/* Navigation */}

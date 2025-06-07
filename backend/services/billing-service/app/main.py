@@ -270,35 +270,35 @@ def initialize_packages(db: Session):
     
     default_packages = [
         {
-            "name": "starter",
-            "display_name": "Starter",
+        "name": "starter",
+        "display_name": "Starter",
             "plan_type": PlanType.starter,
-            "credits_monthly": 500,
+        "credits_monthly": 500,
             "price_monthly": 25.00,
             "price_annual": 240.00,  # 20% discount
-            "features": [
+        "features": [
                 "500 credits per month",
                 "Email enrichment",
                 "Phone enrichment", 
                 "CSV import/export",
-                "Chrome extension",
+            "Chrome extension",
                 "Basic support"
             ]
         },
         {
-            "name": "pro-1k",
-            "display_name": "Pro 1K",
+        "name": "pro-1k",
+        "display_name": "Pro 1K",
             "plan_type": PlanType.pro,
-            "credits_monthly": 1000,
+        "credits_monthly": 1000,
             "price_monthly": 49.00,
             "price_annual": 470.40,  # 20% discount
-            "features": [
+        "features": [
                 "1000 credits per month",
-                "All Starter features",
+            "All Starter features",
                 "Advanced analytics",
-                "Priority support",
+            "Priority support",
                 "API access",
-                "Custom integrations"
+            "Custom integrations"
             ]
         },
         {
@@ -308,24 +308,24 @@ def initialize_packages(db: Session):
             "credits_monthly": 3000,
             "price_monthly": 129.00,
             "price_annual": 1238.40,  # 20% discount
-            "features": [
+        "features": [
                 "3000 credits per month",
                 "All Pro 1K features",
-                "Bulk operations",
+            "Bulk operations",
                 "Advanced filters",
                 "CRM integrations",
                 "Dedicated support"
-            ],
+        ],
             "popular": True
-        },
-        {
-            "name": "pro-5k",
-            "display_name": "Pro 5K",
+    },
+    {
+        "name": "pro-5k",
+        "display_name": "Pro 5K", 
             "plan_type": PlanType.pro,
-            "credits_monthly": 5000,
+        "credits_monthly": 5000,
             "price_monthly": 199.00,
             "price_annual": 1910.40,  # 20% discount
-            "features": [
+        "features": [
                 "5000 credits per month",
                 "All Pro 3K features",
                 "White-label options",
@@ -335,16 +335,16 @@ def initialize_packages(db: Session):
             ]
         },
         {
-            "name": "enterprise",
-            "display_name": "Enterprise",
+        "name": "enterprise",
+        "display_name": "Enterprise",
             "plan_type": PlanType.enterprise,
             "credits_monthly": 0,  # Custom
             "price_monthly": 0.00,  # Custom pricing
-            "price_annual": 0.00,
-            "features": [
+        "price_annual": 0.00,
+        "features": [
                 "Custom credit allocation",
-                "All Pro features",
-                "SSO integration",
+            "All Pro features",
+            "SSO integration",
                 "Advanced security",
                 "Custom SLA",
                 "Dedicated account manager"

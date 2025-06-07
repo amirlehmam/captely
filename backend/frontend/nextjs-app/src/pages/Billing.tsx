@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import apiService from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { StripePaymentMethodSetup, CheckoutSession } from '../components/StripeElements';
 
 interface Subscription {
   id: string;
@@ -359,21 +360,14 @@ const BillingPage: React.FC = () => {
   };
 
   const handleAddPaymentMethod = async () => {
-    try {
-      // Create setup intent and redirect to customer portal
-      const response = await apiService.createCustomerPortalSession();
-      window.open(response.portal_url, '_blank');
-      toast.success(t('billing.redirectingToSecurePaymentSetup'));
-      
-      // Refresh data after portal session
-      setTimeout(async () => {
-        await fetchAllBillingData();
-        setShowAddPaymentMethod(false);
-      }, 5000);
-    } catch (error) {
-      console.error('Payment method error:', error);
-      toast.error(t('billing.failedToAddPaymentMethod'));
-    }
+    // Show the Stripe Elements modal
+    setShowAddPaymentMethod(true);
+  };
+
+  const handlePaymentMethodSuccess = async () => {
+    setShowAddPaymentMethod(false);
+    await fetchAllBillingData();
+    toast.success(t('billing.paymentMethodAddedSuccessfully'));
   };
 
   const handleRemovePaymentMethod = async (paymentMethodId: string) => {
@@ -1241,7 +1235,7 @@ const BillingPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Add Payment Method Modal */}
+      {/* Add Payment Method Modal with Stripe Elements */}
       <AnimatePresence>
         {showAddPaymentMethod && (
           <motion.div
@@ -1255,48 +1249,13 @@ const BillingPage: React.FC = () => {
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+              className="max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {t('billing.addPaymentMethodTitle')}
-                </h2>
-                <button
-                  onClick={() => setShowAddPaymentMethod(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                  <div className="flex items-start">
-                    <Lock className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-                    <div>
-                      <h5 className="font-medium text-blue-900 mb-1">
-                        {t('billing.securePaymentTitle')}
-                      </h5>
-                      <p className="text-sm text-blue-700">
-                        {t('billing.securePaymentDescription')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleAddPaymentMethod}
-                  className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
-                >
-                  {t('billing.continueToStripeCheckout')}
-                  <ExternalLink className="w-4 h-4 ml-2 inline" />
-                </button>
-
-                <p className="text-xs text-center text-gray-500">
-                  {t('billing.agreeTerms')}
-                </p>
-              </div>
+              <StripePaymentMethodSetup
+                onSuccess={handlePaymentMethodSuccess}
+                onCancel={() => setShowAddPaymentMethod(false)}
+              />
             </motion.div>
           </motion.div>
         )}
