@@ -209,7 +209,7 @@ const BillingPage: React.FC = () => {
 
   const fetchCreditUsage = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_IMPORT_URL}/user/credits`);
+      const response = await fetch(`${import.meta.env.VITE_IMPORT_URL}/api/user/credits`);
       if (!response.ok) throw new Error('Failed to fetch credit usage');
       
       const data = await response.json();

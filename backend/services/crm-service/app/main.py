@@ -281,7 +281,7 @@ async def get_contacts(
         offset = (page - 1) * limit
         
         # Build base query with user filtering
-        where_conditions = ["c.user_id = :user_id"]  # Always filter by user
+        where_conditions = ["j.user_id = :user_id"]  # Always filter by user (from import_jobs table)
         params = {"user_id": user_id}
         
         if search:
