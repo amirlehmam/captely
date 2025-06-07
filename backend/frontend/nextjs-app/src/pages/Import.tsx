@@ -301,7 +301,7 @@ const ImportPage: React.FC = () => {
       }
 
       // Send manual contacts to backend for enrichment
-      const response = await fetch('/api/import/api/imports/manual', {
+      const response = await fetch('/api/import/imports/manual', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
