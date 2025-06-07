@@ -533,15 +533,14 @@ class ApiService {
   }
 
   async deductCredits(credits: number, reason: string): Promise<{ success: boolean; new_balance: number }> {
-    return client.post(`${API_CONFIG.importUrl}/credits/deduct`, {
+    return client.post(`${API_CONFIG.creditUrl}/credits/deduct`, {
       credits,
-      operation_type: 'enrichment',
       reason
     });
   }
 
   async refundCredits(credits: number, reason: string): Promise<{ success: boolean; new_balance: number }> {
-    return client.post(`${API_CONFIG.importUrl}/credits/refund`, {
+    return client.post(`${API_CONFIG.creditUrl}/credits/refund`, {
       credits,
       reason
     });

@@ -1007,7 +1007,9 @@ const CRMPage: React.FC = () => {
                       <div className={`text-xs mt-1 ${
                         isDark ? 'text-gray-400' : 'text-gray-500'
                       }`}>
-                        {contact.batch_created_at ? new Date(contact.batch_created_at).toLocaleDateString() : '-'}
+                        {contact.batch_created_at && contact.batch_created_at !== 'Invalid Date' 
+                          ? new Date(contact.batch_created_at).toLocaleDateString() 
+                          : '-'}
                       </div>
                     </div>
                   </td>
@@ -1082,7 +1084,7 @@ const CRMPage: React.FC = () => {
         }`}>
                       <div className="flex items-center justify-between">
               <div className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                📈 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts)} of {totalContacts.toLocaleString()} contacts
+                📈 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts || 0)} of {(totalContacts || 0).toLocaleString()} contacts
                 {selectedContacts.size > 0 && (
                   <span className={`ml-2 font-semibold ${
                     isDark ? 'text-emerald-400' : 'text-teal-600'

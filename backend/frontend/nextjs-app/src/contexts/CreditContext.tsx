@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { apiService } from '../services/api';
 
 interface CreditData {
   balance: number;
@@ -78,29 +79,7 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
         return;
       }
 
-      // Use environment variable or fallback
-      const importUrl = (window as any).__RUNTIME_CONFIG__?.VITE_IMPORT_URL || 
-                       import.meta.env?.VITE_IMPORT_URL || 
-                       'http://localhost:8002';
-
-      const response = await fetch(`${importUrl}/api/user/credits`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token expired or invalid - clear it
-          localStorage.removeItem('captely_jwt');
-          sessionStorage.removeItem('captely_jwt');
-          throw new Error('Authentication expired. Please log in again.');
-        }
-        throw new Error(`Failed to fetch credit data: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await apiService.getCreditData();
       setCreditData(data);
       setError(null);
 
