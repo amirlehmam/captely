@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 interface ApiConfig {
   authUrl: string;
   importUrl: string;
+  creditUrl: string;
   analyticsUrl: string;
   crmUrl: string;
   exportUrl: string;
@@ -23,6 +24,7 @@ const getApiConfig = (): ApiConfig => {
       return {
         authUrl: runtimeConfig.VITE_AUTH_URL || getDefaultUrl('auth'),
         importUrl: runtimeConfig.VITE_IMPORT_URL || getDefaultUrl('import'),
+        creditUrl: runtimeConfig.VITE_CREDIT_URL || getDefaultUrl('credit'),
         analyticsUrl: runtimeConfig.VITE_ANALYTICS_URL || getDefaultUrl('analytics'),
         crmUrl: runtimeConfig.VITE_CRM_URL || getDefaultUrl('crm'),
         exportUrl: runtimeConfig.VITE_EXPORT_URL || getDefaultUrl('export'),
@@ -35,6 +37,7 @@ const getApiConfig = (): ApiConfig => {
   return {
     authUrl: import.meta.env?.VITE_AUTH_URL || getDefaultUrl('auth'),
     importUrl: import.meta.env?.VITE_IMPORT_URL || getDefaultUrl('import'),
+    creditUrl: import.meta.env?.VITE_CREDIT_URL || getDefaultUrl('credit'),
     analyticsUrl: import.meta.env?.VITE_ANALYTICS_URL || getDefaultUrl('analytics'),
     crmUrl: import.meta.env?.VITE_CRM_URL || getDefaultUrl('crm'),
     exportUrl: import.meta.env?.VITE_EXPORT_URL || getDefaultUrl('export'),
@@ -526,7 +529,7 @@ class ApiService {
   // ==========================================
 
   async getCreditData(): Promise<CreditData> {
-    return client.get<CreditData>(`${API_CONFIG.importUrl}/user/credits`);
+    return client.get<CreditData>(`${API_CONFIG.creditUrl}/credit/info`);
   }
 
   async deductCredits(credits: number, reason: string): Promise<{ success: boolean; new_balance: number }> {
@@ -921,7 +924,7 @@ class ApiService {
     total_pages: number;
     filters_applied: any;
   }> {
-    return client.get(`${API_CONFIG.importUrl}/crm/contacts`, params);
+    return client.get(`${API_CONFIG.crmUrl}/crm/contacts`, params);
   }
 
   async getCrmContactsStats(): Promise<{
@@ -947,7 +950,7 @@ class ApiService {
       poor: number;
     };
   }> {
-    return client.get(`${API_CONFIG.importUrl}/crm/contacts/stats`);
+    return client.get(`${API_CONFIG.crmUrl}/crm/contacts/stats`);
   }
 
   async getCrmBatches(): Promise<{
@@ -959,7 +962,7 @@ class ApiService {
       enriched_count: number;
     }>;
   }> {
-    return client.get(`${API_CONFIG.importUrl}/crm/batches`);
+    return client.get(`${API_CONFIG.crmUrl}/crm/batches`);
   }
 
   async bulkExportCrmContacts(
@@ -967,7 +970,7 @@ class ApiService {
     exportType: 'hubspot' | 'csv' = 'hubspot'
   ): Promise<any> {
     try {
-      const response = await client.post(`${API_CONFIG.importUrl}/crm/contacts/bulk-export`, {
+      const response = await client.post(`${API_CONFIG.crmUrl}/crm/contacts/bulk-export`, {
         contact_ids: contactIds,
         export_type: exportType
       });
