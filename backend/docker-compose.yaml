@@ -251,7 +251,7 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgrespw@db:5432/postgres
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
