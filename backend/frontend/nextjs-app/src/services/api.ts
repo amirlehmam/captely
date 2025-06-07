@@ -954,12 +954,12 @@ class ApiService {
   }
 
   async getCrmBatches(): Promise<{
-    batches: Array<{
+    contacts: Array<{
       id: string;
-      name: string;
+      first_name: string;
+      last_name: string;
+      company: string;
       created_at: string;
-      contact_count: number;
-      enriched_count: number;
     }>;
   }> {
     return client.get(`${API_CONFIG.crmUrl}/contacts/recent`);

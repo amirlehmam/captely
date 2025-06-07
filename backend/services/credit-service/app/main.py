@@ -173,21 +173,31 @@ app.include_router(router)
 
 @app.get("/api/credits/info")
 async def get_credit_info(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    authorization: str = Header(...),
     session: AsyncSession = Depends(get_session)
 ):
     """Get credit information for the authenticated user"""
     try:
-        # Extract user_id from token
-        token = credentials.credentials
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        user_id = payload.get("sub")
+        # Extract user_id from token using auth service validation
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid authorization header")
         
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+        token = authorization.replace("Bearer ", "")
+        
+        # Validate token with auth service
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"http://auth-service:8000/auth/validate-token",
+                json={"token": token},
+                timeout=5.0
             )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        
+        token_data = response.json()
+        user_id = token_data["user_id"]
         
         # Get user's current credit balance
         user_query = text("SELECT credits, current_subscription_id FROM users WHERE id = :user_id")

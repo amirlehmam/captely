@@ -205,28 +205,42 @@ class CampaignResponse(BaseModel):
 async def get_current_user_id(authorization: str = Header(...)) -> str:
     """Extract user ID from JWT token via auth service"""
     try:
+        print(f"🔧 CRM: Received Authorization header: {authorization[:50]}...")
+        
         if not authorization.startswith("Bearer "):
+            print(f"❌ CRM: Invalid authorization header format")
             raise HTTPException(status_code=401, detail="Invalid authorization header")
         
         token = authorization.replace("Bearer ", "")
+        print(f"🔧 CRM: Extracted token: {token[:20]}...{token[-10:]}")
         
         # Validate token with auth service
         async with httpx.AsyncClient() as client:
+            request_payload = {"token": token}
+            print(f"🔧 CRM: Sending request to auth service: {request_payload}")
+            
             response = await client.post(
                 f"http://auth-service:8000/auth/validate-token",
-                json={"token": token},
+                json=request_payload,
                 timeout=5.0
             )
+            
+            print(f"🔧 CRM: Auth service response status: {response.status_code}")
+            print(f"🔧 CRM: Auth service response text: {response.text}")
         
         if response.status_code != 200:
+            print(f"❌ CRM: Auth service returned {response.status_code}: {response.text}")
             raise HTTPException(status_code=401, detail="Invalid or expired token")
         
         token_data = response.json()
+        print(f"✅ CRM: Token validation successful: {token_data}")
         return token_data["user_id"]
         
-    except httpx.RequestError:
+    except httpx.RequestError as e:
+        print(f"❌ CRM: Request error to auth service: {e}")
         raise HTTPException(status_code=503, detail="Authentication service unavailable")
     except Exception as e:
+        print(f"❌ CRM: Authentication failed: {e}")
         raise HTTPException(status_code=401, detail="Authentication failed")
 
 # Application lifecycle
