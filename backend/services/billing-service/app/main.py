@@ -36,8 +36,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize Stripe
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+if not STRIPE_SECRET_KEY:
+    logger.warning("STRIPE_SECRET_KEY not set - Stripe functionality will be disabled")
+else:
+    stripe.api_key = STRIPE_SECRET_KEY
+    logger.info("Stripe initialized successfully")
 
 app = FastAPI(
     title="Captely Billing Service",
@@ -92,7 +98,7 @@ class StripeService:
     """Comprehensive Stripe service for billing operations"""
     
     @staticmethod
-    def create_customer(email: str, name: str = None, metadata: Dict = None) -> stripe.Customer:
+    def create_customer(email: str, name: str = None, metadata: Dict = None):
         """Create a Stripe customer"""
         return stripe.Customer.create(
             email=email,
@@ -131,7 +137,7 @@ class StripeService:
         price_id: str, 
         trial_period_days: int = None,
         default_payment_method: str = None
-    ) -> stripe.Subscription:
+    ):
         """Create a Stripe subscription"""
         params = {
             "customer": customer_id,
@@ -150,12 +156,12 @@ class StripeService:
         return stripe.Subscription.create(**params)
     
     @staticmethod
-    def update_subscription(subscription_id: str, **kwargs) -> stripe.Subscription:
+    def update_subscription(subscription_id: str, **kwargs):
         """Update a Stripe subscription"""
         return stripe.Subscription.modify(subscription_id, **kwargs)
     
     @staticmethod
-    def cancel_subscription(subscription_id: str, at_period_end: bool = True) -> stripe.Subscription:
+    def cancel_subscription(subscription_id: str, at_period_end: bool = True):
         """Cancel a Stripe subscription"""
         return stripe.Subscription.modify(
             subscription_id,
@@ -169,7 +175,7 @@ class StripeService:
         success_url: str,
         cancel_url: str,
         mode: str = "subscription"
-    ) -> stripe.checkout.Session:
+    ):
         """Create a Stripe Checkout session"""
         return stripe.checkout.Session.create(
             customer=customer_id,
@@ -181,7 +187,7 @@ class StripeService:
         )
     
     @staticmethod
-    def create_customer_portal_session(customer_id: str, return_url: str) -> stripe.billing_portal.Session:
+    def create_customer_portal_session(customer_id: str, return_url: str):
         """Create a customer portal session"""
         return stripe.billing_portal.Session.create(
             customer=customer_id,
