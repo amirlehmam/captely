@@ -1022,42 +1022,42 @@ class ApiService {
   // ==========================================
 
   async getCurrentSubscription(): Promise<any> {
-    return client.get(`${API_CONFIG.billingUrl}/billing/subscription`);
+    return client.get(`${API_CONFIG.billingUrl}/subscription`);
   }
 
   async getTeamMembers(): Promise<any[]> {
-    return client.get(`${API_CONFIG.billingUrl}/billing/team-members`);
+    return client.get(`${API_CONFIG.billingUrl}/team-members`);
   }
 
   async createCheckoutSession(packageId: string, billingCycle: 'monthly' | 'annual'): Promise<{ checkout_url: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/billing/subscriptions/create-checkout`, {
+    return client.post(`${API_CONFIG.billingUrl}/subscriptions/create-checkout`, {
       package_id: packageId,
       billing_cycle: billingCycle
     });
   }
 
   async cancelSubscription(): Promise<{ success: boolean; message: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/billing/subscription/cancel`, {});
+    return client.post(`${API_CONFIG.billingUrl}/subscription/cancel`, {});
   }
 
   async createCustomerPortalSession(): Promise<{ portal_url: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/billing/customer-portal`, {});
+    return client.post(`${API_CONFIG.billingUrl}/customer-portal`, {});
   }
 
   async getPaymentMethods(): Promise<any[]> {
-    return client.get(`${API_CONFIG.billingUrl}/billing/payment-methods`);
+    return client.get(`${API_CONFIG.billingUrl}/payment-methods`);
   }
 
   async createPaymentMethodSetupIntent(): Promise<{ client_secret: string; setup_intent_id: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/billing/payment-methods/setup-intent`, {});
+    return client.post(`${API_CONFIG.billingUrl}/payment-methods/setup-intent`, {});
   }
 
   async removePaymentMethod(paymentMethodId: string): Promise<{ success: boolean; message: string }> {
-    return client.delete(`${API_CONFIG.billingUrl}/billing/payment-methods/${paymentMethodId}`);
+    return client.delete(`${API_CONFIG.billingUrl}/payment-methods/${paymentMethodId}`);
   }
 
   async setDefaultPaymentMethod(paymentMethodId: string): Promise<{ success: boolean; message: string }> {
-    return client.post(`${API_CONFIG.billingUrl}/billing/payment-methods/${paymentMethodId}/set-default`, {});
+    return client.post(`${API_CONFIG.billingUrl}/payment-methods/${paymentMethodId}/set-default`, {});
   }
 
   async getSecurityLogs(): Promise<any[]> {
