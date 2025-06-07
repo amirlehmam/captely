@@ -351,7 +351,7 @@ const CRMPage: React.FC = () => {
                   <h1 className={`text-4xl font-bold mb-2 ${
                     isDark ? 'text-white' : 'text-gray-900'
                   }`}>
-                    ✨ Contacts Management
+                    Contacts Management
                   </h1>
                   <div className="flex items-center space-x-2">
                     <Award className={`h-5 w-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
@@ -830,32 +830,32 @@ const CRMPage: React.FC = () => {
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  👤 Contact
+                  Contact
                 </th>
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  ⭐ Lead Score
+                  Lead Score
                 </th>
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  📧 Email Reliability
+                  Email Reliability
                 </th>
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  🏢 Company & Position
+                  Company & Position
                 </th>
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  📊 Batch
+                  Batch
                 </th>
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  ⚡ Actions
+                  Actions
                 </th>
               </tr>
             </thead>
