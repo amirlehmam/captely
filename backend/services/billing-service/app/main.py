@@ -15,7 +15,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import create_engine, desc, func
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import IntegrityError
-from jose import jwt, JWTError
+# JWT validation now handled by auth service
 from pydantic import BaseModel
 
 from .models import (
@@ -74,7 +74,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Security
 security = HTTPBearer()
-JWT_SECRET = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")
 
 # ====== DEPENDENCY INJECTION ======
 
@@ -85,17 +84,47 @@ def get_db():
     finally:
         db.close()
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """Extract user ID from JWT token"""
+async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """Validate token with auth service and return user ID"""
     try:
         token = credentials.credentials
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token: missing user ID")
-        return user_id
-    except JWTError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+        
+        if not token:
+            raise HTTPException(
+                status_code=401,
+                detail="Missing API token"
+            )
+        
+        # Call auth service to validate token
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://auth-service:8000/auth/validate-token",
+                json={"token": token},
+                timeout=5.0,
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid or expired token"
+                )
+                
+            data = response.json()
+            return str(data["user_id"])
+            
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=503,
+            detail="Could not connect to authentication service"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Token validation failed: {str(e)}"
+        )
 
 # ====== STRIPE UTILITIES ======
 
