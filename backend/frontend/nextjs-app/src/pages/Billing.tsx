@@ -1002,7 +1002,7 @@ const BillingPage: React.FC = () => {
                         <span className={`text-3xl font-bold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
                         }`}>
-                        €{monthlyPrice.toFixed(0)}
+                        €{(monthlyPrice || 0).toFixed(0)}
                         </span>
                       <span className={`${
                         theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1013,7 +1013,7 @@ const BillingPage: React.FC = () => {
                           <p className={`text-sm font-medium ${
                             theme === 'dark' ? 'text-green-400' : 'text-green-600'
                           }`}>
-                            💰 {t('billing.save')} €{savings.toFixed(0)}/{t('billing.year')}
+                            💰 {t('billing.save')} €{(savings || 0).toFixed(0)}/{t('billing.year')}
                           </p>
                           <p className={`text-xs ${
                             theme === 'dark' ? 'text-green-300' : 'text-green-500'
@@ -1105,7 +1105,7 @@ const BillingPage: React.FC = () => {
                     <p className={`text-xs text-center mt-2 ${
                       theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      💳 {formatMessage('billing.billedAnnually', { amount: totalPrice.toFixed(0) })}
+                      💳 {formatMessage('billing.billedAnnually', { amount: (totalPrice || 0).toFixed(0) })}
                     </p>
                   )}
                 </div>

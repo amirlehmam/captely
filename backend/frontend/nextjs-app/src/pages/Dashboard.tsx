@@ -83,8 +83,8 @@ const Dashboard: React.FC = () => {
     return new Intl.NumberFormat().format(num);
   };
 
-  const formatPercentage = (num: number) => {
-    return `${num.toFixed(1)}%`;
+  const formatPercentage = (num: number | undefined) => {
+    return `${(num || 0).toFixed(1)}%`;
   };
 
   // Enhanced stats cards with safe defaults to prevent flashing

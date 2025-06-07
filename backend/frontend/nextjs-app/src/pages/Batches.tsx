@@ -611,7 +611,7 @@ const BatchesPage: React.FC = () => {
                           />
                         </div>
                         <div className={`text-xs mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {job.progress.toFixed(1)}%
+                          {(job.progress || 0).toFixed(1)}%
                         </div>
                       </div>
                     </div>
@@ -621,7 +621,7 @@ const BatchesPage: React.FC = () => {
                       <div className="font-medium">{job.completed}/{job.total}</div>
                       {job.success_rate !== undefined && (
                         <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {job.success_rate.toFixed(1)}% {t('batches.table.successRate').toLowerCase()}
+                          {(job.success_rate || 0).toFixed(1)}% {t('batches.table.successRate').toLowerCase()}
                         </div>
                       )}
                     </div>

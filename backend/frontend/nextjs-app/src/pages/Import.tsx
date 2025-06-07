@@ -402,7 +402,7 @@ const ImportPage: React.FC = () => {
               <TrendingUp className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
               <div>
                 <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('import.stats.avgSuccessRate')}</p>
-                <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{avgSuccessRate.toFixed(1)}%</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{(avgSuccessRate || 0).toFixed(1)}%</p>
               </div>
             </div>
           </motion.div>
@@ -1065,7 +1065,7 @@ const ImportPage: React.FC = () => {
                       <div className={`text-2xl font-bold ${
                         isDark ? 'text-purple-300' : 'text-purple-900'
                       }`}>
-                        {currentJob.progress.toFixed(1)}%
+                        {(currentJob.progress || 0).toFixed(1)}%
                       </div>
                       <div className={`text-sm font-medium ${
                         isDark ? 'text-purple-400' : 'text-purple-700'

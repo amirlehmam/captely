@@ -520,7 +520,9 @@ const CRMPage: React.FC = () => {
                       ? 'bg-emerald-500/20 text-emerald-300' 
                       : 'bg-emerald-100 text-emerald-700'
                   }`}>
-                    {((stats.overview.enriched_contacts / stats.overview.total_contacts) * 100).toFixed(1)}% success
+                    {stats?.overview?.enriched_contacts && stats?.overview?.total_contacts 
+                      ? ((stats.overview.enriched_contacts / stats.overview.total_contacts) * 100).toFixed(1)
+                      : '0.0'}% success
                   </span>
                 </div>
               </div>
@@ -554,7 +556,7 @@ const CRMPage: React.FC = () => {
                 <p className={`text-3xl font-bold ${
                   isDark ? 'text-purple-100' : 'text-purple-900'
                 }`}>
-                  {stats.overview.avg_lead_score.toFixed(1)}
+                                        {(stats?.overview?.avg_lead_score || 0).toFixed(1)}
                 </p>
                 <div className="flex items-center mt-2">
                   {getLeadScoreStars(stats.overview.avg_lead_score).map((filled, i) => (
@@ -596,7 +598,7 @@ const CRMPage: React.FC = () => {
                 <p className={`text-3xl font-bold ${
                   isDark ? 'text-amber-100' : 'text-amber-900'
                 }`}>
-                  {stats.overview.total_credits_consumed.toFixed(0)}
+                                        {(stats?.overview?.total_credits_consumed || 0).toFixed(0)}
                 </p>
                 <div className="flex items-center mt-2">
                   <Briefcase className={`h-4 w-4 mr-1 ${
