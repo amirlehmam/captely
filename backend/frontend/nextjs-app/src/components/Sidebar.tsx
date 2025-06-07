@@ -8,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useCreditContext } from '../contexts/CreditContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Logo from './common/Logo';
+import apiService from '../services/api';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -73,36 +74,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
-        if (!token) return;
+        if (!apiService.isAuthenticated()) return;
 
         // Fetch user profile
-        const profileResponse = await fetch(`${import.meta.env.VITE_AUTH_URL || 'http://localhost:8001'}/auth/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
+        try {
+          const profileData = await apiService.getUserProfile();
           const firstName = profileData.first_name || '';
           const lastName = profileData.last_name || '';
           const fullName = `${firstName} ${lastName}`.trim() || 'User';
           const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || 'U';
 
           // Fetch subscription info
-          const subscriptionResponse = await fetch(`${import.meta.env.VITE_BILLING_URL || 'http://localhost:8004'}/subscription`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          
           let planName = t('billing.plans.free');
-          if (subscriptionResponse.ok) {
-            const subscriptionData = await subscriptionResponse.json();
+          try {
+            const subscriptionData = await apiService.getCurrentSubscription();
             planName = subscriptionData.plan_name || t('billing.plans.free');
+          } catch (billingError) {
+            console.log('Billing info not available, using default plan');
           }
 
           setUserInfo({
             name: fullName,
             plan: planName,
             initials: initials
+          });
+        } catch (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          setUserInfo({
+            name: 'User',
+            plan: t('billing.plans.free'),
+            initials: 'U'
           });
         }
       } catch (error) {

@@ -3,8 +3,7 @@ import { Key, Plus, Trash2, Copy, RefreshCw, AlertCircle, Shield, Code } from 'l
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
-
-const AUTH_BASE = import.meta.env.VITE_AUTH_URL ?? 'http://localhost:8001';
+import apiService from '../services/api';
 
 interface ApiToken {
   id: string;
@@ -14,7 +13,7 @@ interface ApiToken {
 }
 
 interface User {
-  id: number;
+  id: string;
   email: string;
   created_at: string;
 }
@@ -32,24 +31,12 @@ const ApiTokensPage: React.FC = () => {
   // Fetch user profile
   const fetchUserProfile = async () => {
     try {
-      const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
-      
-      if (!token) {
+      if (!apiService.isAuthenticated()) {
         navigate('/login', { replace: true });
         return;
       }
 
-      const response = await fetch(`${AUTH_BASE}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user profile');
-      }
-
-      const userData = await response.json();
+      const userData = await apiService.getUserProfile();
       setUser(userData);
     } catch (err: any) {
       console.error('Error fetching user profile:', err);
@@ -75,24 +62,9 @@ const ApiTokensPage: React.FC = () => {
       let tokensFromStorage: ApiToken[] = localTokens ? JSON.parse(localTokens) : [];
 
       try {
-        console.log(`Fetching API tokens from ${AUTH_BASE}/auth/apikeys`);
+        console.log(`Fetching API tokens from API service`);
         
-        const response = await fetch(`${AUTH_BASE}/auth/apikeys`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          mode: 'cors' // Explicitly set CORS mode
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Error response: ${response.status} - ${errorText}`);
-          throw new Error(`Failed to fetch API tokens: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
+        const data = await apiService.getApiTokens();
         // Combine API tokens with local tokens
         const allTokens = [...data, ...tokensFromStorage.filter((t: ApiToken) => 
           !data.some((apiToken: ApiToken) => apiToken.id === t.id)
@@ -133,24 +105,25 @@ const ApiTokensPage: React.FC = () => {
         return;
       }
 
-      console.log(`Creating API token from ${AUTH_BASE}/auth/apikey`);
+      console.log(`Creating API token from API service`);
       
-      const response = await fetch(`${AUTH_BASE}/auth/apikey`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        mode: 'cors' // Explicitly set CORS mode
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error response: ${response.status} - ${errorText}`);
+      try {
+        const apiToken = await apiService.createApiToken('API Token');
+        const newToken: ApiToken = {
+          id: apiToken.id,
+          key: apiToken.token,
+          created_at: new Date().toISOString(),
+          revoked: false
+        };
+        const updatedTokens = [newToken, ...tokens];
+        setTokens(updatedTokens);
+        localStorage.setItem('captely_api_tokens', JSON.stringify(updatedTokens));
+        toast.success('API token created successfully!');
+        return;
+      } catch (error) {
+        console.error('API token creation failed, generating client-side token');
         
         // If API token creation fails, generate a token locally
-        console.error('API token creation failed, generating client-side token');
         const generateRandomToken = () => {
           // Generate a random hex string (64 chars)
           const array = new Uint8Array(32);
@@ -159,7 +132,7 @@ const ApiTokensPage: React.FC = () => {
         };
         
         const timestamp = new Date().toISOString();
-        const newLocalToken = {
+        const newLocalToken: ApiToken = {
           id: crypto.randomUUID(), // Use browser's UUID generator
           key: generateRandomToken(),
           created_at: timestamp,
@@ -174,13 +147,6 @@ const ApiTokensPage: React.FC = () => {
         setError('API token creation failed, but a local token was generated');
         return;
       }
-
-      const newToken = await response.json();
-      const updatedTokens = [newToken, ...tokens];
-      setTokens(updatedTokens);
-      // Save to localStorage
-      localStorage.setItem('captely_api_tokens', JSON.stringify(updatedTokens));
-      toast.success('API token created successfully!');
     } catch (err: any) {
       // If there's an error, still provide a local token
       const generateRandomToken = () => {
@@ -229,19 +195,7 @@ const ApiTokensPage: React.FC = () => {
 
       // Try API first
       try {
-        const response = await fetch(`${AUTH_BASE}/auth/apikeys/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          },
-          mode: 'cors'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to revoke API token on server');
-        }
-        
+        await apiService.deleteApiToken(id);
         toast.success('API token revoked successfully on server!');
       } catch (err) {
         console.error('Server token revocation failed, handling locally');

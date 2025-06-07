@@ -4,6 +4,7 @@ import CreditDisplay from './common/CreditDisplay';
 import LanguageSwitcher from './common/LanguageSwitcher';
 import DarkModeToggle from './common/DarkModeToggle';
 import { useLanguage } from '../contexts/LanguageContext';
+import apiService from '../services/api';
 
 const Header: React.FC = () => {
   const [userName, setUserName] = useState('User');
@@ -12,19 +13,12 @@ const Header: React.FC = () => {
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
-        if (!token) return;
+        if (!apiService.isAuthenticated()) return;
 
         // Fetch user profile
-        const profileResponse = await fetch(`${import.meta.env.VITE_AUTH_URL || 'http://localhost:8001'}/auth/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          const firstName = profileData.first_name || '';
-          setUserName(firstName || 'User');
-        }
+        const profileData = await apiService.getUserProfile();
+        const firstName = profileData.first_name || '';
+        setUserName(firstName || 'User');
       } catch (error) {
         console.error('Error fetching user profile:', error);
       }
