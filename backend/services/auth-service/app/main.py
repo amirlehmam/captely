@@ -591,6 +591,26 @@ async def login(data: SignupIn, db: AsyncSession = Depends(get_db)):
 async def me(current_user: User = Depends(get_current_user)):
     return current_user
 
+@app.get("/auth/user/{user_id}")
+async def get_user_by_id(user_id: str, db: AsyncSession = Depends(get_db)):
+    """Get user information by ID - for internal service calls"""
+    try:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "company": user.company,
+            "phone": user.phone
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching user: {str(e)}")
+
 # Add missing profile endpoint that frontend expects
 @app.get("/api/auth/profile/", response_model=UserOut)
 async def get_profile(current_user: User = Depends(get_current_user)):

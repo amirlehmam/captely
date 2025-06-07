@@ -206,17 +206,4 @@ class CreditPackage(Base):
     popular = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# User model (simplified, should be in auth service)
-class User(Base):
-    __tablename__ = "users"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, unique=True, nullable=False)
-    current_subscription_id = Column(UUID(as_uuid=True), ForeignKey("user_subscriptions.id"))
-    stripe_customer_id = Column(String)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    current_subscription = relationship("UserSubscription", foreign_keys=[current_subscription_id]) 
+# Note: User model removed - using auth service for user data 

@@ -143,10 +143,14 @@ class StripeService:
     @staticmethod
     def get_or_create_customer(user_id: str, email: str, db: Session) -> str:
         """Get existing or create new Stripe customer"""
-        user = db.query(User).filter(User.id == user_id).first()
+        # Check if user has active subscription with customer_id
+        subscription = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id,
+            UserSubscription.stripe_customer_id.isnot(None)
+        ).first()
         
-        if user and user.stripe_customer_id:
-            return user.stripe_customer_id
+        if subscription and subscription.stripe_customer_id:
+            return subscription.stripe_customer_id
         
         # Create new customer
         customer = StripeService.create_customer(
@@ -155,14 +159,6 @@ class StripeService:
             metadata={"user_id": user_id}
         )
         
-        # Update user record
-        if user:
-            user.stripe_customer_id = customer.id
-        else:
-            new_user = User(id=user_id, email=email, stripe_customer_id=customer.id)
-            db.add(new_user)
-        
-        db.commit()
         return customer.id
     
     @staticmethod
@@ -451,30 +447,42 @@ async def get_pro_plans(db: Session = Depends(get_db)):
 
 # ====== SUBSCRIPTION ENDPOINTS ======
 
+class CheckoutRequest(BaseModel):
+    package_id: str
+    billing_cycle: str
+
 @app.post("/api/billing/subscriptions/create-checkout")
 async def create_subscription_checkout(
-    package_id: str,
-    billing_cycle: str,
+    data: CheckoutRequest,
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Create a Stripe Checkout session for subscription"""
     try:
         # Get package
-        package = db.query(Package).filter(Package.id == package_id).first()
+        package = db.query(Package).filter(Package.id == data.package_id).first()
         if not package:
             raise HTTPException(status_code=404, detail="Package not found")
         
-        # Get or create Stripe customer
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        # Get user email from auth service
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"http://auth-service:8000/auth/user/{user_id}",
+                timeout=5.0,
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=404, detail="User not found")
+                
+            user_data = response.json()
+            user_email = user_data.get("email", f"user-{user_id}@captely.com")
         
-        customer_id = StripeService.get_or_create_customer(user_id, user.email, db)
+        customer_id = StripeService.get_or_create_customer(user_id, user_email, db)
         
         # Create Stripe price if it doesn't exist
-        price_amount = int((package.price_annual if billing_cycle == "annual" else package.price_monthly) * 100)
-        price_interval = "year" if billing_cycle == "annual" else "month"
+        price_amount = int((package.price_annual if data.billing_cycle == "annual" else package.price_monthly) * 100)
+        price_interval = "year" if data.billing_cycle == "annual" else "month"
         
         stripe_price = stripe.Price.create(
             unit_amount=price_amount,
@@ -486,7 +494,7 @@ async def create_subscription_checkout(
             },
             metadata={
                 "package_id": str(package.id),
-                "billing_cycle": billing_cycle
+                "billing_cycle": data.billing_cycle
             }
         )
         
@@ -570,11 +578,21 @@ async def create_payment_method_setup_intent(
 ):
     """Create a SetupIntent for adding payment methods"""
     try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        # Get user email from auth service
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"http://auth-service:8000/auth/user/{user_id}",
+                timeout=5.0,
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=404, detail="User not found")
+                
+            user_data = response.json()
+            user_email = user_data.get("email", f"user-{user_id}@captely.com")
         
-        customer_id = StripeService.get_or_create_customer(user_id, user.email, db)
+        customer_id = StripeService.get_or_create_customer(user_id, user_email, db)
         
         setup_intent = stripe.SetupIntent.create(
             customer=customer_id,
@@ -693,12 +711,17 @@ async def create_customer_portal_session(
 ):
     """Create customer portal session"""
     try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user or not user.stripe_customer_id:
-            raise HTTPException(status_code=404, detail="Customer not found")
+        # Find existing customer ID from subscriptions
+        subscription = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id,
+            UserSubscription.stripe_customer_id.isnot(None)
+        ).first()
+        
+        if not subscription or not subscription.stripe_customer_id:
+            raise HTTPException(status_code=404, detail="No customer found - please create a subscription first")
         
         portal_session = StripeService.create_customer_portal_session(
-            customer_id=user.stripe_customer_id,
+            customer_id=subscription.stripe_customer_id,
             return_url="https://captely.com/billing"
         )
         
@@ -928,9 +951,11 @@ async def handle_setup_intent_succeeded(setup_intent, db: Session):
         if not customer_id or not payment_method_id:
             return
         
-        # Get user
-        user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
-        if not user:
+        # Get user from subscription
+        subscription = db.query(UserSubscription).filter(
+            UserSubscription.stripe_customer_id == customer_id
+        ).first()
+        if not subscription:
             return
         
         # Get payment method details from Stripe
@@ -938,7 +963,7 @@ async def handle_setup_intent_succeeded(setup_intent, db: Session):
         
         # Save payment method
         new_pm = PaymentMethod(
-            user_id=user.id,
+            user_id=subscription.user_id,
             type="card",
             provider="stripe",
             provider_payment_method_id=payment_method_id,
@@ -951,14 +976,14 @@ async def handle_setup_intent_succeeded(setup_intent, db: Session):
         )
         
         # Set as default if it's the first payment method
-        existing_count = db.query(PaymentMethod).filter(PaymentMethod.user_id == user.id).count()
+        existing_count = db.query(PaymentMethod).filter(PaymentMethod.user_id == subscription.user_id).count()
         if existing_count == 0:
             new_pm.is_default = True
         
         db.add(new_pm)
         db.commit()
         
-        logger.info(f"Payment method added for user {user.id}")
+        logger.info(f"Payment method added for user {subscription.user_id}")
         
     except Exception as e:
         logger.error(f"Error handling setup intent succeeded: {str(e)}")
