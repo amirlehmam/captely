@@ -4,24 +4,24 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    postgresql-client \
-    netcat-traditional \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy wait script
-COPY wait-for-db.sh /usr/local/bin/
+# Copy wait-for-db script
+COPY ../common/wait-for-db.sh /usr/local/bin/wait-for-db.sh
 RUN chmod +x /usr/local/bin/wait-for-db.sh
 
 # Copy application code
 COPY . .
 
-# Set PYTHONPATH so Python can find the common package
-ENV PYTHONPATH=/app:$PYTHONPATH
+# Create health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
 
-# Default command (will be overridden by docker-compose)
+EXPOSE 8000
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
