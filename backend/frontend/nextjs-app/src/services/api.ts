@@ -954,15 +954,15 @@ class ApiService {
   }
 
   async getCrmBatches(): Promise<{
-    contacts: Array<{
+    batches: Array<{
       id: string;
-      first_name: string;
-      last_name: string;
-      company: string;
+      name: string;
       created_at: string;
+      contact_count: number;
+      enriched_count: number;
     }>;
   }> {
-    return client.get(`${API_CONFIG.crmUrl}/contacts/recent`);
+    return client.get(`${API_CONFIG.importUrl}/crm/batches`);
   }
 
   async bulkExportCrmContacts(

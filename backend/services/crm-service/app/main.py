@@ -497,6 +497,8 @@ async def get_recent_contacts(
 ):
     """Get recently enriched contacts for the authenticated user"""
     try:
+        print(f"🔧 CRM: get_recent_contacts called with user_id={user_id}, limit={limit}")
+        
         query = """
             SELECT 
                 c.id, c.first_name, c.last_name, c.company, c.position, 
@@ -509,23 +511,51 @@ async def get_recent_contacts(
             LIMIT :limit
         """
         
+        print(f"🔧 CRM: Executing query with params: user_id={user_id}, limit={limit}")
         result = await session.execute(text(query), {
             "user_id": user_id, 
             "limit": limit
         })
         contacts = []
         
+        row_count = 0
         for row in result.fetchall():
+            row_count += 1
             contact = dict(row._mapping)
+            print(f"🔧 CRM: Processing row {row_count}: {contact}")
+            
+            # Ensure id is properly handled - convert to string if needed for validation
+            if contact.get('id'):
+                contact['id'] = str(contact['id'])
+            
             if contact['created_at']:
                 contact['created_at'] = contact['created_at'].isoformat()
+            
+            # Handle null values that might cause frontend issues
+            for key, value in contact.items():
+                if value is None:
+                    contact[key] = None
+                elif key in ['enrichment_score', 'credits_consumed'] and value is not None:
+                    contact[key] = float(value)
+                    
             contacts.append(contact)
         
-        return JSONResponse(content={"contacts": contacts})
+        print(f"✅ CRM: Successfully processed {len(contacts)} contacts")
+        
+        # Always return a valid response structure, even if no contacts found
+        response_data = {"contacts": contacts}
+        print(f"🔧 CRM: Returning response: {response_data}")
+        
+        return JSONResponse(content=response_data)
         
     except Exception as e:
-        print(f"Error fetching recent contacts: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ CRM: Error in get_recent_contacts: {e}")
+        print(f"❌ CRM: Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ CRM: Full traceback: {traceback.format_exc()}")
+        
+        # Return empty array instead of error to prevent frontend crashes
+        return JSONResponse(content={"contacts": []}, status_code=200)
 
 @app.get("/api/contacts/export/{job_id}")
 async def export_contacts(

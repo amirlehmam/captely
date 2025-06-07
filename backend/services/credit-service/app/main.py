@@ -1,6 +1,6 @@
 # services/credit-service/app/main.py
 
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, APIRouter
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, APIRouter, Header
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
