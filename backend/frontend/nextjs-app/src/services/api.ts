@@ -529,7 +529,7 @@ class ApiService {
   // ==========================================
 
   async getCreditData(): Promise<CreditData> {
-    return client.get<CreditData>(`${API_CONFIG.importUrl}/user/credits`);
+    return client.get<CreditData>(`${API_CONFIG.creditUrl}/credits/info`);
   }
 
   async deductCredits(credits: number, reason: string): Promise<{ success: boolean; new_balance: number }> {
@@ -1213,19 +1213,19 @@ class ApiService {
     };
 
     try {
-      // Auth service: /api/auth/health → /health (nginx strips /api/auth)
-      await client.get(`${API_CONFIG.authUrl}/auth/health`);
+      // Auth service: /api/auth/health → /api/health (nginx routes correctly)
+      await client.get(`${API_CONFIG.authUrl}/health`);
       services.auth = true;
     } catch {}
 
     try {
-      // Import service: /api/import/health → /health (nginx strips /api/import)
+      // Import service: /api/import/health → /api/health (nginx routes correctly)
       await client.get(`${API_CONFIG.importUrl}/health`);
       services.import = true;
     } catch {}
 
     try {
-      // Analytics service: /api/analytics/health → /health (nginx strips /api/analytics)
+      // Analytics service: /api/analytics/health → /api/health (nginx routes correctly)
       await client.get(`${API_CONFIG.analyticsUrl}/health`);
       services.analytics = true;
     } catch {}
