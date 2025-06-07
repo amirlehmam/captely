@@ -365,9 +365,9 @@ const BillingPage: React.FC = () => {
   };
 
   const handlePaymentMethodSuccess = async () => {
-    setShowAddPaymentMethod(false);
+        setShowAddPaymentMethod(false);
     await fetchAllBillingData();
-    toast.success(t('billing.paymentMethodAddedSuccessfully'));
+        toast.success(t('billing.paymentMethodAddedSuccessfully'));
   };
 
   const handleRemovePaymentMethod = async (paymentMethodId: string) => {

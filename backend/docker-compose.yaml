@@ -350,5 +350,5 @@ services:
       retries: 3
 
 volumes:
-  captely_db-data:
+  captely_db-data: 
   redis-data: 
