@@ -18,12 +18,12 @@ from sqlalchemy.exc import IntegrityError
 from jose import jwt, JWTError
 from pydantic import BaseModel
 
-from models import (
+from .models import (
     Base, Package, UserSubscription, CreditBalance, CreditAllocation, 
     EnrichmentHistory, PaymentMethod, BillingTransaction, CreditPackage, User,
     PlanType, BillingCycle, SubscriptionStatus, EnrichmentType, EnrichmentStatus
 )
-from schemas import (
+from .schemas import (
     PackageResponse, SubscriptionCreate, SubscriptionResponse, CreditUsageResponse,
     PaymentMethodCreate, PaymentMethodResponse, BillingTransactionResponse,
     BillingHistoryResponse, BillingDashboardResponse, CreditPackagePurchase,
