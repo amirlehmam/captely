@@ -254,6 +254,8 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
@@ -297,11 +299,13 @@ services:
       args:
         - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-placeholder-google-client-id}
         - VITE_APPLE_CLIENT_ID=${VITE_APPLE_CLIENT_ID:-com.captely.signin}
+        - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
     container_name: captely-frontend
     env_file: .env
     environment:
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-placeholder-google-client-id}
       - VITE_APPLE_CLIENT_ID=${VITE_APPLE_CLIENT_ID:-com.captely.signin}
+      - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
     depends_on:
       - auth-service
       - import-service

@@ -1022,37 +1022,42 @@ class ApiService {
   // ==========================================
 
   async getCurrentSubscription(): Promise<any> {
-    try {
-      return await client.get(`${API_CONFIG.billingUrl}/subscription`);
-    } catch (error) {
-      // Fallback for demo
-      return {
-        plan: 'Professional',
-        status: 'active',
-        credits_monthly: 10000,
-        credits_used: 3456,
-        next_billing: '2024-02-01'
-      };
-    }
+    return client.get(`${API_CONFIG.billingUrl}/billing/subscription`);
   }
 
   async getTeamMembers(): Promise<any[]> {
-    try {
-      return await client.get(`${API_CONFIG.authUrl}/team/members`);
-    } catch (error) {
-      // Fallback for demo
-      return [
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john@company.com',
-          role: 'admin',
-          status: 'active',
-          joined_at: '2024-01-15T00:00:00Z',
-          last_active: '2024-01-30T10:30:00Z'
-        }
-      ];
-    }
+    return client.get(`${API_CONFIG.billingUrl}/billing/team-members`);
+  }
+
+  async createCheckoutSession(packageId: string, billingCycle: 'monthly' | 'annual'): Promise<{ checkout_url: string }> {
+    return client.post(`${API_CONFIG.billingUrl}/billing/subscriptions/create-checkout`, {
+      package_id: packageId,
+      billing_cycle: billingCycle
+    });
+  }
+
+  async cancelSubscription(): Promise<{ success: boolean; message: string }> {
+    return client.post(`${API_CONFIG.billingUrl}/billing/subscription/cancel`, {});
+  }
+
+  async createCustomerPortalSession(): Promise<{ portal_url: string }> {
+    return client.post(`${API_CONFIG.billingUrl}/billing/customer-portal`, {});
+  }
+
+  async getPaymentMethods(): Promise<any[]> {
+    return client.get(`${API_CONFIG.billingUrl}/billing/payment-methods`);
+  }
+
+  async createPaymentMethodSetupIntent(): Promise<{ client_secret: string; setup_intent_id: string }> {
+    return client.post(`${API_CONFIG.billingUrl}/billing/payment-methods/setup-intent`, {});
+  }
+
+  async removePaymentMethod(paymentMethodId: string): Promise<{ success: boolean; message: string }> {
+    return client.delete(`${API_CONFIG.billingUrl}/billing/payment-methods/${paymentMethodId}`);
+  }
+
+  async setDefaultPaymentMethod(paymentMethodId: string): Promise<{ success: boolean; message: string }> {
+    return client.post(`${API_CONFIG.billingUrl}/billing/payment-methods/${paymentMethodId}/set-default`, {});
   }
 
   async getSecurityLogs(): Promise<any[]> {

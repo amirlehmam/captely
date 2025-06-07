@@ -309,18 +309,16 @@ const BillingPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Create subscription through billing service - Mock implementation
-      // await apiService.createSubscription(packageId, billingCycle === 'annual' ? 'yearly' : 'monthly');
+      // Create Stripe checkout session
+      const response = await apiService.createCheckoutSession(packageId, billingCycle);
       
       toast.success(t('billing.redirectingToCheckout'));
       
-      // In production, this would redirect to Stripe Checkout or open a payment modal
-      setTimeout(() => {
-        toast.success(t('billing.subscriptionUpdatedSuccessfully'));
-        fetchAllBillingData();
-      }, 2000);
+      // Redirect to Stripe Checkout
+      window.location.href = response.checkout_url;
       
     } catch (error) {
+      console.error('Upgrade error:', error);
       toast.error(t('billing.failedToInitiateUpgrade'));
     } finally {
       setLoading(false);
@@ -334,10 +332,11 @@ const BillingPage: React.FC = () => {
 
     try {
       setLoading(true);
-      // await apiService.cancelSubscription(subscription.id);
-      toast.success(t('billing.subscriptionCanceled'));
+      const response = await apiService.cancelSubscription();
+      toast.success(response.message || t('billing.subscriptionCanceled'));
       await fetchAllBillingData();
     } catch (error) {
+      console.error('Cancel error:', error);
       toast.error(t('billing.failedToCancelSubscription'));
     } finally {
       setLoading(false);
@@ -347,31 +346,12 @@ const BillingPage: React.FC = () => {
   const handleDownloadInvoice = async (transactionId?: string) => {
     setDownloadingInvoice(true);
     try {
-      // In production, this would download the actual invoice PDF
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Create a mock invoice
-      const invoiceData = {
-        invoice_number: `INV-2024-${Math.floor(Math.random() * 10000)}`,
-        date: new Date().toISOString(),
-        amount: currentPlan?.price_monthly || 0,
-        plan: currentPlan?.display_name || 'Unknown',
-        transaction_id: transactionId || 'N/A'
-      };
-      
-      // Create and download a simple text file as a mock invoice
-      const blob = new Blob([JSON.stringify(invoiceData, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice_${invoiceData.invoice_number}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast.success(t('billing.invoiceDownloadedSuccessfully'));
+      // Open customer portal for invoice downloads
+      const response = await apiService.createCustomerPortalSession();
+      window.open(response.portal_url, '_blank');
+      toast.success(t('billing.redirectingToCustomerPortal'));
     } catch (error) {
+      console.error('Invoice error:', error);
       toast.error(t('billing.failedToDownloadInvoice'));
     } finally {
       setDownloadingInvoice(false);
@@ -380,29 +360,18 @@ const BillingPage: React.FC = () => {
 
   const handleAddPaymentMethod = async () => {
     try {
-      // In production, this would open Stripe's payment method setup
+      // Create setup intent and redirect to customer portal
+      const response = await apiService.createCustomerPortalSession();
+      window.open(response.portal_url, '_blank');
       toast.success(t('billing.redirectingToSecurePaymentSetup'));
       
-      // Mock adding a payment method
-      setTimeout(() => {
-        const newPaymentMethod: PaymentMethod = {
-          id: `pm-${Date.now()}`,
-          type: 'card',
-          provider: 'stripe',
-          last_four: '5555',
-          brand: 'mastercard',
-          exp_month: 12,
-          exp_year: 2026,
-          is_default: paymentMethods.length === 0,
-          is_verified: true,
-          created_at: new Date().toISOString()
-        };
-        
-        setPaymentMethods([...paymentMethods, newPaymentMethod]);
+      // Refresh data after portal session
+      setTimeout(async () => {
+        await fetchAllBillingData();
         setShowAddPaymentMethod(false);
-        toast.success(t('billing.paymentMethodAddedSuccessfully'));
-      }, 2000);
+      }, 5000);
     } catch (error) {
+      console.error('Payment method error:', error);
       toast.error(t('billing.failedToAddPaymentMethod'));
     }
   };
@@ -414,10 +383,11 @@ const BillingPage: React.FC = () => {
 
     try {
       setLoading(true);
-      // In production, this would call the API to remove the payment method
+      const response = await apiService.removePaymentMethod(paymentMethodId);
       setPaymentMethods(paymentMethods.filter(pm => pm.id !== paymentMethodId));
-      toast.success(t('billing.paymentMethodRemovedSuccessfully'));
+      toast.success(response.message || t('billing.paymentMethodRemovedSuccessfully'));
     } catch (error) {
+      console.error('Remove payment method error:', error);
       toast.error(t('billing.failedToRemovePaymentMethod'));
     } finally {
       setLoading(false);
@@ -427,13 +397,14 @@ const BillingPage: React.FC = () => {
   const handleSetDefaultPaymentMethod = async (paymentMethodId: string) => {
     try {
       setLoading(true);
-      // In production, this would call the API to set the default payment method
+      const response = await apiService.setDefaultPaymentMethod(paymentMethodId);
       setPaymentMethods(paymentMethods.map(pm => ({
         ...pm,
         is_default: pm.id === paymentMethodId
       })));
-      toast.success(t('billing.defaultPaymentMethodUpdated'));
+      toast.success(response.message || t('billing.defaultPaymentMethodUpdated'));
     } catch (error) {
+      console.error('Set default error:', error);
       toast.error(t('billing.failedToUpdateDefaultPaymentMethod'));
     } finally {
       setLoading(false);
