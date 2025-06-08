@@ -934,7 +934,7 @@ const BillingPage: React.FC = () => {
           <h2 className={`text-2xl font-bold mb-2 ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
-            💎 {t('billing.chooseCreditPackTitle')}
+             {t('billing.chooseCreditPackTitle')}
           </h2>
           <p className={`${
             theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -996,7 +996,7 @@ const BillingPage: React.FC = () => {
                 <div className="text-center mb-6">
                     <h3 className={`text-xl font-bold ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}>💎 {pack.name}</h3>
+                    }`}> {pack.name}</h3>
                   <div className="mt-4">
                         <span className={`text-3xl font-bold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
