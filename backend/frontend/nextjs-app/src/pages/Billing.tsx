@@ -1197,27 +1197,6 @@ const BillingPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Credit Information - SIMPLIFIED */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mt-8"
-      >
-        <div className="flex items-start space-x-4">
-          <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {t('billing.howCreditsWorkTitle')}
-            </h3>
-            <div className="space-y-2 text-sm text-gray-700">
-              <p>• <strong>{t('billing.oneEmailOneCredit')}</strong> - {t('billing.emailCreditDescription')}</p>
-              <p>• <strong>{t('billing.onePhoneTenCredits')}</strong> - {t('billing.phoneCreditDescription')}</p>
-              <p>• <strong>{t('billing.noResultNoCharge')}</strong> - {t('billing.creditDeductionDescription')}</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
       {/* Add Payment Method Modal with Stripe Elements */}
       <AnimatePresence>
         {showAddPaymentMethod && (
