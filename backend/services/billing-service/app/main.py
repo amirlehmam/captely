@@ -41,14 +41,23 @@ STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # Debug environment loading
-logger.info(f"Loading Stripe config...")
+logger.info(f"🔧 Loading Stripe configuration...")
 logger.info(f"STRIPE_SECRET_KEY present: {bool(STRIPE_SECRET_KEY)}")
 logger.info(f"STRIPE_SECRET_KEY starts with sk_: {STRIPE_SECRET_KEY.startswith('sk_') if STRIPE_SECRET_KEY else False}")
 logger.info(f"STRIPE_WEBHOOK_SECRET present: {bool(stripe_webhook_secret)}")
+logger.info(f"STRIPE_WEBHOOK_SECRET starts with whsec_: {stripe_webhook_secret.startswith('whsec_') if stripe_webhook_secret else False}")
+
+# Fix webhook secret issue - set default if None
+if not stripe_webhook_secret:
+    logger.warning("⚠️ STRIPE_WEBHOOK_SECRET not set - using placeholder")
+    stripe_webhook_secret = "whsec_placeholder_for_development_only"
 
 if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith('sk_'):
-    logger.error("STRIPE_SECRET_KEY not set or invalid - Stripe functionality will be disabled")
+    logger.error("❌ STRIPE_SECRET_KEY not set or invalid - Stripe functionality will be disabled")
     logger.error(f"STRIPE_SECRET_KEY value: {STRIPE_SECRET_KEY[:20]}..." if STRIPE_SECRET_KEY else "None")
+    # Set placeholder to prevent NoneType errors
+    STRIPE_SECRET_KEY = "sk_placeholder_for_development_only"
+    stripe.api_key = STRIPE_SECRET_KEY
 else:
     stripe.api_key = STRIPE_SECRET_KEY
     logger.info("✅ Stripe initialized successfully")
@@ -506,6 +515,13 @@ async def create_subscription_checkout(
 ):
     """Create a Stripe Checkout session for subscription"""
     try:
+        # Validate Stripe configuration first
+        if not STRIPE_SECRET_KEY or STRIPE_SECRET_KEY.startswith("sk_placeholder"):
+            logger.error("❌ Stripe not configured properly for checkout session")
+            raise HTTPException(status_code=503, detail="Payment processing not available - Stripe not configured")
+        
+        logger.info(f"🔧 Starting checkout session creation for user {user_id}, package {data.package_id}")
+        
         # Get package with improved lookup
         package = get_package_by_id_or_name(data.package_id, db)
         if not package:
@@ -663,13 +679,14 @@ async def create_payment_method_setup_intent(
     """Create a SetupIntent for adding payment methods"""
     try:
         # Validate Stripe configuration first
-        if not STRIPE_SECRET_KEY:
-            logger.error("Stripe not configured - missing STRIPE_SECRET_KEY")
+        if not STRIPE_SECRET_KEY or STRIPE_SECRET_KEY.startswith("sk_placeholder"):
+            logger.error("❌ Stripe not configured properly - invalid STRIPE_SECRET_KEY")
             raise HTTPException(status_code=503, detail="Payment processing not available - Stripe not configured")
         
-        if STRIPE_SECRET_KEY == "placeholder-stripe-secret-key" or len(STRIPE_SECRET_KEY) < 10:
-            logger.error("Invalid Stripe configuration - placeholder or too short key")
-            raise HTTPException(status_code=503, detail="Payment processing not available - Invalid Stripe configuration")
+        if not stripe_webhook_secret or stripe_webhook_secret.startswith("whsec_placeholder"):
+            logger.warning("⚠️ Stripe webhook secret not configured properly")
+        
+        logger.info(f"🔧 Starting setup intent creation for user {user_id}")
         
         # Get user email from auth service
         import httpx
@@ -768,6 +785,8 @@ async def get_billing_dashboard(
 ):
     """Get complete billing dashboard"""
     try:
+        logger.info(f"🏠 Getting billing dashboard for user {user_id}")
+        
         # Get current subscription
         subscription = db.query(UserSubscription).filter(
             UserSubscription.user_id == user_id,
@@ -1166,20 +1185,26 @@ async def get_billing_history(
     db: Session = Depends(get_db)
 ):
     """Get billing transaction history"""
-    transactions = db.query(BillingTransaction).filter(
-        BillingTransaction.user_id == user_id
-    ).order_by(desc(BillingTransaction.created_at)).offset(offset).limit(limit).all()
-    
-    total = db.query(BillingTransaction).filter(
-        BillingTransaction.user_id == user_id
-    ).count()
-    
-    return BillingHistoryResponse(
-        transactions=[BillingTransactionResponse.model_validate(tx) for tx in transactions],
-        total=total,
-        limit=limit,
-        offset=offset
-    )
+    try:
+        logger.info(f"📋 Getting billing history for user {user_id}")
+        
+        transactions = db.query(BillingTransaction).filter(
+            BillingTransaction.user_id == user_id
+        ).order_by(desc(BillingTransaction.created_at)).offset(offset).limit(limit).all()
+        
+        total = db.query(BillingTransaction).filter(
+            BillingTransaction.user_id == user_id
+        ).count()
+        
+        return BillingHistoryResponse(
+            transactions=[BillingTransactionResponse.model_validate(tx) for tx in transactions],
+            total=total,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"❌ Error getting billing history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get billing history: {str(e)}")
 
 # ====== TEAM MANAGEMENT ======
 
