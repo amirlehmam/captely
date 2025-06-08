@@ -124,23 +124,23 @@ async def get_credit_info(
 ):
     """Get credit information for the authenticated user"""
     try:
-        # Get user's current credit balance - Use sync queries to avoid async issues
+        # Get user's current credit balance - Use proper async queries
         user_query = text("SELECT credits, current_subscription_id FROM users WHERE id = :user_id")
         user_result = await session.execute(user_query, {"user_id": user_id})
-        user_row = user_result.first()
+        user_row = user_result.fetchone()  # Use fetchone() instead of first() for async compatibility
         
         if not user_row:
-            # Create default user with 5000 credits if doesn't exist
+            # Create default user with 500 credits for pack-500 plan if doesn't exist
             await session.execute(
-                text("INSERT INTO users (id, credits) VALUES (:user_id, 5000) ON CONFLICT (id) DO NOTHING"),
+                text("INSERT INTO users (id, credits, plan) VALUES (:user_id, 500, 'pack-500') ON CONFLICT (id) DO NOTHING"),
                 {"user_id": user_id}
             )
             await session.commit()
-            current_credits = 5000
+            current_credits = 500
             subscription_id = None
-            print(f"✅ Created new user {user_id} with 5000 credits")
+            print(f"✅ Created new user {user_id} with 500 credits (pack-500 plan)")
         else:
-            current_credits = user_row[0] if user_row[0] is not None else 5000
+            current_credits = user_row[0] if user_row[0] is not None else 500
             subscription_id = user_row[1]
             print(f"📊 User {user_id} has {current_credits} credits")
         
@@ -155,7 +155,7 @@ async def get_credit_info(
                 AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
             """)
             usage_result = await session.execute(usage_query, {"user_id": user_id})
-            usage_row = usage_result.first()
+            usage_row = usage_result.fetchone()  # Use fetchone() instead of first() for async compatibility
             
             used_this_month = int(usage_row[0]) if usage_row and usage_row[0] else 0
             used_today = int(usage_row[1]) if usage_row and usage_row[1] else 0
@@ -169,7 +169,7 @@ async def get_credit_info(
             "used_today": used_today,
             "used_this_month": used_this_month,
             "limit_daily": None,
-            "limit_monthly": 5000,
+            "limit_monthly": 500,  # Update monthly limit to match pack-500 plan
             "subscription": subscription_id
         }
         
@@ -178,13 +178,13 @@ async def get_credit_info(
         
     except Exception as e:
         print(f"❌ Error fetching credit info for user {user_id}: {e}")
-        # Return default values if database fails
+        # Return default values for pack-500 plan if database fails
         return {
-            "balance": 5000,
+            "balance": 500,
             "used_today": 0,
             "used_this_month": 0,
             "limit_daily": None,
-            "limit_monthly": 5000,
+            "limit_monthly": 500,
             "subscription": None
         }
 
