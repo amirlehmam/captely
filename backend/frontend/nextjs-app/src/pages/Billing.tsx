@@ -583,7 +583,7 @@ const BillingPage: React.FC = () => {
             <h3 className={`text-lg font-semibold mb-3 ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}>
-              💡 {t('billing.creditConsumptionLogicTitle')}
+               {t('billing.creditConsumptionLogicTitle')}
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -983,7 +983,7 @@ const BillingPage: React.FC = () => {
                 <div className="text-center mb-6">
                     <h3 className={`text-xl font-bold ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}> {pack.name}</h3>²
+                    }`}> {pack.name}</h3>
                   <div className="mt-4">
                         <span className={`text-3xl font-bold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
