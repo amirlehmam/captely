@@ -158,7 +158,7 @@ REDIS_URL=redis://default:PASSWORD@captely-redis-do-user-xxxxx.b.db.ondigitaloce
 JWT_SECRET=your-256-bit-secret-key-here
 
 # Your domain
-VITE_AUTH_URL=https://yourdomain.com/api/auth
+VITE_AUTH_URL=https://yourdomain.com/api
 VITE_IMPORT_URL=https://yourdomain.com/api/import
 # ... (other URLs)
 

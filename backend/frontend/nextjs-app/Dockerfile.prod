@@ -19,12 +19,13 @@ COPY . .
 
 # Set production environment variables with HTTPS
 ENV NODE_ENV=production
-ENV VITE_AUTH_URL=https://captely.com/api/auth
-ENV VITE_IMPORT_URL=https://captely.com/api/import
-ENV VITE_ANALYTICS_URL=https://captely.com/api/analytics
-ENV VITE_CRM_URL=https://captely.com/api/crm
-ENV VITE_EXPORT_URL=https://captely.com/api/export
-ENV VITE_BILLING_URL=https://captely.com/api/billing
+ENV VITE_AUTH_URL=https://captely.com/api
+ENV VITE_IMPORT_URL=https://captely.com/api
+ENV VITE_CREDIT_URL=https://captely.com/api
+ENV VITE_ANALYTICS_URL=https://captely.com/api
+ENV VITE_CRM_URL=https://captely.com/api
+ENV VITE_EXPORT_URL=https://captely.com/api
+ENV VITE_BILLING_URL=https://captely.com/api
 
 # Set OAuth and Stripe environment variables from build args
 ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
