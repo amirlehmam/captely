@@ -31,6 +31,7 @@ class User(Base):
     provider_limits: Mapped[dict] = mapped_column(JSONB, nullable=True)
     notification_preferences: Mapped[dict] = mapped_column(JSONB, nullable=True)
     last_credit_alert: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    plan: Mapped[str] = mapped_column(String, default='pack-500', nullable=False)
     
     # Timestamps
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
