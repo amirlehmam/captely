@@ -181,10 +181,7 @@ const BillingPage: React.FC = () => {
 
   const fetchBillingDashboard = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/billing/dashboard`);
-      if (!response.ok) throw new Error('Failed to fetch billing dashboard');
-      
-      const data = await response.json();
+      const data = await apiService.getBillingDashboard();
       setCurrentPlan(data.current_plan);
       setSubscription(data.subscription);
       setPaymentMethods(data.payment_methods || []);
@@ -196,11 +193,8 @@ const BillingPage: React.FC = () => {
 
   const fetchPackages = async () => {
     try {
-      // Fetch all packages
-      const packagesResponse = await fetch(`${import.meta.env.VITE_BILLING_URL}/packages`);
-      if (!packagesResponse.ok) throw new Error('Failed to fetch packages');
-      
-      const packagesData = await packagesResponse.json();
+      // Fetch all packages using authenticated API service
+      const packagesData = await apiService.getBillingPackages();
       setPackages(packagesData);
     } catch (error) {
       console.error('Error fetching packages:', error);
@@ -242,26 +236,19 @@ const BillingPage: React.FC = () => {
 
   const fetchEnrichmentHistory = async () => {
     try {
-      // Fetch enrichment history from billing service
-      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/billing/enrichment-history`);
-      if (!response.ok) {
-        console.warn('Analytics service unavailable, using enrichment data from billing service');
-        return;
-      }
-      
-      const data = await response.json();
+      // Fetch enrichment history using authenticated API service
+      const data = await apiService.getEnrichmentHistory();
       setEnrichmentHistory(data.enrichments || []);
     } catch (error) {
+      console.warn('Analytics service unavailable, using enrichment data from billing service');
       console.error('Error fetching enrichment history:', error);
     }
   };
 
   const fetchBillingHistory = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/billing/history`);
-      if (!response.ok) throw new Error('Failed to fetch billing history');
-      
-      const data = await response.json();
+      // Fetch billing history using authenticated API service
+      const data = await apiService.getBillingHistory();
       setTransactions(data.transactions || []);
     } catch (error) {
       console.error('Error fetching billing history:', error);
@@ -996,7 +983,7 @@ const BillingPage: React.FC = () => {
                 <div className="text-center mb-6">
                     <h3 className={`text-xl font-bold ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}> {pack.name}</h3>
+                    }`}> {pack.name}</h3>²
                   <div className="mt-4">
                         <span className={`text-3xl font-bold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
