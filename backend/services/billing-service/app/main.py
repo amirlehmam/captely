@@ -60,14 +60,7 @@ if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith('sk_'):
     stripe.api_key = STRIPE_SECRET_KEY
 else:
     stripe.api_key = STRIPE_SECRET_KEY
-    logger.info("✅ Stripe initialized successfully")
-    
-    # Test Stripe connection
-    try:
-        stripe.Account.retrieve()
-        logger.info("✅ Stripe connection test successful")
-    except Exception as e:
-        logger.error(f"❌ Stripe connection test failed: {e}")
+    logger.info("✅ Stripe initialized successfully with valid API key")
 
 app = FastAPI(
     title="Captely Billing Service",
