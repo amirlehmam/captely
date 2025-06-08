@@ -371,6 +371,22 @@ def initialize_packages(db: Session):
             ]
         },
         {
+        "name": "pro-1.5k",
+        "display_name": "Pro 1.5K",
+            "plan_type": PlanType.pro,
+        "credits_monthly": 1500,
+            "price_monthly": 79.00,
+            "price_annual": 758.40,  # 20% discount
+        "features": [
+                "1500 credits per month",
+            "All Pro 1K features",
+                "Advanced filters",
+            "Enhanced support",
+                "Priority processing",
+            "Extended integrations"
+            ]
+        },
+        {
             "name": "pro-3k",
             "display_name": "Pro 3K",
             "plan_type": PlanType.pro,
@@ -490,6 +506,7 @@ def get_package_by_id_or_name(package_id: str, db: Session) -> Package:
     package_mapping = {
         "pack-500": "starter",
         "pack-1000": "pro-1k",
+        "pack-1500": "pro-1.5k",  # Map 1500 to 1.5k plan
         "pack-3000": "pro-3k", 
         "pack-5000": "pro-5k",
         "pack-10000": "enterprise",
@@ -534,6 +551,8 @@ async def create_subscription_checkout(
         # Get package with improved lookup
         package = get_package_by_id_or_name(data.package_id, db)
         if not package:
+            logger.error(f"❌ Package not found: {data.package_id}")
+            logger.error(f"Available packages: {[p.name for p in db.query(Package).all()]}")
             raise HTTPException(status_code=404, detail=f"Package not found: {data.package_id}")
         
         # Get user email from auth service
@@ -828,9 +847,9 @@ async def get_billing_dashboard(
     try:
         logger.info(f"🏠 Getting billing dashboard for user {user_id}")
         
-        # Validate user_id
-        if not user_id:
-            logger.error("Dashboard request with empty user_id")
+        # Validate user_id with detailed logging
+        if not user_id or user_id.strip() == "":
+            logger.error(f"Dashboard request with invalid user_id: '{user_id}'")
             raise HTTPException(status_code=401, detail="User authentication required")
         
         # Get current subscription
