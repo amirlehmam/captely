@@ -2,7 +2,7 @@
 let scrapedLeads = [];
 let jobId = null;
 
-// Define production API base
+// Define production API base - FIXED to always use production
 const API_BASE = 'https://captely.com/api';
 
 // Listen for popup messages
@@ -14,6 +14,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then(() => sendResponse({ status: 'ok' }))
       .catch(error => {
         console.error('Error in startScraping:', error);
+        updateStatus(`Scraping error: ${error.message}`, 'error', '❌');
         sendResponse({ status: 'error', message: error.message });
       });
     return true; // Keep the message channel open for async response
@@ -22,6 +23,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then(() => sendResponse({ status: 'ok' }))
       .catch(error => {
         console.error('Error in downloadCSV:', error);
+        updateStatus(`Download error: ${error.message}`, 'error', '❌');
         sendResponse({ status: 'error', message: error.message });
       });
     return true;
@@ -30,6 +32,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then(() => sendResponse({ status: 'ok' }))
       .catch(error => {
         console.error('Error in sendToEnrichment:', error);
+        updateStatus(`Enrichment error: ${error.message}`, 'error', '❌');
         sendResponse({ status: 'error', message: error.message });
       });
     return true;
@@ -43,10 +46,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // Main scraping function
 async function startScraping(settings = {}) {
   try {
-  // Reset data
-  scrapedLeads = [];
-  jobId = null;
-  
+    // Reset data
+    scrapedLeads = [];
+    jobId = null;
+    
     // Get settings from storage and combine with passed settings
     const storageSettings = await chrome.storage.sync.get(['apiToken', 'maxLeads']);
     
@@ -65,16 +68,16 @@ async function startScraping(settings = {}) {
       pageDelay 
     });
   
-  // Validate settings
-  if (!apiToken) {
-    updateStatus('⚠️ API token not set. Please set your API token first.', 'error');
-    return;
-  }
+    // Validate settings
+    if (!apiToken) {
+      updateStatus('API token not set. Please set your API token first.', 'error', '⚠️');
+      return;
+    }
 
     // Get the active tab
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!activeTab) {
-      updateStatus('⚠️ No active tab found.', 'error');
+      updateStatus('No active tab found.', 'error', '⚠️');
       return;
     }
 
@@ -82,7 +85,7 @@ async function startScraping(settings = {}) {
 
     // Check if we're on LinkedIn Sales Navigator
     if (!activeTab.url.includes('linkedin.com/sales')) {
-      updateStatus('⚠️ Please navigate to LinkedIn Sales Navigator to use this extension.', 'error');
+      updateStatus('Please navigate to LinkedIn Sales Navigator to use this extension.', 'error', '⚠️');
       return;
     }
 
@@ -91,7 +94,7 @@ async function startScraping(settings = {}) {
     let totalPages = 1;
     let hasMorePages = true;
     
-    updateStatus('🚀 Starting scraping process...', 'info');
+    updateStatus('Starting scraping process...', 'info', '🚀');
     updateProgress(0, 0, 0, maxLeads);
 
     // First, inject our content script programmatically to be sure it's there
@@ -139,7 +142,7 @@ async function startScraping(settings = {}) {
         hasMorePages = paginationInfo.hasPagination && currentPage < totalPages;
       }
       
-      updateStatus(`🔍 Scraping page ${currentPage} of ${totalPages}...`, 'info');
+      updateStatus(`Scraping page ${currentPage} of ${totalPages}...`, 'info', '🔍');
       
       // Wait a moment for the page to stabilize
       await new Promise(r => setTimeout(r, pageDelay * 1000));
@@ -151,7 +154,7 @@ async function startScraping(settings = {}) {
         let isBottom = false;
         const maxScrollAttempts = 10; // Increased from 5 to 10
         
-        updateStatus(`📜 Scrolling page to load all leads...`, 'info');
+        updateStatus(`Scrolling page to load all leads...`, 'info', '📜');
         
         // First, scroll to top to start from the beginning
         await chrome.scripting.executeScript({
@@ -232,7 +235,7 @@ async function startScraping(settings = {}) {
         // Wait a moment for the UI to stabilize
         await new Promise(r => setTimeout(r, 1500));
         
-        updateStatus(`✅ Finished scrolling, now scraping leads...`, 'info');
+        updateStatus(`Finished scrolling, now scraping leads...`, 'info', '✅');
       }
       
       // Scrape visible leads on this page
@@ -265,7 +268,7 @@ async function startScraping(settings = {}) {
       if (!results || !results[0] || results[0].result.error) {
         const errorMsg = results?.[0]?.result?.error || 'Unknown error during scraping';
         console.error("Scraping error:", errorMsg);
-        updateStatus(`⚠️ Error: ${errorMsg}`, 'error');
+        updateStatus(`Error: ${errorMsg}`, 'error', '⚠️');
         break;
       }
       
@@ -314,7 +317,7 @@ async function startScraping(settings = {}) {
                 const navigateResult = await navigateToNextPage(activeTab.id);
                 if (!navigateResult) {
                   hasMorePages = false;
-                  updateStatus(`⚠️ Failed to navigate to next page.`, 'warning');
+                  updateStatus(`Failed to navigate to next page.`, 'warning', '⚠️');
                   break;
                 }
                 currentPage++;
@@ -331,7 +334,7 @@ async function startScraping(settings = {}) {
             } else {
               // No more pages, stop scraping
               hasMorePages = false;
-              updateStatus('⚠️ No more leads found to scrape.', 'warning');
+              updateStatus('No more leads found to scrape.', 'warning', '⚠️');
               break;
             }
           } else {
@@ -355,13 +358,13 @@ async function startScraping(settings = {}) {
       totalScraped = scrapedLeads.length;
       
       // Update UI with progress
-      updateStatus(`🕵️‍♀️ Scraped ${totalScraped} leads from ${currentPage} of ${totalPages} pages...`, 'info');
+      updateStatus(`Scraped ${totalScraped} leads from ${currentPage} of ${totalPages} pages...`, 'info', '🕵️‍♀️');
       updateProgress(totalScraped, 0, 0, maxLeads);
       
       // Check if we've reached the maximum
       if (totalScraped >= maxLeads) {
         hasMorePages = false;
-        updateStatus(`✅ Reached the maximum of ${maxLeads} leads.`, 'success');
+        updateStatus(`Reached the maximum of ${maxLeads} leads.`, 'success', '✅');
         break;
       }
       
@@ -377,11 +380,11 @@ async function startScraping(settings = {}) {
           return; // Exit the scraping function, await user restart
         }
         
-        updateStatus(`📄 Navigating to page ${currentPage + 1}...`, 'info');
+        updateStatus(`Navigating to page ${currentPage + 1}...`, 'info', '📄');
         const navigateResult = await navigateToNextPage(activeTab.id);
         if (!navigateResult) {
           hasMorePages = false;
-          updateStatus(`⚠️ Failed to navigate to next page.`, 'warning');
+          updateStatus(`Failed to navigate to next page.`, 'warning', '⚠️');
           break;
         }
         
@@ -391,7 +394,7 @@ async function startScraping(settings = {}) {
         // Wait for the next page to load (LinkedIn can be slow)
         await new Promise(r => setTimeout(r, pageDelay * 1000));
       } else {
-        updateStatus(`🛑 Reached the last page with ${totalScraped} leads.`, 'info');
+        updateStatus(`Reached the last page with ${totalScraped} leads.`, 'info', '🛑');
         break;
       }
     }
@@ -405,12 +408,12 @@ async function startScraping(settings = {}) {
         leadCount: totalScraped
       });
       
-      updateStatus(`✅ Scraping complete! Found ${totalScraped} leads from ${currentPage} pages. You can now download CSV or send for enrichment.`, 'success');
+      updateStatus(`Scraping complete! Found ${totalScraped} leads from ${currentPage} pages. You can now download CSV or send for enrichment.`, 'success', '✅');
     } else {
-      updateStatus('⚠️ No leads found to scrape. Make sure you are on a Sales Navigator list with visible results.', 'warning');
+      updateStatus('No leads found to scrape. Make sure you are on a Sales Navigator list with visible results.', 'warning', '⚠️');
     }
   } catch (error) {
-    updateStatus(`❌ Scraping error: ${error.message}`, 'error');
+    updateStatus(`Scraping error: ${error.message}`, 'error', '❌');
     console.error('Scraping error:', error);
     throw error;
   }
@@ -443,52 +446,52 @@ async function sendToEnrichment() {
   const { apiToken } = await chrome.storage.sync.get(['apiToken']);
   
   if (!apiToken) {
-    updateStatus('⚠️ API token not set. Please set your API token first.', 'error');
+    updateStatus('API token not set. Please set your API token first.', 'error', '⚠️');
     return;
   }
   
   if (scrapedLeads.length === 0) {
-    updateStatus('⚠️ No leads to enrich. Please scrape leads first.', 'warning');
+    updateStatus('No leads to enrich. Please scrape leads first.', 'warning', '⚠️');
     return;
   }
   
   try {
-      // Send to backend for enrichment in batches
-      const batchSize = 20;
-      let sentCount = 0;
+    // Send to backend for enrichment in batches
+    const batchSize = 20;
+    let sentCount = 0;
     const totalCount = scrapedLeads.length;
       
-      updateStatus('📤 Sending leads to Captely for enrichment...', 'info');
+    updateStatus('Sending leads to Captely for enrichment...', 'info', '📤');
       
-      for (let i = 0; i < scrapedLeads.length; i += batchSize) {
-        const batch = scrapedLeads.slice(i, i + batchSize);
-        try {
-          const response = await sendToBackend(batch, apiToken);
-          sentCount += batch.length;
-          
-          if (response.job_id && !jobId) {
-             jobId = response.job_id;
-             // Open dashboard page for progress
-             chrome.tabs.create({ url: `https://captely.com/dashboard?job=${jobId}` });
-             // Start checking job status
-             checkJobStatus(jobId);
-          }
-          
-        updateStatus(`📤 Sent ${sentCount}/${totalCount} leads to Captely`, 'info');
+    for (let i = 0; i < scrapedLeads.length; i += batchSize) {
+      const batch = scrapedLeads.slice(i, i + batchSize);
+      try {
+        const response = await sendToBackend(batch, apiToken);
+        sentCount += batch.length;
+        
+        if (response.job_id && !jobId) {
+          jobId = response.job_id;
+          // Open dashboard page for progress
+          chrome.tabs.create({ url: `https://captely.com/dashboard?job=${jobId}` });
+          // Start checking job status
+          checkJobStatus(jobId);
+        }
+        
+        updateStatus(`Sent ${sentCount}/${totalCount} leads to Captely`, 'info', '📤');
         updateProgress(totalCount, sentCount, 0, totalCount);
           
-          // Small delay between batches
-          await new Promise(r => setTimeout(r, 500));
-        } catch (error) {
-          updateStatus(`❌ Error sending batch: ${error.message}`, 'error');
-          console.error('Error sending batch:', error);
+        // Small delay between batches
+        await new Promise(r => setTimeout(r, 500));
+      } catch (error) {
+        updateStatus(`Error sending batch: ${error.message}`, 'error', '❌');
+        console.error('Error sending batch:', error);
         throw error; // Re-throw to handle in the caller
       }
     }
     
-    updateStatus(`✅ All ${totalCount} leads sent for enrichment.`, 'success');
+    updateStatus(`All ${totalCount} leads sent for enrichment.`, 'success', '✅');
   } catch (error) {
-    updateStatus(`❌ Error sending leads for enrichment: ${error.message}`, 'error');
+    updateStatus(`Error sending leads for enrichment: ${error.message}`, 'error', '❌');
     console.error('Error in sendToEnrichment:', error);
     throw error;
   }
@@ -502,15 +505,19 @@ async function sendToBackend(leads, apiToken) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiToken}`
     },
-    body: JSON.stringify({ leads })
+    body: JSON.stringify({
+      leads: leads,
+      source: 'sales_navigator_extension',
+      auto_enrich: true
+    })
   });
-  
+
   if (!response.ok) {
-    throw new Error(`Backend error: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
-  
-  const data = await response.json();
-  return data;
+
+  return await response.json();
 }
 
 // Check the status of an enrichment job
@@ -551,48 +558,48 @@ async function checkJobStatus(jobId) {
 // Download leads as CSV
 async function downloadCSV() {
   try {
-  if (scrapedLeads.length === 0) {
-    updateStatus('⚠️ No leads to download.', 'warning');
-    return;
-  }
-  
-  // Create CSV content
+    if (scrapedLeads.length === 0) {
+      updateStatus('No leads to download.', 'warning', '⚠️');
+      return;
+    }
+    
+    // Create CSV content
     const headers = ['First Name', 'Last Name', 'Full Name', 'Position', 'Company', 'LinkedIn URL', 'Location', 'Industry'];
-  let csvContent = headers.join(',') + '\n';
-  
-  // Add rows
-  scrapedLeads.forEach(lead => {
-    // Format fields properly for CSV (handle commas, quotes, etc.)
-    const row = [
-      formatCSVField(lead.firstName),
-      formatCSVField(lead.lastName),
-      formatCSVField(lead.fullName),
-      formatCSVField(lead.position),
-      formatCSVField(lead.company),
-      formatCSVField(lead.profileUrl),
-      formatCSVField(lead.location),
+    let csvContent = headers.join(',') + '\n';
+    
+    // Add rows
+    scrapedLeads.forEach(lead => {
+      // Format fields properly for CSV (handle commas, quotes, etc.)
+      const row = [
+        formatCSVField(lead.firstName),
+        formatCSVField(lead.lastName),
+        formatCSVField(lead.fullName),
+        formatCSVField(lead.position),
+        formatCSVField(lead.company),
+        formatCSVField(lead.profileUrl),
+        formatCSVField(lead.location),
         formatCSVField(lead.industry || '')
-    ];
-    csvContent += row.join(',') + '\n';
-  });
-  
+      ];
+      csvContent += row.join(',') + '\n';
+    });
+    
     // Instead of using Blob and URL.createObjectURL, use a data URL
     // Add BOM for UTF-8 to ensure Excel opens it correctly
     const BOM = "\uFEFF";
     const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(BOM + csvContent);
-  
-  // Create and trigger download
+    
+    // Create and trigger download
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     await chrome.downloads.download({
       url: dataUrl,
       filename: `linkedin_leads_${timestamp}.csv`,
-    saveAs: true
-  });
-  
-  updateStatus(`📥 Downloaded ${scrapedLeads.length} leads as CSV.`, 'success');
+      saveAs: true
+    });
+    
+    updateStatus(`Downloaded ${scrapedLeads.length} leads as CSV.`, 'success', '📥');
   } catch (error) {
     console.error("Error downloading CSV:", error);
-    updateStatus(`❌ Error downloading CSV: ${error.message}`, 'error');
+    updateStatus(`Download error: ${error.message}`, 'error', '❌');
     throw error;
   }
 }
@@ -617,11 +624,12 @@ function formatCSVField(value) {
 }
 
 // Update status message in popup
-function updateStatus(message, type = 'info') {
+function updateStatus(message, type = 'info', icon = '') {
   chrome.runtime.sendMessage({ 
     action: 'updateStatus', 
     message,
-    type
+    type,
+    icon
   });
 }
 

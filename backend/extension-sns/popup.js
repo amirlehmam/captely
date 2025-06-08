@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const enrichBtn = document.getElementById('enrich');
   const statusDiv = document.getElementById('status');
   const progressBar = document.getElementById('progressBar');
+  const progressPercent = document.getElementById('progressPercent');
   const scrapedCountEl = document.getElementById('scrapedCount');
   const sentCountEl = document.getElementById('sentCount');
   const enrichedCountEl = document.getElementById('enrichedCount');
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isEnrichingActive = false;
   let currentJobId = null;
   
-  // Define production API base
+  // Define production API base - FIXED to always use production
   const API_BASE = 'https://captely.com/api';
   
   // Toggle settings section
@@ -75,12 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Validate
     if (!token) {
-      updateStatus('⚠️ Please enter a valid API token.', 'warning');
+      updateStatus('Please enter a valid API token.', 'warning', '⚠️');
       return;
     }
     
-    // Validate token with backend
-    updateStatus('🔍 Validating API token...', 'info');
+    // Show loading state
+    saveBtn.disabled = true;
+    updateStatus('Validating API token...', 'info', '🔍');
     
     try {
       const isValid = await validateApiToken(token);
@@ -95,23 +97,25 @@ document.addEventListener('DOMContentLoaded', () => {
           pageDelay: pageDelay,
           settingsExpanded: settingsExpanded
         }, () => {
-          updateStatus('✅ API token validated and settings saved!', 'success');
+          updateStatus('API token validated and settings saved!', 'success', '✅');
+          saveBtn.disabled = false;
         });
       } else {
-        updateStatus('❌ Invalid API token. Please check and try again.', 'error');
+        updateStatus('Invalid API token. Please check and try again.', 'error', '❌');
+        saveBtn.disabled = false;
       }
     } catch (error) {
-      updateStatus(`❌ Error validating token: ${error.message}`, 'error');
+      updateStatus(`Error validating token: ${error.message}`, 'error', '❌');
+      saveBtn.disabled = false;
     }
   });
   
   // Validate API token with the backend
   async function validateApiToken(token) {
     try {
-      // Log the token for debugging
       console.log('Validating token:', token);
       
-      // Try direct validation with the auth service - ensuring correct JSON format
+      // First try to validate with auth service
       try {
         const authResponse = await fetch(`${API_BASE}/auth/validate-token`, {
           method: 'POST',
@@ -126,28 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (authResponse.ok) {
           console.log('Token validated successfully by auth service');
           return true;
-        } else {
-          console.log('Auth service validation failed');
-          // Try to get the error message
-          const errorData = await authResponse.text();
-          console.log('Auth service error:', errorData);
-          
-          // If token validation failed, try to create a new token
-          const newToken = await createNewApiToken();
-          if (newToken) {
-            console.log('Created new API token:', newToken);
-            // Update the token input field with the new token
-            tokenInput.value = newToken;
-            return true;
-          }
         }
       } catch (authError) {
         console.error('Error validating with auth service:', authError);
       }
       
-      // Fallback: Try with the import service
+      // Fallback: Try with the import service to check if token works
       console.log('Trying fallback validation with import service');
-      const response = await fetch(`${API_BASE}/jobs`, {
+      const response = await fetch(`${API_BASE}/imports/jobs`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -156,11 +146,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       console.log('Import service response status:', response.status);
       
-      if (response.ok) {
-        console.log('Token validated successfully by import service');
-        return true;
-      } else {
-        console.log('Import service validation failed');
+      if (response.ok || response.status === 401) {
+        // 401 means token format is recognized but may be invalid
+        // 200 means token is valid
+        console.log('Token validation completed');
+        return response.ok;
       }
       
       return false;
@@ -170,30 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Function to create a new API token
-  async function createNewApiToken() {
-    try {
-      // Use the direct endpoint for extension tokens
-      const response = await fetch(`${API_BASE}/extension/get-token`);
-      
-      if (!response.ok) {
-        console.error('Failed to generate extension token:', await response.text());
-        return null;
-      }
-      
-      const tokenData = await response.json();
-      return tokenData.key;
-    } catch (error) {
-      console.error('Error creating new API token:', error);
-      return null;
-    }
-  }
-  
   // Start scraping button
   startBtn.addEventListener('click', () => {
     // Check if token is set
     if (!tokenInput.value.trim()) {
-      updateStatus('⚠️ Please set your API token first.', 'warning');
+      updateStatus('Please set your API token first.', 'warning', '⚠️');
       return;
     }
     
@@ -208,6 +179,9 @@ document.addEventListener('DOMContentLoaded', () => {
     startBtn.disabled = true;
     downloadBtn.disabled = true;
     enrichBtn.disabled = true;
+    
+    // Add loading spinner to start button
+    startBtn.innerHTML = '<div class="loading-spinner"></div> Scraping...';
     
     // Reset counts
     updateCounts(0, 0, 0);
@@ -224,12 +198,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     
-    updateStatus('🚀 Starting scraping process...', 'info');
+    updateStatus('Starting scraping process...', 'info', '🚀');
   });
   
   // Download CSV button
   downloadBtn.addEventListener('click', () => {
+    downloadBtn.disabled = true;
+    downloadBtn.innerHTML = '<div class="loading-spinner"></div> Downloading...';
+    
     chrome.runtime.sendMessage({ action: 'downloadCSV' });
+    
+    // Re-enable button after a short delay
+    setTimeout(() => {
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = '<span>📥</span> Download CSV';
+    }, 2000);
   });
   
   // Enrich button
@@ -237,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Disable buttons during enrichment
     isEnrichingActive = true;
     enrichBtn.disabled = true;
+    enrichBtn.innerHTML = '<div class="loading-spinner"></div> Processing...';
     
     // Reset enrichment counts
     sentCountEl.textContent = 0;
@@ -244,14 +228,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Tell background script to send leads for enrichment
     chrome.runtime.sendMessage({ action: 'sendToEnrichment' });
-    updateStatus('🔍 Starting enrichment process...', 'info');
+    updateStatus('Starting enrichment process...', 'info', '🔍');
   });
   
   // Listen for messages from background script
   chrome.runtime.onMessage.addListener((message) => {
     switch (message.action) {
       case 'updateStatus':
-        updateStatus(message.message, message.type || 'info');
+        updateStatus(message.message, message.type || 'info', message.icon);
         break;
         
       case 'updateProgress':
@@ -271,10 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'enableButtons':
         // Enable appropriate buttons based on the message
         if (message.downloadEnabled) {
-        downloadBtn.disabled = false;
+          downloadBtn.disabled = false;
+          downloadBtn.innerHTML = '<span>📥</span> Download CSV';
         }
         if (message.enrichEnabled) {
           enrichBtn.disabled = false;
+          enrichBtn.innerHTML = '<span>✨</span> Send for Enrichment';
         }
         // Update lead count if provided
         if (message.leadCount) {
@@ -294,20 +280,22 @@ document.addEventListener('DOMContentLoaded', () => {
         isScrapingActive = false;
         isEnrichingActive = false;
         startBtn.disabled = false;
+        startBtn.innerHTML = '<span>🚀</span> Start Scraping';
         
         // Only re-enable enrichment button if we're done with enrichment
         if (message.enrichmentComplete) {
           enrichBtn.disabled = false;
+          enrichBtn.innerHTML = '<span>✨</span> Send for Enrichment';
         }
         
-        updateStatus(`✅ Process complete! ${message.total || 0} leads processed.`, 'success');
+        updateStatus(`Process complete! ${message.total || 0} leads processed.`, 'success', '✅');
         break;
 
       case 'pauseScraping':
         // This is sent when auto-pagination is disabled and we need user input
-        startBtn.textContent = 'Continue Scraping';
+        startBtn.innerHTML = '<span>▶️</span> Continue Scraping';
         startBtn.disabled = false;
-        updateStatus(`✋ Reached end of page ${message.currentPage} of ${message.totalPages}. Click 'Continue Scraping' to proceed to the next page.`, 'info');
+        updateStatus(`Reached end of page ${message.currentPage} of ${message.totalPages}. Click 'Continue Scraping' to proceed to the next page.`, 'info', '✋');
         isScrapingActive = false;
         break;
     }
@@ -328,9 +316,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Helper to update status with styling
-  function updateStatus(message, type = 'info') {
-    statusDiv.textContent = message;
+  // Helper to update status with styling and icons
+  function updateStatus(message, type = 'info', icon = null) {
+    const statusIcon = statusDiv.querySelector('.status-icon');
+    const statusText = statusDiv.querySelector('span:last-child') || statusDiv;
+    
+    // Update icon if provided
+    if (icon && statusIcon) {
+      statusIcon.textContent = icon;
+    }
+    
+    // Update text - if there's an icon span, update the text span, otherwise the whole div
+    if (statusIcon && statusDiv.children.length > 1) {
+      statusText.textContent = message;
+    } else {
+      statusDiv.innerHTML = `<span class="status-icon">${icon || '🎯'}</span><span>${message}</span>`;
+    }
     
     // Reset classes
     statusDiv.classList.remove('status-info', 'status-success', 'status-warning', 'status-error');
@@ -339,15 +340,72 @@ document.addEventListener('DOMContentLoaded', () => {
     statusDiv.classList.add(`status-${type}`);
   }
   
-  // Helper to update count elements
+  // Helper to update count elements with animation
   function updateCounts(scraped, sent, enriched) {
-    scrapedCountEl.textContent = scraped;
-    sentCountEl.textContent = sent;
-    enrichedCountEl.textContent = enriched;
+    animateCounter(scrapedCountEl, scraped);
+    animateCounter(sentCountEl, sent);
+    animateCounter(enrichedCountEl, enriched);
   }
   
-  // Helper to update progress bar
+  // Helper to animate counter updates
+  function animateCounter(element, newValue) {
+    const currentValue = parseInt(element.textContent) || 0;
+    if (currentValue !== newValue) {
+      element.style.transform = 'scale(1.2)';
+      element.style.color = '#667eea';
+      
+      setTimeout(() => {
+        element.textContent = newValue;
+        element.style.transform = 'scale(1)';
+        setTimeout(() => {
+          element.style.color = '';
+        }, 150);
+      }, 100);
+    }
+  }
+  
+  // Helper to update progress bar with percentage
   function updateProgressBar(percent) {
     progressBar.style.width = `${percent}%`;
+    progressPercent.textContent = `${percent}%`;
+    
+    // Add some visual feedback
+    if (percent > 0) {
+      progressBar.style.opacity = '1';
+    }
+    
+    // Change color based on progress
+    if (percent >= 100) {
+      progressBar.style.background = 'linear-gradient(90deg, #34d399 0%, #10b981 100%)';
+    } else {
+      progressBar.style.background = 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)';
+    }
   }
+  
+  // Check if we're on LinkedIn Sales Navigator on load
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const currentTab = tabs[0];
+    if (currentTab && !currentTab.url.includes('linkedin.com/sales')) {
+      updateStatus('Please navigate to LinkedIn Sales Navigator to use this extension.', 'warning', '⚠️');
+      startBtn.disabled = true;
+    } else {
+      updateStatus('Ready to scrape Sales Navigator leads...', 'info', '🎯');
+    }
+  });
+  
+  // Add keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 's':
+          e.preventDefault();
+          if (!saveBtn.disabled) saveBtn.click();
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (!startBtn.disabled) startBtn.click();
+          break;
+      }
+    }
+  });
 });

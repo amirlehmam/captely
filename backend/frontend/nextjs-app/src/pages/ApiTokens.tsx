@@ -268,7 +268,7 @@ const ApiTokensPage: React.FC = () => {
             <h1 className={`text-4xl font-bold mb-2 ${
               isDark ? 'text-white' : 'text-gray-900'
             }`}>
-              🔑 API Tokens
+               API Tokens
             </h1>
             <p className={`text-lg ${
               isDark ? 'text-gray-300' : 'text-gray-600'
@@ -430,17 +430,17 @@ const ApiTokensPage: React.FC = () => {
                     <th scope="col" className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
                     }`}>
-                      📅 Created
+                       Created
                     </th>
                     <th scope="col" className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
                     }`}>
-                      🔑 Token
+                       Token
                     </th>
                     <th scope="col" className={`px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
                     }`}>
-                      ⚡ Actions
+                       Actions
                     </th>
                   </tr>
                 </thead>
