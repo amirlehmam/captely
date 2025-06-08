@@ -657,7 +657,7 @@ const SettingsPage: React.FC = () => {
               } text-white`}
             >
               <Save className="w-4 h-4 mr-2 inline" />
-              💾 Save Profile
+               Save Profile
             </button>
           </div>
         </div>
@@ -745,7 +745,7 @@ const SettingsPage: React.FC = () => {
               ) : (
                 <Lock className="w-4 h-4 mr-2 inline" />
               )}
-              🔄 Update Password
+               Update Password
             </button>
           </div>
         </div>
@@ -836,7 +836,7 @@ const SettingsPage: React.FC = () => {
               ) : (
                 <Save className="w-4 h-4 mr-2 inline" />
               )}
-              💾 Save Settings
+               Save Settings
             </button>
           </div>
         </div>
@@ -880,7 +880,7 @@ const SettingsPage: React.FC = () => {
                 className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                📥 Go to Import Page
+                 Go to Import Page
                 <ExternalLink className="w-4 h-4 ml-2" />
               </a>
             </div>
@@ -1562,7 +1562,7 @@ const SettingsPage: React.FC = () => {
               ) : (
                 <>
                   <Plus className="w-4 h-4 mr-2 inline" />
-                  🔑 Generate API Key
+                   Generate API Key
                 </>
               )}
             </button>
@@ -1703,7 +1703,7 @@ const SettingsPage: React.FC = () => {
                     className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200"
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
-                    💳 Go to Billing Page
+                     Go to Billing Page
                     <ExternalLink className="w-4 h-4 ml-2" />
                   </a>
                 </div>
@@ -1771,7 +1771,7 @@ const SettingsPage: React.FC = () => {
                     ) : (
                       <Save className="w-4 h-4 mr-2 inline" />
                     )}
-                    💾 Save Preferences
+                     Save Preferences
                   </button>
                 </div>
               </div>
