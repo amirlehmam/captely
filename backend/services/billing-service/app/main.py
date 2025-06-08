@@ -38,19 +38,19 @@ logger = logging.getLogger(__name__)
 # Initialize Stripe
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY") 
-stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # Debug environment loading
 logger.info(f"🔧 Loading Stripe configuration...")
 logger.info(f"STRIPE_SECRET_KEY present: {bool(STRIPE_SECRET_KEY)}")
 logger.info(f"STRIPE_SECRET_KEY starts with sk_: {STRIPE_SECRET_KEY.startswith('sk_') if STRIPE_SECRET_KEY else False}")
-logger.info(f"STRIPE_WEBHOOK_SECRET present: {bool(stripe_webhook_secret)}")
-logger.info(f"STRIPE_WEBHOOK_SECRET starts with whsec_: {stripe_webhook_secret.startswith('whsec_') if stripe_webhook_secret else False}")
+logger.info(f"STRIPE_WEBHOOK_SECRET present: {bool(STRIPE_WEBHOOK_SECRET)}")
+logger.info(f"STRIPE_WEBHOOK_SECRET starts with whsec_: {STRIPE_WEBHOOK_SECRET.startswith('whsec_') if STRIPE_WEBHOOK_SECRET else False}")
 
 # Fix webhook secret issue - set default if None
-if not stripe_webhook_secret:
+if not STRIPE_WEBHOOK_SECRET:
     logger.warning("⚠️ STRIPE_WEBHOOK_SECRET not set - using placeholder")
-    stripe_webhook_secret = "whsec_placeholder_for_development_only"
+    STRIPE_WEBHOOK_SECRET = "whsec_placeholder_for_development_only"
 
 if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith('sk_'):
     logger.error("❌ STRIPE_SECRET_KEY not set or invalid - Stripe functionality will be disabled")
@@ -729,7 +729,7 @@ async def create_payment_method_setup_intent(
             logger.error("❌ Stripe not configured properly - invalid STRIPE_SECRET_KEY")
             raise HTTPException(status_code=503, detail="Payment processing not available - Stripe not configured")
         
-        if not stripe_webhook_secret or stripe_webhook_secret.startswith("whsec_placeholder"):
+        if not STRIPE_WEBHOOK_SECRET or STRIPE_WEBHOOK_SECRET.startswith("whsec_placeholder"):
             logger.warning("⚠️ Stripe webhook secret not configured properly")
         
         logger.info(f"🔧 Starting setup intent creation for user {user_id}")
@@ -950,7 +950,7 @@ async def stripe_webhook(
         
         # Verify webhook signature
         event = stripe.Webhook.construct_event(
-            payload, stripe_signature, stripe_webhook_secret
+            payload, stripe_signature, STRIPE_WEBHOOK_SECRET
         )
         
         # Handle the event
