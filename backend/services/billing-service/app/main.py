@@ -554,15 +554,29 @@ async def create_subscription_checkout(
             }
         )
         
-        # Create checkout session
-        checkout_session = StripeService.create_checkout_session(
-            customer_id=customer_id,
-            price_id=stripe_price.id,
-            success_url="https://captely.com/billing?success=true&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url="https://captely.com/billing?canceled=true"
-        )
-        
-        return {"checkout_url": checkout_session.url}
+        # Create checkout session with error handling
+        try:
+            checkout_session = StripeService.create_checkout_session(
+                customer_id=customer_id,
+                price_id=stripe_price.id,
+                success_url="https://captely.com/billing?success=true&session_id={CHECKOUT_SESSION_ID}",
+                cancel_url="https://captely.com/billing?canceled=true"
+            )
+            
+            # Validate checkout session response
+            if hasattr(checkout_session, 'url') and checkout_session.url:
+                logger.info(f"Checkout session created successfully")
+                return {"checkout_url": checkout_session.url}
+            else:
+                logger.error("Checkout session created but missing URL")
+                raise HTTPException(status_code=500, detail="Invalid checkout session response")
+                
+        except AttributeError as attr_error:
+            logger.error(f"Stripe checkout AttributeError: {attr_error}")
+            raise HTTPException(status_code=503, detail="Payment processing temporarily unavailable")
+        except Exception as checkout_error:
+            logger.error(f"Checkout session creation failed: {checkout_error}")
+            raise HTTPException(status_code=500, detail="Failed to create payment session")
         
     except Exception as e:
         logger.error(f"Error creating checkout session: {str(e)}")
@@ -700,17 +714,31 @@ async def create_payment_method_setup_intent(
         logger.info(f"Creating Stripe SetupIntent for customer {customer_id}")
         
         try:
+            # Fix for NoneType 'Secret' attribute error in Stripe library
             setup_intent = stripe.SetupIntent.create(
                 customer=customer_id,
                 payment_method_types=["card"],
                 usage="off_session"
             )
             
-            logger.info(f"Stripe SetupIntent created: {setup_intent.id}")
+            # Validate the response before accessing attributes
+            if hasattr(setup_intent, 'id') and setup_intent.id:
+                logger.info(f"Stripe SetupIntent created: {setup_intent.id}")
+            else:
+                logger.error("SetupIntent created but missing ID")
+                raise HTTPException(status_code=500, detail="Invalid SetupIntent response")
             
+        except AttributeError as attr_error:
+            # Handle the specific 'Secret' attribute error
+            logger.error(f"Stripe library AttributeError: {attr_error}")
+            raise HTTPException(status_code=503, detail="Payment processing temporarily unavailable - Stripe configuration issue")
         except stripe.error.StripeError as stripe_error:
             logger.error(f"Stripe API error: {stripe_error}")
             raise HTTPException(status_code=400, detail=f"Stripe error: {str(stripe_error)}")
+        except Exception as stripe_lib_error:
+            # Catch any other Stripe library internal errors
+            logger.error(f"Stripe library internal error: {stripe_lib_error}")
+            raise HTTPException(status_code=503, detail="Payment processing temporarily unavailable")
         
         # Validate setup intent response
         if not setup_intent:
@@ -779,6 +807,11 @@ async def get_billing_dashboard(
     """Get complete billing dashboard"""
     try:
         logger.info(f"🏠 Getting billing dashboard for user {user_id}")
+        
+        # Validate user_id
+        if not user_id:
+            logger.error("Dashboard request with empty user_id")
+            raise HTTPException(status_code=401, detail="User authentication required")
         
         # Get current subscription
         subscription = db.query(UserSubscription).filter(
@@ -1181,6 +1214,11 @@ async def get_billing_history(
     try:
         logger.info(f"📋 Getting billing history for user {user_id}")
         
+        # Validate user_id
+        if not user_id:
+            logger.error("History request with empty user_id")
+            raise HTTPException(status_code=401, detail="User authentication required")
+        
         transactions = db.query(BillingTransaction).filter(
             BillingTransaction.user_id == user_id
         ).order_by(desc(BillingTransaction.created_at)).offset(offset).limit(limit).all()
@@ -1198,6 +1236,53 @@ async def get_billing_history(
     except Exception as e:
         logger.error(f"❌ Error getting billing history: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get billing history: {str(e)}")
+
+# ====== ENRICHMENT HISTORY ======
+
+@app.get("/api/billing/enrichment-history")
+async def get_enrichment_history(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Get enrichment history for billing analytics"""
+    try:
+        logger.info(f"📊 Getting enrichment history for user {user_id}")
+        
+        # Validate user_id
+        if not user_id:
+            logger.error("Enrichment history request with empty user_id")
+            raise HTTPException(status_code=401, detail="User authentication required")
+        
+        # Get enrichment history (if table exists)
+        try:
+            enrichments = db.query(EnrichmentHistory).filter(
+                EnrichmentHistory.user_id == user_id
+            ).order_by(desc(EnrichmentHistory.created_at)).limit(100).all()
+            
+            return {
+                "enrichments": [
+                    {
+                        "id": str(enrichment.id),
+                        "type": enrichment.enrichment_type.value,
+                        "status": enrichment.status.value,
+                        "credits_used": enrichment.credits_used,
+                        "created_at": enrichment.created_at.isoformat()
+                    }
+                    for enrichment in enrichments
+                ],
+                "total": len(enrichments)
+            }
+        except Exception:
+            # If enrichment history table doesn't exist, return empty
+            logger.info("Enrichment history table not available, returning empty")
+            return {
+                "enrichments": [],
+                "total": 0
+            }
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting enrichment history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get enrichment history: {str(e)}")
 
 # ====== TEAM MANAGEMENT ======
 
