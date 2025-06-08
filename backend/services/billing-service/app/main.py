@@ -150,12 +150,20 @@ class StripeService:
     
     @staticmethod
     def create_customer(email: str, name: str = None, metadata: Dict = None):
-        """Create a Stripe customer"""
-        return stripe.Customer.create(
-            email=email,
-            name=name,
-            metadata=metadata or {}
-        )
+        """Create a Stripe customer with error handling"""
+        try:
+            return stripe.Customer.create(
+                email=email,
+                name=name,
+                metadata=metadata or {}
+            )
+        except AttributeError as attr_error:
+            # Handle the specific 'Secret' attribute error from Stripe library
+            if "'Secret'" in str(attr_error) or "'NoneType'" in str(attr_error):
+                logger.error(f"Stripe library AttributeError in customer creation: {attr_error}")
+                raise Exception("Payment processing temporarily unavailable - Stripe configuration issue")
+            else:
+                raise attr_error
     
     @staticmethod
     def get_or_create_customer(user_id: str, email: str, db: Session) -> str:
@@ -223,15 +231,23 @@ class StripeService:
         cancel_url: str,
         mode: str = "subscription"
     ):
-        """Create a Stripe Checkout session"""
-        return stripe.checkout.Session.create(
-            customer=customer_id,
-            payment_method_types=["card"],
-            line_items=[{"price": price_id, "quantity": 1}],
-            mode=mode,
-            success_url=success_url,
-            cancel_url=cancel_url
-        )
+        """Create a Stripe Checkout session with error handling for library bugs"""
+        try:
+            return stripe.checkout.Session.create(
+                customer=customer_id,
+                payment_method_types=["card"],
+                line_items=[{"price": price_id, "quantity": 1}],
+                mode=mode,
+                success_url=success_url,
+                cancel_url=cancel_url
+            )
+        except AttributeError as attr_error:
+            # Handle the specific 'Secret' attribute error from Stripe library
+            if "'Secret'" in str(attr_error) or "'NoneType'" in str(attr_error):
+                logger.error(f"Stripe library AttributeError in checkout session: {attr_error}")
+                raise Exception("Payment processing temporarily unavailable - Stripe configuration issue")
+            else:
+                raise attr_error
     
     @staticmethod
     def create_customer_portal_session(customer_id: str, return_url: str):
@@ -540,19 +556,23 @@ async def create_subscription_checkout(
         price_amount = int((package.price_annual if data.billing_cycle == "annual" else package.price_monthly) * 100)
         price_interval = "year" if data.billing_cycle == "annual" else "month"
         
-        stripe_price = stripe.Price.create(
-            unit_amount=price_amount,
-            currency="eur",
-            recurring={"interval": price_interval},
-            product_data={
-                "name": f"{package.display_name} Plan",
-                "description": f"{package.credits_monthly} credits per month"
-            },
-            metadata={
-                "package_id": str(package.id),
-                "billing_cycle": data.billing_cycle
-            }
-        )
+        try:
+            stripe_price = stripe.Price.create(
+                unit_amount=price_amount,
+                currency="eur",
+                recurring={"interval": price_interval},
+                product_data={
+                    "name": f"{package.display_name} Plan",
+                    "description": f"{package.credits_monthly} credits per month"
+                },
+                metadata={
+                    "package_id": str(package.id),
+                    "billing_cycle": data.billing_cycle
+                }
+            )
+        except AttributeError as attr_error:
+            logger.error(f"Stripe library AttributeError in price creation: {attr_error}")
+            raise HTTPException(status_code=503, detail="Payment processing temporarily unavailable - Price creation failed")
         
         # Create checkout session with error handling
         try:
