@@ -451,6 +451,34 @@ class CheckoutRequest(BaseModel):
     package_id: str
     billing_cycle: str
 
+def get_package_by_id_or_name(package_id: str, db: Session) -> Package:
+    """Get package by UUID or by mapping frontend string IDs to actual packages"""
+    # First try direct UUID lookup
+    package = db.query(Package).filter(Package.id == package_id).first()
+    if package:
+        return package
+    
+    # Frontend package ID mapping to database package names
+    package_mapping = {
+        "pack-500": "starter",
+        "pack-1500": "pro-1k",
+        "pack-3000": "pro-3k", 
+        "pack-5000": "pro-5k",
+        "pack-10000": "pro-10k",
+        "pack-20000": "pro-20k"
+    }
+    
+    # Try mapping lookup
+    if package_id in package_mapping:
+        mapped_name = package_mapping[package_id]
+        package = db.query(Package).filter(Package.name == mapped_name).first()
+        if package:
+            return package
+    
+    # Try direct name lookup as fallback
+    package = db.query(Package).filter(Package.name == package_id).first()
+    return package
+
 @app.post("/api/billing/subscriptions/create-checkout")
 async def create_subscription_checkout(
     data: CheckoutRequest,
@@ -459,10 +487,10 @@ async def create_subscription_checkout(
 ):
     """Create a Stripe Checkout session for subscription"""
     try:
-        # Get package
-        package = db.query(Package).filter(Package.id == data.package_id).first()
+        # Get package with improved lookup
+        package = get_package_by_id_or_name(data.package_id, db)
         if not package:
-            raise HTTPException(status_code=404, detail="Package not found")
+            raise HTTPException(status_code=404, detail=f"Package not found: {data.package_id}")
         
         # Get user email from auth service
         import httpx
@@ -594,11 +622,19 @@ async def create_payment_method_setup_intent(
         
         customer_id = StripeService.get_or_create_customer(user_id, user_email, db)
         
+        # Validate Stripe configuration
+        if not STRIPE_SECRET_KEY:
+            raise HTTPException(status_code=503, detail="Stripe not configured")
+        
         setup_intent = stripe.SetupIntent.create(
             customer=customer_id,
             payment_method_types=["card"],
             usage="off_session"
         )
+        
+        # Validate setup intent response
+        if not setup_intent or not hasattr(setup_intent, 'client_secret') or not setup_intent.client_secret:
+            raise HTTPException(status_code=500, detail="Invalid setup intent response from Stripe")
         
         return {
             "client_secret": setup_intent.client_secret,
@@ -1059,6 +1095,21 @@ async def get_billing_history(
         limit=limit,
         offset=offset
     )
+
+# ====== TEAM MANAGEMENT ======
+
+@app.get("/api/billing/team-members")
+async def get_team_members(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Get team members for billing (placeholder - not implemented yet)"""
+    # For now, return empty list since team management isn't implemented
+    return {
+        "team_members": [],
+        "total": 0,
+        "current_user_id": user_id
+    }
 
 if __name__ == "__main__":
     import uvicorn

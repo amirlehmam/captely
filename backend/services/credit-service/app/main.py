@@ -117,60 +117,6 @@ async def import_file(
 
 credit_service = CreditService(name="Captely Credit Service")
 
-@app.get("/api/credits/{user_id}", status_code=status.HTTP_200_OK)
-async def get_credit_info(user_id: str, auth=Depends(verify_api_token)):
-    """
-    Return credit info for a given user_id.
-    Note: we depend on verify_api_token above so only valid tokens can query.
-    """
-    return await credit_service.get_credit_info(user_id)
-
-@app.get("/api/credits/{user_id}/balance", status_code=status.HTTP_200_OK)
-async def get_credit_balance(user_id: str, auth=Depends(verify_api_token)):
-    """
-    Return credit balance for a given user_id (frontend expects this endpoint).
-    Simple standalone implementation without async session issues.
-    """
-    try:
-        # Use sync session for simplicity
-        session = SessionLocal()
-        
-        # Get user directly from database  
-        result = session.execute(text("SELECT credits FROM users WHERE id = :user_id"), {"user_id": user_id})
-        user_credits = result.scalar()
-        
-        session.close()
-        
-        if user_credits is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        return {
-            "balance": user_credits or 0,
-            "used_today": 0,  # Simplified for now
-            "limit_daily": 1000,  # Default limit
-            "limit_monthly": 30000  # Default limit
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-router = APIRouter(prefix="/api/credits")
-
-@router.post("/check_and_decrement")
-async def check_and_decrement(data: dict, session: AsyncSession = Depends(get_session)):
-    user_id = data.get("user_id")
-    count = int(data.get("count", 0))
-    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-    if not user:
-        raise HTTPException(404, "User not found")
-    if user.credits < count:
-        raise HTTPException(402, "Not enough credits")
-    user.credits -= count
-    session.add(CreditLog(user_id=user_id, change=-count, reason="enrichment"))
-    await session.commit()
-    return {"ok": True, "remaining": user.credits}
-
-app.include_router(router)
-
 @app.get("/api/credits/info")
 async def get_credit_info(
     user_id: str = Depends(verify_api_token),
@@ -241,6 +187,62 @@ async def get_credit_info(
             "limit_monthly": 5000,
             "subscription": None
         }
+
+# ---- Additional credit endpoints (after /info to avoid route conflicts) ----
+
+@app.get("/api/credits/{user_id}", status_code=status.HTTP_200_OK)
+async def get_credit_info_by_id(user_id: str, auth=Depends(verify_api_token)):
+    """
+    Return credit info for a given user_id.
+    Note: we depend on verify_api_token above so only valid tokens can query.
+    """
+    return await credit_service.get_credit_info(user_id)
+
+@app.get("/api/credits/{user_id}/balance", status_code=status.HTTP_200_OK)
+async def get_credit_balance(user_id: str, auth=Depends(verify_api_token)):
+    """
+    Return credit balance for a given user_id (frontend expects this endpoint).
+    Simple standalone implementation without async session issues.
+    """
+    try:
+        # Use sync session for simplicity
+        session = SessionLocal()
+        
+        # Get user directly from database  
+        result = session.execute(text("SELECT credits FROM users WHERE id = :user_id"), {"user_id": user_id})
+        user_credits = result.scalar()
+        
+        session.close()
+        
+        if user_credits is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "balance": user_credits or 0,
+            "used_today": 0,  # Simplified for now
+            "limit_daily": 1000,  # Default limit
+            "limit_monthly": 30000  # Default limit
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+router = APIRouter(prefix="/api/credits")
+
+@router.post("/check_and_decrement")
+async def check_and_decrement(data: dict, session: AsyncSession = Depends(get_session)):
+    user_id = data.get("user_id")
+    count = int(data.get("count", 0))
+    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "User not found")
+    if user.credits < count:
+        raise HTTPException(402, "Not enough credits")
+    user.credits -= count
+    session.add(CreditLog(user_id=user_id, change=-count, reason="enrichment"))
+    await session.commit()
+    return {"ok": True, "remaining": user.credits}
+
+app.include_router(router)
 
 @app.get("/health")
 async def health():
