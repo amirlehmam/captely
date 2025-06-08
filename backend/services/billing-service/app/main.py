@@ -632,13 +632,18 @@ async def create_payment_method_setup_intent(
             usage="off_session"
         )
         
-        # Validate setup intent response
-        if not setup_intent or not hasattr(setup_intent, 'client_secret') or not setup_intent.client_secret:
-            raise HTTPException(status_code=500, detail="Invalid setup intent response from Stripe")
+        # Validate setup intent response and attribute access
+        if not setup_intent:
+            raise HTTPException(status_code=500, detail="No setup intent received from Stripe")
+        
+        # Check for client_secret attribute safely
+        client_secret = getattr(setup_intent, 'client_secret', None)
+        if not client_secret:
+            raise HTTPException(status_code=500, detail="Setup intent missing client_secret")
         
         return {
-            "client_secret": setup_intent.client_secret,
-            "setup_intent_id": setup_intent.id
+            "client_secret": client_secret,
+            "setup_intent_id": getattr(setup_intent, 'id', None)
         }
         
     except Exception as e:
@@ -1109,6 +1114,70 @@ async def get_team_members(
         "team_members": [],
         "total": 0,
         "current_user_id": user_id
+    }
+
+# ====== MISSING BILLING ENDPOINTS ======
+
+@app.get("/api/billing/packages")
+async def get_billing_packages(db: Session = Depends(get_db)):
+    """Get all available packages for billing frontend"""
+    packages = db.query(Package).filter(Package.is_active == True).all()
+    return {
+        "packages": [
+            {
+                "id": str(package.id),
+                "name": package.name,
+                "display_name": package.display_name,
+                "plan_type": package.plan_type.value,
+                "credits_monthly": package.credits_monthly,
+                "price_monthly": float(package.price_monthly),
+                "price_annual": float(package.price_annual),
+                "features": json.loads(package.features) if package.features else [],
+                "popular": package.popular,
+                "is_active": package.is_active
+            }
+            for package in packages
+        ]
+    }
+
+@app.get("/api/billing/dashboard") 
+async def get_billing_dashboard_data(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Get billing dashboard data"""
+    return {
+        "current_plan": None,  # No active subscription
+        "subscription": None,
+        "credit_usage": {
+            "total_credits": 5000,
+            "used_credits": 0,
+            "remaining_credits": 5000
+        },
+        "recent_transactions": [],
+        "payment_methods": []
+    }
+
+@app.get("/api/billing/history")
+async def get_billing_history_data(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Get billing history"""
+    return {
+        "transactions": [],
+        "total": 0
+    }
+
+@app.get("/api/billing/enrichment-history")
+async def get_billing_enrichment_history(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Get enrichment history for billing"""
+    return {
+        "enrichments": [],
+        "total": 0
     }
 
 if __name__ == "__main__":

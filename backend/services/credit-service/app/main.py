@@ -127,7 +127,7 @@ async def get_credit_info(
         # Get user's current credit balance - Use sync queries to avoid async issues
         user_query = text("SELECT credits, current_subscription_id FROM users WHERE id = :user_id")
         user_result = await session.execute(user_query, {"user_id": user_id})
-        user_row = user_result.fetchone()
+        user_row = user_result.first()
         
         if not user_row:
             # Create default user with 5000 credits if doesn't exist
@@ -155,7 +155,7 @@ async def get_credit_info(
                 AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
             """)
             usage_result = await session.execute(usage_query, {"user_id": user_id})
-            usage_row = usage_result.fetchone()
+            usage_row = usage_result.first()
             
             used_this_month = int(usage_row[0]) if usage_row and usage_row[0] else 0
             used_today = int(usage_row[1]) if usage_row and usage_row[1] else 0

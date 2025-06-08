@@ -184,7 +184,7 @@ const CRMPage: React.FC = () => {
     if (selectedContacts.size === contacts.length) {
       setSelectedContacts(new Set());
     } else {
-      setSelectedContacts(new Set(contacts.map(c => c.id)));
+      setSelectedContacts(new Set((contacts || []).map(c => c.id)));
     }
   };
 
@@ -672,7 +672,7 @@ const CRMPage: React.FC = () => {
               style={{ willChange: 'border-color, box-shadow' }}
             >
               <option value="all">📊 All Batches</option>
-              {batches.map(batch => (
+              {(batches || []).map(batch => (
                 <option key={batch.id} value={batch.id}>
                   📁 {batch.name} ({batch.contact_count})
                 </option>
@@ -866,7 +866,7 @@ const CRMPage: React.FC = () => {
                 ? 'bg-gray-800 divide-gray-700' 
                 : 'bg-white divide-gray-100'
             }`}>
-              {contacts.map((contact) => (
+              {(contacts || []).map((contact) => (
                 <motion.tr
                   key={contact.id}
                   initial={{ opacity: 0 }}
