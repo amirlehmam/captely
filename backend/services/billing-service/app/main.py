@@ -546,33 +546,32 @@ async def get_current_subscription(
     db: Session = Depends(get_db)
 ):
     """Get current user subscription"""
+    from app.models import Package  # Local import to avoid circularities
+
     subscription = db.query(UserSubscription).filter(
         UserSubscription.user_id == user_id,
         UserSubscription.status == SubscriptionStatus.active
     ).first()
     
     if not subscription:
-        # Return default pack-500 plan for users without subscription
-        from app.models import Package
-        
         # Try to find pack-500 package in database
         pack_500 = db.query(Package).filter(Package.id == "pack-500").first()
         if pack_500:
-            # Create mock subscription response for pack-500 plan
+            # Build a minimal but valid SubscriptionResponse using the starter package
             return {
                 "id": "default-pack-500",
                 "user_id": user_id,
-                "package_id": "pack-500",
+                "package_id": str(pack_500.id),
                 "billing_cycle": "monthly",
                 "status": "active",
-                "package": {
-                    "id": pack_500.id,
-                    "display_name": pack_500.display_name,
-                    "credits_monthly": pack_500.credits_monthly,
-                    "price_monthly": float(pack_500.price_monthly),
-                    "price_yearly": float(pack_500.price_yearly) if pack_500.price_yearly else None,
-                    "features": pack_500.features or []
-                }
+                "current_period_start": datetime.utcnow(),
+                "current_period_end": datetime.utcnow() + timedelta(days=30),
+                "trial_start": None,
+                "trial_end": None,
+                "cancelled_at": None,
+                "cancel_at_period_end": False,
+                "created_at": datetime.utcnow(),
+                "package": PackageResponse.model_validate(pack_500)
             }
         else:
             # Fallback if no pack-500 in database
@@ -582,14 +581,14 @@ async def get_current_subscription(
                 "package_id": "pack-500",
                 "billing_cycle": "monthly",
                 "status": "active",
-                "package": {
-                    "id": "pack-500",
-                    "display_name": "Pack 500",
-                    "credits_monthly": 500,
-                    "price_monthly": 25.0,
-                    "price_yearly": None,
-                    "features": ["500 credits per month", "Email support", "Basic enrichment"]
-                }
+                "current_period_start": datetime.utcnow(),
+                "current_period_end": datetime.utcnow() + timedelta(days=30),
+                "trial_start": None,
+                "trial_end": None,
+                "cancelled_at": None,
+                "cancel_at_period_end": False,
+                "created_at": datetime.utcnow(),
+                "package": None
             }
     
     return SubscriptionResponse.model_validate(subscription)
