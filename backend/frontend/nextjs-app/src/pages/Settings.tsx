@@ -980,8 +980,8 @@ const SettingsPage: React.FC = () => {
               <div key={member.id} className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {member.name.charAt(0).toUpperCase()}
+                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                      <span className="text-sm font-medium text-white">{(member.name || 'U').charAt(0).toUpperCase()}</span>
                     </div>
                     <div>
                       <h4 className={`font-semibold ${

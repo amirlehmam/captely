@@ -1075,7 +1075,7 @@ const ImportPage: React.FC = () => {
                       <div className={`text-2xl font-bold ${
                         isDark ? 'text-yellow-300' : 'text-yellow-900'
                       }`}>
-                        {currentJob.status}
+                        {(currentJob.status || 'unknown').charAt(0).toUpperCase() + (currentJob.status || 'unknown').slice(1)}
                       </div>
                       <div className={`text-sm font-medium ${
                         isDark ? 'text-yellow-400' : 'text-yellow-700'
@@ -1314,7 +1314,7 @@ const ImportPage: React.FC = () => {
                         </p>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(job.status)}`}>
-                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                        {(job.status || 'unknown').charAt(0).toUpperCase() + (job.status || 'unknown').slice(1)}
                       </div>
                     </div>
                     

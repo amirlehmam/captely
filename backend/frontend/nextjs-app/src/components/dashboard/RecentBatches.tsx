@@ -153,7 +153,7 @@ const RecentBatches: React.FC = () => {
                           {getStatusIcon(job.status)}
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(job.status)}`}>
-                          {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                          {(job.status || 'unknown').charAt(0).toUpperCase() + (job.status || 'unknown').slice(1)}
                         </div>
                       </div>
                     </td>

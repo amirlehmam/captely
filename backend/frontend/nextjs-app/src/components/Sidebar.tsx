@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           const firstName = profileData.first_name || '';
           const lastName = profileData.last_name || '';
           const fullName = `${firstName} ${lastName}`.trim() || 'User';
-          const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || 'U';
+          const initials = ((firstName || '').charAt(0) + (lastName || '').charAt(0)).toUpperCase() || 'U';
 
           // Fetch subscription info
           let planName = t('billing.plans.free');

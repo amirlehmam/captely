@@ -68,7 +68,7 @@ const ProviderStatus: React.FC = () => {
                     {provider.name}
                   </span>
                   <div className={`inline-block ml-3 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(provider.status)}`}>
-                    {provider.status.charAt(0).toUpperCase() + provider.status.slice(1)}
+                    {(provider.status || 'unknown').charAt(0).toUpperCase() + (provider.status || 'unknown').slice(1)}
                   </div>
                 </div>
               </div>
