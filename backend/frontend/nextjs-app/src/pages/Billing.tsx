@@ -1081,9 +1081,9 @@ const BillingPage: React.FC = () => {
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                     ) : isCurrentPack ? (
-                      `✅ ${t('billing.currentPack')}`
+                      ` ${t('billing.currentPack')}`
                 ) : (
-                      `🛒 ${t('billing.buyThisPack')}`
+                      ` ${t('billing.buyThisPack')}`
                 )}
               </button>
                   
