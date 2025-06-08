@@ -1059,6 +1059,36 @@ class ApiService {
     return client.post(`${API_CONFIG.billingUrl}/billing/payment-methods/${paymentMethodId}/set-default`, {});
   }
 
+  // ==========================================
+  // ADDITIONAL BILLING METHODS WITH AUTH HEADERS
+  // ==========================================
+
+  async getBillingDashboard(): Promise<{
+    current_plan: any;
+    subscription: any;
+    credit_usage: any;
+    recent_transactions: any[];
+    payment_methods: any[];
+  }> {
+    return client.get(`${API_CONFIG.billingUrl}/billing/dashboard`);
+  }
+
+  async getBillingHistory(): Promise<{
+    transactions: any[];
+  }> {
+    return client.get(`${API_CONFIG.billingUrl}/billing/history`);
+  }
+
+  async getEnrichmentHistory(): Promise<{
+    enrichments: any[];
+  }> {
+    return client.get(`${API_CONFIG.billingUrl}/billing/enrichment-history`);
+  }
+
+  async getBillingPackages(): Promise<any[]> {
+    return client.get(`${API_CONFIG.billingUrl}/billing/packages`);
+  }
+
   async getSecurityLogs(): Promise<any[]> {
     try {
       return await client.get(`${API_CONFIG.authUrl}/security/logs`);

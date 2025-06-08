@@ -581,8 +581,8 @@ async def create_subscription_checkout(
                 currency="eur",
                 recurring={"interval": price_interval},
                 product_data={
-                    "name": f"{package.display_name} Plan",
-                    "description": f"{package.credits_monthly} credits per month"
+                    "name": f"{package.display_name} Plan"
+                    # Removed description - not supported in newer Stripe API
                 },
                 metadata={
                     "package_id": str(package.id),
