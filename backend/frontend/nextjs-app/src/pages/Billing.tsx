@@ -483,7 +483,7 @@ const BillingPage: React.FC = () => {
                   ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-400 bg-clip-text text-transparent' 
                   : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 bg-clip-text text-transparent'
               }`}>
-                💳 {t('billing.title')}
+                {t('billing.title')}
             </h1>
               <p className={`text-lg ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -531,7 +531,7 @@ const BillingPage: React.FC = () => {
                 }`}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                🔄 {t('billing.refreshButton')}
+                 {t('billing.refreshButton')}
             </button>
             <button
               onClick={() => setShowHistory(!showHistory)}
@@ -542,7 +542,7 @@ const BillingPage: React.FC = () => {
                 }`}
             >
               <History className="h-4 w-4 mr-2" />
-                📋 {showHistory ? t('billing.hideHistory') : t('billing.showHistory')}
+                 {showHistory ? t('billing.hideHistory') : t('billing.showHistory')}
             </button>
             <button 
               onClick={() => handleDownloadInvoice()}
@@ -558,7 +558,7 @@ const BillingPage: React.FC = () => {
               ) : (
                 <FileText className="h-4 w-4 mr-2" />
               )}
-                📄 {t('billing.downloadInvoice')}
+                 {t('billing.downloadInvoice')}
             </button>
             </div>
           </div>
@@ -593,7 +593,7 @@ const BillingPage: React.FC = () => {
                   <Zap className={`w-4 h-4 mr-2 ${
                     theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
                   }`} />
-                  <strong>📧 1 email found = 1 credit</strong>
+                  <strong> 1 email found = 1 credit</strong>
                 </p>
                 <p className={`text-sm flex items-center ${
                   theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
@@ -601,7 +601,7 @@ const BillingPage: React.FC = () => {
                   <Zap className={`w-4 h-4 mr-2 ${
                     theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
                   }`} />
-                  <strong>📱 1 phone found = 10 credits</strong>
+                  <strong> 1 phone found = 10 credits</strong>
                 </p>
                 <p className={`text-sm flex items-center ${
                   theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
@@ -609,7 +609,7 @@ const BillingPage: React.FC = () => {
                   <CheckCircle className={`w-4 h-4 mr-2 ${
                     theme === 'dark' ? 'text-green-400' : 'text-green-500'
                   }`} />
-                  <strong>❌ No result = No charge</strong>
+                  <strong> No result = No charge</strong>
                 </p>
               </div>
             </div>
@@ -642,7 +642,7 @@ const BillingPage: React.FC = () => {
                 <h3 className={`text-lg font-bold ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  👑 {t('billing.currentPlanTitle')}
+                   {t('billing.currentPlanTitle')}
                 </h3>
                 <p className={`text-sm ${
                   theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -675,7 +675,7 @@ const BillingPage: React.FC = () => {
               }`}>{currentPlan?.display_name}</h4>
               <p className={`${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-              }`}>💳 {currentPlan?.credits_monthly?.toLocaleString()} credits/month</p>
+              }`}> {currentPlan?.credits_monthly?.toLocaleString()} Credits/Month</p>
             </div>
             
             <div className="flex items-center justify-between">
@@ -698,7 +698,7 @@ const BillingPage: React.FC = () => {
                 <span className={`${
                   theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                 }`}>
-                  📅 {t('billing.nextBillingDate')}
+                   {t('billing.nextBillingDate')}
                 </span>
                 <span className={`font-medium ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -714,7 +714,7 @@ const BillingPage: React.FC = () => {
                   className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  💳 {t('billing.managePaymentMethods')}
+                   {t('billing.managePaymentMethods')}
                 </button>
                 <button
                   onClick={() => handleDownloadInvoice()}
@@ -741,7 +741,7 @@ const BillingPage: React.FC = () => {
                     theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
                   }`}
             >
-                  ❌ {t('billing.cancelSubscription')}
+                   {t('billing.cancelSubscription')}
             </button>
               )}
             </div>
@@ -763,7 +763,7 @@ const BillingPage: React.FC = () => {
           <h3 className={`text-lg font-semibold ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
-            💳 {t('billing.paymentMethodsTitle')}
+             {t('billing.paymentMethodsTitle')}
           </h3>
           <button
             onClick={() => setShowAddPaymentMethod(true)}
@@ -774,7 +774,7 @@ const BillingPage: React.FC = () => {
             } text-white`}
           >
             <Plus className="w-4 h-4 mr-2" />
-            ➕ {t('billing.addPaymentMethod')}
+             {t('billing.addPaymentMethod')}
           </button>
         </div>
 
@@ -823,7 +823,7 @@ const BillingPage: React.FC = () => {
                         <span className={`font-medium ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
                         }`}>
-                          💳 •••• {method.last_four}
+                           •••• {method.last_four}
                         </span>
                         {method.is_default && (
                           <span className={`px-2 py-1 text-xs rounded-full ${
@@ -891,7 +891,7 @@ const BillingPage: React.FC = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              📅 {t('billing.monthly')}
+               {t('billing.monthly')}
             </button>
             <button
               onClick={() => setBillingType('annual')}
@@ -999,12 +999,12 @@ const BillingPage: React.FC = () => {
                           <p className={`text-sm font-medium ${
                             theme === 'dark' ? 'text-green-400' : 'text-green-600'
                           }`}>
-                            💰 {t('billing.save')} €{(savings || 0).toFixed(0)}/{t('billing.year')}
+                             {t('billing.save')} €{(savings || 0).toFixed(0)}/{t('billing.year')}
                           </p>
                           <p className={`text-xs ${
                             theme === 'dark' ? 'text-green-300' : 'text-green-500'
                           }`}>
-                            🎉 {t('billing.twoMonthsOffered')}
+                             {t('billing.twoMonthsOffered')}
                           </p>
                       </div>
                     )}
@@ -1025,7 +1025,7 @@ const BillingPage: React.FC = () => {
                       <Mail className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
                       }`} />
-                      📧 {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} {t('billing.emails')}
+                       {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} {t('billing.emails')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1033,7 +1033,7 @@ const BillingPage: React.FC = () => {
                       <Phone className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
                       }`} />
-                      📱 {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} {t('billing.phones')}
+                       {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} {t('billing.phones')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1041,7 +1041,7 @@ const BillingPage: React.FC = () => {
                       <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-green-400' : 'text-green-500'
                       }`} />
-                      🔗 {t('billing.apiAccessIntegrations')}
+                       {t('billing.apiAccessIntegrations')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1049,7 +1049,7 @@ const BillingPage: React.FC = () => {
                       <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-green-400' : 'text-green-500'
                       }`} />
-                      🌐 {t('billing.chromeExtension')}
+                       {t('billing.chromeExtension')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1057,7 +1057,7 @@ const BillingPage: React.FC = () => {
                       <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-green-400' : 'text-green-500'
                       }`} />
-                      💬 {t('billing.emailSupport')}
+                       {t('billing.emailSupport')}
                     </div>
                   </div>
 
@@ -1091,7 +1091,7 @@ const BillingPage: React.FC = () => {
                     <p className={`text-xs text-center mt-2 ${
                       theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      💳 {formatMessage('billing.billedAnnually', { amount: (totalPrice || 0).toFixed(0) })}
+                       {formatMessage('billing.billedAnnually', { amount: (totalPrice || 0).toFixed(0) })}
                     </p>
                   )}
                 </div>
