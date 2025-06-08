@@ -519,7 +519,8 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
             credits=5000,  # Professional plan: 5000 credits for new users
             total_spent=0,
             email_verified=True,  # Email is verified
-            auth_provider='email'
+            auth_provider='email',
+            plan='pack-500'  # Set default plan to pack-500
         )
         db.add(user)
         
