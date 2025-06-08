@@ -730,7 +730,7 @@ const BillingPage: React.FC = () => {
                   ) : (
                     <FileText className="w-4 h-4 mr-2" />
                   )}
-                  📄 {t('billing.seeDownloadInvoices')}
+                   {t('billing.seeDownloadInvoices')}
                 </button>
             </div>
               
