@@ -453,27 +453,31 @@ class CheckoutRequest(BaseModel):
 
 def get_package_by_id_or_name(package_id: str, db: Session) -> Package:
     """Get package by UUID or by mapping frontend string IDs to actual packages"""
-    # First try direct UUID lookup
-    package = db.query(Package).filter(Package.id == package_id).first()
-    if package:
-        return package
-    
     # Frontend package ID mapping to database package names
     package_mapping = {
         "pack-500": "starter",
-        "pack-1500": "pro-1k",
+        "pack-1000": "pro-1k",
         "pack-3000": "pro-3k", 
         "pack-5000": "pro-5k",
-        "pack-10000": "pro-10k",
-        "pack-20000": "pro-20k"
+        "pack-10000": "enterprise",
+        "pack-20000": "enterprise"
     }
     
-    # Try mapping lookup
+    # Try mapping lookup first to avoid UUID casting issues
     if package_id in package_mapping:
         mapped_name = package_mapping[package_id]
         package = db.query(Package).filter(Package.name == mapped_name).first()
         if package:
             return package
+    
+    # Try direct UUID lookup only if it looks like a UUID
+    if len(package_id) > 10 and '-' in package_id:
+        try:
+            package = db.query(Package).filter(Package.id == package_id).first()
+            if package:
+                return package
+        except Exception:
+            pass  # Not a valid UUID, continue to name lookup
     
     # Try direct name lookup as fallback
     package = db.query(Package).filter(Package.name == package_id).first()
@@ -643,6 +647,15 @@ async def create_payment_method_setup_intent(
 ):
     """Create a SetupIntent for adding payment methods"""
     try:
+        # Validate Stripe configuration first
+        if not STRIPE_SECRET_KEY:
+            logger.error("Stripe not configured - missing STRIPE_SECRET_KEY")
+            raise HTTPException(status_code=503, detail="Payment processing not available - Stripe not configured")
+        
+        if STRIPE_SECRET_KEY == "placeholder-stripe-secret-key" or len(STRIPE_SECRET_KEY) < 10:
+            logger.error("Invalid Stripe configuration - placeholder or too short key")
+            raise HTTPException(status_code=503, detail="Payment processing not available - Invalid Stripe configuration")
+        
         # Get user email from auth service
         import httpx
         async with httpx.AsyncClient() as client:
@@ -659,30 +672,45 @@ async def create_payment_method_setup_intent(
         
         customer_id = StripeService.get_or_create_customer(user_id, user_email, db)
         
-        # Validate Stripe configuration
-        if not STRIPE_SECRET_KEY:
-            raise HTTPException(status_code=503, detail="Stripe not configured")
+        logger.info(f"Creating Stripe SetupIntent for customer {customer_id}")
         
-        setup_intent = stripe.SetupIntent.create(
-            customer=customer_id,
-            payment_method_types=["card"],
-            usage="off_session"
-        )
+        try:
+            setup_intent = stripe.SetupIntent.create(
+                customer=customer_id,
+                payment_method_types=["card"],
+                usage="off_session"
+            )
+            
+            logger.info(f"Stripe SetupIntent created: {setup_intent.id}")
+            
+        except stripe.error.StripeError as stripe_error:
+            logger.error(f"Stripe API error: {stripe_error}")
+            raise HTTPException(status_code=400, detail=f"Stripe error: {str(stripe_error)}")
         
-        # Validate setup intent response and attribute access
+        # Validate setup intent response
         if not setup_intent:
             raise HTTPException(status_code=500, detail="No setup intent received from Stripe")
         
-        # Check for client_secret attribute safely
-        client_secret = getattr(setup_intent, 'client_secret', None)
+        # Access client_secret safely
+        client_secret = None
+        setup_intent_id = None
+        
+        try:
+            client_secret = setup_intent.client_secret
+            setup_intent_id = setup_intent.id
+        except AttributeError as attr_error:
+            logger.error(f"SetupIntent missing expected attributes: {attr_error}")
+            logger.error(f"SetupIntent object: {setup_intent}")
+            raise HTTPException(status_code=500, detail="Invalid setup intent response from Stripe")
+        
         if not client_secret:
             raise HTTPException(status_code=500, detail="Setup intent missing client_secret")
         
         return {
             "client_secret": client_secret,
-            "setup_intent_id": getattr(setup_intent, 'id', None)
+            "setup_intent_id": setup_intent_id
         }
-        
+         
     except Exception as e:
         logger.error(f"Error creating setup intent: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create setup intent: {str(e)}")
