@@ -181,7 +181,7 @@ const BillingPage: React.FC = () => {
 
   const fetchBillingDashboard = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/dashboard`);
+      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/billing/dashboard`);
       if (!response.ok) throw new Error('Failed to fetch billing dashboard');
       
       const data = await response.json();
@@ -242,10 +242,9 @@ const BillingPage: React.FC = () => {
 
   const fetchEnrichmentHistory = async () => {
     try {
-      // Fetch real enrichment history from analytics service
-      const response = await fetch(`${import.meta.env.VITE_ANALYTICS_URL}/enrichment-history`);
+      // Fetch enrichment history from billing service
+      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/billing/enrichment-history`);
       if (!response.ok) {
-        // Fallback to mock data if analytics service isn't available
         console.warn('Analytics service unavailable, using enrichment data from billing service');
         return;
       }
@@ -259,7 +258,7 @@ const BillingPage: React.FC = () => {
 
   const fetchBillingHistory = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/history`);
+      const response = await fetch(`${import.meta.env.VITE_BILLING_URL}/billing/history`);
       if (!response.ok) throw new Error('Failed to fetch billing history');
       
       const data = await response.json();
