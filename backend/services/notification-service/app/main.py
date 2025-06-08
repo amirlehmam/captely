@@ -19,7 +19,7 @@ from jose import jwt, JWTError
 import os
 
 from common.config import get_settings
-from common.db import get_session
+from common.db import get_async_session
 from common.utils import logger
 
 app = FastAPI(
@@ -233,7 +233,7 @@ email_service = EmailService()
 async def send_email_notification(
     notification: EmailNotification,
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Send a custom email notification"""
     
@@ -273,7 +273,7 @@ async def send_email_notification(
 async def notify_job_completion(
     notification: JobCompletionNotification,
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Send job completion notification"""
     
@@ -320,7 +320,7 @@ async def notify_job_completion(
 async def notify_credit_alert(
     notification: CreditAlertNotification,
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Send credit alert notification"""
     
@@ -369,7 +369,7 @@ async def notify_credit_alert(
 @app.get("/api/notifications/preferences/{user_id}")
 async def get_notification_preferences(
     user_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
     auth_user: str = Depends(verify_jwt)
 ):
     """Get user's notification preferences"""
@@ -395,7 +395,7 @@ async def get_notification_preferences(
 async def update_notification_preferences(
     user_id: str,
     preferences: NotificationPreferences,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
     auth_user: str = Depends(verify_jwt)
 ):
     """Update user's notification preferences"""
@@ -422,7 +422,7 @@ async def update_notification_preferences(
 @app.post("/api/notifications/weekly-summary")
 async def send_weekly_summaries(
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Send weekly summary emails to all users who have opted in"""
     
@@ -491,7 +491,7 @@ async def send_weekly_summaries(
 async def get_notification_logs(
     user_id: str,
     limit: int = 50,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
     auth_user: str = Depends(verify_jwt)
 ):
     """Get notification logs for a user"""
@@ -575,6 +575,17 @@ async def check_credit_alerts():
             await session.execute(text(update_query), {"user_id": user_id})
         
         await session.commit()
+
+# Health check endpoints
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "notification-service", "version": "1.0.0"}
+
+@app.get("/api/health")
+async def api_health_check():
+    """API health check endpoint"""
+    return {"status": "healthy", "service": "notification-service", "version": "1.0.0"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -946,8 +946,8 @@ const CRMPage: React.FC = () => {
 
                   <td className="px-6 py-5">
                     {contact.email ? (
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getEmailReliabilityColor(contact.email_reliability)}`}>
-                        {contact.email_reliability.charAt(0).toUpperCase() + contact.email_reliability.slice(1)}
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getEmailReliabilityColor(contact.email_reliability || 'unknown')}`}>
+                        {(contact.email_reliability || 'unknown').charAt(0).toUpperCase() + (contact.email_reliability || 'unknown').slice(1)}
                       </span>
                     ) : (
                       <span className={`text-sm ${

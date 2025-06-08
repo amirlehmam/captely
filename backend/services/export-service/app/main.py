@@ -537,6 +537,17 @@ async def get_available_columns(
         ]
     }
 
+# Health check endpoints
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "export-service", "version": "1.0.0"}
+
+@app.get("/api/health")
+async def api_health_check():
+    """API health check endpoint"""
+    return {"status": "healthy", "service": "export-service", "version": "1.0.0"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 

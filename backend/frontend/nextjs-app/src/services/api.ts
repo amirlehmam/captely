@@ -923,7 +923,7 @@ class ApiService {
     total_pages: number;
     filters_applied: any;
   }> {
-    return client.get(`${API_CONFIG.crmUrl}/contacts`, params);
+    return client.get(`${API_CONFIG.importUrl}/crm/contacts`, params);
   }
 
   async getCrmContactsStats(): Promise<{
@@ -949,7 +949,7 @@ class ApiService {
       poor: number;
     };
   }> {
-    return client.get(`${API_CONFIG.crmUrl}/contacts/stats/enrichment`);
+    return client.get(`${API_CONFIG.importUrl}/crm/contacts/stats`);
   }
 
   async getCrmBatches(): Promise<{
@@ -969,7 +969,7 @@ class ApiService {
     exportType: 'hubspot' | 'csv' = 'hubspot'
   ): Promise<any> {
     try {
-      const response = await client.post(`${API_CONFIG.crmUrl}/contacts/bulk-export`, {
+      const response = await client.post(`${API_CONFIG.importUrl}/crm/contacts/bulk-export`, {
         contact_ids: contactIds,
         export_type: exportType
       });
