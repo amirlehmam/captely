@@ -1959,8 +1959,8 @@ async def get_crm_contacts_stats(
                 "contacts_with_phone": stats[3] or 0,
                 "verified_emails": stats[4] or 0,
                 "verified_phones": stats[5] or 0,
-                "avg_lead_score": round(float(stats[14] or 0), 1),
-                "total_credits_consumed": float(stats[15] or 0)
+                "avg_lead_score": round(float(stats[13] or 0), 1),
+                "total_credits_consumed": float(stats[14] or 0)
             },
             "lead_quality": {
                 "high_quality": stats[6] or 0,
