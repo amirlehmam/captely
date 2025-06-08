@@ -94,7 +94,7 @@ async def check_credits_before_operation(
         FROM users WHERE id = :user_id
     """
     result = await session.execute(query, {"user_id": request.user_id})
-    user_data = result.first()
+    user_data = result.fetchone()
     
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -272,7 +272,7 @@ async def get_credit_balance(
         FROM users WHERE id = :user_id
     """
     result = await session.execute(user_query, {"user_id": user_id})
-    user_data = result.first()
+    user_data = result.fetchone()
     
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -287,7 +287,7 @@ async def get_credit_balance(
         "user_id": user_id, 
         "today": today
     })
-    daily_usage, daily_operations = daily_result.first()
+    daily_usage, daily_operations = daily_result.fetchone()
     
     # Monthly usage
     month_start = datetime.now().replace(day=1).date()
@@ -299,7 +299,7 @@ async def get_credit_balance(
         "user_id": user_id,
         "month_start": month_start
     })
-    monthly_usage, monthly_operations = monthly_result.first()
+    monthly_usage, monthly_operations = monthly_result.fetchone()
     
     # Provider breakdown
     provider_usage_query = """

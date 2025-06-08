@@ -17,8 +17,8 @@ const Header: React.FC = () => {
 
         // Fetch user profile
         const profileData = await apiService.getUserProfile();
-        const firstName = profileData.first_name || '';
-        setUserName(firstName || 'User');
+          const firstName = profileData.first_name || '';
+          setUserName(firstName || 'User');
       } catch (error) {
         console.error('Error fetching user profile:', error);
       }

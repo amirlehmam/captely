@@ -552,7 +552,45 @@ async def get_current_subscription(
     ).first()
     
     if not subscription:
-        raise HTTPException(status_code=404, detail="No active subscription found")
+        # Return default pack-500 plan for users without subscription
+        from app.models import Package
+        
+        # Try to find pack-500 package in database
+        pack_500 = db.query(Package).filter(Package.id == "pack-500").first()
+        if pack_500:
+            # Create mock subscription response for pack-500 plan
+            return {
+                "id": "default-pack-500",
+                "user_id": user_id,
+                "package_id": "pack-500",
+                "billing_cycle": "monthly",
+                "status": "active",
+                "package": {
+                    "id": pack_500.id,
+                    "display_name": pack_500.display_name,
+                    "credits_monthly": pack_500.credits_monthly,
+                    "price_monthly": float(pack_500.price_monthly),
+                    "price_yearly": float(pack_500.price_yearly) if pack_500.price_yearly else None,
+                    "features": pack_500.features or []
+                }
+            }
+        else:
+            # Fallback if no pack-500 in database
+            return {
+                "id": "default-pack-500",
+                "user_id": user_id,
+                "package_id": "pack-500",
+                "billing_cycle": "monthly",
+                "status": "active",
+                "package": {
+                    "id": "pack-500",
+                    "display_name": "Pack 500",
+                    "credits_monthly": 500,
+                    "price_monthly": 25.0,
+                    "price_yearly": None,
+                    "features": ["500 credits per month", "Email support", "Basic enrichment"]
+                }
+            }
     
     return SubscriptionResponse.model_validate(subscription)
 
