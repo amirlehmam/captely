@@ -922,11 +922,35 @@ async def create_customer_portal_session(
             UserSubscription.stripe_customer_id.isnot(None)
         ).first()
         
-        if not subscription or not subscription.stripe_customer_id:
-            raise HTTPException(status_code=404, detail="No customer found - please create a subscription first")
+        customer_id = None
+        if subscription and subscription.stripe_customer_id:
+            customer_id = subscription.stripe_customer_id
+        else:
+            # Create a customer for users without subscriptions
+            try:
+                # Get user email from auth service
+                import httpx
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        f"http://auth-service:8000/auth/user/{user_id}",
+                        timeout=5.0,
+                    )
+                    
+                    if response.status_code != 200:
+                        raise HTTPException(status_code=404, detail="User not found")
+                        
+                    user_data = response.json()
+                    user_email = user_data.get("email", f"user-{user_id}@captely.com")
+                
+                # Create Stripe customer for portal access
+                customer_id = StripeService.get_or_create_customer(user_id, user_email, db)
+                
+            except Exception as customer_error:
+                logger.error(f"Failed to create customer: {customer_error}")
+                raise HTTPException(status_code=404, detail="Unable to create customer record - please complete a purchase first")
         
         portal_session = StripeService.create_customer_portal_session(
-            customer_id=subscription.stripe_customer_id,
+            customer_id=customer_id,
             return_url="https://captely.com/billing"
         )
         
