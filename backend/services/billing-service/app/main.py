@@ -37,13 +37,28 @@ logger = logging.getLogger(__name__)
 
 # Initialize Stripe
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY") 
 stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
-if not STRIPE_SECRET_KEY:
-    logger.warning("STRIPE_SECRET_KEY not set - Stripe functionality will be disabled")
+# Debug environment loading
+logger.info(f"Loading Stripe config...")
+logger.info(f"STRIPE_SECRET_KEY present: {bool(STRIPE_SECRET_KEY)}")
+logger.info(f"STRIPE_SECRET_KEY starts with sk_: {STRIPE_SECRET_KEY.startswith('sk_') if STRIPE_SECRET_KEY else False}")
+logger.info(f"STRIPE_WEBHOOK_SECRET present: {bool(stripe_webhook_secret)}")
+
+if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith('sk_'):
+    logger.error("STRIPE_SECRET_KEY not set or invalid - Stripe functionality will be disabled")
+    logger.error(f"STRIPE_SECRET_KEY value: {STRIPE_SECRET_KEY[:20]}..." if STRIPE_SECRET_KEY else "None")
 else:
     stripe.api_key = STRIPE_SECRET_KEY
-    logger.info("Stripe initialized successfully")
+    logger.info("✅ Stripe initialized successfully")
+    
+    # Test Stripe connection
+    try:
+        stripe.Account.retrieve()
+        logger.info("✅ Stripe connection test successful")
+    except Exception as e:
+        logger.error(f"❌ Stripe connection test failed: {e}")
 
 app = FastAPI(
     title="Captely Billing Service",
@@ -1183,67 +1198,7 @@ async def get_team_members(
 
 # ====== MISSING BILLING ENDPOINTS ======
 
-@app.get("/api/billing/packages")
-async def get_billing_packages(db: Session = Depends(get_db)):
-    """Get all available packages for billing frontend"""
-    packages = db.query(Package).filter(Package.is_active == True).all()
-    return {
-        "packages": [
-            {
-                "id": str(package.id),
-                "name": package.name,
-                "display_name": package.display_name,
-                "plan_type": package.plan_type.value,
-                "credits_monthly": package.credits_monthly,
-                "price_monthly": float(package.price_monthly),
-                "price_annual": float(package.price_annual),
-                "features": json.loads(package.features) if package.features else [],
-                "popular": package.popular,
-                "is_active": package.is_active
-            }
-            for package in packages
-        ]
-    }
-
-@app.get("/api/billing/dashboard") 
-async def get_billing_dashboard_data(
-    user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
-):
-    """Get billing dashboard data"""
-    return {
-        "current_plan": None,  # No active subscription
-        "subscription": None,
-        "credit_usage": {
-            "total_credits": 5000,
-            "used_credits": 0,
-            "remaining_credits": 5000
-        },
-        "recent_transactions": [],
-        "payment_methods": []
-    }
-
-@app.get("/api/billing/history")
-async def get_billing_history_data(
-    user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
-):
-    """Get billing history"""
-    return {
-        "transactions": [],
-        "total": 0
-    }
-
-@app.get("/api/billing/enrichment-history")
-async def get_billing_enrichment_history(
-    user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
-):
-    """Get enrichment history for billing"""
-    return {
-        "enrichments": [],
-        "total": 0
-    }
+# Duplicate endpoints removed - main implementations are used
 
 if __name__ == "__main__":
     import uvicorn
