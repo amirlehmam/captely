@@ -1,0 +1,141 @@
+captely-credit-service  | 2025-06-08T13:48:15.786306697Z Checking database connection...
+captely-credit-service  | 2025-06-08T13:48:15.786408696Z Skipping DB check, assuming database is available - executing command
+captely-credit-service  | 2025-06-08T13:48:19.876766684Z INFO:     Started server process [1]
+captely-credit-service  | 2025-06-08T13:48:19.879765577Z INFO:     Waiting for application startup.
+captely-credit-service  | 2025-06-08T13:48:19.881704060Z INFO:     Application startup complete.
+captely-credit-service  | 2025-06-08T13:48:19.881716394Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+captely-credit-service  | 2025-06-08T13:48:28.561449977Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 500 credits
+captely-credit-service  | 2025-06-08T13:48:28.561512383Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 500, 'used_today': 0, 'used_this_month': 0, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:48:28.561519817Z INFO:     172.18.0.15:44708 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:48:31.028712231Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 500 credits
+captely-credit-service  | 2025-06-08T13:48:31.028776771Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 500, 'used_today': 0, 'used_this_month': 0, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:48:31.028783914Z INFO:     172.18.0.15:43220 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:48:57.198317282Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 500 credits
+captely-credit-service  | 2025-06-08T13:48:57.198353189Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 500, 'used_today': 0, 'used_this_month': 0, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:48:57.198416547Z INFO:     172.18.0.15:46908 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:48:58.937342641Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 500 credits
+captely-credit-service  | 2025-06-08T13:48:58.937394929Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 500, 'used_today': 0, 'used_this_month': 0, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:48:58.937402443Z INFO:     172.18.0.15:46924 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:48:59.008585112Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 500 credits
+captely-credit-service  | 2025-06-08T13:48:59.008639072Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 500, 'used_today': 0, 'used_this_month': 0, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:48:59.008647708Z INFO:     172.18.0.15:46936 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:49:27.185757118Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 498 credits
+captely-credit-service  | 2025-06-08T13:49:27.185813362Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 498, 'used_today': 2, 'used_this_month': 2, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:49:27.185823862Z INFO:     172.18.0.15:39996 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:49:28.919402717Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 497 credits
+captely-credit-service  | 2025-06-08T13:49:28.919452921Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 497, 'used_today': 3, 'used_this_month': 3, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:49:28.919486463Z INFO:     172.18.0.15:40006 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:49:43.327021622Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 497 credits
+captely-credit-service  | 2025-06-08T13:49:43.327077216Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 497, 'used_today': 3, 'used_this_month': 3, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:49:43.327084499Z INFO:     172.18.0.15:38378 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:49:57.922069901Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 497 credits
+captely-credit-service  | 2025-06-08T13:49:57.922147355Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 497, 'used_today': 3, 'used_this_month': 3, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:49:57.922159859Z INFO:     172.18.0.15:42420 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:49:58.480545529Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 497 credits
+captely-credit-service  | 2025-06-08T13:49:58.480597215Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 497, 'used_today': 3, 'used_this_month': 3, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:49:58.480606612Z INFO:     172.18.0.15:42424 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:50:27.167533073Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 495 credits
+captely-credit-service  | 2025-06-08T13:50:27.167575271Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 495, 'used_today': 5, 'used_this_month': 5, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:50:27.167582835Z INFO:     172.18.0.15:54752 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:50:28.911661395Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 495 credits
+captely-credit-service  | 2025-06-08T13:50:28.911702340Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 495, 'used_today': 5, 'used_this_month': 5, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:50:28.911708342Z INFO:     172.18.0.15:54764 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:50:57.918626534Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 492 credits
+captely-credit-service  | 2025-06-08T13:50:57.918673171Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 492, 'used_today': 8, 'used_this_month': 8, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:50:57.918682749Z INFO:     172.18.0.15:50876 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:51:02.712036216Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 492 credits
+captely-credit-service  | 2025-06-08T13:51:02.712373752Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 492, 'used_today': 8, 'used_this_month': 8, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:51:02.712384323Z INFO:     172.18.0.15:49224 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:51:27.934103292Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 490 credits
+captely-credit-service  | 2025-06-08T13:51:27.934191857Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 490, 'used_today': 10, 'used_this_month': 10, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:51:27.934198419Z INFO:     172.18.0.15:49188 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:51:32.699454504Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 490 credits
+captely-credit-service  | 2025-06-08T13:51:32.699492535Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 490, 'used_today': 10, 'used_this_month': 10, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:51:32.699501502Z INFO:     172.18.0.15:59598 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:51:57.930437703Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 488 credits
+captely-credit-service  | 2025-06-08T13:51:57.930497675Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 488, 'used_today': 12, 'used_this_month': 12, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:51:57.930506781Z INFO:     172.18.0.15:50682 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:52:02.684106301Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 487 credits
+captely-credit-service  | 2025-06-08T13:52:02.684168187Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 487, 'used_today': 13, 'used_this_month': 13, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:52:02.684178245Z INFO:     172.18.0.15:55922 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:52:32.688275683Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 486 credits
+captely-credit-service  | 2025-06-08T13:52:32.688333871Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 486, 'used_today': 14, 'used_this_month': 14, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:52:32.688667601Z INFO:     172.18.0.15:42214 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:52:32.923876912Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 486 credits
+captely-credit-service  | 2025-06-08T13:52:32.923926193Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 486, 'used_today': 14, 'used_this_month': 14, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:52:32.923933467Z INFO:     172.18.0.15:42230 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:53:02.671285182Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 484 credits
+captely-credit-service  | 2025-06-08T13:53:02.671519628Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 484, 'used_today': 16, 'used_this_month': 16, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:53:02.671532481Z INFO:     172.18.0.15:50984 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:53:32.949608926Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 482 credits
+captely-credit-service  | 2025-06-08T13:53:32.949662606Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 482, 'used_today': 18, 'used_this_month': 18, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:53:32.949688294Z INFO:     172.18.0.15:49348 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:53:53.349074564Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 482 credits
+captely-credit-service  | 2025-06-08T13:53:53.349103988Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 482, 'used_today': 18, 'used_this_month': 18, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:53:53.349110731Z INFO:     172.18.0.15:48984 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:54:16.489808023Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 481 credits
+captely-credit-service  | 2025-06-08T13:54:16.489834894Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 481, 'used_today': 19, 'used_this_month': 19, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:54:16.489843058Z INFO:     172.18.0.15:46256 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:54:23.276841160Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 480 credits
+captely-credit-service  | 2025-06-08T13:54:23.276872438Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 480, 'used_today': 20, 'used_this_month': 20, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:54:23.276881094Z INFO:     172.18.0.15:56900 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:54:53.297078883Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:54:53.297112236Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:54:53.297119309Z INFO:     172.18.0.15:57842 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:55:23.288000350Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:55:23.288095477Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:55:23.288104173Z INFO:     172.18.0.15:60146 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:55:26.611192707Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:55:26.611220419Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:55:26.611227402Z INFO:     172.18.0.15:60162 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:55:56.590850339Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:55:56.590883220Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:55:56.590890023Z INFO:     172.18.0.15:33350 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:56:26.591540895Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:56:26.591596258Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:56:26.591640309Z INFO:     172.18.0.15:36404 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:56:56.595208750Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:56:56.595235189Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:56:56.595240530Z INFO:     172.18.0.15:39518 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:57:26.595223262Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:57:26.595268998Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:57:26.595278624Z INFO:     172.18.0.15:43896 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:57:56.583192946Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:57:56.583242979Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:57:56.583249631Z INFO:     172.18.0.15:54942 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:58:26.604733291Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:58:26.604771211Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:58:26.604780108Z INFO:     172.18.0.15:37106 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:58:45.893001688Z INFO:     51.195.190.14:60510 - "GET / HTTP/1.0" 404 Not Found
+captely-credit-service  | 2025-06-08T13:58:45.931370916Z INFO:     51.195.190.14:46458 - "GET /nice%20ports%2C/Trinity.txt.bak HTTP/1.0" 404 Not Found
+captely-credit-service  | 2025-06-08T13:58:45.969650568Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:58:46.005082029Z INFO:     51.195.190.14:46634 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-credit-service  | 2025-06-08T13:58:46.040381713Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:58:51.097234976Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:58:56.583322383Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:58:56.583358570Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:58:56.583367667Z INFO:     172.18.0.15:40770 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:58:58.647794779Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:58:58.682813991Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:58:58.730920798Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:58:58.775025125Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:59:03.840954414Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:59:08.915995721Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:59:10.203342149Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:59:14.177393646Z INFO:     51.195.190.14:36032 - "GET / HTTP/1.1" 404 Not Found
+captely-credit-service  | 2025-06-08T13:59:16.854376950Z WARNING:  Invalid HTTP request received.
+captely-credit-service  | 2025-06-08T13:59:26.587694584Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:59:26.587727505Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:59:26.587740770Z INFO:     172.18.0.15:51060 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T13:59:56.931451450Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T13:59:56.931491696Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T13:59:56.931498659Z INFO:     172.18.0.15:58462 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T14:00:26.923316174Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T14:00:26.923375725Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T14:00:26.923385173Z INFO:     172.18.0.15:40126 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T14:01:32.920106299Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T14:01:32.921414870Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T14:01:32.921424569Z INFO:     172.18.0.15:51714 - "GET /api/credits/info HTTP/1.0" 200 OK
+captely-credit-service  | 2025-06-08T14:02:32.923537433Z 📊 User 1feeef3b-fefe-403e-ae96-748bff6c5394 has 478 credits
+captely-credit-service  | 2025-06-08T14:02:32.923595651Z 💳 Credit info response for 1feeef3b-fefe-403e-ae96-748bff6c5394: {'balance': 478, 'used_today': 22, 'used_this_month': 22, 'limit_daily': None, 'limit_monthly': 500, 'subscription': None}
+captely-credit-service  | 2025-06-08T14:02:32.923603966Z INFO:     172.18.0.15:57278 - "GET /api/credits/info HTTP/1.0" 200 OK

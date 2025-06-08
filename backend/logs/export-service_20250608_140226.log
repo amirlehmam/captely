@@ -1,0 +1,21 @@
+captely-export-service  | 2025-06-08T13:48:16.128270358Z Postgres is up - executing command
+captely-export-service  | 2025-06-08T13:48:16.128276941Z db:5432 - accepting connections
+captely-export-service  | 2025-06-08T13:48:20.091336812Z INFO:     Started server process [1]
+captely-export-service  | 2025-06-08T13:48:20.091399810Z INFO:     Waiting for application startup.
+captely-export-service  | 2025-06-08T13:48:20.091641739Z INFO:     Application startup complete.
+captely-export-service  | 2025-06-08T13:48:20.094001475Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+captely-export-service  | 2025-06-08T13:58:45.895850562Z INFO:     51.195.190.14:37552 - "GET / HTTP/1.0" 404 Not Found
+captely-export-service  | 2025-06-08T13:58:45.939348192Z INFO:     51.195.190.14:51736 - "GET /nice%20ports%2C/Trinity.txt.bak HTTP/1.0" 404 Not Found
+captely-export-service  | 2025-06-08T13:58:45.986465710Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:58:46.033918782Z INFO:     51.195.190.14:51964 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-export-service  | 2025-06-08T13:58:46.077506479Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:58:51.143756987Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:58:58.714736489Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:58:58.761088545Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:58:58.805158840Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:58:58.836774035Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:59:03.909699046Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:59:08.972001548Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:59:09.405493614Z WARNING:  Invalid HTTP request received.
+captely-export-service  | 2025-06-08T13:59:14.772413643Z INFO:     51.195.190.14:43084 - "GET / HTTP/1.1" 404 Not Found
+captely-export-service  | 2025-06-08T13:59:26.167885137Z WARNING:  Invalid HTTP request received.

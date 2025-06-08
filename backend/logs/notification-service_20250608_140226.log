@@ -1,0 +1,65 @@
+captely-notification-service  | 2025-06-08T13:48:16.362147821Z Postgres is up - executing command
+captely-notification-service  | 2025-06-08T13:48:16.365627929Z db:5432 - accepting connections
+captely-notification-service  | 2025-06-08T13:48:19.551212602Z INFO:     Started server process [1]
+captely-notification-service  | 2025-06-08T13:48:19.551261733Z INFO:     Waiting for application startup.
+captely-notification-service  | 2025-06-08T13:48:19.555089628Z INFO:     Application startup complete.
+captely-notification-service  | 2025-06-08T13:48:19.560486848Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+captely-notification-service  | 2025-06-08T13:54:28.531176692Z INFO:     172.18.0.12:46164 - "POST /api/notifications/job-completion HTTP/1.1" 500 Internal Server Error
+captely-notification-service  | 2025-06-08T13:54:28.543959279Z ERROR:    Exception in ASGI application
+captely-notification-service  | 2025-06-08T13:54:28.544042553Z Traceback (most recent call last):
+captely-notification-service  | 2025-06-08T13:54:28.544053343Z   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 408, in run_asgi
+captely-notification-service  | 2025-06-08T13:54:28.544059434Z     result = await app(  # type: ignore[func-returns-value]
+captely-notification-service  | 2025-06-08T13:54:28.544064844Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+captely-notification-service  | 2025-06-08T13:54:28.544070185Z   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 84, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544075854Z     return await self.app(scope, receive, send)
+captely-notification-service  | 2025-06-08T13:54:28.544081244Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+captely-notification-service  | 2025-06-08T13:54:28.544086935Z   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1106, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544092987Z     await super().__call__(scope, receive, send)
+captely-notification-service  | 2025-06-08T13:54:28.544098486Z   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 122, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544103987Z     await self.middleware_stack(scope, receive, send)
+captely-notification-service  | 2025-06-08T13:54:28.544109267Z   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 184, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544114767Z     raise exc
+captely-notification-service  | 2025-06-08T13:54:28.544120007Z   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 162, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544125748Z     await self.app(scope, receive, _send)
+captely-notification-service  | 2025-06-08T13:54:28.544131068Z   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544136527Z     await self.app(scope, receive, send)
+captely-notification-service  | 2025-06-08T13:54:28.544141727Z   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 79, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544147167Z     raise exc
+captely-notification-service  | 2025-06-08T13:54:28.544152497Z   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 68, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544157967Z     await self.app(scope, receive, sender)
+captely-notification-service  | 2025-06-08T13:54:28.544163347Z   File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 20, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544168848Z     raise e
+captely-notification-service  | 2025-06-08T13:54:28.544193874Z   File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 17, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544197731Z     await self.app(scope, receive, send)
+captely-notification-service  | 2025-06-08T13:54:28.544201027Z   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 718, in __call__
+captely-notification-service  | 2025-06-08T13:54:28.544204603Z     await route.handle(scope, receive, send)
+captely-notification-service  | 2025-06-08T13:54:28.544207900Z   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 276, in handle
+captely-notification-service  | 2025-06-08T13:54:28.544211467Z     await self.app(scope, receive, send)
+captely-notification-service  | 2025-06-08T13:54:28.544215935Z   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 66, in app
+captely-notification-service  | 2025-06-08T13:54:28.544219531Z     response = await func(request)
+captely-notification-service  | 2025-06-08T13:54:28.544222848Z                ^^^^^^^^^^^^^^^^^^^
+captely-notification-service  | 2025-06-08T13:54:28.544226264Z   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 274, in app
+captely-notification-service  | 2025-06-08T13:54:28.544229641Z     raw_response = await run_endpoint_function(
+captely-notification-service  | 2025-06-08T13:54:28.544233017Z                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+captely-notification-service  | 2025-06-08T13:54:28.544236434Z   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+captely-notification-service  | 2025-06-08T13:54:28.544239870Z     return await dependant.call(**values)
+captely-notification-service  | 2025-06-08T13:54:28.544354072Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+captely-notification-service  | 2025-06-08T13:54:28.544360714Z   File "/app/app/main.py", line 284, in notify_job_completion
+captely-notification-service  | 2025-06-08T13:54:28.544364651Z     result = await session.execute(text(user_query), {"user_id": notification.user_id})
+captely-notification-service  | 2025-06-08T13:54:28.544368287Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+captely-notification-service  | 2025-06-08T13:54:28.544371704Z TypeError: object CursorResult can't be used in 'await' expression
+captely-notification-service  | 2025-06-08T13:58:45.901791933Z INFO:     51.195.190.14:50736 - "GET / HTTP/1.0" 404 Not Found
+captely-notification-service  | 2025-06-08T13:58:45.957091939Z INFO:     51.195.190.14:36710 - "GET /nice%20ports%2C/Trinity.txt.bak HTTP/1.0" 404 Not Found
+captely-notification-service  | 2025-06-08T13:58:46.001307974Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:58:46.033016846Z INFO:     51.195.190.14:36928 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-notification-service  | 2025-06-08T13:58:46.078080205Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:58:51.137601646Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:58:58.686048062Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:58:58.732226876Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:58:58.775004348Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:58:58.807327920Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:59:03.871183084Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:59:08.926501597Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:59:09.189353397Z WARNING:  Invalid HTTP request received.
+captely-notification-service  | 2025-06-08T13:59:15.532629236Z INFO:     51.195.190.14:58222 - "GET / HTTP/1.1" 404 Not Found
+captely-notification-service  | 2025-06-08T13:59:26.434602993Z WARNING:  Invalid HTTP request received.

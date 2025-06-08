@@ -1,0 +1,30 @@
+captely-db  | 2025-06-08T13:48:09.486585294Z 
+captely-db  | 2025-06-08T13:48:09.486644775Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+captely-db  | 2025-06-08T13:48:09.486649764Z 
+captely-db  | 2025-06-08T13:48:09.526316348Z 2025-06-08 13:48:09.526 UTC [1] LOG:  starting PostgreSQL 15.13 (Debian 15.13-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+captely-db  | 2025-06-08T13:48:09.526797242Z 2025-06-08 13:48:09.526 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+captely-db  | 2025-06-08T13:48:09.526829511Z 2025-06-08 13:48:09.526 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+captely-db  | 2025-06-08T13:48:09.529472123Z 2025-06-08 13:48:09.529 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+captely-db  | 2025-06-08T13:48:09.535498003Z 2025-06-08 13:48:09.535 UTC [29] LOG:  database system was shut down at 2025-06-08 13:48:05 UTC
+captely-db  | 2025-06-08T13:48:09.545270045Z 2025-06-08 13:48:09.545 UTC [1] LOG:  database system is ready to accept connections
+captely-db  | 2025-06-08T13:49:01.965632307Z 2025-06-08 13:49:01.965 UTC [45] ERROR:  invalid input syntax for type uuid: "pack-500" at character 553
+captely-db  | 2025-06-08T13:49:01.965667141Z 2025-06-08 13:49:01.965 UTC [45] STATEMENT:  SELECT packages.id AS packages_id, packages.name AS packages_name, packages.display_name AS packages_display_name, packages.plan_type AS packages_plan_type, packages.credits_monthly AS packages_credits_monthly, packages.price_monthly AS packages_price_monthly, packages.price_annual AS packages_price_annual, packages.features AS packages_features, packages.is_active AS packages_is_active, packages.popular AS packages_popular, packages.created_at AS packages_created_at, packages.updated_at AS packages_updated_at 
+captely-db  | 2025-06-08T13:49:01.965678292Z 	FROM packages 
+captely-db  | 2025-06-08T13:49:01.965686116Z 	WHERE packages.id = 'pack-500'::UUID 
+captely-db  | 2025-06-08T13:49:01.965693170Z 	 LIMIT 1
+captely-db  | 2025-06-08T13:49:30.600740929Z 2025-06-08 13:49:30.600 UTC [45] ERROR:  invalid input syntax for type uuid: "pack-3000" at character 553
+captely-db  | 2025-06-08T13:49:30.600833721Z 2025-06-08 13:49:30.600 UTC [45] STATEMENT:  SELECT packages.id AS packages_id, packages.name AS packages_name, packages.display_name AS packages_display_name, packages.plan_type AS packages_plan_type, packages.credits_monthly AS packages_credits_monthly, packages.price_monthly AS packages_price_monthly, packages.price_annual AS packages_price_annual, packages.features AS packages_features, packages.is_active AS packages_is_active, packages.popular AS packages_popular, packages.created_at AS packages_created_at, packages.updated_at AS packages_updated_at 
+captely-db  | 2025-06-08T13:49:30.600843990Z 	FROM packages 
+captely-db  | 2025-06-08T13:49:30.600926875Z 	WHERE packages.id = 'pack-3000'::UUID 
+captely-db  | 2025-06-08T13:49:30.600933036Z 	 LIMIT 1
+captely-db  | 2025-06-08T13:53:09.627834859Z 2025-06-08 13:53:09.627 UTC [27] LOG:  checkpoint starting: time
+captely-db  | 2025-06-08T13:53:13.958659318Z 2025-06-08 13:53:13.958 UTC [27] LOG:  checkpoint complete: wrote 46 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.319 s, sync=0.004 s, total=4.332 s; sync files=28, longest=0.002 s, average=0.001 s; distance=33 kB, estimate=33 kB
+captely-db  | 2025-06-08T13:58:10.058945553Z 2025-06-08 13:58:10.058 UTC [27] LOG:  checkpoint starting: time
+captely-db  | 2025-06-08T13:58:12.282262918Z 2025-06-08 13:58:12.281 UTC [27] LOG:  checkpoint complete: wrote 23 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.210 s, sync=0.004 s, total=2.224 s; sync files=23, longest=0.002 s, average=0.001 s; distance=33 kB, estimate=33 kB
+captely-db  | 2025-06-08T13:58:45.896311038Z 2025-06-08 13:58:45.896 UTC [1056] LOG:  invalid length of startup packet
+captely-db  | 2025-06-08T13:58:45.952287931Z 2025-06-08 13:58:45.952 UTC [1065] LOG:  invalid length of startup packet
+captely-db  | 2025-06-08T13:58:46.000062209Z 2025-06-08 13:58:45.999 UTC [1066] FATAL:  unsupported frontend protocol 65363.19778: server supports 3.0 to 3.0
+captely-db  | 2025-06-08T13:59:26.038099458Z 2025-06-08 13:59:26.037 UTC [1137] LOG:  invalid length of startup packet
+captely-db  | 2025-06-08T13:59:26.103829518Z 2025-06-08 13:59:26.102 UTC [1138] LOG:  invalid length of startup packet
+captely-db  | 2025-06-08T13:59:26.246690276Z 2025-06-08 13:59:26.246 UTC [1140] LOG:  invalid length of startup packet
+captely-db  | 2025-06-08T13:59:26.292589520Z 2025-06-08 13:59:26.291 UTC [1141] LOG:  invalid length of startup packet

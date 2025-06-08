@@ -1,0 +1,25 @@
+captely-import-service  | 2025-06-08T13:48:15.525756681Z Checking database connection...
+captely-import-service  | 2025-06-08T13:48:15.525825959Z Skipping DB check, assuming database is available - executing command
+captely-import-service  | 2025-06-08T13:48:20.027118898Z INFO:     Started server process [1]
+captely-import-service  | 2025-06-08T13:48:20.027428292Z INFO:     Waiting for application startup.
+captely-import-service  | 2025-06-08T13:48:20.029657204Z INFO:     Application startup complete.
+captely-import-service  | 2025-06-08T13:48:20.029680568Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+captely-import-service  | 2025-06-08T13:48:44.313258693Z 📁 Processing file upload: linkedin_leads_2025-05-19T15-53-50.csv for user: 1feeef3b-fefe-403e-ae96-748bff6c5394
+captely-import-service  | 2025-06-08T13:48:44.313514609Z 🎯 Enrichment type requested: Email
+captely-import-service  | 2025-06-08T13:48:44.313529748Z ✅ Created file import job: c317e697-1acd-4141-ac57-09f63d3932bf with 25 contacts
+captely-import-service  | 2025-06-08T13:48:44.313539514Z 🚀 Successfully queued 25 contacts for Email enrichment in job: c317e697-1acd-4141-ac57-09f63d3932bf
+captely-import-service  | 2025-06-08T13:48:44.313548622Z INFO:     172.18.0.15:35164 - "POST /api/imports/file HTTP/1.0" 200 OK
+captely-import-service  | 2025-06-08T13:58:45.893800822Z INFO:     51.195.190.14:35426 - "GET / HTTP/1.0" 404 Not Found
+captely-import-service  | 2025-06-08T13:58:45.938100974Z INFO:     51.195.190.14:49610 - "GET /nice%20ports%2C/Trinity.txt.bak HTTP/1.0" 404 Not Found
+captely-import-service  | 2025-06-08T13:58:45.975034826Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:58:46.020961931Z INFO:     51.195.190.14:49804 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-import-service  | 2025-06-08T13:58:46.072531011Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:58:51.135107983Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:58:58.705704152Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:58:58.755321417Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:58:58.799416517Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:58:58.839144812Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:59:03.885705424Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:59:08.939102816Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:59:11.634822980Z WARNING:  Invalid HTTP request received.
+captely-import-service  | 2025-06-08T13:59:26.364435095Z WARNING:  Invalid HTTP request received.

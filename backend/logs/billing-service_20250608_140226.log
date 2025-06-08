@@ -1,0 +1,100 @@
+captely-billing-service  | 2025-06-08T13:48:15.682765116Z Skipping DB check, assuming database is available - executing command
+captely-billing-service  | 2025-06-08T13:48:15.682855163Z Checking database connection...
+captely-billing-service  | 2025-06-08T13:48:18.165062083Z INFO:app.main:Stripe initialized successfully
+captely-billing-service  | 2025-06-08T13:48:18.245823636Z INFO:     Started server process [1]
+captely-billing-service  | 2025-06-08T13:48:18.245867157Z INFO:     Waiting for application startup.
+captely-billing-service  | 2025-06-08T13:48:18.396792615Z INFO:     Application startup complete.
+captely-billing-service  | 2025-06-08T13:48:18.404237603Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+captely-billing-service  | 2025-06-08T13:48:20.774022547Z INFO:     127.0.0.1:35334 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:48:28.636357159Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:48:28.650964829Z INFO:     172.18.0.15:45628 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:48:28.709252632Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:48:28.717445309Z INFO:     172.18.0.15:45632 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:48:50.848235700Z INFO:     127.0.0.1:58964 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:48:57.238028129Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:48:57.244011439Z INFO:     172.18.0.15:57662 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:48:57.413544983Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:48:57.418987830Z INFO:     172.18.0.15:57668 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:49:01.961382297Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:49:01.966100727Z ERROR:app.main:Error creating checkout session: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type uuid: "pack-500"
+captely-billing-service  | 2025-06-08T13:49:01.966119652Z LINE 3: WHERE packages.id = 'pack-500'::UUID 
+captely-billing-service  | 2025-06-08T13:49:01.966127266Z                             ^
+captely-billing-service  | 2025-06-08T13:49:01.966134289Z 
+captely-billing-service  | 2025-06-08T13:49:01.966141042Z [SQL: SELECT packages.id AS packages_id, packages.name AS packages_name, packages.display_name AS packages_display_name, packages.plan_type AS packages_plan_type, packages.credits_monthly AS packages_credits_monthly, packages.price_monthly AS packages_price_monthly, packages.price_annual AS packages_price_annual, packages.features AS packages_features, packages.is_active AS packages_is_active, packages.popular AS packages_popular, packages.created_at AS packages_created_at, packages.updated_at AS packages_updated_at 
+captely-billing-service  | 2025-06-08T13:49:01.966149457Z FROM packages 
+captely-billing-service  | 2025-06-08T13:49:01.966156221Z WHERE packages.id = %(id_1)s::UUID 
+captely-billing-service  | 2025-06-08T13:49:01.966162933Z  LIMIT %(param_1)s]
+captely-billing-service  | 2025-06-08T13:49:01.966169594Z [parameters: {'id_1': 'pack-500', 'param_1': 1}]
+captely-billing-service  | 2025-06-08T13:49:01.966176317Z (Background on this error at: https://sqlalche.me/e/20/9h9h)
+captely-billing-service  | 2025-06-08T13:49:01.974950124Z INFO:     172.18.0.15:41666 - "POST /api/billing/subscriptions/create-checkout HTTP/1.0" 500 Internal Server Error
+captely-billing-service  | 2025-06-08T13:49:20.933101153Z INFO:     127.0.0.1:36740 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:49:30.598012368Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:49:30.601228877Z ERROR:app.main:Error creating checkout session: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type uuid: "pack-3000"
+captely-billing-service  | 2025-06-08T13:49:30.601243533Z LINE 3: WHERE packages.id = 'pack-3000'::UUID 
+captely-billing-service  | 2025-06-08T13:49:30.601248903Z                             ^
+captely-billing-service  | 2025-06-08T13:49:30.601253712Z 
+captely-billing-service  | 2025-06-08T13:49:30.601323672Z [SQL: SELECT packages.id AS packages_id, packages.name AS packages_name, packages.display_name AS packages_display_name, packages.plan_type AS packages_plan_type, packages.credits_monthly AS packages_credits_monthly, packages.price_monthly AS packages_price_monthly, packages.price_annual AS packages_price_annual, packages.features AS packages_features, packages.is_active AS packages_is_active, packages.popular AS packages_popular, packages.created_at AS packages_created_at, packages.updated_at AS packages_updated_at 
+captely-billing-service  | 2025-06-08T13:49:30.601331697Z FROM packages 
+captely-billing-service  | 2025-06-08T13:49:30.601337037Z WHERE packages.id = %(id_1)s::UUID 
+captely-billing-service  | 2025-06-08T13:49:30.601341967Z  LIMIT %(param_1)s]
+captely-billing-service  | 2025-06-08T13:49:30.601382141Z [parameters: {'id_1': 'pack-3000', 'param_1': 1}]
+captely-billing-service  | 2025-06-08T13:49:30.601388633Z (Background on this error at: https://sqlalche.me/e/20/9h9h)
+captely-billing-service  | 2025-06-08T13:49:30.602098863Z INFO:     172.18.0.15:37144 - "POST /api/billing/subscriptions/create-checkout HTTP/1.0" 500 Internal Server Error
+captely-billing-service  | 2025-06-08T13:49:51.012369358Z INFO:     127.0.0.1:51780 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:50:05.422500521Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:50:05.473709338Z INFO:httpx:HTTP Request: GET http://auth-service:8000/auth/user/1feeef3b-fefe-403e-ae96-748bff6c5394 "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:50:05.486335495Z INFO:stripe:message='Request to Stripe api' method=post path=https://api.stripe.com/v1/customers
+captely-billing-service  | 2025-06-08T13:50:05.852447637Z INFO:stripe:message='Stripe API response' path=https://api.stripe.com/v1/customers response_code=200
+captely-billing-service  | 2025-06-08T13:50:05.853927668Z ERROR:app.main:Error creating setup intent: 'NoneType' object has no attribute 'Secret'
+captely-billing-service  | 2025-06-08T13:50:05.855878985Z INFO:     172.18.0.15:52994 - "POST /api/billing/payment-methods/setup-intent HTTP/1.0" 500 Internal Server Error
+captely-billing-service  | 2025-06-08T13:50:21.102505451Z INFO:     127.0.0.1:51924 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:50:51.181750822Z INFO:     127.0.0.1:58772 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:51:02.811944253Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:51:02.819435837Z INFO:     172.18.0.15:55904 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:51:02.881406055Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:51:02.886928228Z INFO:     172.18.0.15:55914 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:51:21.261709366Z INFO:     127.0.0.1:45842 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:51:51.352637138Z INFO:     127.0.0.1:50018 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:52:21.431473234Z INFO:     127.0.0.1:34670 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:52:51.520094800Z INFO:     127.0.0.1:51236 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:53:21.597951597Z INFO:     127.0.0.1:56384 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:53:51.690658871Z INFO:     127.0.0.1:45158 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:53:53.481431412Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:53:53.487315246Z INFO:     172.18.0.15:57416 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:53:53.552245135Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:53:53.557545306Z INFO:     172.18.0.15:57420 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:54:21.761071756Z INFO:     127.0.0.1:54834 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:54:51.839045198Z INFO:     127.0.0.1:41282 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:55:21.919138148Z INFO:     127.0.0.1:59970 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:55:26.690132574Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:55:26.705866996Z INFO:     172.18.0.15:37610 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:55:26.779477328Z INFO:httpx:HTTP Request: POST http://auth-service:8000/auth/validate-token "HTTP/1.1 200 OK"
+captely-billing-service  | 2025-06-08T13:55:26.783577939Z INFO:     172.18.0.15:37622 - "GET /api/billing/subscription HTTP/1.0" 200 OK
+captely-billing-service  | 2025-06-08T13:55:51.988962072Z INFO:     127.0.0.1:35422 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:56:22.065574262Z INFO:     127.0.0.1:52372 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:56:52.151641920Z INFO:     127.0.0.1:38012 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:57:22.223447823Z INFO:     127.0.0.1:60010 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:57:52.298736608Z INFO:     127.0.0.1:54020 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:58:22.378440861Z INFO:     127.0.0.1:34132 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:58:45.899311864Z INFO:     51.195.190.14:46054 - "GET / HTTP/1.0" 404 Not Found
+captely-billing-service  | 2025-06-08T13:58:45.944242037Z INFO:     51.195.190.14:60256 - "GET /nice%20ports%2C/Trinity.txt.bak HTTP/1.0" 404 Not Found
+captely-billing-service  | 2025-06-08T13:58:45.986651836Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:58:46.036020217Z INFO:     51.195.190.14:60462 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-billing-service  | 2025-06-08T13:58:46.087577126Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:58:51.151639066Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:58:52.478398338Z INFO:     127.0.0.1:52360 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:58:58.721478159Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:58:58.765011916Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:58:58.802121736Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:58:58.839141886Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:59:03.899729437Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:59:08.957940516Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:59:22.613469287Z INFO:     127.0.0.1:60192 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T13:59:26.268793364Z WARNING:  Invalid HTTP request received.
+captely-billing-service  | 2025-06-08T13:59:52.697795385Z INFO:     127.0.0.1:48188 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T14:00:22.783006699Z INFO:     127.0.0.1:49062 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T14:00:52.857957721Z INFO:     127.0.0.1:58820 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T14:01:22.929898207Z INFO:     127.0.0.1:55258 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T14:01:53.005414111Z INFO:     127.0.0.1:51698 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T14:02:23.094023975Z INFO:     127.0.0.1:43186 - "GET /health HTTP/1.1" 200 OK
+captely-billing-service  | 2025-06-08T14:02:53.172049524Z INFO:     127.0.0.1:48126 - "GET /health HTTP/1.1" 200 OK

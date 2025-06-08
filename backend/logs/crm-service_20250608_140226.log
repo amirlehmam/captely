@@ -1,0 +1,272 @@
+captely-crm-service  | 2025-06-08T13:48:15.742202375Z Postgres is up - executing command
+captely-crm-service  | 2025-06-08T13:48:19.504204522Z INFO:     Started server process [1]
+captely-crm-service  | 2025-06-08T13:48:19.504263512Z INFO:     Waiting for application startup.
+captely-crm-service  | 2025-06-08T13:48:19.504267730Z INFO:     Application startup complete.
+captely-crm-service  | 2025-06-08T13:48:19.507449464Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+captely-crm-service  | 2025-06-08T13:50:55.529444891Z ✅ CRM service started, using existing database schema
+captely-crm-service  | 2025-06-08T13:50:55.529506476Z 🔧 CRM: Received Authorization header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdW...
+captely-crm-service  | 2025-06-08T13:50:55.529517066Z 🔧 CRM: Extracted token: eyJhbGciOiJIUzI1NiIs...KMShNp5Xko
+captely-crm-service  | 2025-06-08T13:50:55.529526182Z 🔧 CRM: Sending request to auth service: {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZmVlZWYzYi1mZWZlLTQwM2UtYWU5Ni03NDhiZmY2YzUzOTQiLCJleHAiOjE3NDkzOTIxNzl9.hM_bIBG9DFfvESjXoZg5-ydMIXkEd_MkXKMShNp5Xko'}
+captely-crm-service  | 2025-06-08T13:50:55.529535259Z 🔧 CRM: Received Authorization header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdW...
+captely-crm-service  | 2025-06-08T13:50:55.529543094Z 🔧 CRM: Extracted token: eyJhbGciOiJIUzI1NiIs...KMShNp5Xko
+captely-crm-service  | 2025-06-08T13:50:55.529551058Z 🔧 CRM: Sending request to auth service: {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZmVlZWYzYi1mZWZlLTQwM2UtYWU5Ni03NDhiZmY2YzUzOTQiLCJleHAiOjE3NDkzOTIxNzl9.hM_bIBG9DFfvESjXoZg5-ydMIXkEd_MkXKMShNp5Xko'}
+captely-crm-service  | 2025-06-08T13:50:55.529560215Z 🔧 CRM: Auth service response status: 200
+captely-crm-service  | 2025-06-08T13:50:55.529567950Z 🔧 CRM: Auth service response text: {"user_id":"1feeef3b-fefe-403e-ae96-748bff6c5394","valid":true}
+captely-crm-service  | 2025-06-08T13:50:55.529576516Z ✅ CRM: Token validation successful: {'user_id': '1feeef3b-fefe-403e-ae96-748bff6c5394', 'valid': True}
+captely-crm-service  | 2025-06-08T13:50:55.529597855Z 🔧 CRM: Auth service response status: 200
+captely-crm-service  | 2025-06-08T13:50:55.529607574Z 🔧 CRM: Auth service response text: {"user_id":"1feeef3b-fefe-403e-ae96-748bff6c5394","valid":true}
+captely-crm-service  | 2025-06-08T13:50:55.529616119Z ✅ CRM: Token validation successful: {'user_id': '1feeef3b-fefe-403e-ae96-748bff6c5394', 'valid': True}
+captely-crm-service  | 2025-06-08T13:50:55.529624686Z INFO:     172.18.0.15:34132 - "GET /api/contacts?page=1&limit=25&search=&batch_filter=all&status_filter=all&email_reliability=all&lead_score_min=0&lead_score_max=100 HTTP/1.0" 200 OK
+captely-crm-service  | 2025-06-08T13:50:55.534049238Z INFO:     172.18.0.15:34142 - "GET /api/contacts/stats/enrichment HTTP/1.0" 200 OK
+captely-crm-service  | 2025-06-08T13:53:20.136022465Z 🔧 CRM: Received Authorization header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdW...
+captely-crm-service  | 2025-06-08T13:53:20.136071366Z 🔧 CRM: Extracted token: eyJhbGciOiJIUzI1NiIs...KMShNp5Xko
+captely-crm-service  | 2025-06-08T13:53:20.136082336Z 🔧 CRM: Sending request to auth service: {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZmVlZWYzYi1mZWZlLTQwM2UtYWU5Ni03NDhiZmY2YzUzOTQiLCJleHAiOjE3NDkzOTIxNzl9.hM_bIBG9DFfvESjXoZg5-ydMIXkEd_MkXKMShNp5Xko'}
+captely-crm-service  | 2025-06-08T13:53:20.136090972Z 🔧 CRM: Received Authorization header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdW...
+captely-crm-service  | 2025-06-08T13:53:20.136098817Z 🔧 CRM: Extracted token: eyJhbGciOiJIUzI1NiIs...KMShNp5Xko
+captely-crm-service  | 2025-06-08T13:53:20.136126980Z 🔧 CRM: Sending request to auth service: {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZmVlZWYzYi1mZWZlLTQwM2UtYWU5Ni03NDhiZmY2YzUzOTQiLCJleHAiOjE3NDkzOTIxNzl9.hM_bIBG9DFfvESjXoZg5-ydMIXkEd_MkXKMShNp5Xko'}
+captely-crm-service  | 2025-06-08T13:53:20.136130907Z 🔧 CRM: Auth service response status: 200
+captely-crm-service  | 2025-06-08T13:53:20.136134083Z 🔧 CRM: Auth service response text: {"user_id":"1feeef3b-fefe-403e-ae96-748bff6c5394","valid":true}
+captely-crm-service  | 2025-06-08T13:53:20.136137420Z ✅ CRM: Token validation successful: {'user_id': '1feeef3b-fefe-403e-ae96-748bff6c5394', 'valid': True}
+captely-crm-service  | 2025-06-08T13:53:20.136140594Z 🔧 CRM: Auth service response status: 200
+captely-crm-service  | 2025-06-08T13:53:20.136143490Z 🔧 CRM: Auth service response text: {"user_id":"1feeef3b-fefe-403e-ae96-748bff6c5394","valid":true}
+captely-crm-service  | 2025-06-08T13:53:20.136151875Z ✅ CRM: Token validation successful: {'user_id': '1feeef3b-fefe-403e-ae96-748bff6c5394', 'valid': True}
+captely-crm-service  | 2025-06-08T13:53:20.136155312Z INFO:     172.18.0.15:45674 - "GET /api/contacts?page=1&limit=25&search=&batch_filter=all&status_filter=all&email_reliability=all&lead_score_min=0&lead_score_max=100 HTTP/1.0" 200 OK
+captely-crm-service  | 2025-06-08T13:53:20.138180686Z INFO:     172.18.0.15:45678 - "GET /api/contacts/stats/enrichment HTTP/1.0" 200 OK
+captely-crm-service  | 2025-06-08T13:58:45.895225680Z INFO:     51.195.190.14:41990 - "GET / HTTP/1.0" 404 Not Found
+captely-crm-service  | 2025-06-08T13:58:45.936136322Z INFO:     51.195.190.14:56164 - "GET /nice%20ports%2C/Trinity.txt.bak HTTP/1.0" 404 Not Found
+captely-crm-service  | 2025-06-08T13:58:45.977634967Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:46.020210455Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:46.075334161Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.143400254Z INFO:     51.195.190.14:38756 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-crm-service  | 2025-06-08T13:58:51.189037511Z INFO:     51.195.190.14:38896 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-crm-service  | 2025-06-08T13:58:51.221414763Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.261592323Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.301379187Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.331904538Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.368008408Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.404635018Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.448034727Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.490114402Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.525577550Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.567595461Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:58:51.618587049Z INFO:     51.195.190.14:40014 - "GET /devicedesc.xml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.189354270Z INFO:     51.195.190.14:45732 - "GET /localstart.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.189945577Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:59:09.192638833Z INFO:     51.195.190.14:45844 - "GET /CSS/Miniweb.css HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.192648521Z INFO:     51.195.190.14:45832 - "GET /.git/HEAD HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.192652880Z INFO:     51.195.190.14:45818 - "GET /i3iW HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.192656516Z INFO:     51.195.190.14:45736 - "GET / HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.353825159Z INFO:     51.195.190.14:46466 - "GET / HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.354431505Z INFO:     51.195.190.14:46472 - "GET /inicio.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.517123469Z INFO:     51.195.190.14:46896 - "GET /inicio.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.620765568Z INFO:     51.195.190.14:47210 - "GET /Portal0000.htm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.673765519Z INFO:     51.195.190.14:47354 - "GET /start.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.773630027Z INFO:     51.195.190.14:47674 - "GET /__Additional HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.829262049Z INFO:     51.195.190.14:47788 - "GET /inicio.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.831645429Z INFO:     51.195.190.14:47786 - "GET /?=PHPE9568F36-D428-11d2-A769-00AA001ACF42 HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.998673220Z INFO:     51.195.190.14:48258 - "GET /base.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:09.998743141Z INFO:     51.195.190.14:48252 - "GET /?=PHPB8B5F2A0-3C92-11d3-A3A9-4C7B08C10000 HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.051266045Z INFO:     51.195.190.14:48394 - "HEAD / HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.151396467Z INFO:     51.195.190.14:48672 - "GET /indice.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.304530918Z INFO:     51.195.190.14:48984 - "GET / HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.306100986Z INFO:     51.195.190.14:48988 - "GET /cgi-mod/header_logo.cgi?size=big HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.306211792Z INFO:     51.195.190.14:48990 - "GET /admin.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.467117276Z INFO:     51.195.190.14:49346 - "GET /localstart.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.619190794Z INFO:     51.195.190.14:49698 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.620712903Z INFO:     51.195.190.14:49702 - "GET /indice.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.773189301Z INFO:     51.195.190.14:50066 - "GET /menu.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:10.921961305Z INFO:     51.195.190.14:50378 - "GET /home.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:11.080256015Z INFO:     51.195.190.14:50720 - "GET /indice.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:11.231655822Z INFO:     51.195.190.14:51012 - "GET /start.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:11.382352392Z INFO:     51.195.190.14:51326 - "GET /menu.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:11.535544380Z INFO:     51.195.190.14:51632 - "GET /home.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:11.687751448Z INFO:     51.195.190.14:51928 - "GET /admin.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:11.841788506Z INFO:     51.195.190.14:52248 - "GET /indice.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:11.842055763Z INFO:     51.195.190.14:52246 - "GET /health HTTP/1.1" 200 OK
+captely-crm-service  | 2025-06-08T13:59:11.988018275Z INFO:     51.195.190.14:52550 - "GET /admin.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.142759041Z INFO:     51.195.190.14:52858 - "GET /admin.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.245200839Z INFO:     51.195.190.14:53062 - "GET /login.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.295044774Z INFO:     51.195.190.14:53174 - "GET /index.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.395693320Z INFO:     51.195.190.14:53338 - "GET /dniapi/userInfos HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.445406953Z INFO:     51.195.190.14:53442 - "GET /admin.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.546289072Z INFO:     51.195.190.14:53636 - "GET /api/v2/about HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.595743082Z INFO:     51.195.190.14:53716 - "GET /main.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.695694723Z INFO:     51.195.190.14:53902 - "GET /webui HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.745120552Z INFO:     51.195.190.14:53994 - "GET /default.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.846194177Z INFO:     51.195.190.14:54160 - "GET /user HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.895242804Z INFO:     51.195.190.14:54238 - "GET /default.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:12.999374845Z INFO:     51.195.190.14:54410 - "GET /human.aspx?arg12=infotech HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.048249107Z INFO:     51.195.190.14:54478 - "GET /base.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.149949288Z INFO:     51.195.190.14:54648 - "GET /dana-cached/hc/HostCheckerInstaller.osx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.199483537Z INFO:     51.195.190.14:54726 - "GET /admin.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.301356157Z INFO:     51.195.190.14:54874 - "GET /dana-na/nc/nc_gina_ver.txt HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.351455768Z INFO:     51.195.190.14:54954 - "GET /index.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.458463812Z INFO:     51.195.190.14:55094 - "GET /%2BCSCOE%2B/logon.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.506087432Z INFO:     51.195.190.14:55172 - "GET /admin.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.610431655Z INFO:     51.195.190.14:55332 - "GET /CFIDE/componentutils/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.660488877Z INFO:     51.195.190.14:55430 - "GET /start.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.760737680Z INFO:     51.195.190.14:55564 - "GET /geoserver/index.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.813238834Z INFO:     51.195.190.14:55658 - "GET /index.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.915856108Z INFO:     51.195.190.14:55844 - "GET /geoserver/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:13.966448483Z INFO:     51.195.190.14:55934 - "GET /base.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.067922744Z INFO:     51.195.190.14:56132 - "GET /geoserver/web/wicket/bookmarkable/org.geoserver.web.AboutGeoServerPage HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.116663439Z INFO:     51.195.190.14:56238 - "GET /main.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.217497439Z INFO:     51.195.190.14:45834 - "GET / HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.219859109Z INFO:     51.195.190.14:56414 - "GET /Account/Login HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.270103798Z INFO:     51.195.190.14:56502 - "GET /base.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.371695937Z INFO:     51.195.190.14:56674 - "GET /cgi-bin/info.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.421830523Z INFO:     51.195.190.14:56746 - "GET /localstart.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.520745998Z INFO:     51.195.190.14:56918 - "GET /xml/info.xml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.572488762Z INFO:     51.195.190.14:57054 - "GET /base.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.673234558Z INFO:     51.195.190.14:57198 - "GET /magento_version HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.723282522Z INFO:     51.195.190.14:57290 - "GET /inicio.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.825242346Z INFO:     51.195.190.14:57438 - "GET /api/v1/check-version HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.881612960Z INFO:     51.195.190.14:57540 - "GET /indice.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:14.978375084Z INFO:     51.195.190.14:57730 - "GET /fog/management/index.php?node=client&sub=logininfo HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.025506246Z INFO:     51.195.190.14:57812 - "GET /localstart.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.128236070Z INFO:     51.195.190.14:58006 - "GET /helpdesk/WebObjects/Helpdesk.woa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.178684909Z INFO:     51.195.190.14:58122 - "GET /menu.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.279110491Z INFO:     51.195.190.14:58310 - "GET /cluster/list.query HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.329006102Z INFO:     51.195.190.14:58424 - "GET /localstart.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.431918516Z INFO:     51.195.190.14:58612 - "GET /apps/zxtm/login.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.482848739Z INFO:     51.195.190.14:58724 - "GET /default.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.584047047Z INFO:     51.195.190.14:58972 - "GET /api/server/version HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.584805586Z INFO:     51.195.190.14:58974 - "GET /webui HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.634901340Z INFO:     51.195.190.14:59074 - "GET /start.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.733849204Z INFO:     51.195.190.14:59338 - "GET /administrator/manifests/files/joomla.xml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.784151241Z INFO:     51.195.190.14:59506 - "GET /main.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.885755342Z INFO:     51.195.190.14:59820 - "GET /language/en-GB/en-GB.xml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:15.938010129Z INFO:     51.195.190.14:59956 - "GET /index.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.037142195Z INFO:     51.195.190.14:60250 - "GET /versa/login HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.087456104Z INFO:     51.195.190.14:60394 - "GET /start.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.190463474Z INFO:     51.195.190.14:60656 - "GET /login.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.239720078Z INFO:     51.195.190.14:60792 - "GET /default.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.342540028Z INFO:     51.195.190.14:32786 - "GET /p/login/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.394490308Z INFO:     51.195.190.14:32914 - "GET /start.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.497435652Z INFO:     51.195.190.14:33138 - "GET /api/version HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.548642781Z INFO:     51.195.190.14:33244 - "GET /base.inc HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.649931346Z INFO:     51.195.190.14:33420 - "GET /portal/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.699324354Z INFO:     51.195.190.14:33520 - "GET /menu.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.803087047Z INFO:     51.195.190.14:33716 - "GET /status HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.804573120Z INFO:     51.195.190.14:33718 - "GET /rest/applinks/1.0/manifest HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.851885390Z INFO:     51.195.190.14:33816 - "GET /inicio.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.956869572Z INFO:     51.195.190.14:33972 - "GET /confluence/rest/applinks/1.0/manifest HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:16.957059866Z INFO:     51.195.190.14:33968 - "GET /info.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.008946938Z INFO:     51.195.190.14:34062 - "GET /base.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.109769457Z INFO:     51.195.190.14:34252 - "GET /cgi-bin/param.cgi?get_device_conf HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.157876645Z WARNING:  Invalid HTTP request received.
+captely-crm-service  | 2025-06-08T13:59:17.260688801Z INFO:     51.195.190.14:34476 - "GET /lms/db HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.310433162Z INFO:     51.195.190.14:34582 - "GET /localstart.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.412866675Z INFO:     51.195.190.14:34750 - "GET /ext-js/app/common/zld_product_spec.js HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.460731092Z INFO:     51.195.190.14:34836 - "GET /start.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.565228079Z INFO:     51.195.190.14:35000 - "GET /login/login.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.615506512Z INFO:     51.195.190.14:35106 - "GET /default.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.714707938Z INFO:     51.195.190.14:35314 - "GET /allversions HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.768806110Z INFO:     51.195.190.14:35466 - "GET /start.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.874356686Z INFO:     51.195.190.14:35708 - "GET /versions HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:17.924308933Z INFO:     51.195.190.14:35836 - "GET /base.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.029482888Z INFO:     51.195.190.14:36080 - "GET /r-seenet/index.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.081428530Z INFO:     51.195.190.14:36240 - "GET /default.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.182417658Z INFO:     51.195.190.14:36478 - "GET /api/vip/i18n/api/v2/translation/products/vRNIUI/versions/1 HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.236051427Z INFO:     51.195.190.14:36572 - "GET /index.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.338227310Z INFO:     51.195.190.14:36816 - "GET /tos/index.php?user/login HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.391519314Z INFO:     51.195.190.14:36900 - "GET /readme.txt HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.495259406Z INFO:     51.195.190.14:37096 - "GET /c/login HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.547342512Z INFO:     51.195.190.14:37220 - "GET /default.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.651676978Z INFO:     51.195.190.14:37472 - "GET /WebApp/js/UI_String.js HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.703043243Z INFO:     51.195.190.14:37588 - "GET /index.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.805092060Z INFO:     51.195.190.14:37770 - "GET /login.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.861248949Z INFO:     51.195.190.14:37906 - "GET /main.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:18.962153460Z INFO:     51.195.190.14:38118 - "GET /officescan/console/html/localization.js HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.014724784Z INFO:     51.195.190.14:38214 - "GET /localstart.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.118070813Z INFO:     51.195.190.14:38426 - "GET /officescan/console/cgi/cgiChkMasterPwd.exe HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.171396710Z INFO:     51.195.190.14:38552 - "GET /default.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.269875453Z INFO:     51.195.190.14:38758 - "GET /IPCamDesc.xml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.323346558Z INFO:     51.195.190.14:38844 - "GET /main.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.426057968Z INFO:     51.195.190.14:39050 - "GET /kylin/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.483006318Z INFO:     51.195.190.14:39164 - "GET /admin.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.584411180Z INFO:     51.195.190.14:39426 - "GET /api/v1.0/environment HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.637036985Z INFO:     51.195.190.14:39578 - "GET /inicio.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.739333323Z INFO:     51.195.190.14:39768 - "GET /cslu/v1/core/conf HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.796101617Z INFO:     51.195.190.14:39884 - "GET /base.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.900646494Z INFO:     51.195.190.14:40094 - "GET /config HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:19.951948179Z INFO:     51.195.190.14:40234 - "GET /menu.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.054330707Z INFO:     51.195.190.14:40490 - "GET /CHANGELOG.txt HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.108594986Z INFO:     51.195.190.14:40594 - "GET /home.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.210079667Z INFO:     51.195.190.14:40810 - "GET /admin/reports/status HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.266067841Z INFO:     51.195.190.14:40918 - "GET /indice.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.363698779Z INFO:     51.195.190.14:41136 - "GET /admin/reports/updates HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.419261722Z INFO:     51.195.190.14:41240 - "GET /robots.txt HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.517863965Z INFO:     51.195.190.14:41406 - "GET /javascript/validation/OEM.js HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.575148278Z INFO:     51.195.190.14:41498 - "GET /indice.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.677214047Z INFO:     51.195.190.14:41726 - "GET /pom.xml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.714879980Z INFO:     51.195.190.14:41838 - "GET /menu.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.757823953Z INFO:     51.195.190.14:41970 - "GET /build.gradle HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.791283206Z INFO:     51.195.190.14:42024 - "GET /indice.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.831497484Z INFO:     51.195.190.14:42074 - "GET /webportal.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.859054819Z INFO:     51.195.190.14:42152 - "GET /home.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.889470948Z INFO:     51.195.190.14:42222 - "GET /workplace/home.action HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.912412175Z INFO:     51.195.190.14:42272 - "GET /home.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.942964737Z INFO:     51.195.190.14:42360 - "GET /css/eonweb.css HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.962112243Z INFO:     51.195.190.14:42412 - "GET /admin.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:20.989261208Z INFO:     51.195.190.14:42460 - "GET /pandora_console/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.012740255Z INFO:     51.195.190.14:42484 - "GET /index.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.038074909Z INFO:     51.195.190.14:42534 - "GET /centreon/api/latest/platform/versions HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.067308981Z INFO:     51.195.190.14:42568 - "GET /menu.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.093408487Z INFO:     51.195.190.14:42636 - "GET /cgi-bin/authLogin.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.116537773Z INFO:     51.195.190.14:42692 - "GET /menu.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.144357446Z INFO:     51.195.190.14:42738 - "GET /css/elfinder.min.css HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.166173792Z INFO:     51.195.190.14:42794 - "GET /main.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.195460942Z INFO:     51.195.190.14:42836 - "GET /api/v3/meta HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.215994213Z INFO:     51.195.190.14:42876 - "GET /inicio.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.246501351Z INFO:     51.195.190.14:42926 - "GET /geoserver/web/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.274302831Z INFO:     51.195.190.14:42982 - "GET /inicio.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.303463585Z INFO:     51.195.190.14:43010 - "GET /am_bin/amlogin HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.321057093Z INFO:     51.195.190.14:43058 - "GET /home.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.354643023Z INFO:     51.195.190.14:43118 - "GET /system/version/current HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.369633062Z INFO:     51.195.190.14:43180 - "GET /inicio.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.399161941Z INFO:     51.195.190.14:43224 - "GET /api/v1/version HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.414271493Z INFO:     51.195.190.14:43264 - "GET /inicio.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.436305182Z INFO:     51.195.190.14:43282 - "GET /i18n/component/JS HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.469465832Z INFO:     51.195.190.14:43326 - "GET /indice.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.507044792Z INFO:     51.195.190.14:43396 - "GET /hx/api/about HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.531171262Z INFO:     51.195.190.14:43446 - "GET /menu.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.569196962Z INFO:     51.195.190.14:43504 - "GET /app/ui/login.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.589539079Z INFO:     51.195.190.14:43530 - "GET /main.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.628227040Z INFO:     51.195.190.14:43590 - "GET /login/?next=/ HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.651871764Z INFO:     51.195.190.14:43632 - "GET /menu.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.679311821Z INFO:     51.195.190.14:43734 - "GET /MagicInfo/config.js HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.703590533Z INFO:     51.195.190.14:43764 - "GET /menu.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.740792022Z INFO:     51.195.190.14:43812 - "GET /plugin/webs_model_cfg.js HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.758356215Z INFO:     51.195.190.14:43854 - "GET /inicio.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.812854721Z INFO:     51.195.190.14:43960 - "GET /localstart.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.860948454Z INFO:     51.195.190.14:44038 - "GET /indice.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.917036864Z INFO:     51.195.190.14:44156 - "GET /base.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:21.975017952Z INFO:     51.195.190.14:44290 - "GET /indice.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.031503741Z INFO:     51.195.190.14:44414 - "GET /index.shtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.081162683Z INFO:     51.195.190.14:44512 - "GET /localstart.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.126835416Z INFO:     51.195.190.14:44602 - "GET /index.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.171513691Z INFO:     51.195.190.14:44704 - "GET /admin.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.223036165Z INFO:     51.195.190.14:44816 - "GET /main.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.286165311Z INFO:     51.195.190.14:44904 - "GET /default.html HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.336611716Z INFO:     51.195.190.14:45042 - "GET /home.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.383329322Z INFO:     51.195.190.14:45170 - "GET /start.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.426032575Z INFO:     51.195.190.14:45262 - "GET /localstart.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.479511526Z INFO:     51.195.190.14:45376 - "GET /default.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.530521559Z INFO:     51.195.190.14:45512 - "GET /base.jhtml HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.583274190Z INFO:     51.195.190.14:45676 - "GET /main.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.638000438Z INFO:     51.195.190.14:45784 - "GET /home.asp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.694117171Z INFO:     51.195.190.14:45894 - "GET /base.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.739127223Z INFO:     51.195.190.14:46030 - "GET /index.cgi HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.790068137Z INFO:     51.195.190.14:46126 - "GET /start.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.850760153Z INFO:     51.195.190.14:46252 - "GET /index.php HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.896345965Z INFO:     51.195.190.14:46352 - "GET /main.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.938304545Z INFO:     51.195.190.14:46440 - "GET /default.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:22.984949625Z INFO:     51.195.190.14:46546 - "GET /admin.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:23.018539863Z INFO:     51.195.190.14:46660 - "GET /home.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:23.062094229Z INFO:     51.195.190.14:46708 - "GET /start.aspx HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:23.119231929Z INFO:     51.195.190.14:46790 - "GET /main.jsp HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:23.167170313Z INFO:     51.195.190.14:46872 - "GET /home.pl HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:23.212840241Z INFO:     51.195.190.14:46954 - "GET /localstart.jsa HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:23.259272074Z INFO:     51.195.190.14:47056 - "GET /home.cfm HTTP/1.1" 404 Not Found
+captely-crm-service  | 2025-06-08T13:59:25.890034279Z INFO:     51.195.190.14:52890 - "GET / HTTP/1.1" 404 Not Found

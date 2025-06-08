@@ -1,0 +1,1644 @@
+captely-analytics-service  | 2025-06-08T13:48:16.492078279Z db:5432 - accepting connections
+captely-analytics-service  | 2025-06-08T13:48:16.494019607Z Postgres is up - executing command
+captely-analytics-service  | 2025-06-08T13:48:19.580649393Z INFO:     Started server process [1]
+captely-analytics-service  | 2025-06-08T13:48:19.580685910Z INFO:     Waiting for application startup.
+captely-analytics-service  | 2025-06-08T13:48:19.588489705Z INFO:     Application startup complete.
+captely-analytics-service  | 2025-06-08T13:48:19.588526983Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+captely-analytics-service  | 2025-06-08T13:48:28.588594718Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:28.588659649Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:28.588665981Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:28.588671661Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:28.588676370Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:28.588681269Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:28.588685787Z INFO:     172.18.0.15:50054 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:28.747532298Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:28.747558136Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:28.747562424Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:28.747565610Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:28.747568736Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:28.747571671Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:28.747574597Z INFO:     172.18.0.15:50060 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:33.774471198Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:33.774519167Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:33.774525047Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:33.774529496Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:33.774533523Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:33.774537451Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:33.774541308Z INFO:     172.18.0.15:38646 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:49.556694813Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:49.556758591Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:49.556766916Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:49.556773588Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:49.556779980Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:49.556786202Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:49.556792454Z INFO:     172.18.0.15:43474 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:49.638650985Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:49.638692682Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:49.638699796Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:49.638706087Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:49.638741633Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:49.638746493Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:49.638750971Z INFO:     172.18.0.15:43488 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:54.633718189Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:54.633756009Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:54.633763253Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:54.633768643Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:54.633773632Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:54.633778631Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:54.633783539Z INFO:     172.18.0.15:33118 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:57.193464503Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:57.193491283Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:57.193497715Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:57.193502645Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:57.193507313Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:57.193511981Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:57.193689741Z INFO:     172.18.0.15:33120 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:57.339572749Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:57.339624745Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:57.339630977Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:57.339635836Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:57.339640655Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:57.339645334Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:57.339650353Z INFO:     172.18.0.15:33136 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:48:59.915516107Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:48:59.915548908Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:48:59.915555191Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:48:59.915560279Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:48:59.915566480Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:59.915574135Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:48:59.915580397Z INFO:     172.18.0.15:33146 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:00.001181103Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:00.001235495Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:00.001242998Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:00.001247888Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:00.001252536Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:00.001257325Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:00.001262045Z INFO:     172.18.0.15:45548 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:04.930157188Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:04.930211630Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:04.930220315Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:04.930225946Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:04.930231326Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:04.930236706Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:04.930242167Z INFO:     172.18.0.15:45552 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:09.917181383Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:09.917231987Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:09.917240202Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:09.917247486Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:09.917254058Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:09.917260811Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:09.917267673Z INFO:     172.18.0.15:45554 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:09.990130786Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:09.990178995Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:09.990187541Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:09.990194644Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:09.990201277Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:09.990208060Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:09.990214873Z INFO:     172.18.0.15:47850 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:14.910439462Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:14.910487321Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:14.910495547Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:14.910500826Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:14.910505826Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:14.910510965Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:14.910515965Z INFO:     172.18.0.15:47858 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:19.939668507Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:19.939722837Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:19.939729991Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:19.939735161Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:19.939740020Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:19.939745170Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:19.939750048Z INFO:     172.18.0.15:47860 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:20.004122510Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:20.004155572Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:20.004167073Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:20.004190416Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:20.004195857Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:20.004200445Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:20.004205264Z INFO:     172.18.0.15:43092 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:20.058640929Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:20.058679289Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:20.058686814Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:20.058692955Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:20.058726897Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:20.058734552Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:20.058740804Z INFO:     172.18.0.15:43104 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:24.919772929Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:24.919831488Z    - Total contacts: 0
+captely-analytics-service  | 2025-06-08T13:49:24.919838792Z    - Emails found: 0
+captely-analytics-service  | 2025-06-08T13:49:24.919844631Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:24.919850242Z    - Email hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:24.919857446Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:24.919865842Z INFO:     172.18.0.15:43110 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:29.913558006Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:29.913640149Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:29.913646771Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:29.913652452Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:29.913657181Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:29.913661960Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:29.913666709Z INFO:     172.18.0.15:43120 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:29.974740791Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:29.974779011Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:29.974785153Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:29.974789962Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:29.974794631Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:29.974799500Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:29.974804289Z INFO:     172.18.0.15:46124 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:34.928927102Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:34.929003292Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:34.929012300Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:34.929017599Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:34.929022709Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:34.929027538Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:34.929032598Z INFO:     172.18.0.15:46138 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:39.542617400Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:39.542668074Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:39.542677912Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:39.542685857Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:39.542692570Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:39.542700254Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:39.542707648Z INFO:     172.18.0.15:46154 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:39.636531287Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:39.636560371Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:39.636566623Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:39.636571612Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:39.636576742Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:39.636581541Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:39.636586360Z INFO:     172.18.0.15:46168 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:44.636814804Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:44.636884453Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:44.636893008Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:44.636899510Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:44.636905441Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:44.636911412Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:44.636917163Z INFO:     172.18.0.15:45072 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:49.557168042Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:49.557230248Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:49.557237111Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:49.557242331Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:49.557247210Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:49.557252330Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:49.557257108Z INFO:     172.18.0.15:45074 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:49.612121438Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:49.612163787Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:49.612170570Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:49.612176251Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:49.612181601Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:49.612186630Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:49.612191940Z INFO:     172.18.0.15:45076 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:49.678957629Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:49.679004726Z    - Total contacts: 3
+captely-analytics-service  | 2025-06-08T13:49:49.679032809Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:49.679038079Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:49.679042588Z    - Email hit rate: 100.0%
+captely-analytics-service  | 2025-06-08T13:49:49.679047687Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:49.679052546Z INFO:     172.18.0.15:45088 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:54.641706975Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:54.641741700Z    - Total contacts: 4
+captely-analytics-service  | 2025-06-08T13:49:54.641746048Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:54.641749364Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:54.641752360Z    - Email hit rate: 75.0%
+captely-analytics-service  | 2025-06-08T13:49:54.641755275Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:54.641759002Z INFO:     172.18.0.15:46848 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:59.551368001Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:59.551408206Z    - Total contacts: 4
+captely-analytics-service  | 2025-06-08T13:49:59.551416391Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:59.551423455Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:59.551429847Z    - Email hit rate: 75.0%
+captely-analytics-service  | 2025-06-08T13:49:59.551436349Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:59.551443060Z INFO:     172.18.0.15:46854 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:49:59.642854016Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:49:59.642921662Z    - Total contacts: 4
+captely-analytics-service  | 2025-06-08T13:49:59.642928165Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:49:59.642933444Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:49:59.642938684Z    - Email hit rate: 75.0%
+captely-analytics-service  | 2025-06-08T13:49:59.642943983Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:49:59.642949143Z INFO:     172.18.0.15:46870 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:04.918031579Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:04.918077615Z    - Total contacts: 4
+captely-analytics-service  | 2025-06-08T13:50:04.918083926Z    - Emails found: 3
+captely-analytics-service  | 2025-06-08T13:50:04.918088996Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:04.918094075Z    - Email hit rate: 75.0%
+captely-analytics-service  | 2025-06-08T13:50:04.918098824Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:04.918103893Z INFO:     172.18.0.15:34350 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:09.918833348Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:09.918879914Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:09.918886687Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:09.918892267Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:09.918897638Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:09.918902937Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:09.918927763Z INFO:     172.18.0.15:34366 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:09.982552696Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:09.982590507Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:09.982595516Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:09.982599052Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:09.982602399Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:09.982605754Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:09.982609201Z INFO:     172.18.0.15:57774 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:14.922213690Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:14.922254045Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:14.922260216Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:14.922264996Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:14.922274013Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:14.922278822Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:14.922283560Z INFO:     172.18.0.15:57778 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:19.919963759Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:19.920039810Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:19.920045901Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:19.920051001Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:19.920055810Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:19.920060559Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:19.920065447Z INFO:     172.18.0.15:57780 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:19.981025577Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:19.981065111Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:19.981071363Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:19.981076192Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:19.981080880Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:19.981085739Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:19.981090498Z INFO:     172.18.0.15:35180 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:20.052036608Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:20.052062105Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:20.052068227Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:20.052073446Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:20.052078576Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:20.052083616Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:20.052088785Z INFO:     172.18.0.15:35188 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:24.918369164Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:24.918451037Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:24.918459583Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:24.918464922Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:24.918469871Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:24.918474820Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:24.918487063Z INFO:     172.18.0.15:35194 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:29.926987881Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:29.927029019Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:29.927036092Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:29.927041721Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:29.927047082Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:29.927053273Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:29.927058833Z INFO:     172.18.0.15:35210 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:30.016467138Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:30.016541797Z    - Total contacts: 6
+captely-analytics-service  | 2025-06-08T13:50:30.016552136Z    - Emails found: 5
+captely-analytics-service  | 2025-06-08T13:50:30.016559689Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:30.016566492Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:50:30.016573054Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:30.016579787Z INFO:     172.18.0.15:42508 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:34.917888620Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:34.917957848Z    - Total contacts: 7
+captely-analytics-service  | 2025-06-08T13:50:34.917965403Z    - Emails found: 6
+captely-analytics-service  | 2025-06-08T13:50:34.917996090Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:34.918001319Z    - Email hit rate: 85.7%
+captely-analytics-service  | 2025-06-08T13:50:34.918006539Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:34.918012229Z INFO:     172.18.0.15:42514 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:39.996156317Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:39.996205479Z    - Total contacts: 8
+captely-analytics-service  | 2025-06-08T13:50:39.996213954Z    - Emails found: 7
+captely-analytics-service  | 2025-06-08T13:50:39.996221488Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:39.996228451Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:50:39.996234874Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:39.996242057Z INFO:     172.18.0.15:45950 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:40.087128277Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:40.087180074Z    - Total contacts: 8
+captely-analytics-service  | 2025-06-08T13:50:40.087187227Z    - Emails found: 7
+captely-analytics-service  | 2025-06-08T13:50:40.087193759Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:40.087199830Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:50:40.087232010Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:40.087236218Z INFO:     172.18.0.15:45952 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:44.633389932Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:44.633416672Z    - Total contacts: 8
+captely-analytics-service  | 2025-06-08T13:50:44.633421111Z    - Emails found: 7
+captely-analytics-service  | 2025-06-08T13:50:44.633424425Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:44.633427461Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:50:44.633430577Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:44.633433773Z INFO:     172.18.0.15:45954 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:49.573120785Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:49.573309526Z    - Total contacts: 9
+captely-analytics-service  | 2025-06-08T13:50:49.573321458Z    - Emails found: 8
+captely-analytics-service  | 2025-06-08T13:50:49.573329163Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:49.573337127Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:50:49.573344331Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:49.573351945Z INFO:     172.18.0.15:45964 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:49.638475252Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:49.638513614Z    - Total contacts: 9
+captely-analytics-service  | 2025-06-08T13:50:49.638520807Z    - Emails found: 8
+captely-analytics-service  | 2025-06-08T13:50:49.638526858Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:49.638537989Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:50:49.638544191Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:49.638552075Z INFO:     172.18.0.15:45972 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:50:49.693592483Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:50:49.693620416Z    - Total contacts: 9
+captely-analytics-service  | 2025-06-08T13:50:49.693626587Z    - Emails found: 8
+captely-analytics-service  | 2025-06-08T13:50:49.693631465Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:50:49.693636164Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:50:49.693640893Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:50:49.693646083Z INFO:     172.18.0.15:45980 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:02.677497662Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:02.677537887Z    - Total contacts: 9
+captely-analytics-service  | 2025-06-08T13:51:02.677544338Z    - Emails found: 8
+captely-analytics-service  | 2025-06-08T13:51:02.677549648Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:02.677555119Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:51:02.677561000Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:02.677566400Z INFO:     172.18.0.15:58250 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:02.830092234Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:02.830122730Z    - Total contacts: 9
+captely-analytics-service  | 2025-06-08T13:51:02.830126898Z    - Emails found: 8
+captely-analytics-service  | 2025-06-08T13:51:02.830130364Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:02.830133290Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:51:02.830136355Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:02.831757749Z INFO:     172.18.0.15:58256 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:08.892546932Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:08.892602194Z    - Total contacts: 9
+captely-analytics-service  | 2025-06-08T13:51:08.892609258Z    - Emails found: 8
+captely-analytics-service  | 2025-06-08T13:51:08.892614558Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:08.892619577Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:51:08.892624527Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:08.892630026Z INFO:     172.18.0.15:58266 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:08.956457997Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:08.956504303Z    - Total contacts: 9
+captely-analytics-service  | 2025-06-08T13:51:08.956512729Z    - Emails found: 8
+captely-analytics-service  | 2025-06-08T13:51:08.956526934Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:08.956531873Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:51:08.956536562Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:08.956541391Z INFO:     172.18.0.15:58276 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:13.971373938Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:13.971444820Z    - Total contacts: 10
+captely-analytics-service  | 2025-06-08T13:51:13.971451873Z    - Emails found: 9
+captely-analytics-service  | 2025-06-08T13:51:13.971464747Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:13.971472121Z    - Email hit rate: 90.0%
+captely-analytics-service  | 2025-06-08T13:51:13.971479434Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:13.971486988Z INFO:     172.18.0.15:50854 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:18.866760965Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:18.866805117Z    - Total contacts: 11
+captely-analytics-service  | 2025-06-08T13:51:18.866812871Z    - Emails found: 9
+captely-analytics-service  | 2025-06-08T13:51:18.866820546Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:18.866826866Z    - Email hit rate: 81.8%
+captely-analytics-service  | 2025-06-08T13:51:18.866838719Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:18.866845662Z INFO:     172.18.0.15:50856 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:18.980830293Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:18.980868784Z    - Total contacts: 11
+captely-analytics-service  | 2025-06-08T13:51:18.980875066Z    - Emails found: 9
+captely-analytics-service  | 2025-06-08T13:51:18.980899642Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:18.980902938Z    - Email hit rate: 81.8%
+captely-analytics-service  | 2025-06-08T13:51:18.980905914Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:18.980908878Z INFO:     172.18.0.15:50858 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:23.994146080Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:23.994199720Z    - Total contacts: 11
+captely-analytics-service  | 2025-06-08T13:51:23.994206933Z    - Emails found: 9
+captely-analytics-service  | 2025-06-08T13:51:23.994212935Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:23.994218234Z    - Email hit rate: 81.8%
+captely-analytics-service  | 2025-06-08T13:51:23.994223484Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:23.994228844Z INFO:     172.18.0.15:37516 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:28.864026310Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:28.864085009Z    - Total contacts: 12
+captely-analytics-service  | 2025-06-08T13:51:28.864091812Z    - Emails found: 10
+captely-analytics-service  | 2025-06-08T13:51:28.864097091Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:28.864102862Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:51:28.864108342Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:28.864113612Z INFO:     172.18.0.15:37522 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:28.964582062Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:28.964630241Z    - Total contacts: 12
+captely-analytics-service  | 2025-06-08T13:51:28.964640070Z    - Emails found: 10
+captely-analytics-service  | 2025-06-08T13:51:28.964646862Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:28.964653795Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:51:28.964665437Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:28.964672190Z INFO:     172.18.0.15:37530 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:33.982651885Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:33.982681259Z    - Total contacts: 12
+captely-analytics-service  | 2025-06-08T13:51:33.982687170Z    - Emails found: 10
+captely-analytics-service  | 2025-06-08T13:51:33.982692180Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:33.982696869Z    - Email hit rate: 83.3%
+captely-analytics-service  | 2025-06-08T13:51:33.982701758Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:33.982706507Z INFO:     172.18.0.15:57540 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:38.861768100Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:38.861814666Z    - Total contacts: 13
+captely-analytics-service  | 2025-06-08T13:51:38.861822231Z    - Emails found: 11
+captely-analytics-service  | 2025-06-08T13:51:38.861827951Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:38.861833452Z    - Email hit rate: 84.6%
+captely-analytics-service  | 2025-06-08T13:51:38.861838842Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:38.861844513Z INFO:     172.18.0.15:57542 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:38.939065625Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:38.939125206Z    - Total contacts: 13
+captely-analytics-service  | 2025-06-08T13:51:38.940044644Z    - Emails found: 11
+captely-analytics-service  | 2025-06-08T13:51:38.940206946Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:38.940259754Z    - Email hit rate: 84.6%
+captely-analytics-service  | 2025-06-08T13:51:38.940264002Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:38.940267569Z INFO:     172.18.0.15:57554 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:38.999755232Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:38.999811637Z    - Total contacts: 13
+captely-analytics-service  | 2025-06-08T13:51:38.999818930Z    - Emails found: 11
+captely-analytics-service  | 2025-06-08T13:51:38.999823909Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:38.999856501Z    - Email hit rate: 84.6%
+captely-analytics-service  | 2025-06-08T13:51:38.999861859Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:38.999867120Z INFO:     172.18.0.15:57560 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:43.989583956Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:43.989651843Z    - Total contacts: 13
+captely-analytics-service  | 2025-06-08T13:51:43.989674615Z    - Emails found: 11
+captely-analytics-service  | 2025-06-08T13:51:43.989681718Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:43.989687960Z    - Email hit rate: 84.6%
+captely-analytics-service  | 2025-06-08T13:51:43.989694352Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:43.989700544Z INFO:     172.18.0.15:36140 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:48.877377199Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:48.877422192Z    - Total contacts: 13
+captely-analytics-service  | 2025-06-08T13:51:48.877431100Z    - Emails found: 11
+captely-analytics-service  | 2025-06-08T13:51:48.877439325Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:48.877446809Z    - Email hit rate: 84.6%
+captely-analytics-service  | 2025-06-08T13:51:48.877454673Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:48.877462058Z INFO:     172.18.0.15:36148 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:48.988825185Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:48.988855994Z    - Total contacts: 13
+captely-analytics-service  | 2025-06-08T13:51:48.988862966Z    - Emails found: 11
+captely-analytics-service  | 2025-06-08T13:51:48.988868756Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:48.988874086Z    - Email hit rate: 84.6%
+captely-analytics-service  | 2025-06-08T13:51:48.988879336Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:48.988884876Z INFO:     172.18.0.15:36160 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:53.982236188Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:53.982309254Z    - Total contacts: 13
+captely-analytics-service  | 2025-06-08T13:51:53.982354748Z    - Emails found: 11
+captely-analytics-service  | 2025-06-08T13:51:53.982361110Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:53.982366260Z    - Email hit rate: 84.6%
+captely-analytics-service  | 2025-06-08T13:51:53.982372361Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:53.982377060Z INFO:     172.18.0.15:41864 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:58.865746430Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:58.865777778Z    - Total contacts: 14
+captely-analytics-service  | 2025-06-08T13:51:58.865781966Z    - Emails found: 12
+captely-analytics-service  | 2025-06-08T13:51:58.865785152Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:58.865788177Z    - Email hit rate: 85.7%
+captely-analytics-service  | 2025-06-08T13:51:58.865791964Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:58.865795000Z INFO:     172.18.0.15:41880 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:51:58.971396610Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:51:58.971428140Z    - Total contacts: 14
+captely-analytics-service  | 2025-06-08T13:51:58.971432456Z    - Emails found: 12
+captely-analytics-service  | 2025-06-08T13:51:58.971435662Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:51:58.971438558Z    - Email hit rate: 85.7%
+captely-analytics-service  | 2025-06-08T13:51:58.971441593Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:51:58.971444519Z INFO:     172.18.0.15:41892 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:03.966574236Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:03.966624950Z    - Total contacts: 15
+captely-analytics-service  | 2025-06-08T13:52:03.966632224Z    - Emails found: 13
+captely-analytics-service  | 2025-06-08T13:52:03.966641591Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:03.966646852Z    - Email hit rate: 86.7%
+captely-analytics-service  | 2025-06-08T13:52:03.966651890Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:03.966657370Z INFO:     172.18.0.15:53684 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:08.868183907Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:08.868214253Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:08.868219353Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:08.868224532Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:08.868228390Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:08.868231836Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:08.868236184Z INFO:     172.18.0.15:53698 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:08.962031620Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:08.962080901Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:08.962087153Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:08.962092853Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:08.962097702Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:08.962102511Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:08.962133909Z INFO:     172.18.0.15:53704 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:09.040313817Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:09.040347941Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:09.040352730Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:09.040356477Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:09.040359862Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:09.040363228Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:09.040366655Z INFO:     172.18.0.15:53710 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:13.979542200Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:13.979615816Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:13.979624913Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:13.979632047Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:13.979646223Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:13.979652926Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:13.979659358Z INFO:     172.18.0.15:38116 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:18.878190375Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:18.878259453Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:18.878268510Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:18.878276034Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:18.878283819Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:18.878290852Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:18.878298095Z INFO:     172.18.0.15:38124 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:18.969894690Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:18.970022438Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:18.970034801Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:18.970040611Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:18.970046051Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:18.970051271Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:18.970056641Z INFO:     172.18.0.15:38128 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:23.976842829Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:23.976874818Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:23.976882773Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:23.976889485Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:23.976896249Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:23.976902881Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:23.976909523Z INFO:     172.18.0.15:42134 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:28.869585043Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:28.869677665Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:28.869686411Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:28.869691951Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:28.869697181Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:28.869702030Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:28.869707120Z INFO:     172.18.0.15:42144 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:28.970745642Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:28.970796305Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:28.970802417Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:28.970807497Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:28.970812436Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:28.970817195Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:28.970821964Z INFO:     172.18.0.15:42146 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:33.967234810Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:33.967283801Z    - Total contacts: 16
+captely-analytics-service  | 2025-06-08T13:52:33.967289942Z    - Emails found: 14
+captely-analytics-service  | 2025-06-08T13:52:33.967295062Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:33.967299190Z    - Email hit rate: 87.5%
+captely-analytics-service  | 2025-06-08T13:52:33.967303927Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:33.967308235Z INFO:     172.18.0.15:52850 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:38.873120172Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:38.873748330Z    - Total contacts: 17
+captely-analytics-service  | 2025-06-08T13:52:38.873767245Z    - Emails found: 15
+captely-analytics-service  | 2025-06-08T13:52:38.873773466Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:38.873778735Z    - Email hit rate: 88.2%
+captely-analytics-service  | 2025-06-08T13:52:38.873784356Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:38.873789907Z INFO:     172.18.0.15:52862 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:38.953044475Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:38.953090470Z    - Total contacts: 17
+captely-analytics-service  | 2025-06-08T13:52:38.953096622Z    - Emails found: 15
+captely-analytics-service  | 2025-06-08T13:52:38.953102563Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:38.953107733Z    - Email hit rate: 88.2%
+captely-analytics-service  | 2025-06-08T13:52:38.953112822Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:38.953116960Z INFO:     172.18.0.15:52864 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:39.045383510Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:39.045437010Z    - Total contacts: 17
+captely-analytics-service  | 2025-06-08T13:52:39.045442880Z    - Emails found: 15
+captely-analytics-service  | 2025-06-08T13:52:39.045448110Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:39.045478197Z    - Email hit rate: 88.2%
+captely-analytics-service  | 2025-06-08T13:52:39.045483126Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:39.045487554Z INFO:     172.18.0.15:52874 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:43.972866387Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:43.972935687Z    - Total contacts: 18
+captely-analytics-service  | 2025-06-08T13:52:43.972943181Z    - Emails found: 16
+captely-analytics-service  | 2025-06-08T13:52:43.972948981Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:43.972954561Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:52:43.972960402Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:43.972966212Z INFO:     172.18.0.15:57488 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:48.911180692Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:48.911209105Z    - Total contacts: 18
+captely-analytics-service  | 2025-06-08T13:52:48.911213353Z    - Emails found: 16
+captely-analytics-service  | 2025-06-08T13:52:48.911216668Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:48.911219725Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:52:48.911222871Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:48.911226006Z INFO:     172.18.0.15:57500 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:52:49.013618666Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:52:49.013659491Z    - Total contacts: 18
+captely-analytics-service  | 2025-06-08T13:52:49.013665973Z    - Emails found: 16
+captely-analytics-service  | 2025-06-08T13:52:49.013671684Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:52:49.013676863Z    - Email hit rate: 88.9%
+captely-analytics-service  | 2025-06-08T13:52:49.013681753Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:52:49.013686001Z INFO:     172.18.0.15:57508 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:53:53.324311764Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:53:53.324348442Z    - Total contacts: 21
+captely-analytics-service  | 2025-06-08T13:53:53.324356337Z    - Emails found: 18
+captely-analytics-service  | 2025-06-08T13:53:53.324362929Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:53:53.324369281Z    - Email hit rate: 85.7%
+captely-analytics-service  | 2025-06-08T13:53:53.324375472Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:53:53.324381443Z INFO:     172.18.0.15:38724 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:53:53.534119479Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:53:53.534629898Z    - Total contacts: 21
+captely-analytics-service  | 2025-06-08T13:53:53.534638535Z    - Emails found: 18
+captely-analytics-service  | 2025-06-08T13:53:53.534644866Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:53:53.534650917Z    - Email hit rate: 85.7%
+captely-analytics-service  | 2025-06-08T13:53:53.534662488Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:53:53.534669361Z INFO:     172.18.0.15:38740 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:53:58.547684213Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:53:58.547732743Z    - Total contacts: 21
+captely-analytics-service  | 2025-06-08T13:53:58.547740108Z    - Emails found: 18
+captely-analytics-service  | 2025-06-08T13:53:58.547744926Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:53:58.547749375Z    - Email hit rate: 85.7%
+captely-analytics-service  | 2025-06-08T13:53:58.547754134Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:53:58.547758361Z INFO:     172.18.0.15:38746 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:03.294542204Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:03.294594330Z    - Total contacts: 22
+captely-analytics-service  | 2025-06-08T13:54:03.294604189Z    - Emails found: 19
+captely-analytics-service  | 2025-06-08T13:54:03.294612054Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:03.294619197Z    - Email hit rate: 86.4%
+captely-analytics-service  | 2025-06-08T13:54:03.294626791Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:03.294664611Z INFO:     172.18.0.15:39678 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:03.546676492Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:03.546717267Z    - Total contacts: 22
+captely-analytics-service  | 2025-06-08T13:54:03.546726164Z    - Emails found: 19
+captely-analytics-service  | 2025-06-08T13:54:03.546732125Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:03.546737525Z    - Email hit rate: 86.4%
+captely-analytics-service  | 2025-06-08T13:54:03.546744578Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:03.546750059Z INFO:     172.18.0.15:39694 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:08.543776760Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:08.543842112Z    - Total contacts: 22
+captely-analytics-service  | 2025-06-08T13:54:08.543850327Z    - Emails found: 19
+captely-analytics-service  | 2025-06-08T13:54:08.543857550Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:08.543864002Z    - Email hit rate: 86.4%
+captely-analytics-service  | 2025-06-08T13:54:08.543870013Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:08.543876696Z INFO:     172.18.0.15:39710 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:13.288607534Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:13.288657096Z    - Total contacts: 22
+captely-analytics-service  | 2025-06-08T13:54:13.288661925Z    - Emails found: 19
+captely-analytics-service  | 2025-06-08T13:54:13.288665832Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:13.288670089Z    - Email hit rate: 86.4%
+captely-analytics-service  | 2025-06-08T13:54:13.288673856Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:13.288677824Z INFO:     172.18.0.15:44940 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:13.526749358Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:13.526779805Z    - Total contacts: 22
+captely-analytics-service  | 2025-06-08T13:54:13.526786567Z    - Emails found: 19
+captely-analytics-service  | 2025-06-08T13:54:13.526812154Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:13.526815732Z    - Email hit rate: 86.4%
+captely-analytics-service  | 2025-06-08T13:54:13.526819127Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:13.526822434Z INFO:     172.18.0.15:44950 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:18.528907629Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:18.528947022Z    - Total contacts: 22
+captely-analytics-service  | 2025-06-08T13:54:18.528957330Z    - Emails found: 19
+captely-analytics-service  | 2025-06-08T13:54:18.528962520Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:18.528994169Z    - Email hit rate: 86.4%
+captely-analytics-service  | 2025-06-08T13:54:18.529001863Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:18.529006733Z INFO:     172.18.0.15:44960 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:23.278531211Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:23.278565805Z    - Total contacts: 23
+captely-analytics-service  | 2025-06-08T13:54:23.278574381Z    - Emails found: 20
+captely-analytics-service  | 2025-06-08T13:54:23.278581534Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:23.278588387Z    - Email hit rate: 87.0%
+captely-analytics-service  | 2025-06-08T13:54:23.278595019Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:23.278601692Z INFO:     172.18.0.15:41548 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:23.343665350Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:23.343733868Z    - Total contacts: 23
+captely-analytics-service  | 2025-06-08T13:54:23.343744236Z    - Emails found: 20
+captely-analytics-service  | 2025-06-08T13:54:23.343751990Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:23.343766698Z    - Email hit rate: 87.0%
+captely-analytics-service  | 2025-06-08T13:54:23.343774052Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:23.343781145Z INFO:     172.18.0.15:41550 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:23.535104000Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:23.535137511Z    - Total contacts: 23
+captely-analytics-service  | 2025-06-08T13:54:23.535760579Z    - Emails found: 20
+captely-analytics-service  | 2025-06-08T13:54:23.535771068Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:23.535775517Z    - Email hit rate: 87.0%
+captely-analytics-service  | 2025-06-08T13:54:23.535779595Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:23.535783783Z INFO:     172.18.0.15:41558 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:28.547742108Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:28.547774148Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:28.547780850Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:28.547786371Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:28.547791700Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:28.547797140Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:28.547816527Z INFO:     172.18.0.15:41574 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:33.283211988Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:33.283249929Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:33.283256581Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:33.283261079Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:33.283266289Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:33.283270397Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:33.283274204Z INFO:     172.18.0.15:50322 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:33.530014690Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:33.530054633Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:33.530060203Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:33.530064612Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:33.530068850Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:33.530073098Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:33.530077186Z INFO:     172.18.0.15:50332 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:38.561335010Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:38.561381927Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:38.561386105Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:38.561389220Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:38.561392426Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:38.561395652Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:38.561398608Z INFO:     172.18.0.15:50340 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:43.301899187Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:43.301956644Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:43.301961313Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:43.301964970Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:43.301987222Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:43.301991379Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:43.301995036Z INFO:     172.18.0.15:53206 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:43.538544682Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:43.538588655Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:43.538593093Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:43.538596219Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:43.538599495Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:43.538602330Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:43.538605406Z INFO:     172.18.0.15:53216 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:48.631234247Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:48.631272258Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:48.631299789Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:48.631304128Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:48.631308505Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:48.631312302Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:48.631316310Z INFO:     172.18.0.15:53230 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:53.277533038Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:53.277564227Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:53.277568515Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:53.277571590Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:53.277574676Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:53.277577772Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:53.277580758Z INFO:     172.18.0.15:53798 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:53.367278356Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:53.367339209Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:53.367344780Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:53.367348968Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:53.367353135Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:53.367357083Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:53.367361170Z INFO:     172.18.0.15:53814 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:53.532817212Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:53.532861865Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:53.532866274Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:53.532869489Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:53.532872575Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:53.532875491Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:53.532878577Z INFO:     172.18.0.15:53820 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:54:58.540827453Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:54:58.540875573Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:54:58.540879661Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:54:58.540882716Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:54:58.540885722Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:54:58.540888718Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:54:58.540891833Z INFO:     172.18.0.15:53836 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:03.288285334Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:03.288330609Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:03.288336910Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:03.288342120Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:03.288346839Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:03.288373298Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:03.288376504Z INFO:     172.18.0.15:42750 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:03.540707792Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:03.540737848Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:03.540741665Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:03.540744470Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:03.540747325Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:03.540749990Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:03.540752736Z INFO:     172.18.0.15:42752 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:08.574450607Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:08.574504318Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:08.574511391Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:08.574516180Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:08.574521009Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:08.574531849Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:08.574537179Z INFO:     172.18.0.15:42756 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:13.308844439Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:13.308897999Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:13.308902287Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:13.308905443Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:13.308908349Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:13.308911254Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:13.308914330Z INFO:     172.18.0.15:37328 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:13.530700510Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:13.530762516Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:13.530767615Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:13.530771693Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:13.530775871Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:13.530780139Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:13.530785048Z INFO:     172.18.0.15:37336 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:18.524350566Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:18.524386423Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:18.524392174Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:18.524396843Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:18.524401191Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:18.524405508Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:18.524410147Z INFO:     172.18.0.15:37338 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:23.285910866Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:23.286190415Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:23.286204562Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:23.286210083Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:23.286214721Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:23.286377804Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:23.286384456Z INFO:     172.18.0.15:36960 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:23.357125376Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:23.357191589Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:23.357198973Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:23.357204163Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:23.357209322Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:23.357214411Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:23.357219932Z INFO:     172.18.0.15:36962 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:23.539253756Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:23.539294852Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:23.539299530Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:23.539303237Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:23.539306534Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:23.539310201Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:23.539313487Z INFO:     172.18.0.15:36966 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:26.612079104Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:26.612106595Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:26.612111143Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:26.612115111Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:26.612118637Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:26.612122415Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:26.612125991Z INFO:     172.18.0.15:36972 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:26.897685163Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:26.897721191Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:26.897725028Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:26.897728194Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:26.897731098Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:26.897733974Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:26.897736909Z INFO:     172.18.0.15:36980 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:31.911448853Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:31.911482785Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:31.911491412Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:31.911494828Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:31.911517581Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:31.911521057Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:31.911524394Z INFO:     172.18.0.15:38466 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:36.583032889Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:36.583059739Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:36.583065881Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:36.583070780Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:36.583075528Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:36.583080237Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:36.583085177Z INFO:     172.18.0.15:38482 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:36.900909643Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:36.900942695Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:36.900950990Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:36.900957752Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:36.900964635Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:36.900997015Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:36.901004530Z INFO:     172.18.0.15:38496 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:40.471595047Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:40.471636555Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:40.471641715Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:40.471645892Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:40.471649790Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:40.471653816Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:40.471657784Z INFO:     172.18.0.15:36366 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:40.550566293Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:40.550601318Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:40.550610315Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:40.550618069Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:40.550624922Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:40.550680014Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:40.550690474Z INFO:     172.18.0.15:36374 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:45.567817948Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:45.567857041Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:45.567865107Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:45.567871980Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:45.567878961Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:45.567885554Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:45.567891845Z INFO:     172.18.0.15:36382 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:50.457693675Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:50.457750370Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:50.457756141Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:50.457759838Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:50.457763355Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:50.457767051Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:50.457770608Z INFO:     172.18.0.15:55050 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:50.555533107Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:50.555574764Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:50.555581326Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:50.555586325Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:50.555591305Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:50.555596034Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:50.555600962Z INFO:     172.18.0.15:55062 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:55:55.578242546Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:55:55.578287669Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:55:55.578292418Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:55:55.578295905Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:55:55.578299201Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:55:55.578308408Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:55:55.578311895Z INFO:     172.18.0.15:55066 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:00.445876718Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:00.445904991Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:00.445913646Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:00.445916331Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:00.445918845Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:00.445921340Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:00.445923995Z INFO:     172.18.0.15:53830 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:00.569824131Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:00.569870136Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:00.569874444Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:00.569877530Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:00.569881638Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:00.569884853Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:00.569887939Z INFO:     172.18.0.15:53846 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:05.564105096Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:05.564142986Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:05.564160939Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:05.564164306Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:05.564167131Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:05.564169956Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:05.564172842Z INFO:     172.18.0.15:53860 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:10.448320402Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:10.448350498Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:10.448356309Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:10.448360627Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:10.448365296Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:10.448369704Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:10.448374302Z INFO:     172.18.0.15:49224 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:10.504008308Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:10.504101851Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:10.504107101Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:10.504110477Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:10.504119143Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:10.504122129Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:10.504125464Z INFO:     172.18.0.15:49230 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:10.579202483Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:10.579261492Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:10.579265971Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:10.579269808Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:10.581605019Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:10.581646285Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:10.581650804Z INFO:     172.18.0.15:49236 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:15.569962565Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:15.570029489Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:15.570035741Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:15.570040861Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:15.570045510Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:15.570050148Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:15.570054827Z INFO:     172.18.0.15:49250 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:20.462404999Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:20.462451295Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:20.462457567Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:20.462462727Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:20.462467616Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:20.462472434Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:20.462495979Z INFO:     172.18.0.15:57660 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:20.564022954Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:20.564096099Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:20.564103884Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:20.564579108Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:20.564591571Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:20.564596069Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:20.564600328Z INFO:     172.18.0.15:57674 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:25.575689288Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:25.575741134Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:25.575747406Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:25.575752556Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:25.575757254Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:25.575762304Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:25.575767013Z INFO:     172.18.0.15:57688 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:30.470160352Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:30.470190028Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:30.470194807Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:30.470198343Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:30.470201600Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:30.470205096Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:30.470208442Z INFO:     172.18.0.15:54870 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:30.573451977Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:30.573509535Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:30.573515856Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:30.573521086Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:30.573525685Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:30.573530624Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:30.573535564Z INFO:     172.18.0.15:54886 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:35.560075540Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:35.560122517Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:35.560128979Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:35.560133287Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:35.560138056Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:35.560142434Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:35.560147153Z INFO:     172.18.0.15:54894 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:40.450137118Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:40.450180138Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:40.450184545Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:40.450188172Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:40.450191158Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:40.450194103Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:40.450197119Z INFO:     172.18.0.15:59846 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:40.515464396Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:40.515490706Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:40.515496637Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:40.515501045Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:40.515505433Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:40.515509742Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:40.515513659Z INFO:     172.18.0.15:59862 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:40.574735161Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:40.574776658Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:40.574783260Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:40.574788320Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:40.574792778Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:40.574796996Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:40.574801754Z INFO:     172.18.0.15:59874 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:45.582211677Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:45.582262781Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:45.582268452Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:45.582273041Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:45.582277399Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:45.582281848Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:45.582286125Z INFO:     172.18.0.15:59886 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:50.453281609Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:50.453317295Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:50.453324398Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:50.453329959Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:50.453335188Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:50.453340599Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:50.453346249Z INFO:     172.18.0.15:34290 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:50.571208774Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:50.571263315Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:50.571272783Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:50.571279866Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:50.571315292Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:50.571320622Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:50.571325271Z INFO:     172.18.0.15:34292 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:56:55.562708336Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:56:55.562752738Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:56:55.562759010Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:56:55.562764070Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:56:55.562768828Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:56:55.562773918Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:56:55.562778557Z INFO:     172.18.0.15:34296 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:00.463472663Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:00.463517065Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:00.463523057Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:00.463528607Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:00.463533777Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:00.463539127Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:00.463544046Z INFO:     172.18.0.15:40022 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:00.570626286Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:00.570663425Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:00.570668255Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:00.570672022Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:00.570675317Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:00.570678794Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:00.570682181Z INFO:     172.18.0.15:40026 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:05.553258768Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:05.553318959Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:05.553323899Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:05.553327315Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:05.553330832Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:05.553334259Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:05.553337633Z INFO:     172.18.0.15:40042 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:10.470150214Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:10.470182104Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:10.470186513Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:10.470190229Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:10.470193626Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:10.470196882Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:10.470212020Z INFO:     172.18.0.15:53878 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:10.531245338Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:10.531277739Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:10.531282579Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:10.531286246Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:10.531289682Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:10.531292988Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:10.531297055Z INFO:     172.18.0.15:53890 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:10.601411422Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:10.601445765Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:10.601450474Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:10.601454171Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:10.601457708Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:10.601461475Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:10.601464952Z INFO:     172.18.0.15:53898 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:15.572223322Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:15.572281751Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:15.572287011Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:15.572291449Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:15.572295666Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:15.572300405Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:15.572304993Z INFO:     172.18.0.15:53904 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:20.454918174Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:20.454989677Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:20.455047184Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:20.455054167Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:20.455058545Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:20.455062764Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:20.455066800Z INFO:     172.18.0.15:34880 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:20.578732001Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:20.578791532Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:20.578795970Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:20.578799246Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:20.578802181Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:20.578805137Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:20.578808162Z INFO:     172.18.0.15:34896 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:25.567791272Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:25.567867635Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:25.567874197Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:25.567907278Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:25.567911206Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:25.567914752Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:25.567918199Z INFO:     172.18.0.15:34898 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:30.473394848Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:30.473463175Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:30.473470569Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:30.473475759Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:30.473489844Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:30.473494803Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:30.473499812Z INFO:     172.18.0.15:45678 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:30.572502439Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:30.572558322Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:30.572563802Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:30.572567128Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:30.572570114Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:30.572573170Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:30.572576246Z INFO:     172.18.0.15:45682 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:35.573327556Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:35.573361399Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:35.573366789Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:35.573370726Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:35.573374032Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:35.573377519Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:35.573382098Z INFO:     172.18.0.15:45684 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:40.465044711Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:40.465092470Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:40.465097419Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:40.465102007Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:40.465105383Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:40.465108810Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:40.465112276Z INFO:     172.18.0.15:34724 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:40.520526593Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:40.520585212Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:40.520592977Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:40.520598497Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:40.520603887Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:40.520609789Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:40.520644542Z INFO:     172.18.0.15:34726 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:40.588495914Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:40.588534555Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:40.588553251Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:40.588557208Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:40.588590159Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:40.588593625Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:40.588596952Z INFO:     172.18.0.15:34736 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:45.577157432Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:45.577208317Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:45.577213265Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:45.577216863Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:45.577220149Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:45.577223525Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:45.577226831Z INFO:     172.18.0.15:34746 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:50.450766031Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:50.450810834Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:50.450816545Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:50.450820672Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:50.450823878Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:50.450827545Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:50.450830751Z INFO:     172.18.0.15:37716 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:50.565602643Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:50.565638330Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:50.565642658Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:50.565646084Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:50.565649010Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:50.565652115Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:50.565655110Z INFO:     172.18.0.15:37724 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:57:55.565780964Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:57:55.565830355Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:57:55.565834583Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:57:55.565837749Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:57:55.565840764Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:57:55.565843820Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:57:55.565846776Z INFO:     172.18.0.15:37730 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:00.468896989Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:00.468926975Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:00.468948985Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:00.468952502Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:00.468955487Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:00.468958613Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:00.468961739Z INFO:     172.18.0.15:34532 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:00.561051347Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:00.561103263Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:00.561108924Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:00.561113242Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:00.561118612Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:00.561122940Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:00.561126938Z INFO:     172.18.0.15:34546 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:05.555039472Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:05.555075348Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:05.555080798Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:05.555084405Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:05.555088002Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:05.555091469Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:05.555094885Z INFO:     172.18.0.15:34550 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:10.448966006Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:10.449019274Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:10.449026096Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:10.449031436Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:10.449036556Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:10.449041525Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:10.449046415Z INFO:     172.18.0.15:54330 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:10.509443282Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:10.509483266Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:10.509490239Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:10.509496029Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:10.509501159Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:10.509507190Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:10.509512290Z INFO:     172.18.0.15:54344 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:10.570814309Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:10.570851128Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:10.570855716Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:10.570859092Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:10.570862398Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:10.570885682Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:10.570889319Z INFO:     172.18.0.15:54352 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:15.592443572Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:15.592516428Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:15.592522689Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:15.592527868Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:15.592532587Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:15.592537857Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:15.592542636Z INFO:     172.18.0.15:54360 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:20.451191916Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:20.451255203Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:20.451261524Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:20.451266403Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:20.451270782Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:20.451275370Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:20.451279959Z INFO:     172.18.0.15:45320 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:20.567991046Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:20.568057159Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:20.568096852Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:20.568102353Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:20.568106691Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:20.568111290Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:20.568115988Z INFO:     172.18.0.15:45328 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:25.562508859Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:25.562571095Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:25.562577507Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:25.562582496Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:25.562586564Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:25.562591442Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:25.562596361Z INFO:     172.18.0.15:45344 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:30.474151574Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:30.474211325Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:30.474218288Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:30.474223217Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:30.474227896Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:30.474232705Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:30.474237624Z INFO:     172.18.0.15:59502 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:30.587569532Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:30.587670069Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:30.587680088Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:30.587687001Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:30.587693032Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:30.587699183Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:30.587704884Z INFO:     172.18.0.15:59516 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:35.560338692Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:35.560409664Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:35.560419093Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:35.560425965Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:35.560432758Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:35.560440342Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:35.560446764Z INFO:     172.18.0.15:59526 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:40.458561604Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:40.458601768Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:40.458610194Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:40.458617308Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:40.458624401Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:40.458631093Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:40.458637825Z INFO:     172.18.0.15:36140 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:40.534118557Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:40.534155355Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:40.534161556Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:40.534166436Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:40.534171295Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:40.534176003Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:40.534180863Z INFO:     172.18.0.15:36156 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:40.604277066Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:40.604330705Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:40.604338270Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:40.604351976Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:40.604359719Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:40.604367103Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:40.604375208Z INFO:     172.18.0.15:36166 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:45.575518364Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:45.575579026Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:45.575587743Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:45.575594896Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:45.575624371Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:45.575628990Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:45.575693820Z INFO:     172.18.0.15:36180 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:45.900011314Z INFO:     51.195.190.14:37046 - "GET / HTTP/1.0" 404 Not Found
+captely-analytics-service  | 2025-06-08T13:58:45.952706939Z INFO:     51.195.190.14:51246 - "GET /nice%20ports%2C/Trinity.txt.bak HTTP/1.0" 404 Not Found
+captely-analytics-service  | 2025-06-08T13:58:46.007890568Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:58:46.048260586Z INFO:     51.195.190.14:51548 - "OPTIONS / HTTP/1.0" 404 Not Found
+captely-analytics-service  | 2025-06-08T13:58:46.085935935Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:58:50.451372561Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:50.451413116Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:50.451424587Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:50.451429987Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:50.451434926Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:50.451439725Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:50.451444554Z INFO:     172.18.0.15:44588 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:50.553418533Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:50.553457224Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:50.553464698Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:50.553470649Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:50.553476260Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:50.553481660Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:50.553487310Z INFO:     172.18.0.15:44592 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:51.136674543Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:58:55.564583554Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:58:55.564632946Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:58:55.564641492Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:58:55.564648976Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:58:55.564656109Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:58:55.564662711Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:58:55.564669794Z INFO:     172.18.0.15:44600 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:58:58.686807163Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:58:58.724904868Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:58:58.770458329Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:58:58.809502542Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:59:00.474422750Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:00.474471770Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:00.474499112Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:00.474502577Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:00.474505753Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:00.474509390Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:00.474512596Z INFO:     172.18.0.15:37674 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:00.555877633Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:00.555902790Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:00.555907068Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:00.555910244Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:00.555913260Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:00.555916184Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:00.555919210Z INFO:     172.18.0.15:37686 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:03.867412087Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:59:05.568638369Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:05.568688281Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:05.568694273Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:05.568699172Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:05.568703650Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:05.568708249Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:05.568712858Z INFO:     172.18.0.15:37696 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:08.932637421Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:59:10.494983835Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:10.495017608Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:10.495024000Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:10.495029380Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:10.495153701Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:10.495158900Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:10.495162438Z INFO:     172.18.0.15:45984 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:10.588855947Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:10.588904717Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:10.588909887Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:10.588913955Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:10.588917361Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:10.588920937Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:10.588924524Z INFO:     172.18.0.15:45986 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:10.687526547Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:10.688422883Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:10.688443551Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:10.688495497Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:10.688500356Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:10.688504053Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:10.688507490Z INFO:     172.18.0.15:45994 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:14.623319211Z INFO:     51.195.190.14:42266 - "GET / HTTP/1.1" 404 Not Found
+captely-analytics-service  | 2025-06-08T13:59:15.618853545Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:15.618889751Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:15.618893168Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:15.618895743Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:15.618898207Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:15.618906834Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:15.618909468Z INFO:     172.18.0.15:46002 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:20.471398559Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:20.471485431Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:20.471490681Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:20.471494448Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:20.471497754Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:20.471501010Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:20.471504436Z INFO:     172.18.0.15:58298 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:20.587802827Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:20.587833634Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:20.587838002Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:20.587841328Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:20.587844354Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:20.587847380Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:20.587850436Z INFO:     172.18.0.15:58306 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:25.577627580Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:25.577678494Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:25.577684786Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:25.577690136Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:25.577694975Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:25.577699814Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:25.577704532Z INFO:     172.18.0.15:58322 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:25.889998993Z WARNING:  Invalid HTTP request received.
+captely-analytics-service  | 2025-06-08T13:59:30.452604540Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:30.452632111Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:30.452690139Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:30.452696571Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:30.452716820Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:30.452720145Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:30.452723080Z INFO:     172.18.0.15:58840 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:30.574263855Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:30.574307757Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:30.574312075Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:30.574315321Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:30.574318345Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:30.574321482Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:30.574324457Z INFO:     172.18.0.15:58848 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:35.559775787Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:35.559815050Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:35.559821973Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:35.559827283Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:35.559832303Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:35.559836851Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:35.559841509Z INFO:     172.18.0.15:58860 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:40.461669381Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:40.461707853Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:40.461712050Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:40.461715467Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:40.461718622Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:40.461721738Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:40.461724944Z INFO:     172.18.0.15:44430 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:40.530407962Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:40.530447215Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:40.530451643Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:40.530455390Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:40.530459758Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:40.531206085Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:40.531227004Z INFO:     172.18.0.15:44440 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:40.604608534Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:40.604640764Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:40.604644831Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:40.604648418Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:40.604652325Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:40.604655651Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:40.604659108Z INFO:     172.18.0.15:44456 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:45.590644307Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:45.590722933Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:45.590728463Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:45.590731810Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:45.590735637Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:45.590739074Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:45.590742490Z INFO:     172.18.0.15:44472 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:50.454892250Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:50.454955067Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:50.454960828Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:50.454965276Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:50.454998578Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:50.455004750Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:50.455009669Z INFO:     172.18.0.15:34548 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:50.561810378Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:50.561867644Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:50.561872223Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:50.561875379Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:50.561878495Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:50.561881571Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:50.561884847Z INFO:     172.18.0.15:34554 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T13:59:55.958540768Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T13:59:55.958603244Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T13:59:55.958608605Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T13:59:55.958612652Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T13:59:55.958616709Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T13:59:55.958620777Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T13:59:55.958625446Z INFO:     172.18.0.15:34556 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:00.933340479Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:00.933380533Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:00.933384881Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:00.933388178Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:00.933391213Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:00.933394319Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:00.933397425Z INFO:     172.18.0.15:46220 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:01.010690646Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:01.010755005Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:01.010783158Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:01.010786774Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:01.010789820Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:01.010792825Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:01.010795891Z INFO:     172.18.0.15:46222 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:05.931608268Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:05.931646749Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:05.931653031Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:05.931658211Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:05.931663170Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:05.931668210Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:05.931673409Z INFO:     172.18.0.15:46224 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:10.932034062Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:10.932066422Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:10.932073023Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:10.932078865Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:10.932084405Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:10.932089795Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:10.932133696Z INFO:     172.18.0.15:39370 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:10.996412089Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:10.996450581Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:10.996457202Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:10.996462873Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:10.996468263Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:10.996473653Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:10.996479103Z INFO:     172.18.0.15:39374 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:11.061290727Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:11.061330269Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:11.061337222Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:11.061342563Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:11.061348483Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:11.061354064Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:11.061359735Z INFO:     172.18.0.15:39378 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:15.948670215Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:15.948740414Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:15.948747658Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:15.950015484Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:15.950030562Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:15.950036614Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:15.950071720Z INFO:     172.18.0.15:39386 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:20.930082156Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:20.930114246Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:20.930118474Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:20.930121749Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:20.930124795Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:20.930127821Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:20.930130987Z INFO:     172.18.0.15:38956 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:20.993240015Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:20.993914159Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:20.993920471Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:20.993964733Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:20.993986053Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:20.993989238Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:20.993992213Z INFO:     172.18.0.15:38970 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:25.921684097Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:25.921737626Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:25.921743617Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:25.921748838Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:25.921753707Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:25.921758725Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:25.921764286Z INFO:     172.18.0.15:38984 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:30.914652432Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:30.914686846Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:30.914691074Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:30.914694491Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:30.914697657Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:30.914701083Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:30.914704569Z INFO:     172.18.0.15:38090 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:30.985566677Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:30.985611681Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:30.985617291Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:30.985621840Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:30.985626468Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:30.985630796Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:30.985633962Z INFO:     172.18.0.15:38092 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:35.924870792Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:35.924915857Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:35.924920425Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:35.924923792Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:35.924926837Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:35.924929902Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:35.924933017Z INFO:     172.18.0.15:38102 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:40.915794915Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:40.915871466Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:40.915880994Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:40.915887867Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:40.915895141Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:40.915903356Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:40.915911672Z INFO:     172.18.0.15:55320 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:40.976800273Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:40.976846659Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:40.976852720Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:40.976858030Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:40.976862729Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:40.976867528Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:40.976872287Z INFO:     172.18.0.15:55322 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:41.040784570Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:41.040841665Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:41.040849571Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:41.040856212Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:41.040862984Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:41.040869517Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:41.040876349Z INFO:     172.18.0.15:55336 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:45.941881737Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:45.941937721Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:45.941943852Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:45.941948852Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:45.941953610Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:45.941958450Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:45.941963299Z INFO:     172.18.0.15:55338 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:50.961926145Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:50.961985896Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:50.961996176Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:50.962001686Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:50.962030089Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:50.962033525Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:50.962036931Z INFO:     172.18.0.15:43852 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:00:51.032268108Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:00:51.032310827Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:00:51.032316137Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:00:51.032320214Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:00:51.032324112Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:00:51.032328140Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:00:51.032332107Z INFO:     172.18.0.15:43866 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:01:32.940320277Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:01:32.940370340Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:01:32.940376772Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:01:32.940382042Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:01:32.940387332Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:01:32.940392771Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:01:32.940398422Z INFO:     172.18.0.15:55830 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:01:33.004856679Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:01:33.004901703Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:01:33.004908766Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:01:33.004914296Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:01:33.004919726Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:01:33.004924926Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:01:33.004930266Z INFO:     172.18.0.15:55832 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:01:33.079236535Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:01:33.079282490Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:01:33.079290465Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:01:33.079299032Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:01:33.079306816Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:01:33.079315031Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:01:33.079322295Z INFO:     172.18.0.15:55844 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:02:32.933260874Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:02:32.933310887Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:02:32.933318471Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:02:32.933324112Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:02:32.933329461Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:02:32.933334881Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:02:32.933340371Z INFO:     172.18.0.15:58704 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:02:33.019070703Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:02:33.019124202Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:02:33.019128991Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:02:33.019132217Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:02:33.019135242Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:02:33.019138588Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:02:33.019141965Z INFO:     172.18.0.15:58714 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
+captely-analytics-service  | 2025-06-08T14:02:33.142284589Z 📊 DASHBOARD DEBUG for user 1feeef3b-fefe-403e-ae96-748bff6c5394:
+captely-analytics-service  | 2025-06-08T14:02:33.142320485Z    - Total contacts: 25
+captely-analytics-service  | 2025-06-08T14:02:33.142327568Z    - Emails found: 22
+captely-analytics-service  | 2025-06-08T14:02:33.142332919Z    - Phones found: 0
+captely-analytics-service  | 2025-06-08T14:02:33.142337547Z    - Email hit rate: 88.0%
+captely-analytics-service  | 2025-06-08T14:02:33.142342566Z    - Phone hit rate: 0.0%
+captely-analytics-service  | 2025-06-08T14:02:33.142347765Z INFO:     172.18.0.15:58720 - "GET /api/analytics/dashboard HTTP/1.0" 200 OK
