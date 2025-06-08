@@ -6,9 +6,6 @@
 -- Enable transactions
 BEGIN;
 
--- User ID from logs (replace with actual user ID if different)
-\set user_id '1feeef3b-fefe-403e-ae96-748bff6c5394'
-
 -- ================================================================
 -- 1. CREATE STARTER PACKAGE IF NOT EXISTS
 -- ================================================================
@@ -44,16 +41,17 @@ WHERE NOT EXISTS (
 -- 2. CREATE USER SUBSCRIPTION IF NOT EXISTS
 -- ================================================================
 
--- First, let's get the package ID for starter
+-- Create subscription for user: 1feeef3b-fefe-403e-ae96-748bff6c5394
 DO $$
 DECLARE 
     starter_package_id UUID;
     subscription_exists BOOLEAN := FALSE;
+    target_user_id UUID := '1feeef3b-fefe-403e-ae96-748bff6c5394';
 BEGIN
     -- Check if user already has any subscription
     SELECT EXISTS(
         SELECT 1 FROM user_subscriptions 
-        WHERE user_id = :'user_id'
+        WHERE user_id = target_user_id
     ) INTO subscription_exists;
     
     -- If no subscription exists, create one
@@ -75,7 +73,7 @@ BEGIN
             created_at,
             updated_at
         ) VALUES (
-            :'user_id',
+            target_user_id,
             starter_package_id,
             'monthly',
             'active',
@@ -85,9 +83,9 @@ BEGIN
             NOW()
         );
         
-        RAISE NOTICE 'Created starter subscription for user %', :'user_id';
+        RAISE NOTICE 'Created starter subscription for user %', target_user_id;
     ELSE
-        RAISE NOTICE 'User % already has a subscription', :'user_id';
+        RAISE NOTICE 'User % already has a subscription', target_user_id;
     END IF;
 END $$;
 
@@ -108,7 +106,7 @@ SELECT
     us.current_period_end
 FROM user_subscriptions us
 JOIN packages p ON us.package_id = p.id
-WHERE us.user_id = :'user_id';
+WHERE us.user_id = '1feeef3b-fefe-403e-ae96-748bff6c5394';
 
 -- ================================================================
 -- 4. SHOW CURRENT USER CREDIT BALANCE
@@ -121,7 +119,7 @@ SELECT
     expired_credits,
     created_at as balance_created
 FROM credit_balances 
-WHERE user_id = :'user_id';
+WHERE user_id = '1feeef3b-fefe-403e-ae96-748bff6c5394';
 
 COMMIT;
 
