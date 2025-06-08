@@ -1,6 +1,6 @@
 -- ================================================================
--- Fix User Subscription Migration
--- Adds a starter subscription for the user if they don't have one
+-- Fix User Subscriptions Migration - FOR ALL USERS
+-- Adds starter subscriptions for all users who don't have one
 -- ================================================================
 
 -- Enable transactions
@@ -38,31 +38,36 @@ WHERE NOT EXISTS (
 );
 
 -- ================================================================
--- 2. CREATE USER SUBSCRIPTION IF NOT EXISTS
+-- 2. CREATE SUBSCRIPTIONS FOR ALL USERS WITHOUT ONE
 -- ================================================================
 
--- Create subscription for user: 1feeef3b-fefe-403e-ae96-748bff6c5394
+-- Get all users who don't have any subscription and create starter subscriptions
 DO $$
 DECLARE 
     starter_package_id UUID;
-    subscription_exists BOOLEAN := FALSE;
-    target_user_id UUID := '1feeef3b-fefe-403e-ae96-748bff6c5394';
+    user_record RECORD;
+    users_processed INTEGER := 0;
 BEGIN
-    -- Check if user already has any subscription
-    SELECT EXISTS(
-        SELECT 1 FROM user_subscriptions 
-        WHERE user_id = target_user_id
-    ) INTO subscription_exists;
+    -- Get the starter package ID
+    SELECT id INTO starter_package_id 
+    FROM packages 
+    WHERE name = 'starter' 
+    LIMIT 1;
     
-    -- If no subscription exists, create one
-    IF NOT subscription_exists THEN
-        -- Get the starter package ID
-        SELECT id INTO starter_package_id 
-        FROM packages 
-        WHERE name = 'starter' 
-        LIMIT 1;
-        
-        -- Create the subscription
+    IF starter_package_id IS NULL THEN
+        RAISE EXCEPTION 'Starter package not found!';
+    END IF;
+    
+    RAISE NOTICE 'Found starter package ID: %', starter_package_id;
+    
+    -- Loop through all users who don't have subscriptions
+    FOR user_record IN 
+        SELECT DISTINCT u.id as user_id
+        FROM users u
+        LEFT JOIN user_subscriptions us ON u.id = us.user_id
+        WHERE us.user_id IS NULL
+    LOOP
+        -- Create subscription for this user
         INSERT INTO user_subscriptions (
             user_id,
             package_id,
@@ -73,7 +78,7 @@ BEGIN
             created_at,
             updated_at
         ) VALUES (
-            target_user_id,
+            user_record.user_id,
             starter_package_id,
             'monthly',
             'active',
@@ -83,46 +88,80 @@ BEGIN
             NOW()
         );
         
-        RAISE NOTICE 'Created starter subscription for user %', target_user_id;
-    ELSE
-        RAISE NOTICE 'User % already has a subscription', target_user_id;
-    END IF;
+        users_processed := users_processed + 1;
+        RAISE NOTICE 'Created starter subscription for user: %', user_record.user_id;
+    END LOOP;
+    
+    RAISE NOTICE 'Total users processed: %', users_processed;
 END $$;
 
 -- ================================================================
--- 3. VERIFY THE SUBSCRIPTION WAS CREATED
+-- 3. VERIFY ALL SUBSCRIPTIONS WERE CREATED
 -- ================================================================
 
+-- Show all users and their subscription status
 SELECT 
-    us.id as subscription_id,
-    us.user_id,
-    us.status,
-    us.billing_cycle,
+    u.id as user_id,
+    u.email,
+    CASE 
+        WHEN us.id IS NOT NULL THEN 'HAS_SUBSCRIPTION'
+        ELSE 'NO_SUBSCRIPTION'
+    END as subscription_status,
     p.name as package_name,
     p.display_name,
-    p.credits_monthly,
-    p.price_monthly,
-    us.current_period_start,
-    us.current_period_end
-FROM user_subscriptions us
-JOIN packages p ON us.package_id = p.id
-WHERE us.user_id = '1feeef3b-fefe-403e-ae96-748bff6c5394';
+    us.status as sub_status,
+    us.billing_cycle
+FROM users u
+LEFT JOIN user_subscriptions us ON u.id = us.user_id
+LEFT JOIN packages p ON us.package_id = p.id
+ORDER BY u.email;
 
 -- ================================================================
--- 4. SHOW CURRENT USER CREDIT BALANCE
+-- 4. SUMMARY STATISTICS
+-- ================================================================
+
+-- Show summary of subscriptions
+SELECT 
+    'TOTAL_USERS' as metric,
+    COUNT(*) as count
+FROM users
+UNION ALL
+SELECT 
+    'USERS_WITH_SUBSCRIPTIONS' as metric,
+    COUNT(DISTINCT us.user_id) as count
+FROM user_subscriptions us
+UNION ALL
+SELECT 
+    'USERS_WITHOUT_SUBSCRIPTIONS' as metric,
+    COUNT(*) as count
+FROM users u
+LEFT JOIN user_subscriptions us ON u.id = us.user_id
+WHERE us.user_id IS NULL
+UNION ALL
+SELECT 
+    'STARTER_SUBSCRIPTIONS' as metric,
+    COUNT(*) as count
+FROM user_subscriptions us
+JOIN packages p ON us.package_id = p.id
+WHERE p.name = 'starter';
+
+-- ================================================================
+-- 5. SHOW CREDIT BALANCES FOR ALL USERS
 -- ================================================================
 
 SELECT 
-    user_id,
-    total_credits,
-    used_credits,
-    expired_credits,
-    created_at as balance_created
-FROM credit_balances 
-WHERE user_id = '1feeef3b-fefe-403e-ae96-748bff6c5394';
+    cb.user_id,
+    u.email,
+    cb.total_credits,
+    cb.used_credits,
+    cb.expired_credits,
+    cb.updated_at as balance_updated
+FROM credit_balances cb
+JOIN users u ON cb.user_id = u.id
+ORDER BY u.email;
 
 COMMIT;
 
 -- ================================================================
--- Migration completed successfully!
+-- Migration completed successfully for ALL USERS!
 -- ================================================================ 
