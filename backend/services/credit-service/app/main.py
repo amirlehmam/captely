@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 
 from common.config import get_settings
-from common.db import get_session, SessionLocal
+from common.db import get_async_session, SessionLocal
 from common.celery_app import celery_app
 from common.auth import verify_api_token
 
@@ -71,7 +71,7 @@ security = HTTPBearer()
 async def import_file(
     file: UploadFile = File(...),
     user_id: str = Depends(verify_api_token),
-    session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ):
     """
     1) Read CSV or Excel; 
@@ -120,7 +120,7 @@ credit_service = CreditService(name="Captely Credit Service")
 @app.get("/api/credits/info")
 async def get_credit_info(
     user_id: str = Depends(verify_api_token),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get credit information for the authenticated user"""
     try:
@@ -229,7 +229,7 @@ async def get_credit_balance(user_id: str, auth=Depends(verify_api_token)):
 router = APIRouter(prefix="/api/credits")
 
 @router.post("/check_and_decrement")
-async def check_and_decrement(data: dict, session: AsyncSession = Depends(get_session)):
+async def check_and_decrement(data: dict, session: AsyncSession = Depends(get_async_session)):
     user_id = data.get("user_id")
     count = int(data.get("count", 0))
     user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()

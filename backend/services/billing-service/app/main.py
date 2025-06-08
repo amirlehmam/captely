@@ -555,7 +555,7 @@ async def get_current_subscription(
     
     if not subscription:
         # Try to find pack-500 package in database
-        pack_500 = db.query(Package).filter(Package.id == "pack-500").first()
+        pack_500 = db.query(Package).filter(Package.name == "starter").first()
         if pack_500:
             # Build a minimal but valid SubscriptionResponse using the starter package
             return {
