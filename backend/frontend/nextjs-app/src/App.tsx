@@ -19,6 +19,9 @@ import { CreditProvider } from './contexts/CreditContext';
 // Notification Context Provider
 import { NotificationProvider } from './contexts/NotificationContext';
 
+// Error Boundary
+import ErrorBoundary from './components/ErrorBoundary';
+
 // Components & pages
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -73,11 +76,12 @@ function App() {
   console.log('📄 Rendering App with authentication:', isAuthenticated);
 
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <CreditProvider>
-          <Router>
-          <Toaster position="top-right" />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <LanguageProvider>
+          <CreditProvider>
+            <Router>
+              <Toaster position="top-right" />
 
           <Routes>
             {/* Legal pages - always accessible */}
@@ -99,8 +103,12 @@ function App() {
 
             {/* Protected */}
             {isAuthenticated && (
-              <NotificationProvider>
-                <Route element={<Layout onLogout={handleLogout} />}>
+              <>
+                <Route element={
+                  <NotificationProvider>
+                    <Layout onLogout={handleLogout} />
+                  </NotificationProvider>
+                }>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/batches" element={<BatchesPage />} />
                   <Route path="/batches/:jobId" element={<BatchDetailPage />} />
@@ -118,13 +126,14 @@ function App() {
                 <Route path="/login" element={<Navigate to="/" replace />} />
                 <Route path="/signup" element={<Navigate to="/" replace />} />
                 <Route path="/forgot-password" element={<Navigate to="/" replace />} />
-              </NotificationProvider>
+              </>
             )}
           </Routes>
         </Router>
       </CreditProvider>
     </LanguageProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

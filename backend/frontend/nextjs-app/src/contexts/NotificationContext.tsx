@@ -26,7 +26,16 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    // Return default values instead of throwing error
+    return {
+      notifications: [],
+      unreadCount: 0,
+      loading: false,
+      fetchNotifications: async () => {},
+      markAsRead: async () => {},
+      markAllAsRead: async () => {},
+      addNotification: () => {},
+    };
   }
   return context;
 };
@@ -44,6 +53,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setNotifications(response.notifications || []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
+      // Don't show error state, just fail silently
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
