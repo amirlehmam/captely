@@ -126,7 +126,9 @@ CREATE TABLE IF NOT EXISTS users (
     credits_purchased INTEGER DEFAULT 0,
     onboarding_completed BOOLEAN DEFAULT FALSE,
     company_name VARCHAR(255),
-    company_size VARCHAR(50)
+    company_size VARCHAR(50),
+    -- Plan field for billing compatibility
+    plan VARCHAR(50) DEFAULT 'pack-500'
 );
 
 -- =============================================
