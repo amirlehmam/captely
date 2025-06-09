@@ -2145,7 +2145,10 @@ async def bulk_export_crm_contacts(
 
 # ─── HubSpot Integration Endpoints ─────────────────────────────────────────────
 
+print("🔄 Initializing HubSpotService...")
 hubspot_service = HubSpotService()
+print(f"✅ HubSpotService initialized: {hubspot_service}")
+print(f"📋 HubSpot Service methods: {dir(hubspot_service)}")
 
 @app.get("/api/integrations/hubspot/oauth-url")
 async def get_hubspot_oauth_url(
@@ -2153,9 +2156,14 @@ async def get_hubspot_oauth_url(
 ):
     """Get HubSpot OAuth authorization URL"""
     try:
+        print(f"🔗 Generating OAuth URL for user: {user_id}")
         oauth_url = hubspot_service.get_oauth_url(state=user_id)
-        return {"oauth_url": oauth_url}
+        print(f"🔗 Generated OAuth URL: {oauth_url}")
+        response = {"oauth_url": oauth_url}
+        print(f"🔗 API Response: {response}")
+        return response
     except Exception as e:
+        print(f"🚨 OAuth URL generation failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate OAuth URL: {str(e)}"
