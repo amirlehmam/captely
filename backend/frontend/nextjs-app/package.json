@@ -23,7 +23,9 @@
     "recharts": "^2.15.3",
     "@stripe/stripe-js": "^3.5.0",
     "@stripe/react-stripe-js": "^2.7.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "axios": "^1.7.0",
+    "@hubspot/api-client": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

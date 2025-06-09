@@ -1276,8 +1276,85 @@ class ApiService {
   }
 
   async updateCampaignStatus(): Promise<any> {
-    // Deprecated - CRM Campaigns removed per requirements
-    throw new Error('CRM Campaigns feature has been removed');
+    return client.get(`${API_CONFIG.crmUrl}/crm/campaigns/status`);
+  }
+
+  // ==========================================
+  // HUBSPOT INTEGRATION
+  // ==========================================
+
+  async getHubSpotOAuthUrl(): Promise<{ oauth_url: string }> {
+    return client.get(`${API_CONFIG.importUrl}/integrations/hubspot/oauth-url`);
+  }
+
+  async getHubSpotIntegrationStatus(): Promise<{
+    connected: boolean;
+    portal_id?: string;
+    expires_at?: string;
+    scopes?: string[];
+    connected_at?: string;
+  }> {
+    return client.get(`${API_CONFIG.importUrl}/integrations/hubspot/status`);
+  }
+
+  async importContactsFromHubSpot(): Promise<{
+    success: boolean;
+    job_id: string;
+    imported: number;
+    failed: number;
+  }> {
+    const response = await client.post(`${API_CONFIG.importUrl}/integrations/hubspot/import`);
+    toast.success(`Started importing contacts from HubSpot!`);
+    return response;
+  }
+
+  async exportContactsToHubSpot(contactIds: number[]): Promise<{
+    success: boolean;
+    exported: number;
+    failed: number;
+    sync_log_id: string;
+  }> {
+    const response = await client.post(`${API_CONFIG.importUrl}/integrations/hubspot/export`, contactIds);
+    toast.success(`Exported ${response.exported} contacts to HubSpot!`);
+    return response;
+  }
+
+  async exportBatchToHubSpot(jobId: string): Promise<{
+    success: boolean;
+    job_id: string;
+    exported: number;
+    failed: number;
+    sync_log_id: string;
+  }> {
+    const response = await client.post(`${API_CONFIG.importUrl}/integrations/hubspot/export-batch`, { job_id: jobId });
+    toast.success(`Exported batch to HubSpot! ${response.exported} contacts synced.`);
+    return response;
+  }
+
+  async getHubSpotSyncLogs(page: number = 1, limit: number = 50): Promise<{
+    logs: Array<{
+      sync_type: string;
+      operation: string;
+      status: string;
+      total_records: number;
+      processed_records: number;
+      failed_records: number;
+      error_message?: string;
+      started_at?: string;
+      completed_at?: string;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  }> {
+    return client.get(`${API_CONFIG.importUrl}/integrations/hubspot/sync-logs`, { page, limit });
+  }
+
+  async disconnectHubSpot(): Promise<{ success: boolean; message: string }> {
+    const response = await client.delete(`${API_CONFIG.importUrl}/integrations/hubspot/disconnect`);
+    toast.success('HubSpot integration disconnected');
+    return response;
   }
 }
 

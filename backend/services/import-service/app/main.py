@@ -21,12 +21,14 @@ from sqlalchemy.orm import Session
 import os
 from typing import Optional
 import time
+from datetime import datetime, timedelta
 
 from common.config import get_settings
 from common.db import get_session, async_engine
 from common.celery_app import celery_app
 from common.auth import verify_api_token
 from .models import ImportJob, Contact, Base
+from .hubspot_service import HubSpotService
 # from .routers import jobs, salesnav, enrichment
 
 # ─── App & Config ───────────────────────────────────────────────────────────────
@@ -2140,3 +2142,313 @@ async def bulk_export_crm_contacts(
     except Exception as e:
         print(f"Error in bulk export: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ─── HubSpot Integration Endpoints ─────────────────────────────────────────────
+
+hubspot_service = HubSpotService()
+
+@app.get("/api/integrations/hubspot/oauth-url")
+async def get_hubspot_oauth_url(
+    user_id: str = Depends(verify_api_token)
+):
+    """Get HubSpot OAuth authorization URL"""
+    try:
+        oauth_url = hubspot_service.get_oauth_url(state=user_id)
+        return {"oauth_url": oauth_url}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate OAuth URL: {str(e)}"
+        )
+
+@app.post("/api/integrations/hubspot/oauth-callback")
+async def hubspot_oauth_callback(
+    code: str,
+    state: str,
+    session: Session = Depends(get_session)
+):
+    """Handle HubSpot OAuth callback"""
+    try:
+        user_id = state  # We passed user_id as state
+        
+        # Exchange code for tokens
+        token_data = await hubspot_service.exchange_code_for_tokens(code)
+        
+        # Store tokens in database
+        expires_at = datetime.now() + timedelta(seconds=token_data['expires_in'])
+        
+        # Get HubSpot portal ID from token info
+        async with httpx.AsyncClient() as client:
+            headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+            response = await client.get("https://api.hubapi.com/oauth/v1/access-tokens/" + token_data['access_token'])
+            token_info = response.json()
+            portal_id = token_info.get('hub_id')
+        
+        insert_query = text("""
+            INSERT INTO hubspot_integrations (
+                user_id, hubspot_portal_id, access_token, refresh_token, 
+                expires_at, scopes, is_active, created_at, updated_at
+            ) VALUES (
+                :user_id, :portal_id, :access_token, :refresh_token,
+                :expires_at, :scopes, TRUE, NOW(), NOW()
+            ) ON CONFLICT (user_id, hubspot_portal_id) DO UPDATE SET
+                access_token = :access_token,
+                refresh_token = :refresh_token,
+                expires_at = :expires_at,
+                scopes = :scopes,
+                is_active = TRUE,
+                updated_at = NOW()
+        """)
+        
+        session.execute(insert_query, {
+            "user_id": user_id,
+            "portal_id": portal_id,
+            "access_token": token_data['access_token'],
+            "refresh_token": token_data['refresh_token'],
+            "expires_at": expires_at,
+            "scopes": token_data.get('scope', '').split(' ')
+        })
+        session.commit()
+        
+        return {"success": True, "message": "HubSpot integration connected successfully"}
+        
+    except Exception as e:
+        if session is not None:
+            session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"OAuth callback failed: {str(e)}"
+        )
+
+@app.get("/api/integrations/hubspot/status")
+async def get_hubspot_integration_status(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get HubSpot integration status for user"""
+    try:
+        query = text("""
+            SELECT hubspot_portal_id, is_active, expires_at, scopes, created_at
+            FROM hubspot_integrations 
+            WHERE user_id = :user_id AND is_active = TRUE
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        result = session.execute(query, {"user_id": user_id})
+        integration = result.fetchone()
+        
+        if not integration:
+            return {"connected": False}
+        
+        portal_id, is_active, expires_at, scopes, created_at = integration
+        
+        return {
+            "connected": True,
+            "portal_id": portal_id,
+            "expires_at": expires_at.isoformat(),
+            "scopes": scopes,
+            "connected_at": created_at.isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get integration status: {str(e)}"
+        )
+
+@app.post("/api/integrations/hubspot/import")
+async def import_from_hubspot(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Import contacts from HubSpot to Captely"""
+    try:
+        # Create a new import job
+        job_id = str(uuid.uuid4())
+        
+        job_insert_sql = text("""
+            INSERT INTO import_jobs (id, user_id, total, status, file_name, created_at, updated_at)
+            VALUES (:job_id, :user_id, 0, 'processing', 'HubSpot Import', NOW(), NOW())
+        """)
+        
+        session.execute(job_insert_sql, {
+            "job_id": job_id,
+            "user_id": user_id
+        })
+        session.commit()
+        
+        # Start import in background
+        result = await hubspot_service.import_contacts_from_hubspot(session, user_id, job_id)
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "imported": result["imported"],
+            "failed": result["failed"]
+        }
+        
+    except Exception as e:
+        if session is not None:
+            session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"HubSpot import failed: {str(e)}"
+        )
+
+@app.post("/api/integrations/hubspot/export")
+async def export_to_hubspot(
+    contact_ids: list[int],
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Export selected contacts to HubSpot"""
+    try:
+        if not contact_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No contacts selected for export"
+            )
+        
+        result = await hubspot_service.export_contacts_to_hubspot(session, user_id, contact_ids)
+        
+        return {
+            "success": True,
+            "exported": result["exported"],
+            "failed": result["failed"],
+            "sync_log_id": result["sync_log_id"]
+        }
+        
+    except Exception as e:
+        if session is not None:
+            session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"HubSpot export failed: {str(e)}"
+        )
+
+@app.post("/api/integrations/hubspot/export-batch")
+async def export_batch_to_hubspot(
+    job_id: str,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Export entire batch/job to HubSpot"""
+    try:
+        # Get all contact IDs from the job
+        contacts_query = text("""
+            SELECT id FROM contacts WHERE job_id = :job_id
+        """)
+        contacts_result = session.execute(contacts_query, {"job_id": job_id})
+        contact_ids = [row[0] for row in contacts_result.fetchall()]
+        
+        if not contact_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No contacts found in this batch"
+            )
+        
+        result = await hubspot_service.export_contacts_to_hubspot(session, user_id, contact_ids)
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "exported": result["exported"],
+            "failed": result["failed"],
+            "sync_log_id": result["sync_log_id"]
+        }
+        
+    except Exception as e:
+        if session is not None:
+            session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Batch export to HubSpot failed: {str(e)}"
+        )
+
+@app.get("/api/integrations/hubspot/sync-logs")
+async def get_hubspot_sync_logs(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100)
+):
+    """Get HubSpot sync logs for user"""
+    try:
+        offset = (page - 1) * limit
+        
+        logs_query = text("""
+            SELECT sync_type, operation, status, total_records, processed_records, 
+                   failed_records, error_message, started_at, completed_at
+            FROM hubspot_sync_logs 
+            WHERE user_id = :user_id
+            ORDER BY started_at DESC
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        logs_result = session.execute(logs_query, {
+            "user_id": user_id,
+            "limit": limit,
+            "offset": offset
+        })
+        logs = logs_result.fetchall()
+        
+        # Get total count
+        count_query = text("""
+            SELECT COUNT(*) FROM hubspot_sync_logs WHERE user_id = :user_id
+        """)
+        count_result = session.execute(count_query, {"user_id": user_id})
+        total = count_result.scalar()
+        
+        logs_data = []
+        for log in logs:
+            logs_data.append({
+                "sync_type": log[0],
+                "operation": log[1],
+                "status": log[2],
+                "total_records": log[3],
+                "processed_records": log[4],
+                "failed_records": log[5],
+                "error_message": log[6],
+                "started_at": log[7].isoformat() if log[7] else None,
+                "completed_at": log[8].isoformat() if log[8] else None
+            })
+        
+        return {
+            "logs": logs_data,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": (total + limit - 1) // limit
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get sync logs: {str(e)}"
+        )
+
+@app.delete("/api/integrations/hubspot/disconnect")
+async def disconnect_hubspot(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Disconnect HubSpot integration"""
+    try:
+        update_query = text("""
+            UPDATE hubspot_integrations 
+            SET is_active = FALSE, updated_at = NOW()
+            WHERE user_id = :user_id
+        """)
+        
+        session.execute(update_query, {"user_id": user_id})
+        session.commit()
+        
+        return {"success": True, "message": "HubSpot integration disconnected"}
+        
+    except Exception as e:
+        if session is not None:
+            session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to disconnect HubSpot: {str(e)}"
+        )

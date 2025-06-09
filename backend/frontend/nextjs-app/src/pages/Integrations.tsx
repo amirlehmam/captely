@@ -10,6 +10,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import apiService from '../services/api';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import HubSpotIntegration from '../components/integrations/HubSpotIntegration';
 
 interface Integration {
   id: string;
@@ -493,125 +494,166 @@ const IntegrationsPage: React.FC = () => {
       </div>
 
       {/* Enhanced Integrations Grid with Dark Mode */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {filteredIntegrations.map((integration, index) => (
-            <motion.div
-              key={integration.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: 1.02, y: -4 }}
-              className={`rounded-2xl shadow-lg border transition-all duration-300 h-full flex flex-col ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 hover:shadow-gray-900/50' 
-                  : 'bg-white border-gray-100 hover:shadow-xl'
-              }`}
-              style={{ willChange: 'transform, box-shadow' }}
-            >
-              <div className="p-6 flex-1">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center">
-                    <div className={`text-4xl mr-4 p-2 rounded-xl ${
-                      isDark ? 'bg-gray-700' : 'bg-gray-50'
-                    }`}>
-                      {integration.icon}
-                    </div>
-                    <div>
-                      <h3 className={`text-lg font-bold ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {integration.name}
-                      </h3>
-                      <div className="flex items-center space-x-2 mt-1">
-                        {getCategoryIcon(integration.category)}
-                        <span className={`text-sm font-medium ${
-                          isDark ? 'text-gray-400' : 'text-gray-600'
+      <div className="space-y-8">
+        {/* HubSpot Integration - Featured */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="mb-4">
+            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              🚀 Featured Integration
+            </h2>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Connect with HubSpot for seamless CRM synchronization
+            </p>
+          </div>
+          <HubSpotIntegration onStatusChange={(connected) => {
+            if (connected) {
+              setConnectedIntegrations(prev => new Set([...prev, 'hubspot']));
+            } else {
+              setConnectedIntegrations(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('hubspot');
+                return newSet;
+              });
+            }
+          }} />
+        </motion.div>
+
+        {/* Other Integrations */}
+        <div>
+          <div className="mb-4">
+            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              🔗 All Integrations
+            </h2>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Connect with your favorite tools and platforms
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence>
+              {filteredIntegrations.filter(int => int.id !== 'hubspot').map((integration, index) => (
+                <motion.div
+                  key={integration.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  className={`rounded-2xl shadow-lg border transition-all duration-300 h-full flex flex-col ${
+                    isDark 
+                      ? 'bg-gray-800 border-gray-700 hover:shadow-gray-900/50' 
+                      : 'bg-white border-gray-100 hover:shadow-xl'
+                  }`}
+                  style={{ willChange: 'transform, box-shadow' }}
+                >
+                  <div className="p-6 flex-1">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className={`text-4xl mr-4 p-2 rounded-xl ${
+                          isDark ? 'bg-gray-700' : 'bg-gray-50'
                         }`}>
-                          {integration.category}
-                        </span>
+                          {integration.icon}
+                        </div>
+                        <div>
+                          <h3 className={`text-lg font-bold ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {integration.name}
+                          </h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            {getCategoryIcon(integration.category)}
+                            <span className={`text-sm font-medium ${
+                              isDark ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              {integration.category}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                        integration.status === 'connected' 
+                          ? isDark 
+                            ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/50'
+                            : 'bg-green-100 text-green-800 border-green-200'
+                          : isDark
+                            ? 'bg-gray-700 text-gray-300 border-gray-600'
+                          : 'bg-gray-100 text-gray-800 border-gray-200'
+                      }`}>
+                        {integration.status === 'connected' ? '✅ Connected' : '⏳ Available'}
                       </div>
                     </div>
+                    
+                    <p className={`text-sm mb-4 leading-relaxed ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      {integration.description}
+                    </p>
+
+                    {integration.status === 'connected' && (
+                      <div className="space-y-2 text-sm">
+                        <div className={`flex items-center ${
+                          isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          <Clock className="w-4 h-4 mr-2" />
+                          Last sync: 2 hours ago
+                        </div>
+                        <div className={`flex items-center ${
+                          isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          <Shield className="w-4 h-4 mr-2" />
+                          Connected securely
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                    integration.status === 'connected' 
-                      ? isDark 
-                        ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/50'
-                        : 'bg-green-100 text-green-800 border-green-200'
-                      : isDark
-                        ? 'bg-gray-700 text-gray-300 border-gray-600'
-                      : 'bg-gray-100 text-gray-800 border-gray-200'
+
+                  <div className={`px-6 py-4 border-t ${
+                    isDark 
+                      ? 'bg-gradient-to-r from-gray-800 to-gray-750 border-gray-700' 
+                      : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
                   }`}>
-                    {integration.status === 'connected' ? '✅ Connected' : '⏳ Available'}
+                    {integration.status === 'connected' ? (
+                      <div className="flex space-x-3">
+                        <button className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-semibold rounded-xl transition-all duration-200 ${
+                          isDark 
+                            ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 focus:ring-purple-500' 
+                            : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 focus:ring-primary-500'
+                        } focus:outline-none focus:ring-2 focus:ring-offset-2`}>
+                          <Settings className="w-4 h-4 mr-2" />
+                          Configure
+                        </button>
+                        <button 
+                          onClick={() => handleDisconnect(integration.id)}
+                          className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-semibold rounded-xl transition-all duration-200 ${
+                            isDark 
+                              ? 'border-red-600/50 text-red-400 bg-red-900/20 hover:bg-red-900/30 focus:ring-red-500' 
+                              : 'border-red-200 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500'
+                          } focus:outline-none focus:ring-2 focus:ring-offset-2`}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Disconnect
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleConnect(integration)}
+                        className="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl text-sm font-semibold transition-all duration-200 transform hover:scale-105"
+                        style={{ willChange: 'transform, box-shadow' }}
+                      >
+                        <PlusCircle className="w-4 h-4 mr-2" />
+                        Connect Now
+                      </button>
+                    )}
                   </div>
-                </div>
-                
-                <p className={`text-sm mb-4 leading-relaxed ${
-                  isDark ? 'text-gray-300' : 'text-gray-600'
-                }`}>
-                  {integration.description}
-                </p>
-
-                {integration.status === 'connected' && (
-                  <div className="space-y-2 text-sm">
-                    <div className={`flex items-center ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      <Clock className="w-4 h-4 mr-2" />
-                      Last sync: 2 hours ago
-                    </div>
-                    <div className={`flex items-center ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      <Shield className="w-4 h-4 mr-2" />
-                      Connected securely
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className={`px-6 py-4 border-t ${
-                isDark 
-                  ? 'bg-gradient-to-r from-gray-800 to-gray-750 border-gray-700' 
-                  : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
-              }`}>
-                {integration.status === 'connected' ? (
-                  <div className="flex space-x-3">
-                    <button className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-semibold rounded-xl transition-all duration-200 ${
-                      isDark 
-                        ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 focus:ring-purple-500' 
-                        : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 focus:ring-primary-500'
-                    } focus:outline-none focus:ring-2 focus:ring-offset-2`}>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Configure
-                    </button>
-                    <button 
-                      onClick={() => handleDisconnect(integration.id)}
-                      className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-semibold rounded-xl transition-all duration-200 ${
-                        isDark 
-                          ? 'border-red-600/50 text-red-400 bg-red-900/20 hover:bg-red-900/30 focus:ring-red-500' 
-                          : 'border-red-200 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500'
-                      } focus:outline-none focus:ring-2 focus:ring-offset-2`}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Disconnect
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleConnect(integration)}
-                    className="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl text-sm font-semibold transition-all duration-200 transform hover:scale-105"
-                    style={{ willChange: 'transform, box-shadow' }}
-                  >
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    Connect Now
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
       {/* Enhanced Configuration Modal with Dark Mode */}
