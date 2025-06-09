@@ -438,7 +438,10 @@ def initialize_packages(db: Session):
     ]
     
     for pkg_data in default_packages:
-        package = Package(**pkg_data, features=json.dumps(pkg_data["features"]))
+        # Extract features to avoid duplicate keyword argument
+        features_data = pkg_data["features"]
+        pkg_data_without_features = {k: v for k, v in pkg_data.items() if k != "features"}
+        package = Package(**pkg_data_without_features, features=json.dumps(features_data))
         db.add(package)
     
     db.commit()
