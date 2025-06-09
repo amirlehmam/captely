@@ -246,7 +246,7 @@ const IntegrationsPage: React.FC = () => {
               <h1 className={`text-4xl font-bold mb-2 ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
-                🔗 Integrations Hub
+                Integrations Hub
         </h1>
               <div className="flex items-center space-x-2">
                 <Zap className={`h-5 w-5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
