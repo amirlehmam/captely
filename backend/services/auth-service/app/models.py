@@ -21,7 +21,10 @@ class User(Base):
     
     # OAuth support fields
     auth_provider: Mapped[str] = mapped_column(String, nullable=True, default='email')  # 'email', 'google', 'apple'
+    google_id: Mapped[str] = mapped_column(String, nullable=True)  # Google user ID
+    apple_id: Mapped[str] = mapped_column(String, nullable=True)  # Apple user ID
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    profile_picture_url: Mapped[str] = mapped_column(String, nullable=True)  # OAuth profile picture
     
     # Credit and billing fields
     credits: Mapped[int] = mapped_column(Integer, default=100, nullable=True)

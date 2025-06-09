@@ -44,8 +44,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_exp_minutes: int = 60
     # OAuth settings - these will read from VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
-    vite_google_client_id: str = "placeholder-google-client-id"
-    google_client_secret: str = "placeholder-google-client-secret"
+    VITE_GOOGLE_CLIENT_ID: str = "placeholder-google-client-id"
+    GOOGLE_CLIENT_SECRET: str = "placeholder-google-client-secret"
     # Email settings
     resend_api_key: str = "re_123456789"  # Will be overridden by env var
     cors_origins: List[str] = ["http://localhost:5173",
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     @property
     def google_client_id(self) -> str:
         """Get Google Client ID from VITE_GOOGLE_CLIENT_ID env var"""
-        return self.vite_google_client_id
+        return self.VITE_GOOGLE_CLIENT_ID
 
 settings = Settings()
 
@@ -245,6 +245,7 @@ async def verify_google_token(credential: str) -> dict:
                 'email': user_info.get('email'),
                 'first_name': user_info.get('given_name'),
                 'last_name': user_info.get('family_name'),
+                'sub': user_info.get('sub'),  # Google user ID
                 'verified': user_info.get('email_verified', False)
             }
     except Exception as e:
@@ -1156,8 +1157,11 @@ async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
             last_name=user_info.get('last_name', ''),
             password_hash='',  # No password for OAuth users
             auth_provider=data.provider,
+            google_id=user_info.get('sub') if data.provider == 'google' else None,
             email_verified=user_info.get('verified', False),
-            is_active=True
+            is_active=True,
+            credits=500,  # Default credits for new users
+            plan='pack-500'  # Default plan
         )
         
         db.add(new_user)
