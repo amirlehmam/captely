@@ -263,7 +263,7 @@ CREATE TABLE IF NOT EXISTS notification_logs (
 CREATE TABLE IF NOT EXISTS export_logs (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(255) NOT NULL,
-    contact_id VARCHAR(255),
+    contact_id INTEGER,
     job_id VARCHAR(255) REFERENCES import_jobs(id),
     platform VARCHAR(50) NOT NULL DEFAULT 'csv',
     platform_contact_id VARCHAR(255),
