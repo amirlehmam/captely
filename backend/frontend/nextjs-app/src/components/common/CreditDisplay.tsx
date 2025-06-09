@@ -20,6 +20,9 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
   const isCriticalCredits = creditData ? creditData.balance < 20 : false;
   const displayBalance = creditData?.balance || 0;
   const displayPlan = creditData?.subscription?.package_name || 'Free';
+  
+  // Don't show error state if we're still loading or if plan is "Loading..."
+  const isRealError = error && !loading && displayPlan !== 'Loading...';
 
   if (variant === 'compact') {
     return (
@@ -27,7 +30,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
         {/* Credit balance - Always present with stable dimensions to prevent flashing */}
         <div className="flex items-center space-x-2" style={{ minWidth: '120px' }}>
           <div className={`p-2 rounded-lg transition-colors duration-200 ${
-            error ? isDark ? 'bg-red-900/20' : 'bg-red-100' :
+            isRealError ? isDark ? 'bg-red-900/20' : 'bg-red-100' :
             isCriticalCredits ? isDark ? 'bg-red-900/20' : 'bg-red-100' : 
             isLowCredits ? isDark ? 'bg-yellow-900/20' : 'bg-yellow-100' : 
             isDark ? 'bg-green-900/20' : 'bg-green-100'
@@ -40,7 +43,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            {error ? (
+            {isRealError ? (
               <AlertTriangle className="h-4 w-4 text-red-600" />
             ) : (
               <CreditCard className={`h-4 w-4 transition-colors duration-200 ${
@@ -52,10 +55,10 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
           </div>
           <div style={{ minWidth: '80px' }}>
             <div className="flex items-center space-x-1">
-              {loading ? (
+              {loading || displayPlan === 'Loading...' ? (
                 <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-gray-400'}`}
                 style={{ display: 'inline-block', width: '40px' }}>•••</span>
-              ) : error ? (
+              ) : isRealError ? (
                 <span className="text-red-600 font-semibold" style={{ display: 'inline-block', minWidth: '40px' }}>Error</span>
               ) : (
                 <span className={`font-semibold transition-colors duration-200 ${
@@ -80,7 +83,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
               display: 'flex',
               alignItems: 'center'
             }}>
-              {loading ? 'Loading...' : isLowCredits ? `${displayPlan} Plan` : ''}
+              {loading || displayPlan === 'Loading...' ? 'Loading...' : isLowCredits ? `${displayPlan} Plan` : ''}
               </div>
           </div>
         </div>

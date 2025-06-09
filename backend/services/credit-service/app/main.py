@@ -124,10 +124,19 @@ async def get_credit_info(
 ):
     """Get credit information for the authenticated user"""
     try:
-        # Get user's current credit balance - Use proper async queries
-        user_query = text("SELECT credits, current_subscription_id FROM users WHERE id = :user_id")
+        # Get user's current credit balance and subscription info
+        user_query = text("""
+            SELECT 
+                u.credits, 
+                u.current_subscription_id, 
+                u.plan,
+                COALESCE(s.plan_name, u.plan, 'pack-500') as package_name
+            FROM users u
+            LEFT JOIN subscriptions s ON u.current_subscription_id = s.id
+            WHERE u.id = :user_id
+        """)
         user_result = await session.execute(user_query, {"user_id": user_id})
-        user_row = user_result.fetchone()  # Use fetchone() instead of first() for async compatibility
+        user_row = user_result.fetchone()
         
         if not user_row:
             # Create default user with 500 credits for pack-500 plan if doesn't exist
@@ -138,10 +147,12 @@ async def get_credit_info(
             await session.commit()
             current_credits = 500
             subscription_id = None
+            package_name = "pack-500"
             print(f"✅ Created new user {user_id} with 500 credits (pack-500 plan)")
         else:
             current_credits = user_row[0] if user_row[0] is not None else 500
             subscription_id = user_row[1]
+            package_name = user_row[3] if user_row[3] else "pack-500"
             print(f"📊 User {user_id} has {current_credits} credits")
         
         # Get usage statistics for current month
@@ -149,13 +160,13 @@ async def get_credit_info(
             usage_query = text("""
                 SELECT 
                     COALESCE(SUM(CASE WHEN change < 0 THEN ABS(change) ELSE 0 END), 0) as used_this_month,
-                    COUNT(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 END) as used_today
+                    COALESCE(SUM(CASE WHEN change < 0 AND DATE(created_at) = CURRENT_DATE THEN ABS(change) ELSE 0 END), 0) as used_today
                 FROM credit_logs 
                 WHERE user_id = :user_id 
                 AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
             """)
             usage_result = await session.execute(usage_query, {"user_id": user_id})
-            usage_row = usage_result.fetchone()  # Use fetchone() instead of first() for async compatibility
+            usage_row = usage_result.fetchone()
             
             used_this_month = int(usage_row[0]) if usage_row and usage_row[0] else 0
             used_today = int(usage_row[1]) if usage_row and usage_row[1] else 0
@@ -163,14 +174,75 @@ async def get_credit_info(
             print(f"⚠️ Could not fetch usage stats: {usage_error}")
             used_this_month = 0
             used_today = 0
+
+        # Get enrichment statistics
+        try:
+            stats_query = text("""
+                SELECT 
+                    COUNT(*) as total_enriched,
+                    COALESCE(AVG(CASE WHEN email_found = true THEN 1.0 ELSE 0.0 END) * 100, 0) as email_hit_rate,
+                    COALESCE(AVG(CASE WHEN phone_found = true THEN 1.0 ELSE 0.0 END) * 100, 0) as phone_hit_rate,
+                    COALESCE(AVG(confidence_score), 0) as avg_confidence,
+                    COALESCE(AVG(CASE WHEN status = 'completed' THEN 1.0 ELSE 0.0 END) * 100, 0) as success_rate
+                FROM contacts 
+                WHERE user_id = :user_id 
+                AND enriched = true
+            """)
+            stats_result = await session.execute(stats_query, {"user_id": user_id})
+            stats_row = stats_result.fetchone()
+            
+            if stats_row:
+                total_enriched = int(stats_row[0]) if stats_row[0] else 0
+                email_hit_rate = float(stats_row[1]) if stats_row[1] else 0.0
+                phone_hit_rate = float(stats_row[2]) if stats_row[2] else 0.0
+                avg_confidence = float(stats_row[3]) if stats_row[3] else 0.0
+                success_rate = float(stats_row[4]) if stats_row[4] else 0.0
+            else:
+                total_enriched = email_hit_rate = phone_hit_rate = avg_confidence = success_rate = 0
+        except Exception as stats_error:
+            print(f"⚠️ Could not fetch enrichment stats: {stats_error}")
+            total_enriched = email_hit_rate = phone_hit_rate = avg_confidence = success_rate = 0
+        
+        # Map plan names to display names
+        plan_display_names = {
+            "pack-500": "Starter",
+            "pack-1000": "Professional", 
+            "pack-5000": "Business",
+            "pack-10000": "Enterprise",
+            "free": "Free",
+            "guest": "Guest"
+        }
+        
+        # Set monthly limits based on plan
+        monthly_limits = {
+            "pack-500": 500,
+            "pack-1000": 1000,
+            "pack-5000": 5000,
+            "pack-10000": 10000,
+            "free": 50,
+            "guest": 0
+        }
+        
+        display_name = plan_display_names.get(package_name, package_name.title())
+        monthly_limit = monthly_limits.get(package_name, 500)
         
         response_data = {
             "balance": current_credits,
             "used_today": used_today,
             "used_this_month": used_this_month,
-            "limit_daily": None,
-            "limit_monthly": 500,  # Update monthly limit to match pack-500 plan
-            "subscription": subscription_id
+            "limit_daily": 500,  # Default daily limit
+            "limit_monthly": monthly_limit,
+            "subscription": {
+                "package_name": display_name,
+                "monthly_limit": monthly_limit
+            },
+            "statistics": {
+                "total_enriched": total_enriched,
+                "email_hit_rate": email_hit_rate,
+                "phone_hit_rate": phone_hit_rate,
+                "avg_confidence": avg_confidence,
+                "success_rate": success_rate
+            }
         }
         
         print(f"💳 Credit info response for {user_id}: {response_data}")
@@ -178,14 +250,24 @@ async def get_credit_info(
         
     except Exception as e:
         print(f"❌ Error fetching credit info for user {user_id}: {e}")
-        # Return default values for pack-500 plan if database fails
+        # Return default values with proper structure if database fails
         return {
             "balance": 500,
             "used_today": 0,
             "used_this_month": 0,
-            "limit_daily": None,
+            "limit_daily": 500,
             "limit_monthly": 500,
-            "subscription": None
+            "subscription": {
+                "package_name": "Starter",
+                "monthly_limit": 500
+            },
+            "statistics": {
+                "total_enriched": 0,
+                "email_hit_rate": 0.0,
+                "phone_hit_rate": 0.0,
+                "avg_confidence": 0.0,
+                "success_rate": 0.0
+            }
         }
 
 # ---- Additional credit endpoints (after /info to avoid route conflicts) ----

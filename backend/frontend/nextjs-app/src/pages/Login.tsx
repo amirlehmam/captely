@@ -132,7 +132,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       
       toast.success(t('auth.login.loginSuccess'));
       onLogin();
-      navigate('/');
+      
+      // Small delay to ensure credit context refreshes before navigation
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
     } catch (error: any) {
       setErrors(prev => ({
         ...prev,
@@ -168,7 +172,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
       toast.success(t('auth.login.loginSuccess'));
       onLogin();
-      navigate('/');
+      
+      // Small delay to ensure credit context refreshes before navigation
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
     } catch (error: any) {
       setErrors(prev => ({
         ...prev,
@@ -241,7 +249,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       }
       
       onLogin();
-      navigate('/');
+      
+      // Small delay to ensure credit context refreshes before navigation
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
     } catch (error: any) {
       setErrors(prev => ({
         ...prev,

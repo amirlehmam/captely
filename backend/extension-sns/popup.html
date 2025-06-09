@@ -465,11 +465,11 @@
     @media (max-width: 400px) {
       body {
         width: 320px;
-      }
+    }
       
       .container {
         margin: 4px;
-      }
+    }
       
       .button-row {
         grid-template-columns: 1fr;
@@ -480,7 +480,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">
+  <div class="logo">
         <div class="logo-icon">C</div>
         <h1>Captely</h1>
       </div>
@@ -492,49 +492,49 @@
         <div class="card-title">
           <span>🔑</span>
           API Configuration
-        </div>
-        
-        <div class="form-group">
-          <label for="token">API Token</label>
+  </div>
+
+  <div class="form-group">
+    <label for="token">API Token</label>
           <div class="input-group">
             <span class="input-icon">🔐</span>
             <input id="token" type="password" class="input-with-icon" placeholder="Enter your API token" />
           </div>
-          <div class="token-info">
+    <div class="token-info">
             <a href="https://captely.com/dashboard/api-tokens" target="_blank">Get API token from Captely Dashboard →</a>
-          </div>
-        </div>
+    </div>
+  </div>
 
-        <div class="form-group">
-          <label for="maxLeads">Maximum Leads to Scrape</label>
+  <div class="form-group">
+    <label for="maxLeads">Maximum Leads to Scrape</label>
           <input id="maxLeads" type="number" min="1" max="500" value="100" class="number-input" />
         </div>
-      </div>
+  </div>
 
-      <div class="settings-toggle" id="settingsToggle">
+  <div class="settings-toggle" id="settingsToggle">
         <div class="settings-title">
           <span>⚙️</span>
           Advanced Settings
         </div>
-        <div class="toggle-icon">▼</div>
-      </div>
+    <div class="toggle-icon">▼</div>
+  </div>
 
-      <div class="settings-section" id="settingsSection">
-        <div class="checkbox-group">
-          <input type="checkbox" id="autoPagination" checked />
-          <label for="autoPagination">Automatically navigate through all pages</label>
-        </div>
-        
-        <div class="checkbox-group">
-          <input type="checkbox" id="thoroughScraping" checked />
-          <label for="thoroughScraping">Scroll through each page to load all leads</label>
-        </div>
-        
-        <div class="form-group">
-          <label for="pageDelay">Page load delay (seconds)</label>
+  <div class="settings-section" id="settingsSection">
+    <div class="checkbox-group">
+      <input type="checkbox" id="autoPagination" checked />
+      <label for="autoPagination">Automatically navigate through all pages</label>
+    </div>
+    
+    <div class="checkbox-group">
+      <input type="checkbox" id="thoroughScraping" checked />
+      <label for="thoroughScraping">Scroll through each page to load all leads</label>
+    </div>
+    
+    <div class="form-group">
+      <label for="pageDelay">Page load delay (seconds)</label>
           <input id="pageDelay" type="number" min="1" max="10" value="3" class="number-input" />
-        </div>
-      </div>
+    </div>
+  </div>
 
       <button id="save" class="btn-outline">
         <span>💾</span>
@@ -545,8 +545,8 @@
         <span>🚀</span>
         Start Scraping
       </button>
-      
-      <div class="button-row">
+  
+  <div class="button-row">
         <button id="download" class="btn-success" disabled>
           <span>📥</span>
           Download CSV
@@ -555,15 +555,15 @@
           <span>✨</span>
           Send for Enrichment
         </button>
-      </div>
+  </div>
 
       <div class="progress-container">
         <div class="progress-label">
           <span>Scraping Progress</span>
           <span id="progressPercent">0%</span>
         </div>
-        <div class="progress">
-          <div id="progressBar" class="progress-bar"></div>
+  <div class="progress">
+    <div id="progressBar" class="progress-bar"></div>
         </div>
       </div>
 
@@ -580,14 +580,14 @@
           <div id="enrichedCount" class="stat-value">0</div>
           <div class="stat-label">Enriched</div>
         </div>
-      </div>
+  </div>
 
       <div class="status-container">
         <div id="status">
           <span class="status-icon">🎯</span>
           <span>Ready to scrape Sales Navigator leads...</span>
         </div>
-      </div>
+    </div>
     </div>
 
     <div class="footer">

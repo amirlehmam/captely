@@ -46,10 +46,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // Main scraping function
 async function startScraping(settings = {}) {
   try {
-    // Reset data
-    scrapedLeads = [];
-    jobId = null;
-    
+  // Reset data
+  scrapedLeads = [];
+  jobId = null;
+  
     // Get settings from storage and combine with passed settings
     const storageSettings = await chrome.storage.sync.get(['apiToken', 'maxLeads']);
     
@@ -68,11 +68,11 @@ async function startScraping(settings = {}) {
       pageDelay 
     });
   
-    // Validate settings
-    if (!apiToken) {
+  // Validate settings
+  if (!apiToken) {
       updateStatus('API token not set. Please set your API token first.', 'error', '⚠️');
-      return;
-    }
+    return;
+  }
 
     // Get the active tab
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -456,35 +456,35 @@ async function sendToEnrichment() {
   }
   
   try {
-    // Send to backend for enrichment in batches
-    const batchSize = 20;
-    let sentCount = 0;
+      // Send to backend for enrichment in batches
+      const batchSize = 20;
+      let sentCount = 0;
     const totalCount = scrapedLeads.length;
       
     updateStatus('Sending leads to Captely for enrichment...', 'info', '📤');
       
-    for (let i = 0; i < scrapedLeads.length; i += batchSize) {
-      const batch = scrapedLeads.slice(i, i + batchSize);
-      try {
-        const response = await sendToBackend(batch, apiToken);
-        sentCount += batch.length;
-        
-        if (response.job_id && !jobId) {
-          jobId = response.job_id;
-          // Open dashboard page for progress
-          chrome.tabs.create({ url: `https://captely.com/dashboard?job=${jobId}` });
-          // Start checking job status
-          checkJobStatus(jobId);
-        }
-        
+      for (let i = 0; i < scrapedLeads.length; i += batchSize) {
+        const batch = scrapedLeads.slice(i, i + batchSize);
+        try {
+          const response = await sendToBackend(batch, apiToken);
+          sentCount += batch.length;
+          
+          if (response.job_id && !jobId) {
+             jobId = response.job_id;
+             // Open dashboard page for progress
+             chrome.tabs.create({ url: `https://captely.com/dashboard?job=${jobId}` });
+             // Start checking job status
+             checkJobStatus(jobId);
+          }
+          
         updateStatus(`Sent ${sentCount}/${totalCount} leads to Captely`, 'info', '📤');
         updateProgress(totalCount, sentCount, 0, totalCount);
           
-        // Small delay between batches
-        await new Promise(r => setTimeout(r, 500));
-      } catch (error) {
+          // Small delay between batches
+          await new Promise(r => setTimeout(r, 500));
+        } catch (error) {
         updateStatus(`Error sending batch: ${error.message}`, 'error', '❌');
-        console.error('Error sending batch:', error);
+          console.error('Error sending batch:', error);
         throw error; // Re-throw to handle in the caller
       }
     }
@@ -511,12 +511,12 @@ async function sendToBackend(leads, apiToken) {
       auto_enrich: true
     })
   });
-
+  
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
-
+  
   return await response.json();
 }
 
@@ -558,44 +558,44 @@ async function checkJobStatus(jobId) {
 // Download leads as CSV
 async function downloadCSV() {
   try {
-    if (scrapedLeads.length === 0) {
+  if (scrapedLeads.length === 0) {
       updateStatus('No leads to download.', 'warning', '⚠️');
-      return;
-    }
-    
-    // Create CSV content
+    return;
+  }
+  
+  // Create CSV content
     const headers = ['First Name', 'Last Name', 'Full Name', 'Position', 'Company', 'LinkedIn URL', 'Location', 'Industry'];
-    let csvContent = headers.join(',') + '\n';
-    
-    // Add rows
-    scrapedLeads.forEach(lead => {
-      // Format fields properly for CSV (handle commas, quotes, etc.)
-      const row = [
-        formatCSVField(lead.firstName),
-        formatCSVField(lead.lastName),
-        formatCSVField(lead.fullName),
-        formatCSVField(lead.position),
-        formatCSVField(lead.company),
-        formatCSVField(lead.profileUrl),
-        formatCSVField(lead.location),
+  let csvContent = headers.join(',') + '\n';
+  
+  // Add rows
+  scrapedLeads.forEach(lead => {
+    // Format fields properly for CSV (handle commas, quotes, etc.)
+    const row = [
+      formatCSVField(lead.firstName),
+      formatCSVField(lead.lastName),
+      formatCSVField(lead.fullName),
+      formatCSVField(lead.position),
+      formatCSVField(lead.company),
+      formatCSVField(lead.profileUrl),
+      formatCSVField(lead.location),
         formatCSVField(lead.industry || '')
-      ];
-      csvContent += row.join(',') + '\n';
-    });
-    
+    ];
+    csvContent += row.join(',') + '\n';
+  });
+  
     // Instead of using Blob and URL.createObjectURL, use a data URL
     // Add BOM for UTF-8 to ensure Excel opens it correctly
     const BOM = "\uFEFF";
     const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(BOM + csvContent);
-    
-    // Create and trigger download
+  
+  // Create and trigger download
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     await chrome.downloads.download({
       url: dataUrl,
       filename: `linkedin_leads_${timestamp}.csv`,
-      saveAs: true
-    });
-    
+    saveAs: true
+  });
+  
     updateStatus(`Downloaded ${scrapedLeads.length} leads as CSV.`, 'success', '📥');
   } catch (error) {
     console.error("Error downloading CSV:", error);

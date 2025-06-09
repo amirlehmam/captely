@@ -47,8 +47,62 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
   const [creditData, setCreditData] = useState<CreditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const fetchCreditData = useCallback(async () => {
+  // Track authentication state changes
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+      const authenticated = Boolean(token);
+      setIsAuthenticated(authenticated);
+      
+      if (!authenticated) {
+        // Clear credit data when not authenticated
+        setCreditData({
+          balance: 0,
+          used_today: 0,
+          used_this_month: 0,
+          limit_daily: 0,
+          limit_monthly: 0,
+          subscription: {
+            package_name: 'Guest',
+            monthly_limit: 0
+          },
+          statistics: {
+            total_enriched: 0,
+            email_hit_rate: 0,
+            phone_hit_rate: 0,
+            avg_confidence: 0,
+            success_rate: 0
+          }
+        });
+        setLoading(false);
+        setError(null);
+      }
+      
+      return authenticated;
+    };
+
+    // Initial check
+    checkAuth();
+
+    // Listen for storage changes (login/logout)
+    const handleStorageChange = () => {
+      checkAuth();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for manual token changes
+    const interval = setInterval(checkAuth, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const fetchCreditData = useCallback(async (retryCount: number = 0) => {
     try {
       setLoading(true);
       setError(null);
@@ -79,16 +133,29 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
         return;
       }
 
+      // Small delay to ensure token is properly set after login
+      if (retryCount === 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       const data = await apiService.getCreditData();
       setCreditData(data);
       setError(null);
 
     } catch (err) {
       console.error('Credit fetch error:', err);
+      
+      // If it's the first attempt and we just authenticated, retry once
+      if (retryCount === 0 && isAuthenticated) {
+        console.log('Retrying credit fetch after authentication...');
+        setTimeout(() => fetchCreditData(1), 1000);
+        return;
+      }
+      
       const errorMessage = err instanceof Error ? err.message : 'Failed to load credit data';
       setError(errorMessage);
       
-      // Set fallback data to keep UI functional
+      // Set fallback data but don't show "Error" in package name
       setCreditData({
         balance: 0,
         used_today: 0,
@@ -96,7 +163,7 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
         limit_daily: 500,
         limit_monthly: 10000,
         subscription: {
-          package_name: 'Error',
+          package_name: 'Loading...',
           monthly_limit: 0
         },
         statistics: {
@@ -110,11 +177,13 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const refreshCredits = useCallback(async () => {
-    await fetchCreditData();
-  }, [fetchCreditData]);
+    if (isAuthenticated) {
+      await fetchCreditData();
+    }
+  }, [fetchCreditData, isAuthenticated]);
 
   const deductCredits = useCallback((amount: number) => {
     if (creditData) {
@@ -135,16 +204,25 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     return creditData ? creditData.balance >= amount : false;
   }, [creditData]);
 
-  // Initial fetch
+  // Fetch credits when authentication state changes to true
   useEffect(() => {
-    fetchCreditData();
-  }, [fetchCreditData]);
+    if (isAuthenticated) {
+      fetchCreditData();
+    }
+  }, [isAuthenticated, fetchCreditData]);
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds only if authenticated
   useEffect(() => {
-    const interval = setInterval(fetchCreditData, 30000);
+    if (!isAuthenticated) return;
+    
+    const interval = setInterval(() => {
+      if (isAuthenticated) {
+        fetchCreditData();
+      }
+    }, 30000);
+    
     return () => clearInterval(interval);
-  }, [fetchCreditData]);
+  }, [fetchCreditData, isAuthenticated]);
 
   const value: CreditContextType = {
     creditData,
