@@ -668,7 +668,7 @@ CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_sync_status ON hubspot_c
 INSERT INTO packages (name, display_name, plan_type, credits_monthly, price_monthly, price_annual, features, popular) VALUES
 
 -- Starter Plan
-('starter', 'Starter', 'starter', 500, 19.00, 182.40, 
+('starter', 'Starter', 'starter', 500, 25.00, 240.00, 
  '["Import CSV files", "API enrichment", "Chrome extension", "Shared database access", "Standard support", "All platform features"]', 
  false),
 
