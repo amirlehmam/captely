@@ -22,7 +22,7 @@ class HubSpotService:
     def __init__(self):
         self.client_id = "0f881091-86be-4d35-bb38-f98365bd62ec"
         self.client_secret = "7608da7f-4549-4aa7-94b4-303a7ea0de83"
-        self.redirect_uri = "https://captely.com/integrations/hubspot/callback"
+        self.redirect_uri = "https://captely.com/integrations"
         self.base_url = "https://api.hubapi.com"
         self.oauth_base_url = "https://app-eu1.hubspot.com"
         

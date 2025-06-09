@@ -1287,6 +1287,13 @@ class ApiService {
     return client.get(`${API_CONFIG.importUrl}/integrations/hubspot/oauth-url`);
   }
 
+  async hubspotOAuthCallback(code: string, state: string): Promise<{ success: boolean; message: string }> {
+    return client.post(`${API_CONFIG.importUrl}/integrations/hubspot/oauth-callback`, {
+      code,
+      state
+    });
+  }
+
   async getHubSpotIntegrationStatus(): Promise<{
     connected: boolean;
     portal_id?: string;

@@ -1561,8 +1561,8 @@ async def export_contact_to_hubspot(
         
         # Log the export
         export_log_query = text("""
-            INSERT INTO export_logs (user_id, contact_id, platform, platform_contact_id, status, created_at)
-            VALUES (:user_id, :contact_id, 'hubspot', :platform_contact_id, 'success', CURRENT_TIMESTAMP)
+            INSERT INTO export_logs (user_id, contact_id, platform, platform_contact_id, export_type, status, created_at)
+            VALUES (:user_id, :contact_id, 'hubspot', :platform_contact_id, 'hubspot', 'success', CURRENT_TIMESTAMP)
         """)
         
         try:
@@ -1659,8 +1659,8 @@ async def export_job_to_hubspot(
                 
                 # Log successful export
                 export_log_query = text("""
-                    INSERT INTO export_logs (user_id, contact_id, platform, platform_contact_id, status, created_at)
-                    VALUES (:user_id, :contact_id, 'hubspot', :platform_contact_id, 'success', CURRENT_TIMESTAMP)
+                    INSERT INTO export_logs (user_id, contact_id, platform, platform_contact_id, export_type, status, created_at)
+                    VALUES (:user_id, :contact_id, 'hubspot', :platform_contact_id, 'hubspot', 'success', CURRENT_TIMESTAMP)
                 """)
                 
                 try:
@@ -2061,8 +2061,8 @@ async def bulk_export_crm_contacts(
                     
                     # Log the export
                     export_log_query = text("""
-                        INSERT INTO export_logs (user_id, contact_id, platform, platform_contact_id, status, created_at)
-                        VALUES (:user_id, :contact_id, 'hubspot', :platform_contact_id, 'success', CURRENT_TIMESTAMP)
+                        INSERT INTO export_logs (user_id, contact_id, platform, platform_contact_id, export_type, status, created_at)
+                        VALUES (:user_id, :contact_id, 'hubspot', :platform_contact_id, 'hubspot', 'success', CURRENT_TIMESTAMP)
                     """)
                     session.execute(export_log_query, {
                         "user_id": user_id,

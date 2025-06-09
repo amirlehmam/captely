@@ -42,7 +42,32 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
 
   useEffect(() => {
     checkIntegrationStatus();
+    
+    // Check for OAuth callback parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (code && state) {
+      handleOAuthCallback(code, state);
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
+
+  const handleOAuthCallback = async (code: string, state: string) => {
+    try {
+      setActionLoading('callback');
+      await apiService.hubspotOAuthCallback(code, state);
+      await checkIntegrationStatus();
+      toast.success('🎉 HubSpot connected successfully!');
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      toast.error('Failed to connect HubSpot. Please try again.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const checkIntegrationStatus = async () => {
     try {
@@ -75,14 +100,10 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       setActionLoading('connect');
       const response = await apiService.getHubSpotOAuthUrl();
       
-      // Open HubSpot OAuth in a new window
-      window.open(response.oauth_url, '_blank');
-      
-      // Check status after OAuth (user needs to refresh)
-      toast.success('Please complete the HubSpot authorization and refresh the page');
+      // Redirect to HubSpot OAuth in the same window
+      window.location.href = response.oauth_url;
     } catch (error) {
       toast.error('Failed to initiate HubSpot connection');
-    } finally {
       setActionLoading(null);
     }
   };
