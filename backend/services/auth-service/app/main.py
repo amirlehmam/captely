@@ -246,7 +246,7 @@ async def verify_google_token(credential: str) -> dict:
                 'first_name': user_info.get('given_name'),
                 'last_name': user_info.get('family_name'),
                 'sub': user_info.get('sub'),  # Google user ID
-                'verified': user_info.get('email_verified', False)
+                'verified': user_info.get('email_verified', False) in [True, 'true', 'True', 1, '1']
             }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Google token verification failed: {str(e)}")
@@ -1151,6 +1151,14 @@ async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
             }
         
         # Create new user with OAuth info
+        # Ensure boolean conversion for email_verified
+        email_verified = user_info.get('verified', False)
+        if isinstance(email_verified, str):
+            email_verified = email_verified.lower() in ['true', '1', 'yes']
+        
+        print(f"🔧 Creating OAuth user - email_verified: {email_verified} (type: {type(email_verified)})")
+        print(f"🔧 User info: {user_info}")
+        
         new_user = User(
             email=email,
             first_name=user_info.get('first_name', ''),
@@ -1158,7 +1166,7 @@ async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
             password_hash='',  # No password for OAuth users
             auth_provider=data.provider,
             google_id=user_info.get('sub') if data.provider == 'google' else None,
-            email_verified=user_info.get('verified', False),
+            email_verified=bool(email_verified),
             is_active=True,
             credits=500,  # Default credits for new users
             plan='pack-500'  # Default plan
