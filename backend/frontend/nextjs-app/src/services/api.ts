@@ -1296,7 +1296,12 @@ class ApiService {
 
   // Notification methods
   async getNotifications(): Promise<{ notifications: any[] }> {
-    return client.get(`${API_CONFIG.importUrl}/notifications`);
+    try {
+      return await client.get(`${API_CONFIG.importUrl}/notifications`);
+    } catch (error) {
+      console.warn('Notifications API not available yet, returning empty array');
+      return { notifications: [] };
+    }
   }
 
   async markNotificationAsRead(id: string): Promise<{ success: boolean }> {
