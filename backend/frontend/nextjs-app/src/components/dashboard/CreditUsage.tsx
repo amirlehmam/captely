@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CreditCard, TrendingUp, AlertCircle, Loader, RefreshCw } from 'lucide-react';
 import { useCreditContext } from '../../contexts/CreditContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -8,6 +9,7 @@ const CreditUsage: React.FC = () => {
   const { t } = useLanguage();
   const { isDark } = useTheme();
   const { creditData, loading, error, refreshCredits } = useCreditContext();
+  const navigate = useNavigate();
 
   // Calculate values with safe defaults to prevent flashing
   const usagePercent = creditData?.limit_monthly && creditData.limit_monthly > 0 
@@ -39,11 +41,14 @@ const CreditUsage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <button className={`inline-flex items-center px-4 py-2 border shadow-sm text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
-            isDark 
-              ? 'border-primary-600 text-primary-300 bg-primary-900/30 hover:bg-primary-900/50' 
-              : 'border-primary-200 text-primary-700 bg-primary-50 hover:bg-primary-100'
-          }`}>
+          <button 
+            onClick={() => navigate('/billing')}
+            className={`inline-flex items-center px-4 py-2 border shadow-sm text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
+              isDark 
+                ? 'border-primary-600 text-primary-300 bg-primary-900/30 hover:bg-primary-900/50' 
+                : 'border-primary-200 text-primary-700 bg-primary-50 hover:bg-primary-100'
+            }`}
+          >
             <CreditCard className="h-4 w-4 mr-2" />
             {t('common.buy_credits')}
           </button>
