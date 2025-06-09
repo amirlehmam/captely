@@ -766,7 +766,7 @@
     "documentation": "Voir la documentation API"
   },
   "search": {
-    "placeholder": "Rechercher prospects, entreprises, campagnes...",
+    "placeholder": "Rechercher prospects, entreprises, contacts...",
     "noResults": "Aucun résultat trouvé",
     "suggestions": "Suggestions",
     "recent": "Recherches récentes"

@@ -16,6 +16,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 // Credit Context Provider - PRODUCTION READY
 import { CreditProvider } from './contexts/CreditContext';
 
+// Notification Context Provider
+import { NotificationProvider } from './contexts/NotificationContext';
+
 // Components & pages
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -96,7 +99,7 @@ function App() {
 
             {/* Protected */}
             {isAuthenticated && (
-              <>
+              <NotificationProvider>
                 <Route element={<Layout onLogout={handleLogout} />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/batches" element={<BatchesPage />} />
@@ -115,7 +118,7 @@ function App() {
                 <Route path="/login" element={<Navigate to="/" replace />} />
                 <Route path="/signup" element={<Navigate to="/" replace />} />
                 <Route path="/forgot-password" element={<Navigate to="/" replace />} />
-              </>
+              </NotificationProvider>
             )}
           </Routes>
         </Router>

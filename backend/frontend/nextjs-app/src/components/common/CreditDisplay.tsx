@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CreditCard, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
 import { useCreditContext } from '../../contexts/CreditContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -14,6 +15,11 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
 }) => {
   const { creditData, loading, error, refreshCredits } = useCreditContext();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
+
+  const handleBuyCredits = () => {
+    navigate('/billing');
+  };
 
   // Stable structure - no early returns for loading state in compact mode
   const isLowCredits = creditData ? creditData.balance < 100 : false;
@@ -116,6 +122,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
           )}
           
           <button 
+            onClick={handleBuyCredits}
             disabled={loading}
             className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
               loading 

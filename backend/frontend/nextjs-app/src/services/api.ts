@@ -1294,6 +1294,19 @@ class ApiService {
     });
   }
 
+  // Notification methods
+  async getNotifications(): Promise<{ notifications: any[] }> {
+    return client.get(`${API_CONFIG.importUrl}/notifications`);
+  }
+
+  async markNotificationAsRead(id: string): Promise<{ success: boolean }> {
+    return client.post(`${API_CONFIG.importUrl}/notifications/${id}/read`);
+  }
+
+  async markAllNotificationsAsRead(): Promise<{ success: boolean }> {
+    return client.post(`${API_CONFIG.importUrl}/notifications/mark-all-read`);
+  }
+
   async getHubSpotIntegrationStatus(): Promise<{
     connected: boolean;
     portal_id?: string;

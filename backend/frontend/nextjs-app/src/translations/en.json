@@ -833,7 +833,7 @@
     "documentation": "View API Documentation"
   },
   "search": {
-    "placeholder": "Search leads, companies, campaigns...",
+    "placeholder": "Search leads, companies, contacts...",
     "noResults": "No results found",
     "suggestions": "Suggestions",
     "recent": "Recent searches"
