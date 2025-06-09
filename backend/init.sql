@@ -106,7 +106,10 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN DEFAULT TRUE,
     -- OAuth support fields (CRITICAL FOR AUTH TO WORK)
     auth_provider VARCHAR(20) DEFAULT 'email', -- 'email', 'google', 'apple'
+    google_id VARCHAR(255), -- Google user ID for OAuth
+    apple_id VARCHAR(255), -- Apple user ID for OAuth
     email_verified BOOLEAN DEFAULT FALSE,
+    profile_picture_url TEXT, -- OAuth profile picture URL
     -- Credit and billing fields
     credits INTEGER DEFAULT 100,
     total_spent DECIMAL(10,2) DEFAULT 0,
@@ -273,6 +276,15 @@ CREATE TABLE IF NOT EXISTS export_logs (
     completed_at TIMESTAMP DEFAULT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add foreign key constraint for contact_id (from batch management migration)
+DO $$
+BEGIN
+    ALTER TABLE export_logs ADD CONSTRAINT fk_export_logs_contact_id 
+    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 -- =============================================
 -- COMPREHENSIVE BILLING SYSTEM
@@ -510,6 +522,57 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 );
 
 -- =============================================
+-- HUBSPOT INTEGRATION TABLES
+-- =============================================
+
+-- HubSpot integration configurations
+CREATE TABLE IF NOT EXISTS hubspot_integrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    hubspot_portal_id VARCHAR(255),
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    scopes TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, hubspot_portal_id)
+);
+
+-- HubSpot sync logs
+CREATE TABLE IF NOT EXISTS hubspot_sync_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    integration_id UUID NOT NULL REFERENCES hubspot_integrations(id) ON DELETE CASCADE,
+    sync_type VARCHAR(50) NOT NULL, -- 'export', 'import'
+    operation VARCHAR(50) NOT NULL, -- 'contacts', 'batch'
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'failed'
+    total_records INTEGER DEFAULT 0,
+    processed_records INTEGER DEFAULT 0,
+    failed_records INTEGER DEFAULT 0,
+    error_message TEXT,
+    sync_data JSONB DEFAULT '{}',
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- HubSpot contact mappings
+CREATE TABLE IF NOT EXISTS hubspot_contact_mappings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    captely_contact_id INTEGER REFERENCES contacts(id) ON DELETE CASCADE,
+    hubspot_contact_id VARCHAR(255) NOT NULL,
+    last_synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    sync_status VARCHAR(50) DEFAULT 'synced', -- 'synced', 'modified', 'error'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, captely_contact_id),
+    UNIQUE(user_id, hubspot_contact_id)
+);
+
+-- =============================================
 -- CREATE ALL PERFORMANCE INDEXES
 -- =============================================
 
@@ -521,9 +584,12 @@ CREATE INDEX IF NOT EXISTS idx_email_verifications_expires_at ON email_verificat
 -- Auth service critical indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_auth_provider ON users(auth_provider);
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+CREATE INDEX IF NOT EXISTS idx_users_apple_id ON users(apple_id);
 CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users(email_verified);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 CREATE INDEX IF NOT EXISTS idx_users_company ON users(company);
+CREATE INDEX IF NOT EXISTS idx_users_plan ON users(plan);
 
 -- Contacts table indexes
 CREATE INDEX IF NOT EXISTS idx_contacts_job_id ON contacts(job_id);
@@ -577,6 +643,20 @@ CREATE INDEX IF NOT EXISTS idx_enrichment_history_user_id ON enrichment_history(
 CREATE INDEX IF NOT EXISTS idx_enrichment_history_created_at ON enrichment_history(created_at);
 CREATE INDEX IF NOT EXISTS idx_billing_transactions_user_id ON billing_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+
+-- HubSpot integration indexes
+CREATE INDEX IF NOT EXISTS idx_hubspot_integrations_user_id ON hubspot_integrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_hubspot_integrations_is_active ON hubspot_integrations(is_active);
+CREATE INDEX IF NOT EXISTS idx_hubspot_integrations_expires_at ON hubspot_integrations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_hubspot_sync_logs_user_id ON hubspot_sync_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_hubspot_sync_logs_integration_id ON hubspot_sync_logs(integration_id);
+CREATE INDEX IF NOT EXISTS idx_hubspot_sync_logs_sync_type ON hubspot_sync_logs(sync_type);
+CREATE INDEX IF NOT EXISTS idx_hubspot_sync_logs_status ON hubspot_sync_logs(status);
+CREATE INDEX IF NOT EXISTS idx_hubspot_sync_logs_created_at ON hubspot_sync_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_user_id ON hubspot_contact_mappings(user_id);
+CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_captely_contact_id ON hubspot_contact_mappings(captely_contact_id);
+CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_hubspot_contact_id ON hubspot_contact_mappings(hubspot_contact_id);
+CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_sync_status ON hubspot_contact_mappings(sync_status);
 
 -- =============================================
 -- INSERT SAMPLE DATA FOR TESTING
@@ -816,6 +896,29 @@ BEGIN
     DROP TRIGGER IF EXISTS update_export_logs_updated_at_trigger ON export_logs;
     CREATE TRIGGER update_export_logs_updated_at_trigger
         BEFORE UPDATE ON export_logs
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+-- HubSpot integration triggers
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_hubspot_integrations_updated_at_trigger ON hubspot_integrations;
+    CREATE TRIGGER update_hubspot_integrations_updated_at_trigger
+        BEFORE UPDATE ON hubspot_integrations
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_hubspot_contact_mappings_updated_at_trigger ON hubspot_contact_mappings;
+    CREATE TRIGGER update_hubspot_contact_mappings_updated_at_trigger
+        BEFORE UPDATE ON hubspot_contact_mappings
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at();
 EXCEPTION

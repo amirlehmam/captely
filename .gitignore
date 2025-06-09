@@ -185,6 +185,7 @@ client_secret.json
 *.p12
 *.key
 api-keys.json
+oauth-credentials-LOCAL-ONLY.txt
 
 # Additional sensitive files
 config/secrets.yml
