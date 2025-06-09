@@ -624,56 +624,103 @@ async def create_subscription_checkout(
         logger.error(f"Error creating checkout session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
 
+@app.post("/api/billing/create-default-subscription")
+async def create_default_subscription(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Create a default starter subscription for new users"""
+    try:
+        # Check if user already has a subscription
+        existing = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id,
+            UserSubscription.status == SubscriptionStatus.active
+        ).first()
+        
+        if existing:
+            return {"message": "User already has an active subscription", "subscription_id": str(existing.id)}
+        
+        # Get starter package
+        starter_package = db.query(Package).filter(Package.name == "starter").first()
+        if not starter_package:
+            raise HTTPException(status_code=404, detail="Starter package not found")
+        
+        # Create new subscription
+        new_subscription = UserSubscription(
+            user_id=user_id,
+            package_id=starter_package.id,
+            billing_cycle=BillingCycle.monthly,
+            status=SubscriptionStatus.active,
+            current_period_start=datetime.utcnow(),
+            current_period_end=datetime.utcnow() + timedelta(days=30),
+        )
+        
+        db.add(new_subscription)
+        db.commit()
+        db.refresh(new_subscription)
+        
+        # Allocate starter credits (500 credits for 30 days)
+        CreditService.allocate_credits(
+            user_id=user_id,
+            credits=500,
+            source="starter_subscription",
+            expires_at=datetime.utcnow() + timedelta(days=30),
+            db=db,
+            subscription_id=str(new_subscription.id)
+        )
+        
+        logger.info(f"Created starter subscription for user {user_id}")
+        return {"message": "Starter subscription created successfully", "subscription_id": str(new_subscription.id)}
+        
+    except Exception as e:
+        logger.error(f"Error creating default subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create subscription: {str(e)}")
+
 @app.get("/api/billing/subscription", response_model=SubscriptionResponse)
 async def get_current_subscription(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Get current user subscription"""
-    from app.models import Package  # Local import to avoid circularities
-
     subscription = db.query(UserSubscription).filter(
         UserSubscription.user_id == user_id,
         UserSubscription.status == SubscriptionStatus.active
     ).first()
     
     if not subscription:
-        # Try to find pack-500 package in database
-        pack_500 = db.query(Package).filter(Package.name == "starter").first()
-        if pack_500:
-            # Build a minimal but valid SubscriptionResponse using the starter package
-            return {
-                "id": "default-pack-500",
-                "user_id": user_id,
-                "package_id": str(pack_500.id),
-                "billing_cycle": "monthly",
-                "status": "active",
-                "current_period_start": datetime.utcnow(),
-                "current_period_end": datetime.utcnow() + timedelta(days=30),
-                "trial_start": None,
-                "trial_end": None,
-                "cancelled_at": None,
-                "cancel_at_period_end": False,
-                "created_at": datetime.utcnow(),
-                "package": PackageResponse.model_validate(pack_500)
-            }
-        else:
-            # Fallback if no pack-500 in database
-            return {
-                "id": "default-pack-500",
-                "user_id": user_id,
-                "package_id": "pack-500",
-                "billing_cycle": "monthly",
-                "status": "active",
-                "current_period_start": datetime.utcnow(),
-                "current_period_end": datetime.utcnow() + timedelta(days=30),
-                "trial_start": None,
-                "trial_end": None,
-                "cancelled_at": None,
-                "cancel_at_period_end": False,
-                "created_at": datetime.utcnow(),
-                "package": None
-            }
+        # Auto-create starter subscription for users without one
+        logger.info(f"No subscription found for user {user_id}, creating starter subscription")
+        
+        starter_package = db.query(Package).filter(Package.name == "starter").first()
+        if not starter_package:
+            raise HTTPException(status_code=404, detail="Starter package not found")
+        
+        # Create new subscription
+        new_subscription = UserSubscription(
+            user_id=user_id,
+            package_id=starter_package.id,
+            billing_cycle=BillingCycle.monthly,
+            status=SubscriptionStatus.active,
+            current_period_start=datetime.utcnow(),
+            current_period_end=datetime.utcnow() + timedelta(days=30),
+        )
+        
+        db.add(new_subscription)
+        db.commit()
+        db.refresh(new_subscription)
+        
+        # Allocate starter credits (500 credits for 30 days)
+        CreditService.allocate_credits(
+            user_id=user_id,
+            credits=500,
+            source="starter_subscription",
+            expires_at=datetime.utcnow() + timedelta(days=30),
+            db=db,
+            subscription_id=str(new_subscription.id)
+        )
+        
+        subscription = new_subscription
+        logger.info(f"Created starter subscription for user {user_id}")
     
     return SubscriptionResponse.model_validate(subscription)
 
