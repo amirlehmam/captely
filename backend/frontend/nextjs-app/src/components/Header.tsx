@@ -20,8 +20,8 @@ const Header: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Navigate to contacts page with search query
-      navigate(`/contacts?search=${encodeURIComponent(searchQuery.trim())}`);
+      // Navigate to CRM page with search query
+      navigate(`/crm?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 

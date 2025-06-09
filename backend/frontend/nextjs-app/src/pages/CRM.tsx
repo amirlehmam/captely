@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Search, Filter, Download, Mail, Phone, Building2, 
@@ -82,6 +83,7 @@ interface Batch {
 const CRMPage: React.FC = () => {
   const { t } = useLanguage();
   const { isDark } = useTheme();
+  const location = useLocation();
   
   // State
   const [loading, setLoading] = useState(true);
@@ -161,6 +163,17 @@ const CRMPage: React.FC = () => {
     fetchStats();
     fetchBatches();
   }, [fetchStats, fetchBatches]);
+
+  // Handle URL search parameter when page loads
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const searchQuery = searchParams.get('search');
+    if (searchQuery) {
+      setSearchTerm(searchQuery);
+      // Show a toast to indicate search is active
+      toast.success(`🔍 Searching for "${searchQuery}"`);
+    }
+  }, [location.search]);
 
   // Handlers
   const handleRefresh = async () => {
