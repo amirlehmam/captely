@@ -558,6 +558,14 @@ async def create_subscription_checkout(
             logger.error(f"Available packages: {[p.name for p in db.query(Package).all()]}")
             raise HTTPException(status_code=404, detail=f"Package not found: {data.package_id}")
         
+        # Prevent Enterprise packages from going through checkout
+        if package.plan_type == PlanType.enterprise:
+            logger.error(f"❌ Enterprise package {package.name} cannot be purchased through checkout")
+            raise HTTPException(
+                status_code=400, 
+                detail="Enterprise packages require custom pricing. Please contact our sales team at sales@captely.com"
+            )
+        
         # Get user email from auth service
         import httpx
         async with httpx.AsyncClient() as client:

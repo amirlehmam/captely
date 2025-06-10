@@ -911,7 +911,7 @@ const BillingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Credit Packs */}
+      {/* Regular Credit Packs */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -931,7 +931,7 @@ const BillingPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {creditPacks.map((pack) => {
+          {creditPacks.filter(pack => pack.plan_type !== 'enterprise').map((pack) => {
             const monthlyPrice = billingType === 'annual' ? pack.price_annual / 12 : pack.price_monthly;
             const totalPrice = billingType === 'annual' ? pack.price_annual : pack.price_monthly;
             const savings = billingType === 'annual' ? (pack.price_monthly * 12) - pack.price_annual : 0;
@@ -1100,6 +1100,156 @@ const BillingPage: React.FC = () => {
           })}
           </div>
         </motion.div>
+
+      {/* Enterprise Section */}
+      {creditPacks.filter(pack => pack.plan_type === 'enterprise').length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <div className="text-center mb-8">
+            <h2 className={`text-2xl font-bold mb-2 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              🏢 Enterprise Solutions
+            </h2>
+            <p className={`${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              Custom solutions for large organizations with high-volume needs
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            {creditPacks.filter(pack => pack.plan_type === 'enterprise').map((pack) => (
+              <motion.div
+                key={pack.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`relative rounded-xl shadow-xl border-2 p-8 ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-br from-purple-900/20 via-gray-800 to-blue-900/20 border-purple-500/50' 
+                    : 'bg-gradient-to-br from-purple-50 via-white to-blue-50 border-purple-300'
+                }`}
+              >
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <span className={`px-6 py-2 rounded-full text-sm font-bold text-white ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-500'
+                      : 'bg-gradient-to-r from-purple-600 to-purple-500'
+                  }`}>
+                    👑 Enterprise
+                  </span>
+                </div>
+
+                <div className="text-center mb-8">
+                  <h3 className={`text-3xl font-bold mb-4 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {pack.display_name}
+                  </h3>
+                  <div className="mb-6">
+                    <span className={`text-4xl font-bold ${
+                      theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                    }`}>
+                      Custom Pricing
+                    </span>
+                    <p className={`text-lg mt-2 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Tailored to your organization's needs
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 mb-8">
+                  <div>
+                    <h4 className={`text-xl font-semibold mb-4 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      🚀 Premium Features
+                    </h4>
+                    <div className="space-y-3">
+                      {JSON.parse(pack.features || '[]').map((feature: string, index: number) => (
+                        <div key={index} className={`flex items-center text-sm ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                          <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                            theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                          }`} />
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className={`text-xl font-semibold mb-4 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      💼 What's Included
+                    </h4>
+                    <div className="space-y-3">
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Crown className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-yellow-400' : 'text-yellow-500'
+                        }`} />
+                        High-volume credit packages
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Users className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
+                        }`} />
+                        Team management & multiple users
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Shield className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-green-400' : 'text-green-500'
+                        }`} />
+                        Advanced security & compliance
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Headphones className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-emerald-400' : 'text-emerald-500'
+                        }`} />
+                        Priority support & dedicated account manager
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <button
+                    onClick={() => window.open('mailto:sales@captely.com?subject=Enterprise Plan Inquiry&body=Hi, I am interested in learning more about Captely Enterprise plans for my organization.', '_blank')}
+                    className={`inline-flex items-center px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${
+                      theme === 'dark'
+                        ? 'bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white shadow-xl hover:shadow-2xl'
+                        : 'bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white shadow-xl hover:shadow-2xl'
+                    }`}
+                  >
+                    <Mail className="w-6 h-6 mr-3" />
+                    Contact Sales Team
+                  </button>
+                  <p className={`text-sm mt-3 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    Get a custom quote tailored to your needs
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Enrichment History */}
       <AnimatePresence>
