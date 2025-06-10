@@ -487,6 +487,144 @@ async def send_weekly_summaries(
     
     return {"status": "success", "sent_count": sent_count}
 
+@app.get("/api/notifications/")
+async def get_user_notifications(
+    limit: int = 50,
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_jwt)
+):
+    """Get notifications for the authenticated user"""
+    
+    try:
+        # Get recent notification logs for this user
+        user_query = "SELECT email FROM users WHERE id = :user_id"
+        user_result = await session.execute(text(user_query), {"user_id": auth_user})
+        user_email = user_result.scalar()
+        
+        if not user_email:
+            return {"notifications": []}
+        
+        # Get recent notifications from logs
+        logs_query = """
+            SELECT template_name, subject, status, created_at, recipient_email
+            FROM notification_logs 
+            WHERE recipient_email = :email 
+            ORDER BY created_at DESC 
+            LIMIT :limit
+        """
+        
+        result = await session.execute(text(logs_query), {
+            "email": user_email,
+            "limit": limit
+        })
+        logs = result.fetchall()
+        
+        # Format notifications for frontend
+        notifications = []
+        for log in logs:
+            template_name, subject, status, created_at, recipient_email = log
+            
+            # Map template names to notification types
+            notification_type = "system_update"
+            if template_name == "job_completion":
+                notification_type = "job_completed"
+            elif template_name in ["low_credits", "no_credits"]:
+                notification_type = "low_credits"
+            elif template_name == "weekly_summary":
+                notification_type = "batch_complete"
+            
+            notifications.append({
+                "id": f"{template_name}_{int(created_at.timestamp())}",
+                "type": notification_type,
+                "title": subject,
+                "message": _get_notification_message(template_name, subject),
+                "read": status == "delivered",
+                "created_at": created_at.isoformat()
+            })
+        
+        return {"notifications": notifications}
+        
+    except Exception as e:
+        logger.error(f"Error fetching notifications for user {auth_user}: {str(e)}")
+        return {"notifications": []}
+
+def _get_notification_message(template_name: str, subject: str) -> str:
+    """Generate notification message based on template"""
+    if template_name == "job_completion":
+        return "Your enrichment job has finished processing. Click to view results."
+    elif template_name == "low_credits":
+        return "Your credit balance is running low. Consider topping up to continue."
+    elif template_name == "weekly_summary":
+        return "Your weekly activity summary is ready to view."
+    else:
+        return subject
+
+@app.post("/api/notifications/{notification_id}/read")
+async def mark_notification_as_read(
+    notification_id: str,
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_jwt)
+):
+    """Mark a specific notification as read"""
+    
+    try:
+        # Extract timestamp from notification ID
+        if "_" in notification_id:
+            timestamp_str = notification_id.split("_")[-1]
+            timestamp = datetime.fromtimestamp(int(timestamp_str))
+            
+            # Update notification status (if logs table has status tracking)
+            update_query = """
+                UPDATE notification_logs 
+                SET status = 'read' 
+                WHERE created_at = :timestamp 
+                AND recipient_email = (
+                    SELECT email FROM users WHERE id = :user_id
+                )
+            """
+            
+            await session.execute(text(update_query), {
+                "timestamp": timestamp,
+                "user_id": auth_user
+            })
+            await session.commit()
+        
+        return {"success": True}
+        
+    except Exception as e:
+        logger.error(f"Error marking notification as read: {str(e)}")
+        return {"success": False}
+
+@app.post("/api/notifications/mark-all-read")
+async def mark_all_notifications_as_read(
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_jwt)
+):
+    """Mark all notifications as read for the authenticated user"""
+    
+    try:
+        # Get user's email
+        user_query = "SELECT email FROM users WHERE id = :user_id"
+        user_result = await session.execute(text(user_query), {"user_id": auth_user})
+        user_email = user_result.scalar()
+        
+        if user_email:
+            # Mark all notifications as read
+            update_query = """
+                UPDATE notification_logs 
+                SET status = 'read' 
+                WHERE recipient_email = :email
+            """
+            
+            await session.execute(text(update_query), {"email": user_email})
+            await session.commit()
+        
+        return {"success": True}
+        
+    except Exception as e:
+        logger.error(f"Error marking all notifications as read: {str(e)}")
+        return {"success": False}
+
 @app.get("/api/notifications/logs/{user_id}")
 async def get_notification_logs(
     user_id: str,

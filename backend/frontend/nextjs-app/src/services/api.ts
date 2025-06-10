@@ -1294,10 +1294,11 @@ class ApiService {
     });
   }
 
-  // Notification methods
+  // Notification methods - Fixed to use correct notification service endpoints
   async getNotifications(): Promise<{ notifications: any[] }> {
     try {
-      return await client.get(`${API_CONFIG.importUrl}/notifications`);
+      // Use the notification service directly (nginx routes /api/notifications to notification-service)
+      return await client.get('/api/notifications/');
     } catch (error) {
       console.warn('Notifications API not available yet, returning empty array');
       return { notifications: [] };
@@ -1305,11 +1306,11 @@ class ApiService {
   }
 
   async markNotificationAsRead(id: string): Promise<{ success: boolean }> {
-    return client.post(`${API_CONFIG.importUrl}/notifications/${id}/read`);
+    return client.post(`/api/notifications/${id}/read`);
   }
 
   async markAllNotificationsAsRead(): Promise<{ success: boolean }> {
-    return client.post(`${API_CONFIG.importUrl}/notifications/mark-all-read`);
+    return client.post('/api/notifications/mark-all-read');
   }
 
   async getHubSpotIntegrationStatus(): Promise<{
