@@ -2018,23 +2018,50 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
             "updated_at": datetime.utcnow()
         })
     
-    # Save to database using SYNC operations
+    # Save to database using SYNC operations with lead scoring
     try:
         with SyncSessionLocal() as session:
-            # Insert contact record with MODERN VERIFICATION FIELDS
+            # Calculate lead score and email reliability before saving
+            lead_score = calculate_lead_score(
+                email=contact_data.get("email"),
+                phone=contact_data.get("phone"),
+                email_verified=contact_data.get("email_verified", False),
+                phone_verified=contact_data.get("phone_verified", False),
+                email_verification_score=contact_data.get("email_verification_score"),
+                phone_verification_score=contact_data.get("phone_verification_score"),
+                company=contact_data["company"],
+                position=contact_data["position"],
+                profile_url=contact_data["profile_url"],
+                enrichment_score=contact_data.get("enrichment_score")
+            )
+            
+            email_reliability = calculate_email_reliability(
+                email=contact_data.get("email"),
+                email_verified=contact_data.get("email_verified", False),
+                email_verification_score=contact_data.get("email_verification_score"),
+                is_disposable=False,  # These flags would need to be set during verification
+                is_role_based=False,
+                is_catchall=False
+            )
+            
+            print(f"📊 Calculated scores - Lead: {lead_score}, Email reliability: {email_reliability}")
+            
+            # Insert contact record with MODERN VERIFICATION FIELDS AND SCORING
             contact_insert = text("""
                 INSERT INTO contacts (
                     job_id, first_name, last_name, company, position, location, 
                     industry, profile_url, email, phone, enriched, enrichment_status,
                     enrichment_provider, enrichment_score, email_verified, phone_verified,
                     email_verification_score, phone_verification_score,
-                    notes, credits_consumed, created_at, updated_at
+                    lead_score, email_reliability, notes, credits_consumed, 
+                    created_at, updated_at
                 ) VALUES (
                     :job_id, :first_name, :last_name, :company, :position, :location,
                     :industry, :profile_url, :email, :phone, :enriched, :enrichment_status,
                     :enrichment_provider, :enrichment_score, :email_verified, :phone_verified,
                     :email_verification_score, :phone_verification_score,
-                    :notes, :credits_consumed, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    :lead_score, :email_reliability, :notes, :credits_consumed,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 ) RETURNING id
             """)
             
@@ -2057,6 +2084,8 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                 "phone_verified": contact_data.get("phone_verified", False),
                 "email_verification_score": contact_data.get("email_verification_score"),
                 "phone_verification_score": contact_data.get("phone_verification_score"),
+                "lead_score": lead_score,
+                "email_reliability": email_reliability,
                 "notes": contact_data.get("notes"),
                 "credits_consumed": contact_data["credits_consumed"]
             })
@@ -2179,12 +2208,59 @@ def ultra_fast_single_enrich(self, lead: Dict[str, Any], job_id: str, user_id: s
         
         logger.warning(f"💰 Credits to charge: {credits_to_charge}")
         
-        # Save to database
+        # Save to database with scoring
         with SyncSessionLocal() as session:
             try:
                 # Create or update contact
                 if contact_id:
-                    # Update existing contact
+                    # Get existing contact data for scoring
+                    get_contact_query = text("""
+                        SELECT 
+                            company, position, profile_url, enrichment_score,
+                            email_verified, phone_verified, 
+                            email_verification_score, phone_verification_score,
+                            is_disposable, is_role_based, is_catchall
+                        FROM contacts 
+                        WHERE id = :contact_id
+                    """)
+                    contact_result = session.execute(get_contact_query, {"contact_id": contact_id})
+                    contact_data = contact_result.fetchone()
+                    
+                    if contact_data:
+                        # Calculate lead score and email reliability
+                        lead_score = calculate_lead_score(
+                            email=result.get("email"),
+                            phone=lead.get("phone"),  # Keep existing phone if any
+                            email_verified=False,  # Fresh enrichment, not verified yet
+                            phone_verified=False,
+                            email_verification_score=None,
+                            phone_verification_score=None,
+                            company=contact_data[0] or lead.get("company"),
+                            position=contact_data[1] or lead.get("position"),
+                            profile_url=contact_data[2] or lead.get("profile_url"),
+                            enrichment_score=result.get("confidence", 0)
+                        )
+                        
+                        email_reliability = calculate_email_reliability(
+                            email=result.get("email"),
+                            email_verified=False,  # Fresh enrichment, not verified yet
+                            email_verification_score=None,
+                            is_disposable=contact_data[8] or False,
+                            is_role_based=contact_data[9] or False,
+                            is_catchall=contact_data[10] or False
+                        )
+                    else:
+                        # Fallback calculation if contact not found
+                        lead_score = calculate_lead_score(
+                            email=result.get("email"),
+                            company=lead.get("company"),
+                            position=lead.get("position"),
+                            profile_url=lead.get("profile_url"),
+                            enrichment_score=result.get("confidence", 0)
+                        )
+                        email_reliability = calculate_email_reliability(email=result.get("email"))
+                    
+                    # Update existing contact with scoring
                     contact_update = text("""
                         UPDATE contacts SET 
                             email = :email,
@@ -2193,6 +2269,8 @@ def ultra_fast_single_enrich(self, lead: Dict[str, Any], job_id: str, user_id: s
                             enrichment_provider = :provider,
                             enrichment_score = :score,
                             credits_consumed = :credits,
+                            lead_score = :lead_score,
+                            email_reliability = :email_reliability,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = :contact_id
                     """)
@@ -2203,19 +2281,36 @@ def ultra_fast_single_enrich(self, lead: Dict[str, Any], job_id: str, user_id: s
                         "provider": result.get("provider", "none"),
                         "score": result.get("confidence", 0),
                         "credits": credits_to_charge,
+                        "lead_score": lead_score,
+                        "email_reliability": email_reliability,
                         "contact_id": contact_id
                     })
+                    
+                    logger.warning(f"✅ Updated contact {contact_id}: lead_score={lead_score}, email_reliability={email_reliability}")
                 else:
-                    # Create new contact
+                    # Calculate lead score for new contact
+                    lead_score = calculate_lead_score(
+                        email=result.get("email"),
+                        company=lead.get("company"),
+                        position=lead.get("position"),
+                        profile_url=lead.get("profile_url"),
+                        enrichment_score=result.get("confidence", 0)
+                    )
+                    
+                    email_reliability = calculate_email_reliability(email=result.get("email"))
+                    
+                    # Create new contact with scoring
                     contact_insert = text("""
                         INSERT INTO contacts (
                             job_id, first_name, last_name, company, position, 
                             email, enriched, enrichment_status, enrichment_provider,
-                            enrichment_score, credits_consumed, created_at, updated_at
+                            enrichment_score, credits_consumed, lead_score, email_reliability,
+                            created_at, updated_at
                         ) VALUES (
                             :job_id, :first_name, :last_name, :company, :position,
                             :email, :enriched, :status, :provider,
-                            :score, :credits, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                            :score, :credits, :lead_score, :email_reliability,
+                            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                         ) RETURNING id
                     """)
                     result_row = session.execute(contact_insert, {
@@ -2229,9 +2324,13 @@ def ultra_fast_single_enrich(self, lead: Dict[str, Any], job_id: str, user_id: s
                         "status": "completed" if email_found else "failed",
                         "provider": result.get("provider", "none"),
                         "score": result.get("confidence", 0),
-                        "credits": credits_to_charge
+                        "credits": credits_to_charge,
+                        "lead_score": lead_score,
+                        "email_reliability": email_reliability
                     })
                     contact_id = result_row.scalar_one()
+                    
+                    logger.warning(f"✅ Created contact {contact_id}: lead_score={lead_score}, email_reliability={email_reliability}")
                 
                 # Charge credits if email found
                 if credits_to_charge > 0:
@@ -2355,17 +2454,28 @@ def ultra_fast_batch_enrich_task(self, leads: List[Dict[str, Any]], job_id: str,
                         if credits_needed > 0:
                             logger.warning(f"⚠️ Skipping credit charge for contact {i+1} - insufficient credits")
                     
-                    # Insert contact
+                    # Calculate lead score and email reliability for each contact
+                    lead_score = calculate_lead_score(
+                        email=result.get("email"),
+                        company=lead.get("company"),
+                        position=lead.get("position"),
+                        profile_url=lead.get("profile_url"),
+                        enrichment_score=result.get("confidence", 0)
+                    )
+                    
+                    email_reliability = calculate_email_reliability(email=result.get("email"))
+                    
+                    # Insert contact with scoring
                     contact_insert = text("""
                         INSERT INTO contacts (
                             job_id, first_name, last_name, company, position, location,
                             industry, profile_url, email, enriched, enrichment_status,
                             enrichment_provider, enrichment_score, credits_consumed,
-                            created_at, updated_at
+                            lead_score, email_reliability, created_at, updated_at
                         ) VALUES (
                             :job_id, :first_name, :last_name, :company, :position, :location,
                             :industry, :profile_url, :email, :enriched, :status,
-                            :provider, :score, :credits,
+                            :provider, :score, :credits, :lead_score, :email_reliability,
                             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                         )
                     """)
@@ -2384,7 +2494,9 @@ def ultra_fast_batch_enrich_task(self, leads: List[Dict[str, Any]], job_id: str,
                         "status": "completed" if email_found else "failed",
                         "provider": result.get("provider", "none"),
                         "score": result.get("confidence", 0),
-                        "credits": credits_to_charge
+                        "credits": credits_to_charge,
+                        "lead_score": lead_score,
+                        "email_reliability": email_reliability
                     })
                     
                     if email_found:
