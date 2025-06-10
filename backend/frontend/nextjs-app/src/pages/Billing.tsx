@@ -931,11 +931,11 @@ const BillingPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {creditPacks.filter(pack => pack.plan_type !== 'enterprise').map((pack) => {
+          {packages.filter(pack => pack.plan_type !== 'enterprise').map((pack) => {
             const monthlyPrice = billingType === 'annual' ? pack.price_annual / 12 : pack.price_monthly;
             const totalPrice = billingType === 'annual' ? pack.price_annual : pack.price_monthly;
             const savings = billingType === 'annual' ? (pack.price_monthly * 12) - pack.price_annual : 0;
-            const isCurrentPack = currentPlan?.credits_monthly === pack.credits;
+            const isCurrentPack = currentPlan?.credits_monthly === pack.credits_monthly;
           
           return (
             <motion.div
@@ -1062,7 +1062,7 @@ const BillingPage: React.FC = () => {
                   </div>
 
                 <button
-                    onClick={() => handlePlanUpgrade(pack.id, billingType)}
+                    onClick={() => handlePlanUpgrade(pack.name, billingType)}
                     disabled={isCurrentPack || loading}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
                       isCurrentPack
@@ -1102,7 +1102,7 @@ const BillingPage: React.FC = () => {
         </motion.div>
 
       {/* Enterprise Section */}
-      {creditPacks.filter(pack => pack.plan_type === 'enterprise').length > 0 && (
+      {packages.filter(pack => pack.plan_type === 'enterprise').length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1122,7 +1122,7 @@ const BillingPage: React.FC = () => {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            {creditPacks.filter(pack => pack.plan_type === 'enterprise').map((pack) => (
+            {packages.filter(pack => pack.plan_type === 'enterprise').map((pack) => (
               <motion.div
                 key={pack.id}
                 initial={{ opacity: 0, y: 20 }}
