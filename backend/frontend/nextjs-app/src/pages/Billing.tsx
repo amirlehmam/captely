@@ -983,7 +983,7 @@ const BillingPage: React.FC = () => {
                 <div className="text-center mb-6">
                     <h3 className={`text-xl font-bold ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}> {pack.name}</h3>
+                    }`}> {pack.display_name}</h3>
                   <div className="mt-4">
                         <span className={`text-3xl font-bold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -1013,7 +1013,7 @@ const BillingPage: React.FC = () => {
                     <p className={`text-sm mt-2 ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                      {billingType === 'annual' ? (pack.credits * 12).toLocaleString() : pack.credits.toLocaleString()} 
+                      {billingType === 'annual' ? (pack.credits_monthly * 12).toLocaleString() : pack.credits_monthly.toLocaleString()} 
                       {billingType === 'annual' ? t('billing.creditsPerYear') : t('billing.creditsPerMonth')}
                     </p>
                 </div>
@@ -1025,7 +1025,7 @@ const BillingPage: React.FC = () => {
                       <Mail className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
                       }`} />
-                       {billingType === 'annual' ? (pack.emails_equivalent * 12).toLocaleString() : pack.emails_equivalent.toLocaleString()} {t('billing.emails')}
+                       {billingType === 'annual' ? (Math.round(pack.credits_monthly * 0.5) * 12).toLocaleString() : Math.round(pack.credits_monthly * 0.5).toLocaleString()} {t('billing.emails')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1033,7 +1033,7 @@ const BillingPage: React.FC = () => {
                       <Phone className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
                       }`} />
-                       {billingType === 'annual' ? (pack.phones_equivalent * 12).toLocaleString() : pack.phones_equivalent.toLocaleString()} {t('billing.phones')}
+                       {billingType === 'annual' ? (Math.round(pack.credits_monthly * 0.25) * 12).toLocaleString() : Math.round(pack.credits_monthly * 0.25).toLocaleString()} {t('billing.phones')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
