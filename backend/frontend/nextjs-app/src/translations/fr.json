@@ -139,8 +139,9 @@
     "of": "sur",
     "duration": "Durée",
     "hit_rate": "taux de réussite",
-    "this_month": "ce mois",
-    "active": "Actif"
+    "this_month": "Ce mois-ci",
+    "active": "Actif",
+    "phone_hit_rate": "Taux de réussite téléphone"
   },
   "navigation": {
     "dashboard": "Tableau de bord",

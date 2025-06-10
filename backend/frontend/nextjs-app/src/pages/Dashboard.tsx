@@ -32,6 +32,8 @@ interface Stats {
     credits_used_month?: number;
     email_hit_rate?: number;
     phone_hit_rate?: number;
+    current_batch_emails?: number;
+    current_batch_email_hit_rate?: number;
   };
   recent_batches?: Array<{
     id: string;
@@ -102,14 +104,14 @@ const Dashboard: React.FC = () => {
     },
     {
       title: t('dashboard.stats.emailsFound'),
-      value: stats?.overview?.emails_found || 0,
-      subtitle: `${Math.round((stats?.overview?.email_hit_rate || 0))}% ${t('common.hit_rate')}`,
+      value: stats?.overview?.current_batch_emails || 0,
+      subtitle: `${Math.round((stats?.overview?.current_batch_email_hit_rate || 0))}% ${t('common.hit_rate')}`,
       icon: Mail,
-      color: 'green',
-      bgColor: isDark ? 'bg-green-900/20' : 'bg-green-50',
-      iconColor: isDark ? 'text-green-400' : 'text-green-600',
-      textColor: isDark ? 'text-green-300' : 'text-green-900',
-      borderColor: isDark ? 'border-green-700/50' : 'border-green-200'
+      color: 'blue',
+      bgColor: isDark ? 'bg-blue-900/20' : 'bg-blue-50',
+      iconColor: isDark ? 'text-blue-400' : 'text-blue-600',
+      textColor: isDark ? 'text-blue-300' : 'text-blue-900',
+      borderColor: isDark ? 'border-blue-700/50' : 'border-blue-200'
     },
     {
       title: t('dashboard.stats.phonesFound'),
@@ -125,7 +127,7 @@ const Dashboard: React.FC = () => {
     {
       title: t('dashboard.stats.creditsUsed'),
       value: creditData?.used_this_month || 0,
-      subtitle: `${Math.round((stats?.overview?.email_hit_rate || 0))}% ${t('common.success_rate')}`,
+      subtitle: t('common.this_month'),
       icon: CreditCard,
       color: 'orange',
       bgColor: isDark ? 'bg-orange-900/20' : 'bg-orange-50',
@@ -216,7 +218,7 @@ const Dashboard: React.FC = () => {
                 isDark ? 'bg-purple-900/20 text-purple-400' : 'bg-purple-100 text-purple-600'
               } group-hover:${isDark ? 'bg-purple-900/30' : 'bg-purple-200'}`}>
                 <CreditCard className="h-5 w-5" />
-      </div>
+              </div>
               <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                 {t('common.buy_credits')}
               </span>

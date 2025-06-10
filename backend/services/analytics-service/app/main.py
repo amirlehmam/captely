@@ -715,34 +715,28 @@ async def get_dashboard_analytics(
         current_batch_emails = 0
         current_batch_phones = 0
         current_batch_total = 0
+        current_batch_email_hit_rate = 0
         
         if current_batch:
             current_batch_emails = current_batch.get('emails_found', 0)
             current_batch_phones = current_batch.get('phones_found', 0)
-            current_batch_total = current_batch.get('completed', 0)
-        
-        # Calculate current batch hit rates
-        current_batch_email_rate = (current_batch_emails / current_batch_total * 100) if current_batch_total > 0 else 0
-        current_batch_phone_rate = (current_batch_phones / current_batch_total * 100) if current_batch_total > 0 else 0
-        
-        print(f"🎯 CURRENT BATCH STATS:")
-        print(f"   - Current batch emails: {current_batch_emails}")
-        print(f"   - Current batch phones: {current_batch_phones}")
-        print(f"   - Current batch total: {current_batch_total}")
-        print(f"   - Current batch email rate: {current_batch_email_rate:.1f}%")
-        print(f"   - Current batch phone rate: {current_batch_phone_rate:.1f}%")
+            current_batch_total = current_batch.get('total_contacts', 0)
+            if current_batch_total > 0:
+                current_batch_email_hit_rate = (current_batch_emails / current_batch_total) * 100
         
         response_data = {
             "overview": {
-                "total_contacts": current_batch_total,  # 🎯 FIXED: Show current batch total
-                "emails_found": current_batch_emails,    # 🎯 FIXED: Show current batch emails only
-                "phones_found": current_batch_phones,    # 🎯 FIXED: Show current batch phones only
-                "phone_hit_rate": round(current_batch_phone_rate, 1),  # 🎯 FIXED: Replaced success_rate with phone_hit_rate
-                "email_hit_rate": round(email_hit_rate, 1),  # Overall email hit rate for credits section
-                "success_rate": round(email_hit_rate, 1),    # Keep for backward compatibility
+                "total_contacts": total_contacts,
+                "emails_found": emails_found,
+                "phones_found": phones_found,
+                "success_rate": round(success_rate, 1),
+                "email_hit_rate": round(email_hit_rate, 1),
+                "phone_hit_rate": round(phone_hit_rate, 1),
                 "avg_confidence": round(avg_confidence, 1),
                 "credits_used_today": credits_used_today,
-                "credits_used_month": int(credits_used_total)
+                "credits_used_month": int(credits_used_total),
+                "current_batch_emails": current_batch_emails,
+                "current_batch_email_hit_rate": round(current_batch_email_hit_rate, 1)
             },
             "recent_jobs": recent_jobs[:5],  # Last 5 jobs
             "active_jobs": active_jobs,

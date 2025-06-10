@@ -141,8 +141,9 @@
     "of": "of",
     "duration": "Duration",
     "hit_rate": "hit rate",
-    "this_month": "this month",
-    "active": "Active"
+    "this_month": "This month",
+    "active": "Active",
+    "phone_hit_rate": "Phone Hit Rate"
   },
   "navigation": {
     "dashboard": "Dashboard",

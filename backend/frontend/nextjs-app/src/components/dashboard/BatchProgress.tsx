@@ -256,16 +256,18 @@ const BatchProgress: React.FC = () => {
                       <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         4. {t('common.phone_verify')}
                       </span>
-                      {progress >= 100 && (currentBatch.phones_found || 0) > 0 ? (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      ) : progress >= 100 ? (
+                      {(currentBatch.phones_found || 0) > 0 && progress >= 100 ? (
                         <Loader className="h-4 w-4 text-purple-500 animate-spin" />
+                      ) : (currentBatch.phones_found || 0) > 0 && progress < 100 ? (
+                        <Clock className="h-4 w-4 text-gray-400" />
+                      ) : progress >= 100 ? (
+                        <CheckCircle className="h-4 w-4 text-gray-500" />
                       ) : (
                         <Clock className="h-4 w-4 text-gray-400" />
                       )}
                     </div>
                     <div className={`text-xs space-y-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <div>{t('common.status')}: {progress >= 100 && (currentBatch.phones_found || 0) > 0 ? t('common.verifying') : progress >= 100 ? t('common.ready') : t('common.waiting')}</div>
+                      <div>{t('common.status')}: {(currentBatch.phones_found || 0) > 0 && progress >= 100 ? t('common.verifying') : (currentBatch.phones_found || 0) > 0 && progress < 100 ? t('common.waiting') : progress >= 100 ? t('common.completed') : t('common.waiting')}</div>
                       <div>{t('common.type')}: {t('common.mobile_landline_detection')}</div>
                       <div>{t('common.phones')}: {currentBatch.phones_found || 0} {t('common.found')}</div>
                     </div>
