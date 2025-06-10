@@ -1,167 +1,61 @@
--- ================================================================
--- Fix User Subscriptions Migration - FOR ALL USERS
--- Adds starter subscriptions for all users who don't have one
--- ================================================================
+-- Fix user subscription to 10,000 credits package
+-- User ID: 0f92ca2a-8fb4-48c7-b2a6-560fd2a7a774
 
--- Enable transactions
-BEGIN;
-
--- ================================================================
--- 1. CREATE STARTER PACKAGE IF NOT EXISTS
--- ================================================================
-
-INSERT INTO packages (
-    name, 
-    display_name, 
-    plan_type, 
-    credits_monthly, 
-    price_monthly, 
-    price_annual, 
-    features, 
-    is_active,
-    created_at,
-    updated_at
-) 
-SELECT 
-    'starter',
-    'Starter',
-    'starter',
-    500,
-    25.00,
-    240.00,
-    '["500 credits per month", "Email enrichment", "Phone enrichment", "CSV import/export", "Chrome extension", "Basic support"]',
-    true,
-    NOW(),
-    NOW()
-WHERE NOT EXISTS (
-    SELECT 1 FROM packages WHERE name = 'starter'
-);
-
--- ================================================================
--- 2. CREATE SUBSCRIPTIONS FOR ALL USERS WITHOUT ONE
--- ================================================================
-
--- Get all users who don't have any subscription and create starter subscriptions
+-- First, get the 10K package ID
 DO $$
-DECLARE 
-    starter_package_id UUID;
-    user_record RECORD;
-    users_processed INTEGER := 0;
+DECLARE
+    user_uuid UUID := '0f92ca2a-8fb4-48c7-b2a6-560fd2a7a774';
+    package_10k_id UUID;
+    subscription_id UUID;
 BEGIN
-    -- Get the starter package ID
-    SELECT id INTO starter_package_id 
-    FROM packages 
-    WHERE name = 'starter' 
-    LIMIT 1;
+    -- Get the 10K credits package
+    SELECT id INTO package_10k_id FROM packages WHERE credits_monthly = 10000 LIMIT 1;
     
-    IF starter_package_id IS NULL THEN
-        RAISE EXCEPTION 'Starter package not found!';
+    IF package_10k_id IS NULL THEN
+        RAISE NOTICE 'No 10K package found, creating one...';
+        INSERT INTO packages (id, name, display_name, plan_type, credits_monthly, price_monthly, price_annual, is_active, popular)
+        VALUES (uuid_generate_v4(), 'pro-10k', 'Enterprise', 'enterprise', 10000, 380.00, 3800.00, true, false)
+        RETURNING id INTO package_10k_id;
     END IF;
     
-    RAISE NOTICE 'Found starter package ID: %', starter_package_id;
+    RAISE NOTICE 'Using package ID: %', package_10k_id;
     
-    -- Loop through all users who don't have subscriptions
-    FOR user_record IN 
-        SELECT DISTINCT u.id as user_id
-        FROM users u
-        LEFT JOIN user_subscriptions us ON u.id = us.user_id
-        WHERE us.user_id IS NULL
-    LOOP
-        -- Create subscription for this user
-        INSERT INTO user_subscriptions (
-            user_id,
-            package_id,
-            billing_cycle,
-            status,
-            current_period_start,
-            current_period_end,
-            created_at,
-            updated_at
-        ) VALUES (
-            user_record.user_id,
-            starter_package_id,
-            'monthly',
-            'active',
-            NOW(),
-            NOW() + INTERVAL '30 days',
-            NOW(),
-            NOW()
-        );
-        
-        users_processed := users_processed + 1;
-        RAISE NOTICE 'Created starter subscription for user: %', user_record.user_id;
-    END LOOP;
+    -- Delete existing subscription for this user
+    DELETE FROM user_subscriptions WHERE user_id = user_uuid;
     
-    RAISE NOTICE 'Total users processed: %', users_processed;
-END $$;
-
--- ================================================================
--- 3. VERIFY ALL SUBSCRIPTIONS WERE CREATED
--- ================================================================
-
--- Show all users and their subscription status
-SELECT 
-    u.id as user_id,
-    u.email,
-    CASE 
-        WHEN us.id IS NOT NULL THEN 'HAS_SUBSCRIPTION'
-        ELSE 'NO_SUBSCRIPTION'
-    END as subscription_status,
-    p.name as package_name,
-    p.display_name,
-    us.status as sub_status,
-    us.billing_cycle
-FROM users u
-LEFT JOIN user_subscriptions us ON u.id = us.user_id
-LEFT JOIN packages p ON us.package_id = p.id
-ORDER BY u.email;
-
--- ================================================================
--- 4. SUMMARY STATISTICS
--- ================================================================
-
--- Show summary of subscriptions
-SELECT 
-    'TOTAL_USERS' as metric,
-    COUNT(*) as count
-FROM users
-UNION ALL
-SELECT 
-    'USERS_WITH_SUBSCRIPTIONS' as metric,
-    COUNT(DISTINCT us.user_id) as count
-FROM user_subscriptions us
-UNION ALL
-SELECT 
-    'USERS_WITHOUT_SUBSCRIPTIONS' as metric,
-    COUNT(*) as count
-FROM users u
-LEFT JOIN user_subscriptions us ON u.id = us.user_id
-WHERE us.user_id IS NULL
-UNION ALL
-SELECT 
-    'STARTER_SUBSCRIPTIONS' as metric,
-    COUNT(*) as count
-FROM user_subscriptions us
-JOIN packages p ON us.package_id = p.id
-WHERE p.name = 'starter';
-
--- ================================================================
--- 5. SHOW CREDIT BALANCES FOR ALL USERS
--- ================================================================
-
-SELECT 
-    cb.user_id,
-    u.email,
-    cb.total_credits,
-    cb.used_credits,
-    cb.expired_credits,
-    cb.updated_at as balance_updated
-FROM credit_balances cb
-JOIN users u ON cb.user_id = u.id
-ORDER BY u.email;
-
-COMMIT;
-
--- ================================================================
--- Migration completed successfully for ALL USERS!
--- ================================================================ 
+    -- Create new subscription
+    INSERT INTO user_subscriptions (
+        id, user_id, package_id, billing_cycle, status,
+        current_period_start, current_period_end
+    ) VALUES (
+        uuid_generate_v4(), user_uuid, package_10k_id, 'monthly', 'active',
+        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30 days'
+    ) RETURNING id INTO subscription_id;
+    
+    RAISE NOTICE 'Created subscription ID: %', subscription_id;
+    
+    -- Delete existing credit allocations
+    DELETE FROM credit_allocations WHERE user_id = user_uuid;
+    
+    -- Create new credit allocation
+    INSERT INTO credit_allocations (
+        id, user_id, credits_allocated, credits_remaining,
+        allocated_at, expires_at, source, billing_cycle, subscription_id
+    ) VALUES (
+        uuid_generate_v4(), user_uuid, 10000, 9980,
+        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30 days',
+        'manual_fix_10k', 'monthly', subscription_id
+    );
+    
+    -- Update or create credit balance
+    INSERT INTO credit_balances (user_id, total_credits, used_credits, expired_credits)
+    VALUES (user_uuid, 10000, 20, 0)
+    ON CONFLICT (user_id) DO UPDATE SET
+        total_credits = 10000,
+        used_credits = 20,
+        expired_credits = 0,
+        updated_at = CURRENT_TIMESTAMP;
+    
+    RAISE NOTICE '✅ Successfully updated user % to 10K credits package', user_uuid;
+    
+END $$; 
