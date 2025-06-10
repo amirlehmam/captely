@@ -1262,7 +1262,7 @@ async def handle_payment_succeeded(invoice, db: Session):
         
         subscription_id = invoice.get("subscription")
         if not subscription_id:
-            logger.warning("❌ No subscription ID in invoice")
+            logger.info("💰 Payment succeeded but no subscription - might be one-time payment")
             return
         
         logger.info(f"🔍 Looking for subscription: {subscription_id}")
@@ -1274,12 +1274,31 @@ async def handle_payment_succeeded(invoice, db: Session):
         
         if not subscription:
             logger.warning(f"❌ Subscription not found in database: {subscription_id}")
+            # Try to get subscription from Stripe and create it
+            try:
+                stripe_subscription = stripe.Subscription.retrieve(subscription_id)
+                await handle_subscription_created(stripe_subscription, db)
+                
+                # Try to find it again
+                subscription = db.query(UserSubscription).filter(
+                    UserSubscription.stripe_subscription_id == subscription_id
+                ).first()
+            except Exception as create_error:
+                logger.error(f"❌ Could not create subscription: {create_error}")
+                return
+        
+        if not subscription:
+            logger.error(f"❌ Still no subscription found after creation attempt")
             return
         
         logger.info(f"✅ Found subscription for user: {subscription.user_id}")
         
         # Allocate credits for the billing period
         package = subscription.package
+        if not package:
+            logger.error(f"❌ No package found for subscription")
+            return
+            
         expires_at = datetime.fromtimestamp(invoice["period_end"])
         
         logger.info(f"💳 Allocating {package.credits_monthly} credits for package {package.name}")
@@ -1287,7 +1306,7 @@ async def handle_payment_succeeded(invoice, db: Session):
         CreditService.allocate_credits(
             user_id=subscription.user_id,
             credits=package.credits_monthly,
-            source="subscription",
+            source="subscription_payment",
             expires_at=expires_at,
             db=db,
             subscription_id=subscription.id
@@ -1310,6 +1329,7 @@ async def handle_payment_succeeded(invoice, db: Session):
         db.commit()
         
         logger.info(f"✅ Payment succeeded processed for subscription {subscription_id}")
+        logger.info(f"🎯 User {subscription.user_id} received {package.credits_monthly} credits")
         
     except Exception as e:
         logger.error(f"❌ Error handling payment succeeded: {str(e)}")
@@ -1367,6 +1387,10 @@ async def handle_subscription_created(subscription_data, db: Session):
         
         if not user_id:
             logger.warning(f"❌ Subscription created without user_id in customer metadata: {customer_id}")
+            # Try to find user by email if available
+            if customer.email:
+                # This would require a connection to the auth service to find user by email
+                logger.info(f"🔍 Could try to find user by email: {customer.email}")
             return
         
         logger.info(f"✅ Found user_id: {user_id}")
@@ -1381,36 +1405,85 @@ async def handle_subscription_created(subscription_data, db: Session):
         
         logger.info(f"💰 Price metadata - package_id: {package_id}, billing_cycle: {billing_cycle}")
         
-        if not package_id:
-            logger.warning(f"❌ Subscription created without package_id in price metadata: {price_id}")
-            # Try to find package by credits amount
-            package = db.query(Package).filter(Package.credits_monthly == 10000).first()
-            if package:
-                package_id = str(package.id)
-                logger.info(f"🔍 Found package by credits: {package_id}")
-            else:
-                logger.error("❌ Cannot find package with 10000 credits")
-                return
+        # Find package by ID or by price amount
+        target_package = None
+        if package_id:
+            target_package = db.query(Package).filter(Package.id == package_id).first()
         
-        # Create subscription record
-        new_subscription = UserSubscription(
+        if not target_package:
+            # Try to find by price amount
+            price_amount = price.unit_amount / 100 if price.unit_amount else 0
+            price_interval = price.recurring.get("interval", "month") if price.recurring else "month"
+            
+            if price_interval == "month":
+                target_package = db.query(Package).filter(Package.price_monthly == price_amount).first()
+            else:
+                target_package = db.query(Package).filter(Package.price_annual == price_amount).first()
+            
+            # Special case for zero price (testing)
+            if not target_package and price_amount == 0:
+                target_package = db.query(Package).filter(Package.credits_monthly == 10000).first()
+                logger.info(f"🔍 Zero price detected, using 10K package for testing")
+        
+        if not target_package:
+            logger.error(f"❌ No package found for price {price_id}")
+            return
+        
+        package_id = str(target_package.id)
+        logger.info(f"📦 Using package: {target_package.name} ({target_package.credits_monthly} credits)")
+        
+        # Check if user already has a subscription
+        existing_subscription = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id
+        ).first()
+        
+        if existing_subscription:
+            logger.info(f"🔄 User already has subscription, updating it")
+            existing_subscription.package_id = package_id
+            existing_subscription.stripe_subscription_id = subscription_data["id"]
+            existing_subscription.stripe_customer_id = subscription_data["customer"]
+            existing_subscription.billing_cycle = BillingCycle(billing_cycle)
+            existing_subscription.status = SubscriptionStatus.active
+            existing_subscription.current_period_start = datetime.fromtimestamp(subscription_data["current_period_start"])
+            existing_subscription.current_period_end = datetime.fromtimestamp(subscription_data["current_period_end"])
+            existing_subscription.updated_at = datetime.utcnow()
+            new_subscription = existing_subscription
+        else:
+            # Create new subscription record
+            new_subscription = UserSubscription(
+                user_id=user_id,
+                package_id=package_id,
+                billing_cycle=BillingCycle(billing_cycle),
+                status=SubscriptionStatus.active,
+                stripe_subscription_id=subscription_data["id"],
+                stripe_customer_id=subscription_data["customer"],
+                current_period_start=datetime.fromtimestamp(subscription_data["current_period_start"]),
+                current_period_end=datetime.fromtimestamp(subscription_data["current_period_end"])
+            )
+            
+            db.add(new_subscription)
+        
+        db.commit()
+        db.refresh(new_subscription)
+        
+        # Allocate credits immediately
+        expires_at = datetime.fromtimestamp(subscription_data["current_period_end"])
+        CreditService.allocate_credits(
             user_id=user_id,
-            package_id=package_id,
-            billing_cycle=BillingCycle(billing_cycle),
-            status=SubscriptionStatus.active,
-            stripe_subscription_id=subscription_data["id"],
-            stripe_customer_id=subscription_data["customer"],
-            current_period_start=datetime.fromtimestamp(subscription_data["current_period_start"]),
-            current_period_end=datetime.fromtimestamp(subscription_data["current_period_end"])
+            credits=target_package.credits_monthly,
+            source="new_subscription",
+            expires_at=expires_at,
+            db=db,
+            subscription_id=new_subscription.id
         )
         
-        db.add(new_subscription)
-        db.commit()
-        
-        logger.info(f"✅ Subscription created for user {user_id} with package {package_id}")
+        logger.info(f"✅ Subscription created for user {user_id} with package {target_package.name}")
+        logger.info(f"🎯 User received {target_package.credits_monthly} credits")
         
     except Exception as e:
         logger.error(f"❌ Error handling subscription created: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
 
 async def handle_subscription_updated(subscription_data, db: Session):
     """Handle subscription updates"""
@@ -1423,6 +1496,8 @@ async def handle_subscription_updated(subscription_data, db: Session):
         
         if not subscription:
             logger.warning(f"❌ Subscription not found in database: {subscription_data['id']}")
+            # Try to create subscription if it doesn't exist
+            await handle_subscription_created(subscription_data, db)
             return
         
         logger.info(f"✅ Found subscription for user: {subscription.user_id}")
@@ -1436,49 +1511,90 @@ async def handle_subscription_updated(subscription_data, db: Session):
         
         logger.info(f"💰 Updated price metadata - package_id: {package_id}")
         
+        # If no package_id in metadata, try to find by price amount
+        target_package = None
         if package_id:
-            logger.info(f"🔄 Updating package from {subscription.package_id} to {package_id}")
-            subscription.package_id = package_id
+            target_package = db.query(Package).filter(Package.id == package_id).first()
+            logger.info(f"🔍 Found package by ID: {target_package.name if target_package else 'None'}")
+        
+        if not target_package:
+            # Try to find package by price amount (convert from cents to euros)
+            price_amount = price.unit_amount / 100 if price.unit_amount else 0
+            billing_cycle = price.recurring.get("interval", "month") if price.recurring else "month"
+            
+            logger.info(f"🔍 Searching for package by price: €{price_amount}, cycle: {billing_cycle}")
+            
+            if billing_cycle == "month":
+                target_package = db.query(Package).filter(Package.price_monthly == price_amount).first()
+            else:
+                target_package = db.query(Package).filter(Package.price_annual == price_amount).first()
+            
+            if target_package:
+                logger.info(f"🔍 Found package by price: {target_package.name} ({target_package.credits_monthly} credits)")
+            else:
+                # Special case: if price is 0, assume it's the 10K package for testing
+                if price_amount == 0:
+                    target_package = db.query(Package).filter(Package.credits_monthly == 10000).first()
+                    logger.info(f"🔍 Zero price detected, using 10K package: {target_package.name if target_package else 'None'}")
+        
+        if target_package:
+            logger.info(f"🔄 Updating subscription from package {subscription.package_id} to {target_package.id}")
+            
+            # Update subscription package
+            old_package_id = subscription.package_id
+            subscription.package_id = target_package.id
+            
+            # Clear old credit allocations for this user
+            old_allocations = db.query(CreditAllocation).filter(
+                CreditAllocation.user_id == subscription.user_id
+            ).all()
+            for alloc in old_allocations:
+                db.delete(alloc)
+            logger.info(f"🗑️ Cleared {len(old_allocations)} old credit allocations")
             
             # Allocate new credits for the updated package
-            package = db.query(Package).filter(Package.id == package_id).first()
-            if package:
-                logger.info(f"💳 Allocating {package.credits_monthly} credits for updated package {package.name}")
-                
-                expires_at = datetime.fromtimestamp(subscription_data["current_period_end"])
-                CreditService.allocate_credits(
-                    user_id=subscription.user_id,
-                    credits=package.credits_monthly,
-                    source="subscription_update",
-                    expires_at=expires_at,
-                    db=db,
-                    subscription_id=subscription.id
-                )
-            else:
-                logger.error(f"❌ Package not found: {package_id}")
+            expires_at = datetime.fromtimestamp(subscription_data["current_period_end"])
+            credits_to_allocate = target_package.credits_monthly
+            
+            CreditService.allocate_credits(
+                user_id=subscription.user_id,
+                credits=credits_to_allocate,
+                source="subscription_update_automatic",
+                expires_at=expires_at,
+                db=db,
+                subscription_id=subscription.id
+            )
+            
+            # Update credit balance
+            credit_balance = db.query(CreditBalance).filter(
+                CreditBalance.user_id == subscription.user_id
+            ).first()
+            
+            if not credit_balance:
+                credit_balance = CreditBalance(user_id=subscription.user_id)
+                db.add(credit_balance)
+            
+            # Keep existing used credits, update total
+            used_credits = credit_balance.used_credits if credit_balance.used_credits else 0
+            remaining_credits = max(0, credits_to_allocate - used_credits)
+            
+            credit_balance.total_credits = credits_to_allocate
+            credit_balance.used_credits = used_credits
+            credit_balance.expired_credits = 0
+            credit_balance.updated_at = datetime.utcnow()
+            
+            logger.info(f"💳 Allocated {credits_to_allocate} credits for updated package {target_package.name}")
+            logger.info(f"📊 Credit balance: {remaining_credits} remaining after {used_credits} used")
+            
         else:
-            logger.warning(f"❌ No package_id in price metadata: {price_id}")
-            # Try to find package by checking for 10000 credits (since that's what the user wants)
-            package = db.query(Package).filter(Package.credits_monthly == 10000).first()
-            if package:
-                logger.info(f"🔍 Found 10K credits package by credits amount: {package.id}")
-                subscription.package_id = package.id
-                
-                expires_at = datetime.fromtimestamp(subscription_data["current_period_end"])
-                CreditService.allocate_credits(
-                    user_id=subscription.user_id,
-                    credits=package.credits_monthly,
-                    source="subscription_update_fallback",
-                    expires_at=expires_at,
-                    db=db,
-                    subscription_id=subscription.id
-                )
+            logger.error(f"❌ Could not find package for price {price_id}")
         
-        # Update status and periods
+        # Update subscription status and periods
         subscription.status = SubscriptionStatus(subscription_data["status"])
         subscription.current_period_start = datetime.fromtimestamp(subscription_data["current_period_start"])
         subscription.current_period_end = datetime.fromtimestamp(subscription_data["current_period_end"])
         subscription.cancel_at_period_end = subscription_data.get("cancel_at_period_end", False)
+        subscription.updated_at = datetime.utcnow()
         
         if subscription_data.get("canceled_at"):
             subscription.cancelled_at = datetime.fromtimestamp(subscription_data["canceled_at"])
@@ -1486,6 +1602,8 @@ async def handle_subscription_updated(subscription_data, db: Session):
         db.commit()
         
         logger.info(f"✅ Subscription updated successfully: {subscription_data['id']}")
+        if target_package:
+            logger.info(f"🎯 User {subscription.user_id} now has {target_package.name} ({target_package.credits_monthly} credits)")
         
     except Exception as e:
         logger.error(f"❌ Error handling subscription updated: {str(e)}")
