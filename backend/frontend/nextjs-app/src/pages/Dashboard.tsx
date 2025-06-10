@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
                 isDark ? 'bg-purple-900/20 text-purple-400' : 'bg-purple-100 text-purple-600'
               } group-hover:${isDark ? 'bg-purple-900/30' : 'bg-purple-200'}`}>
                 <CreditCard className="h-4 w-4" />
-              </div>
+      </div>
               <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                 {t('common.buy_credits')}
               </span>

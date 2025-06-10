@@ -95,7 +95,7 @@ const PaymentMethodSetupForm: React.FC<PaymentMethodSetupProps> = ({ onSuccess, 
       <div className="flex items-center space-x-3 mb-4">
         <Lock className={`w-5 h-5 ${theme === 'dark' ? 'text-emerald-400' : 'text-teal-600'}`} />
         <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          🔒 Add Payment Method
+           Add Payment Method
         </h3>
       </div>
 
@@ -108,7 +108,7 @@ const PaymentMethodSetupForm: React.FC<PaymentMethodSetupProps> = ({ onSuccess, 
           <label className={`block text-sm font-medium mb-2 ${
             theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
           }`}>
-            💳 Card Information
+             Card Information
           </label>
           <div className={`p-3 border rounded-md ${
             theme === 'dark' 
@@ -145,7 +145,7 @@ const PaymentMethodSetupForm: React.FC<PaymentMethodSetupProps> = ({ onSuccess, 
           ) : (
             <>
               <CreditCard className="w-4 h-4 mr-2" />
-              💳 Add Payment Method
+               Add Payment Method
             </>
           )}
         </button>
