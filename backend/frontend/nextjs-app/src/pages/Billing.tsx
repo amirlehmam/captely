@@ -1154,31 +1154,70 @@ const BillingPage: React.FC = () => {
                       🚀 Premium Features
                     </h4>
                     <div className="space-y-3">
-                      {(() => {
-                        // Handle null/undefined features
-                        if (!pack.features) return [];
-                        
-                        try {
-                          // Try to parse as JSON first
-                          const features = JSON.parse(pack.features);
-                          return Array.isArray(features) ? features : [];
-                        } catch {
-                          // If not JSON and features is a string, split by comma/semicolon and clean up
-                          if (typeof pack.features === 'string') {
-                            return pack.features.split(/[,;]/).map(f => f.trim()).filter(f => f);
-                          }
-                          return [];
-                        }
-                      })().map((feature: string, index: number) => (
-                        <div key={index} className={`flex items-center text-sm ${
-                          theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                        }`}>
-                          <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
-                            theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
-                          }`} />
-                          {feature}
-                        </div>
-                      ))}
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Unlimited monthly credits (million+ scale)
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Advanced AI-powered enrichment algorithms
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Real-time data verification & scoring
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Custom data enrichment workflows
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Advanced analytics & reporting dashboards
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Custom API rate limits & webhooks
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        White-label & custom branding options
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Bulk export capabilities (CSV, Excel, API)
+                      </div>
                     </div>
                   </div>
                   
@@ -1195,7 +1234,7 @@ const BillingPage: React.FC = () => {
                         <Crown className={`w-5 h-5 mr-3 flex-shrink-0 ${
                           theme === 'dark' ? 'text-yellow-400' : 'text-yellow-500'
                         }`} />
-                        High-volume credit packages
+                        High-volume credit packages (500K+ credits/month)
                       </div>
                       <div className={`flex items-center text-sm ${
                         theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1203,7 +1242,7 @@ const BillingPage: React.FC = () => {
                         <Users className={`w-5 h-5 mr-3 flex-shrink-0 ${
                           theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
                         }`} />
-                        Team management & multiple users
+                        Team management & unlimited users
                       </div>
                       <div className={`flex items-center text-sm ${
                         theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1211,7 +1250,7 @@ const BillingPage: React.FC = () => {
                         <Shield className={`w-5 h-5 mr-3 flex-shrink-0 ${
                           theme === 'dark' ? 'text-green-400' : 'text-green-500'
                         }`} />
-                        Advanced security & compliance
+                        Advanced security & compliance (SOC2, GDPR)
                       </div>
                       <div className={`flex items-center text-sm ${
                         theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1220,6 +1259,38 @@ const BillingPage: React.FC = () => {
                           theme === 'dark' ? 'text-emerald-400' : 'text-emerald-500'
                         }`} />
                         Priority support & dedicated account manager
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        SSO/SAML integration & advanced user permissions
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Custom integrations (Salesforce, HubSpot, etc.)
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        99.9% SLA uptime guarantee
+                      </div>
+                      <div className={`flex items-center text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        <Check className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        Advanced data retention & compliance controls
                       </div>
                     </div>
                   </div>
