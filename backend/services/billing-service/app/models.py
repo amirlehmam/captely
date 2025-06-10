@@ -54,6 +54,11 @@ class Package(Base):
     price_monthly = Column(Float, nullable=False)  # in EUR
     price_annual = Column(Float, nullable=False)   # in EUR with 20% discount
     features = Column(Text)  # JSON array of features
+    
+    # Stripe integration
+    stripe_price_id_monthly = Column(String)  # Stripe price ID for monthly billing
+    stripe_price_id_annual = Column(String)   # Stripe price ID for annual billing
+    
     is_active = Column(Boolean, default=True)
     popular = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
