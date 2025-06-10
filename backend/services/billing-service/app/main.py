@@ -512,8 +512,9 @@ def get_package_by_id_or_name(package_id: str, db: Session) -> Package:
         "pack-1500": "pro-1.5k",  # Map 1500 to 1.5k plan
         "pack-3000": "pro-3k", 
         "pack-5000": "pro-5k",
-        "pack-10000": "enterprise",
-        "pack-20000": "enterprise"
+        "pack-10000": "pro-10k",    # Fixed: map to pro-10k
+        "pack-20000": "pro-20k",    # Fixed: map to pro-20k
+        "enterprise": "enterprise"  # Enterprise is contact-only
     }
     
     # Try mapping lookup first to avoid UUID casting issues
