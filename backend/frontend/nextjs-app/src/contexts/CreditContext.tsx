@@ -102,9 +102,9 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const fetchCreditData = useCallback(async (retryCount: number = 0) => {
+  const fetchCreditData = useCallback(async (retryCount: number = 0, silent: boolean = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
@@ -148,7 +148,7 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
       // If it's the first attempt and we just authenticated, retry once
       if (retryCount === 0 && isAuthenticated) {
         console.log('Retrying credit fetch after authentication...');
-        setTimeout(() => fetchCreditData(1), 1000);
+        setTimeout(() => fetchCreditData(1, silent), 1000);
         return;
       }
       
@@ -175,13 +175,13 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
         }
       });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [isAuthenticated]);
 
-  const refreshCredits = useCallback(async () => {
+  const refreshCredits = useCallback(async (silent: boolean = false) => {
     if (isAuthenticated) {
-      await fetchCreditData();
+      await fetchCreditData(0, silent);
     }
   }, [fetchCreditData, isAuthenticated]);
 
@@ -211,13 +211,13 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     }
   }, [isAuthenticated, fetchCreditData]);
 
-  // Auto-refresh every 30 seconds only if authenticated
+  // 🎯 SILENT auto-refresh every 30 seconds - no loading states shown
   useEffect(() => {
     if (!isAuthenticated) return;
     
     const interval = setInterval(() => {
       if (isAuthenticated) {
-        fetchCreditData();
+        fetchCreditData(0, true); // Silent refresh - users won't see loading
       }
     }, 30000);
     

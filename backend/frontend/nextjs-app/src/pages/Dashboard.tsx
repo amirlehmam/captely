@@ -152,34 +152,34 @@ const Dashboard: React.FC = () => {
   return (
     <div className={`min-h-screen transition-all duration-300 ${isDark ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       <div className="p-6 space-y-6">
-        {/* Quick Actions - compact and elegant design */}
-        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border shadow-sm p-6`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        {/* Quick Actions - ULTRA COMPACT design */}
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border shadow-sm p-4`}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {t('dashboard.quickActions.title')}
             </h3>
-            <div className="flex items-center text-sm text-gray-500">
-              <Zap className="h-4 w-4 mr-1" />
+            <div className="flex items-center text-xs text-gray-500">
+              <Zap className="h-3 w-3 mr-1" />
               Fast Access
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <motion.button
               onClick={() => navigate('/import')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
             >
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full mb-2 transition-colors ${
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-600'
               } group-hover:${isDark ? 'bg-blue-900/30' : 'bg-blue-200'}`}>
-                <Upload className="h-5 w-5" />
+                <Upload className="h-4 w-4" />
               </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                 {t('dashboard.quickActions.newUpload')}
               </span>
             </motion.button>
@@ -188,18 +188,18 @@ const Dashboard: React.FC = () => {
               onClick={() => navigate('/batches')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
             >
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full mb-2 transition-colors ${
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-green-900/20 text-green-400' : 'bg-green-100 text-green-600'
               } group-hover:${isDark ? 'bg-green-900/30' : 'bg-green-200'}`}>
-                <ListChecks className="h-5 w-5" />
+                <ListChecks className="h-4 w-4" />
               </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                 {t('dashboard.quickActions.viewResults')}
               </span>
             </motion.button>
@@ -208,18 +208,18 @@ const Dashboard: React.FC = () => {
               onClick={() => navigate('/billing')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
             >
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full mb-2 transition-colors ${
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-purple-900/20 text-purple-400' : 'bg-purple-100 text-purple-600'
               } group-hover:${isDark ? 'bg-purple-900/30' : 'bg-purple-200'}`}>
-                <CreditCard className="h-5 w-5" />
+                <CreditCard className="h-4 w-4" />
               </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                 {t('common.buy_credits')}
               </span>
             </motion.button>
@@ -228,18 +228,18 @@ const Dashboard: React.FC = () => {
               onClick={() => navigate('/crm')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
             >
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full mb-2 transition-colors ${
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-orange-900/20 text-orange-400' : 'bg-orange-100 text-orange-600'
               } group-hover:${isDark ? 'bg-orange-900/30' : 'bg-orange-200'}`}>
-                <Database className="h-5 w-5" />
+                <Database className="h-4 w-4" />
               </div>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                 {t('navigation.contacts')}
               </span>
             </motion.button>
