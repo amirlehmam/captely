@@ -107,9 +107,15 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.verify(plain, hashed)
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user_id) -> str:
+    # Convert UUID to string if needed
+    if hasattr(user_id, '__str__'):
+        user_id_str = str(user_id)
+    else:
+        user_id_str = user_id
+    
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_exp_minutes)
-    to_encode = {"sub": user_id, "exp": expire}
+    to_encode = {"sub": user_id_str, "exp": expire}
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
     return encoded_jwt
 
@@ -510,6 +516,8 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Email already registered")
         
         print(f"Creating new user for: {data.email}")
+        
+        # Let SQLAlchemy auto-generate UUID - don't set id explicitly
         user = User(
             email=data.email,
             password_hash=get_password_hash(data.password),
@@ -518,12 +526,16 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
             company=data.company,
             phone=data.phone,
             credits=500,  # pack-500 plan: 500 credits for new users
-            total_spent=0,
+            total_spent=0.0,  # Explicitly float
             email_verified=True,  # Email is verified
             auth_provider='email',
             plan='pack-500'  # Set default plan to pack-500
         )
+        
         db.add(user)
+        await db.flush()  # Flush to get the generated UUID
+        
+        print(f"User object created with ID: {user.id}")
         
         # Clean up the verification record
         await db.execute(
@@ -534,7 +546,7 @@ async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)):
         await db.refresh(user)
 
         print(f"User created successfully: {user.id}")
-        token = create_access_token(str(user.id))
+        token = create_access_token(user.id)  # Pass UUID object, function will convert to string
         return TokenOut(access_token=token)
     except HTTPException as e:
         print(f"HTTPException in signup: {e.detail}")
@@ -580,7 +592,7 @@ async def login(data: SignupIn, db: AsyncSession = Depends(get_db)):
             )
 
         print(f"Login successful for: {data.email}")
-        token = create_access_token(str(user.id))
+        token = create_access_token(user.id)  # Pass UUID object, function will convert to string
         return TokenOut(access_token=token)
     except HTTPException as e:
         print(f"HTTPException in login: {e.detail}")
@@ -1138,7 +1150,7 @@ async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
         
         if existing_user:
             # User exists, log them in
-            token = create_access_token(str(existing_user.id))
+            token = create_access_token(existing_user.id)  # Pass UUID object
             return {
                 "user": {
                     "id": str(existing_user.id),
@@ -1169,10 +1181,15 @@ async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
             email_verified=bool(email_verified),
             is_active=True,
             credits=500,  # Default credits for new users
+            total_spent=0.0,  # Explicitly float
             plan='pack-500'  # Default plan
         )
         
         db.add(new_user)
+        await db.flush()  # Flush to get the generated UUID
+        
+        print(f"OAuth user created with ID: {new_user.id}")
+        
         await db.commit()
         await db.refresh(new_user)
         
@@ -1184,7 +1201,7 @@ async def oauth_signup(data: OAuthSignupIn, db: AsyncSession = Depends(get_db)):
             new_user.phone
         ])
         
-        token = create_access_token(str(new_user.id))
+        token = create_access_token(new_user.id)  # Pass UUID object
         
         return {
             "user": {
