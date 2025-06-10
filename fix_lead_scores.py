@@ -29,4 +29,4 @@ except ImportError as e:
     print("💡 Make sure you're running this from the project root directory")
 except Exception as e:
     print(f"❌ Error running recalculation: {e}")
-    print("💡 Make sure your database is running and accessible") 
+    print("💡 Make sure your database is running and accessible")
