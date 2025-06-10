@@ -1,6 +1,7 @@
 -- COMPLETE STRIPE PRICING FIX
 -- This script will fix all pricing and Stripe integration issues
 
+
 -- Step 1: Update package names and pricing
 UPDATE packages 
 SET 
