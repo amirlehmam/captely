@@ -475,12 +475,13 @@ async def get_dashboard_analytics(
     """Get real-time dashboard analytics from the database for the authenticated user"""
     try:
         # Get total contacts and enrichment stats for this user
+        # FIXED: Made email/phone counting consistent with other queries
         stats_query = text("""
             SELECT 
                 COUNT(*) as total_contacts,
                 COUNT(CASE WHEN c.enriched = true THEN 1 END) as enriched_count,
-                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' AND c.email != 'N/A' THEN 1 END) as emails_found,
-                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' AND c.phone != 'N/A' THEN 1 END) as phones_found,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' AND c.email != 'null' THEN 1 END) as emails_found,
+                COUNT(CASE WHEN c.phone IS NOT NULL AND c.phone != '' AND c.phone != 'null' THEN 1 END) as phones_found,
                 AVG(c.enrichment_score) as avg_confidence,
                 SUM(c.credits_consumed) as credits_used_total,
                 COUNT(DISTINCT c.job_id) as total_jobs
@@ -504,13 +505,37 @@ async def get_dashboard_analytics(
         phone_hit_rate = (phones_found / total_contacts * 100) if total_contacts > 0 else 0
         success_rate = (enriched_count / total_contacts * 100) if total_contacts > 0 else 0
         
-        # Add debug logging
-        print(f"📊 DASHBOARD DEBUG for user {user_id}:")
+        # Enhanced debug logging to track down discrepancies
+        print(f"📊 DASHBOARD ANALYTICS DEBUG for user {user_id}:")
         print(f"   - Total contacts: {total_contacts}")
+        print(f"   - Enriched contacts: {enriched_count}")
         print(f"   - Emails found: {emails_found}")
         print(f"   - Phones found: {phones_found}")
+        print(f"   - Credits used total: {credits_used_total}")
         print(f"   - Email hit rate: {email_hit_rate:.1f}%")
         print(f"   - Phone hit rate: {phone_hit_rate:.1f}%")
+        
+        # Additional debug query to check for data inconsistencies
+        debug_query = text("""
+            SELECT 
+                ij.id as job_id,
+                ij.status,
+                COUNT(c.id) as contacts_in_job,
+                COUNT(CASE WHEN c.email IS NOT NULL AND c.email != '' THEN 1 END) as emails_in_job,
+                SUM(c.credits_consumed) as credits_in_job
+            FROM import_jobs ij
+            LEFT JOIN contacts c ON ij.id = c.job_id
+            WHERE ij.user_id = :user_id
+            GROUP BY ij.id, ij.status
+            ORDER BY ij.created_at DESC
+            LIMIT 3
+        """)
+        
+        debug_result = await session.execute(debug_query, {"user_id": user_id})
+        print(f"   📋 Recent jobs breakdown:")
+        for job in debug_result.fetchall():
+            print(f"      Job {job[0]}: {job[2]} contacts, {job[3]} emails, {job[4]} credits")
+        print(f"   =" * 50)
         
         # Get recent jobs (both active and completed)
         recent_jobs_query = text("""
