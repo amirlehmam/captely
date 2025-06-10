@@ -711,7 +711,7 @@ async def get_dashboard_analytics(
                     {"name": "Export Ready", "status": "completed", "duration": "Ready"}
                 ]
         
-        return {
+        response_data = {
             "overview": {
                 "total_contacts": total_contacts,
                 "emails_found": emails_found,
@@ -727,8 +727,13 @@ async def get_dashboard_analytics(
             "active_jobs": active_jobs,
             "current_batch": current_batch,  # Most recent job for BatchProgress component
             "provider_performance": provider_performance,
-            "processing_stages": processing_stages
+            "processing_stages": processing_stages,
+            "last_updated": datetime.now().isoformat(),  # Cache busting
+            "data_source": "live_database"  # Indicates this is fresh data
         }
+        
+        print(f"🎯 DASHBOARD RESPONSE: Emails found = {emails_found}")
+        return response_data
         
     except Exception as e:
         print(f"Error fetching dashboard analytics: {e}")
