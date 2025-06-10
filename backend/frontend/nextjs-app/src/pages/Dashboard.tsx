@@ -125,7 +125,7 @@ const Dashboard: React.FC = () => {
     {
       title: t('dashboard.stats.creditsUsed'),
       value: creditData?.used_this_month || 0,
-      subtitle: t('common.this_month'),
+      subtitle: `${Math.round((stats?.overview?.email_hit_rate || 0))}% ${t('common.success_rate')}`,
       icon: CreditCard,
       color: 'orange',
       bgColor: isDark ? 'bg-orange-900/20' : 'bg-orange-50',

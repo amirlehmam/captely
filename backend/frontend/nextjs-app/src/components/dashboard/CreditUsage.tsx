@@ -228,10 +228,10 @@ const CreditUsage: React.FC = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {creditData?.statistics?.success_rate?.toFixed(1) || '0.0'}%
+                    {creditData?.statistics?.phone_hit_rate?.toFixed(1) || '0.0'}%
                   </div>
                   <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {t('common.success_rate')}
+                    {t('common.phone_hit_rate')}
                   </div>
                 </div>
               </div>
