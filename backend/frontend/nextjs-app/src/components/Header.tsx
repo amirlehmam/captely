@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import CreditDisplay from './common/CreditDisplay';
 import LanguageSwitcher from './common/LanguageSwitcher';
 import DarkModeToggle from './common/DarkModeToggle';
@@ -56,21 +56,9 @@ const Header: React.FC = () => {
     }}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16" style={{ minHeight: '64px' }}>
-          {/* Mobile menu button */}
-          <button className="md:hidden p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-          style={{
-            willChange: 'background-color, color',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Menu className="h-6 w-6" />
-          </button>
-
-          {/* Search bar */}
-          <div className="flex-1 max-w-lg mx-4" style={{ minWidth: '200px' }}>
+          
+          {/* Search bar - Now starts from the left */}
+          <div className="flex-1 max-w-lg" style={{ minWidth: '200px' }}>
             <form onSubmit={handleSearch} className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />

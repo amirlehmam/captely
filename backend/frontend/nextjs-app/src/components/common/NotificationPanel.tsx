@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Check, X, Clock, CreditCard, Briefcase, AlertTriangle } from 'lucide-react';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -11,6 +12,7 @@ interface NotificationPanelProps {
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }) => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close panel when clicking outside
@@ -57,6 +59,34 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     return `${days}d ago`;
+  };
+
+  const handleNotificationClick = async (notification: any) => {
+    // Mark as read
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+
+    // Handle navigation based on notification type
+    if (notification.type === 'batch_complete' || notification.type === 'job_completed') {
+      // If notification has job_id in data, redirect to that specific batch
+      if (notification.data?.job_id) {
+        navigate(`/batches?job=${notification.data.job_id}`);
+        onClose();
+      } else if (notification.data?.batch_id) {
+        navigate(`/batches?job=${notification.data.batch_id}`);
+        onClose();
+      } else {
+        // Fallback to batches page
+        navigate('/batches');
+        onClose();
+      }
+    } else if (notification.type === 'low_credits' || notification.type === 'credit_purchase') {
+      // Redirect to billing/credits page
+      navigate('/billing');
+      onClose();
+    }
+    // For other notification types, just mark as read (no navigation)
   };
 
   if (!isOpen) return null;
@@ -139,7 +169,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }
                   className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
                     !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex space-x-3">
                     <div className="flex-shrink-0 mt-1">
@@ -168,6 +198,14 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }
                       }`}>
                         {notification.message}
                       </p>
+                      {/* Show clickable indicator for job completion notifications */}
+                      {(notification.type === 'batch_complete' || notification.type === 'job_completed') && (
+                        <p className={`text-xs mt-2 ${
+                          isDark ? 'text-blue-400' : 'text-blue-600'
+                        }`}>
+                          💡 Click to view batch results
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -182,6 +220,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }
             isDark ? 'border-gray-700' : 'border-gray-200'
           }`}>
             <button
+              onClick={() => {
+                navigate('/notifications');
+                onClose();
+              }}
               className={`text-sm w-full text-center ${
                 isDark 
                   ? 'text-blue-400 hover:text-blue-300' 

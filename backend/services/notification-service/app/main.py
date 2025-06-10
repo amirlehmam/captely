@@ -504,17 +504,22 @@ async def get_user_notifications(
         if not user_email:
             return {"notifications": []}
         
-        # Get recent notifications from logs
+        # Get recent notifications from logs with job info
         logs_query = """
-            SELECT template_name, subject, status, created_at, recipient_email
-            FROM notification_logs 
-            WHERE recipient_email = :email 
-            ORDER BY created_at DESC 
+            SELECT nl.template_name, nl.subject, nl.status, nl.created_at, nl.recipient_email,
+                   ij.id as job_id, ij.file_name
+            FROM notification_logs nl
+            LEFT JOIN import_jobs ij ON ij.user_id = :user_id 
+                AND DATE(ij.created_at) = DATE(nl.created_at)
+                AND nl.template_name = 'job_completion'
+            WHERE nl.recipient_email = :email 
+            ORDER BY nl.created_at DESC 
             LIMIT :limit
         """
         
         result = await session.execute(text(logs_query), {
             "email": user_email,
+            "user_id": auth_user,
             "limit": limit
         })
         logs = result.fetchall()
@@ -522,7 +527,7 @@ async def get_user_notifications(
         # Format notifications for frontend
         notifications = []
         for log in logs:
-            template_name, subject, status, created_at, recipient_email = log
+            template_name, subject, status, created_at, recipient_email, job_id, file_name = log
             
             # Map template names to notification types
             notification_type = "system_update"
@@ -533,13 +538,22 @@ async def get_user_notifications(
             elif template_name == "weekly_summary":
                 notification_type = "batch_complete"
             
+            # Prepare notification data with job_id for job completion notifications
+            notification_data = {}
+            if template_name == "job_completion" and job_id:
+                notification_data = {
+                    "job_id": job_id,
+                    "file_name": file_name
+                }
+            
             notifications.append({
                 "id": f"{template_name}_{int(created_at.timestamp())}",
                 "type": notification_type,
                 "title": subject,
                 "message": _get_notification_message(template_name, subject),
                 "read": status == "delivered",
-                "created_at": created_at.isoformat()
+                "created_at": created_at.isoformat(),
+                "data": notification_data
             })
         
         return {"notifications": notifications}
