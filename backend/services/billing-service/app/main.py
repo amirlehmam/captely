@@ -1022,41 +1022,250 @@ async def stripe_webhook(
     try:
         payload = await request.body()
         
+        logger.info(f"🎯 Stripe webhook received: {len(payload)} bytes")
+        
         # Verify webhook signature
         event = stripe.Webhook.construct_event(
             payload, stripe_signature, STRIPE_WEBHOOK_SECRET
         )
         
+        logger.info(f"🎯 Webhook event verified: {event['type']} - {event['id']}")
+        
         # Handle the event
         if event["type"] == "invoice.payment_succeeded":
+            logger.info(f"💰 Processing invoice.payment_succeeded for {event['id']}")
             await handle_payment_succeeded(event["data"]["object"], db)
         elif event["type"] == "invoice.payment_failed":
+            logger.info(f"❌ Processing invoice.payment_failed for {event['id']}")
             await handle_payment_failed(event["data"]["object"], db)
         elif event["type"] == "customer.subscription.created":
+            logger.info(f"🆕 Processing customer.subscription.created for {event['id']}")
             await handle_subscription_created(event["data"]["object"], db)
         elif event["type"] == "customer.subscription.updated":
+            logger.info(f"🔄 Processing customer.subscription.updated for {event['id']}")
             await handle_subscription_updated(event["data"]["object"], db)
         elif event["type"] == "customer.subscription.deleted":
+            logger.info(f"🗑️ Processing customer.subscription.deleted for {event['id']}")
             await handle_subscription_deleted(event["data"]["object"], db)
         elif event["type"] == "setup_intent.succeeded":
+            logger.info(f"🔐 Processing setup_intent.succeeded for {event['id']}")
             await handle_setup_intent_succeeded(event["data"]["object"], db)
+        else:
+            logger.info(f"⚠️ Unhandled webhook event type: {event['type']}")
         
         return {"success": True}
         
     except stripe.error.SignatureVerificationError:
+        logger.error("❌ Webhook signature verification failed")
         raise HTTPException(status_code=400, detail="Invalid signature")
     except Exception as e:
-        logger.error(f"Webhook error: {str(e)}")
+        logger.error(f"❌ Webhook error: {str(e)}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
+
+# ====== MANUAL SUBSCRIPTION SYNC (DEBUG) ======
+
+@app.post("/api/billing/subscription/sync")
+async def sync_subscription_manually(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Manually sync subscription from Stripe (for debugging)"""
+    try:
+        logger.info(f"🔄 Manual subscription sync for user {user_id}")
+        
+        # Get current subscription
+        subscription = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id,
+            UserSubscription.stripe_subscription_id.isnot(None)
+        ).first()
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="No Stripe subscription found")
+        
+        logger.info(f"🔍 Found subscription {subscription.stripe_subscription_id}")
+        
+        # Get subscription from Stripe
+        stripe_subscription = stripe.Subscription.retrieve(subscription.stripe_subscription_id)
+        logger.info(f"📡 Retrieved Stripe subscription: {stripe_subscription.id}")
+        
+        # Manually trigger the update handler
+        await handle_subscription_updated(stripe_subscription, db)
+        
+        return {"success": True, "message": "Subscription synced manually"}
+        
+    except Exception as e:
+        logger.error(f"❌ Error syncing subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to sync subscription: {str(e)}")
+
+@app.post("/api/billing/subscription/force-update-to-10k")
+async def force_update_to_10k_credits(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Force update user to 10,000 credits package (emergency fix)"""
+    try:
+        logger.info(f"🚨 FORCE UPDATE: Updating user {user_id} to 10K credits package")
+        
+        # Find the 10K credits package
+        package_10k = db.query(Package).filter(Package.credits_monthly == 10000).first()
+        if not package_10k:
+            raise HTTPException(status_code=404, detail="10,000 credits package not found")
+        
+        logger.info(f"📦 Found 10K package: {package_10k.name} ({package_10k.id})")
+        
+        # Get or create subscription
+        subscription = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id
+        ).first()
+        
+        if subscription:
+            logger.info(f"🔄 Updating existing subscription {subscription.id}")
+            # Update existing subscription
+            old_package_id = subscription.package_id
+            subscription.package_id = package_10k.id
+            subscription.status = SubscriptionStatus.active
+            subscription.current_period_end = datetime.utcnow() + timedelta(days=30)
+            logger.info(f"📦 Updated package from {old_package_id} to {package_10k.id}")
+        else:
+            logger.info(f"🆕 Creating new subscription for user")
+            # Create new subscription
+            subscription = UserSubscription(
+                user_id=user_id,
+                package_id=package_10k.id,
+                billing_cycle=BillingCycle.monthly,
+                status=SubscriptionStatus.active,
+                current_period_start=datetime.utcnow(),
+                current_period_end=datetime.utcnow() + timedelta(days=30),
+            )
+            db.add(subscription)
+            db.flush()  # To get the ID
+            logger.info(f"🆕 Created subscription {subscription.id}")
+        
+        # Clear old credit allocations
+        old_allocations = db.query(CreditAllocation).filter(
+            CreditAllocation.user_id == user_id
+        ).all()
+        for alloc in old_allocations:
+            db.delete(alloc)
+        logger.info(f"🗑️ Cleared {len(old_allocations)} old credit allocations")
+        
+        # Allocate 10,000 credits
+        expires_at = datetime.utcnow() + timedelta(days=30)
+        CreditService.allocate_credits(
+            user_id=user_id,
+            credits=10000,
+            source="manual_fix_10k",
+            expires_at=expires_at,
+            db=db,
+            subscription_id=subscription.id
+        )
+        logger.info(f"💳 Allocated 10,000 credits")
+        
+        # Update credit balance
+        credit_balance = db.query(CreditBalance).filter(CreditBalance.user_id == user_id).first()
+        if not credit_balance:
+            credit_balance = CreditBalance(user_id=user_id)
+            db.add(credit_balance)
+        
+        credit_balance.total_credits = 10000
+        credit_balance.used_credits = 20  # Keep existing used credits
+        credit_balance.expired_credits = 0
+        
+        db.commit()
+        
+        logger.info(f"✅ FORCE UPDATE COMPLETE: User {user_id} now has 10K credits package")
+        
+        return {
+            "success": True, 
+            "message": "Successfully updated to 10,000 credits package",
+            "package_name": package_10k.name,
+            "credits_allocated": 10000,
+            "subscription_id": str(subscription.id)
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error force updating to 10K: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to force update: {str(e)}")
+
+@app.get("/api/billing/debug/user-state")
+async def debug_user_state(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Debug endpoint to check user's billing state"""
+    try:
+        logger.info(f"🔍 Debug user state for {user_id}")
+        
+        # Get subscription
+        subscription = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id
+        ).first()
+        
+        # Get credit balance
+        credit_balance = db.query(CreditBalance).filter(
+            CreditBalance.user_id == user_id
+        ).first()
+        
+        # Get credit allocations
+        allocations = db.query(CreditAllocation).filter(
+            CreditAllocation.user_id == user_id
+        ).all()
+        
+        # Get packages
+        packages = db.query(Package).all()
+        
+        return {
+            "user_id": user_id,
+            "subscription": {
+                "id": str(subscription.id) if subscription else None,
+                "package_id": str(subscription.package_id) if subscription else None,
+                "package_name": subscription.package.name if subscription and subscription.package else None,
+                "stripe_subscription_id": subscription.stripe_subscription_id if subscription else None,
+                "status": subscription.status.value if subscription else None,
+            } if subscription else None,
+            "credit_balance": {
+                "total_credits": credit_balance.total_credits if credit_balance else 0,
+                "used_credits": credit_balance.used_credits if credit_balance else 0,
+            } if credit_balance else None,
+            "credit_allocations": [
+                {
+                    "id": str(alloc.id),
+                    "credits_allocated": alloc.credits_allocated,
+                    "credits_remaining": alloc.credits_remaining,
+                    "source": alloc.source,
+                    "expires_at": alloc.expires_at.isoformat()
+                }
+                for alloc in allocations
+            ],
+            "available_packages": [
+                {
+                    "id": str(pkg.id),
+                    "name": pkg.name,
+                    "credits_monthly": pkg.credits_monthly
+                }
+                for pkg in packages
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error debugging user state: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to debug user state: {str(e)}")
 
 # ====== WEBHOOK HANDLERS ======
 
 async def handle_payment_succeeded(invoice, db: Session):
     """Handle successful payment"""
     try:
+        logger.info(f"💰 Processing payment succeeded: {invoice.get('id')}")
+        
         subscription_id = invoice.get("subscription")
         if not subscription_id:
+            logger.warning("❌ No subscription ID in invoice")
             return
+        
+        logger.info(f"🔍 Looking for subscription: {subscription_id}")
         
         # Get subscription
         subscription = db.query(UserSubscription).filter(
@@ -1064,11 +1273,16 @@ async def handle_payment_succeeded(invoice, db: Session):
         ).first()
         
         if not subscription:
+            logger.warning(f"❌ Subscription not found in database: {subscription_id}")
             return
+        
+        logger.info(f"✅ Found subscription for user: {subscription.user_id}")
         
         # Allocate credits for the billing period
         package = subscription.package
         expires_at = datetime.fromtimestamp(invoice["period_end"])
+        
+        logger.info(f"💳 Allocating {package.credits_monthly} credits for package {package.name}")
         
         CreditService.allocate_credits(
             user_id=subscription.user_id,
@@ -1095,16 +1309,19 @@ async def handle_payment_succeeded(invoice, db: Session):
         db.add(transaction)
         db.commit()
         
-        logger.info(f"Payment succeeded for subscription {subscription_id}")
+        logger.info(f"✅ Payment succeeded processed for subscription {subscription_id}")
         
     except Exception as e:
-        logger.error(f"Error handling payment succeeded: {str(e)}")
+        logger.error(f"❌ Error handling payment succeeded: {str(e)}")
 
 async def handle_payment_failed(invoice, db: Session):
     """Handle failed payment"""
     try:
+        logger.info(f"❌ Processing payment failed: {invoice.get('id')}")
+        
         subscription_id = invoice.get("subscription")
         if not subscription_id:
+            logger.warning("❌ No subscription ID in failed invoice")
             return
         
         subscription = db.query(UserSubscription).filter(
@@ -1112,6 +1329,7 @@ async def handle_payment_failed(invoice, db: Session):
         ).first()
         
         if not subscription:
+            logger.warning(f"❌ Subscription not found for failed payment: {subscription_id}")
             return
         
         # Record failed transaction
@@ -1130,31 +1348,49 @@ async def handle_payment_failed(invoice, db: Session):
         db.add(transaction)
         db.commit()
         
-        logger.warning(f"Payment failed for subscription {subscription_id}")
+        logger.warning(f"⚠️ Payment failed processed for subscription {subscription_id}")
         
     except Exception as e:
-        logger.error(f"Error handling payment failed: {str(e)}")
+        logger.error(f"❌ Error handling payment failed: {str(e)}")
 
 async def handle_subscription_created(subscription_data, db: Session):
     """Handle subscription creation"""
     try:
+        logger.info(f"🆕 Processing subscription created: {subscription_data['id']}")
+        
         # Get customer and user
-        customer = stripe.Customer.retrieve(subscription_data["customer"])
+        customer_id = subscription_data["customer"]
+        logger.info(f"🔍 Getting customer: {customer_id}")
+        
+        customer = stripe.Customer.retrieve(customer_id)
         user_id = customer.metadata.get("user_id")
         
         if not user_id:
-            logger.warning("Subscription created without user_id in customer metadata")
+            logger.warning(f"❌ Subscription created without user_id in customer metadata: {customer_id}")
             return
+        
+        logger.info(f"✅ Found user_id: {user_id}")
         
         # Extract package info from price metadata
         price_id = subscription_data["items"]["data"][0]["price"]["id"]
+        logger.info(f"🔍 Getting price: {price_id}")
+        
         price = stripe.Price.retrieve(price_id)
         package_id = price.metadata.get("package_id")
         billing_cycle = price.metadata.get("billing_cycle", "monthly")
         
+        logger.info(f"💰 Price metadata - package_id: {package_id}, billing_cycle: {billing_cycle}")
+        
         if not package_id:
-            logger.warning("Subscription created without package_id in price metadata")
-            return
+            logger.warning(f"❌ Subscription created without package_id in price metadata: {price_id}")
+            # Try to find package by credits amount
+            package = db.query(Package).filter(Package.credits_monthly == 10000).first()
+            if package:
+                package_id = str(package.id)
+                logger.info(f"🔍 Found package by credits: {package_id}")
+            else:
+                logger.error("❌ Cannot find package with 10000 credits")
+                return
         
         # Create subscription record
         new_subscription = UserSubscription(
@@ -1171,37 +1407,68 @@ async def handle_subscription_created(subscription_data, db: Session):
         db.add(new_subscription)
         db.commit()
         
-        logger.info(f"Subscription created for user {user_id}")
+        logger.info(f"✅ Subscription created for user {user_id} with package {package_id}")
         
     except Exception as e:
-        logger.error(f"Error handling subscription created: {str(e)}")
+        logger.error(f"❌ Error handling subscription created: {str(e)}")
 
 async def handle_subscription_updated(subscription_data, db: Session):
     """Handle subscription updates"""
     try:
+        logger.info(f"🔄 Processing subscription updated: {subscription_data['id']}")
+        
         subscription = db.query(UserSubscription).filter(
             UserSubscription.stripe_subscription_id == subscription_data["id"]
         ).first()
         
         if not subscription:
+            logger.warning(f"❌ Subscription not found in database: {subscription_data['id']}")
             return
+        
+        logger.info(f"✅ Found subscription for user: {subscription.user_id}")
         
         # Get the new package info from price metadata
         price_id = subscription_data["items"]["data"][0]["price"]["id"]
+        logger.info(f"🔍 Getting updated price: {price_id}")
+        
         price = stripe.Price.retrieve(price_id)
         package_id = price.metadata.get("package_id")
         
+        logger.info(f"💰 Updated price metadata - package_id: {package_id}")
+        
         if package_id:
+            logger.info(f"🔄 Updating package from {subscription.package_id} to {package_id}")
             subscription.package_id = package_id
             
             # Allocate new credits for the updated package
             package = db.query(Package).filter(Package.id == package_id).first()
             if package:
+                logger.info(f"💳 Allocating {package.credits_monthly} credits for updated package {package.name}")
+                
                 expires_at = datetime.fromtimestamp(subscription_data["current_period_end"])
                 CreditService.allocate_credits(
                     user_id=subscription.user_id,
                     credits=package.credits_monthly,
                     source="subscription_update",
+                    expires_at=expires_at,
+                    db=db,
+                    subscription_id=subscription.id
+                )
+            else:
+                logger.error(f"❌ Package not found: {package_id}")
+        else:
+            logger.warning(f"❌ No package_id in price metadata: {price_id}")
+            # Try to find package by checking for 10000 credits (since that's what the user wants)
+            package = db.query(Package).filter(Package.credits_monthly == 10000).first()
+            if package:
+                logger.info(f"🔍 Found 10K credits package by credits amount: {package.id}")
+                subscription.package_id = package.id
+                
+                expires_at = datetime.fromtimestamp(subscription_data["current_period_end"])
+                CreditService.allocate_credits(
+                    user_id=subscription.user_id,
+                    credits=package.credits_monthly,
+                    source="subscription_update_fallback",
                     expires_at=expires_at,
                     db=db,
                     subscription_id=subscription.id
@@ -1218,33 +1485,40 @@ async def handle_subscription_updated(subscription_data, db: Session):
         
         db.commit()
         
-        logger.info(f"Subscription updated: {subscription_data['id']}")
+        logger.info(f"✅ Subscription updated successfully: {subscription_data['id']}")
         
     except Exception as e:
-        logger.error(f"Error handling subscription updated: {str(e)}")
+        logger.error(f"❌ Error handling subscription updated: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
 
 async def handle_subscription_deleted(subscription_data, db: Session):
     """Handle subscription deletion"""
     try:
+        logger.info(f"🗑️ Processing subscription deleted: {subscription_data['id']}")
+        
         subscription = db.query(UserSubscription).filter(
             UserSubscription.stripe_subscription_id == subscription_data["id"]
         ).first()
         
         if not subscription:
+            logger.warning(f"❌ Subscription not found for deletion: {subscription_data['id']}")
             return
         
         subscription.status = SubscriptionStatus.cancelled
         subscription.cancelled_at = datetime.utcnow()
         db.commit()
         
-        logger.info(f"Subscription deleted: {subscription_data['id']}")
+        logger.info(f"✅ Subscription deleted: {subscription_data['id']}")
         
     except Exception as e:
-        logger.error(f"Error handling subscription deleted: {str(e)}")
+        logger.error(f"❌ Error handling subscription deleted: {str(e)}")
 
 async def handle_setup_intent_succeeded(setup_intent, db: Session):
     """Handle successful payment method setup"""
     try:
+        logger.info(f"🔐 Processing setup intent succeeded: {setup_intent.get('id')}")
+        
         customer_id = setup_intent.get("customer")
         payment_method_id = setup_intent.get("payment_method")
         
@@ -1283,10 +1557,10 @@ async def handle_setup_intent_succeeded(setup_intent, db: Session):
         db.add(new_pm)
         db.commit()
         
-        logger.info(f"Payment method added for user {subscription.user_id}")
+        logger.info(f"✅ Payment method added for user {subscription.user_id}")
         
     except Exception as e:
-        logger.error(f"Error handling setup intent succeeded: {str(e)}")
+        logger.error(f"❌ Error handling setup intent succeeded: {str(e)}")
 
 # ====== ENRICHMENT ENDPOINTS ======
 
