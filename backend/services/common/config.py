@@ -14,6 +14,9 @@ class Settings:
         # Redis/Celery configuration
         self.redis_url = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
         
+        # JWT configuration
+        self.jwt_secret = os.environ.get('JWT_SECRET', 'devsecret')
+        
         # API Keys for enrichment services
         self.hunter_api = os.environ.get('HUNTER_API_KEY', '195519b1b540f1d005011ecd654a889390616b2b')
         self.dropcontact_api = os.environ.get('DROPCONTACT_API_KEY', 'zzqP8RNF6KXajJVgYaQiWeZW64J2mX')
