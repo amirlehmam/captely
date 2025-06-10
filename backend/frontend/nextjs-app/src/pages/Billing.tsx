@@ -954,7 +954,7 @@ const BillingPage: React.FC = () => {
                   ? 'bg-gradient-to-br from-gray-800 to-gray-900' 
                   : 'bg-white'
               } ${
-                  pack.popular 
+                  pack.credits_monthly === 2000 
                   ? theme === 'dark'
                     ? 'border-emerald-500 shadow-xl scale-105' 
                     : 'border-teal-500 shadow-xl scale-105'
@@ -965,7 +965,7 @@ const BillingPage: React.FC = () => {
                   : 'border-gray-200 hover:border-teal-300'
               }`}
             >
-                {pack.popular && (
+                {pack.credits_monthly === 2000 && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <span className={`px-4 py-1 rounded-full text-xs font-bold text-white ${
                     theme === 'dark'
@@ -1031,7 +1031,7 @@ const BillingPage: React.FC = () => {
                       <Mail className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
                       }`} />
-                       {billingType === 'annual' ? (Math.round(pack.credits_monthly * 0.5) * 12).toLocaleString() : Math.round(pack.credits_monthly * 0.5).toLocaleString()} {t('billing.emails')}
+                       {billingType === 'annual' ? (pack.credits_monthly * 12).toLocaleString() : pack.credits_monthly.toLocaleString()} {t('billing.emails')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1039,7 +1039,7 @@ const BillingPage: React.FC = () => {
                       <Phone className={`w-4 h-4 mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
                       }`} />
-                       {billingType === 'annual' ? (Math.round(pack.credits_monthly * 0.25) * 12).toLocaleString() : Math.round(pack.credits_monthly * 0.25).toLocaleString()} {t('billing.phones')}
+                       {billingType === 'annual' ? (Math.round(pack.credits_monthly / 10) * 12).toLocaleString() : Math.round(pack.credits_monthly / 10).toLocaleString()} {t('billing.phones')}
                     </div>
                     <div className={`flex items-center text-sm ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -1075,7 +1075,7 @@ const BillingPage: React.FC = () => {
                       ? theme === 'dark'
                         ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                         : 'bg-gray-100 text-gray-600 cursor-not-allowed'
-                        : pack.popular
+                        : pack.credits_monthly === 2000
                       ? theme === 'dark'
                         ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
                         : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl'
