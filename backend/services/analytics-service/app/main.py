@@ -934,6 +934,269 @@ async def api_health_check():
     """API health check endpoint (nginx compatibility)"""
     return {"status": "ok", "service": "analytics-service"}
 
+@app.post("/api/analytics/recalculate-lead-scores")
+async def trigger_lead_score_recalculation(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    🔢 API endpoint to trigger lead score recalculation for all contacts
+    This can be called from the frontend or via HTTP request
+    """
+    try:
+        # Import here to avoid circular imports
+        import httpx
+        
+        # Call the enrichment worker service to trigger the task
+        enrichment_worker_url = "http://enrichment-worker:8000"  # Internal docker network
+        
+        # Try to trigger the Celery task via HTTP
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    f"{enrichment_worker_url}/api/trigger-lead-score-recalculation",
+                    json={"user_id": user_id if user_id != "all" else None},
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    task_data = response.json()
+                    return {
+                        "success": True,
+                        "message": "Lead score recalculation started successfully!",
+                        "task_id": task_data.get("task_id"),
+                        "status": "queued"
+                    }
+                else:
+                    # Fallback: try direct database update
+                    raise Exception(f"Enrichment worker returned {response.status_code}")
+                    
+            except Exception as worker_error:
+                print(f"⚠️ Enrichment worker unavailable: {worker_error}")
+                
+                # Fallback: Direct database update approach
+                return await direct_lead_score_recalculation(session, user_id)
+                
+    except Exception as e:
+        print(f"❌ Error triggering lead score recalculation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to trigger recalculation: {str(e)}")
+
+
+async def direct_lead_score_recalculation(session: AsyncSession, user_id: str):
+    """
+    Direct database approach to recalculate lead scores when Celery is unavailable
+    """
+    try:
+        # Build query conditions
+        where_conditions = []
+        params = {}
+        
+        if user_id and user_id != "all":
+            where_conditions.append("ij.user_id = :user_id")
+            params["user_id"] = user_id
+        
+        where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+        
+        # Get all contacts that need score recalculation
+        contacts_query = text(f"""
+            SELECT 
+                c.id, c.email, c.phone, c.company, c.position, c.profile_url,
+                c.email_verified, c.phone_verified, 
+                c.email_verification_score, c.phone_verification_score,
+                c.enrichment_score, c.is_disposable, c.is_role_based, c.is_catchall
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            {where_clause}
+            ORDER BY c.id
+            LIMIT 1000
+        """)
+        
+        result = await session.execute(contacts_query, params)
+        contacts = result.fetchall()
+        
+        updated_count = 0
+        
+        for contact in contacts:
+            contact_id = contact[0]
+            email = contact[1]
+            phone = contact[2]
+            company = contact[3]
+            position = contact[4]
+            profile_url = contact[5]
+            email_verified = contact[6] or False
+            phone_verified = contact[7] or False
+            email_verification_score = contact[8]
+            phone_verification_score = contact[9]
+            enrichment_score = contact[10]
+            is_disposable = contact[11] or False
+            is_role_based = contact[12] or False
+            is_catchall = contact[13] or False
+            
+            # Calculate lead score (simplified version)
+            lead_score = calculate_simple_lead_score(
+                email, phone, email_verified, phone_verified,
+                email_verification_score, phone_verification_score,
+                company, position, profile_url, enrichment_score
+            )
+            
+            # Calculate email reliability
+            email_reliability = calculate_simple_email_reliability(
+                email, email_verified, email_verification_score,
+                is_disposable, is_role_based, is_catchall
+            )
+            
+            # Update the contact
+            update_query = text("""
+                UPDATE contacts 
+                SET 
+                    lead_score = :lead_score,
+                    email_reliability = :email_reliability,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :contact_id
+            """)
+            
+            await session.execute(update_query, {
+                "contact_id": contact_id,
+                "lead_score": lead_score,
+                "email_reliability": email_reliability
+            })
+            
+            updated_count += 1
+        
+        await session.commit()
+        
+        return {
+            "success": True,
+            "message": f"Direct database update completed successfully!",
+            "updated_count": updated_count,
+            "method": "direct_database_update"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Direct recalculation failed: {str(e)}")
+
+
+def calculate_simple_lead_score(email, phone, email_verified, phone_verified, 
+                               email_verification_score, phone_verification_score,
+                               company, position, profile_url, enrichment_score):
+    """Simplified lead score calculation for direct database update"""
+    score = 20  # Base score
+    
+    # Email scoring
+    if email and email.strip():
+        score += 20  # Has email
+        if email_verified:
+            if email_verification_score and email_verification_score >= 0.9:
+                score += 35  # Excellent verification
+            elif email_verification_score and email_verification_score >= 0.7:
+                score += 30  # Good verification
+            elif email_verification_score and email_verification_score >= 0.5:
+                score += 25  # Fair verification
+            else:
+                score += 20  # Basic verification
+    
+    # Phone scoring
+    if phone and phone.strip():
+        score += 15  # Has phone
+        if phone_verified:
+            if phone_verification_score and phone_verification_score >= 0.9:
+                score += 30  # Excellent phone verification
+            elif phone_verification_score and phone_verification_score >= 0.7:
+                score += 25  # Good verification
+            else:
+                score += 20  # Basic verification
+    
+    # Additional data quality factors
+    if company and company.strip() and company.lower() != 'unknown':
+        score += 10
+    if position and position.strip() and position.lower() != 'unknown':
+        score += 10
+    if profile_url and profile_url.strip():
+        score += 10
+    if enrichment_score and enrichment_score >= 0.8:
+        score += 10
+    elif enrichment_score and enrichment_score >= 0.6:
+        score += 5
+    
+    return min(score, 100)
+
+
+def calculate_simple_email_reliability(email, email_verified, email_verification_score,
+                                     is_disposable, is_role_based, is_catchall):
+    """Simplified email reliability calculation for direct database update"""
+    if not email or not email.strip():
+        return 'no_email'
+    
+    if is_disposable:
+        return 'poor'
+    
+    if not email_verified:
+        return 'unknown'
+    
+    if email_verification_score is None:
+        email_verification_score = 0.5
+    
+    if email_verification_score >= 0.9 and not is_role_based and not is_catchall:
+        return 'excellent'
+    elif email_verification_score >= 0.7:
+        return 'good' if not is_role_based else 'fair'
+    elif email_verification_score >= 0.5:
+        return 'fair'
+    else:
+        return 'poor'
+
+
+@app.get("/api/analytics/lead-scores-status")
+async def get_lead_scores_status(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    📊 Check the status of lead scores in the database
+    """
+    try:
+        # Check how many contacts have calculated lead scores vs zeros
+        stats_query = text("""
+            SELECT 
+                COUNT(*) as total_contacts,
+                COUNT(CASE WHEN lead_score > 0 THEN 1 END) as scored_contacts,
+                COUNT(CASE WHEN email_reliability != 'unknown' AND email_reliability IS NOT NULL THEN 1 END) as reliability_set,
+                AVG(CASE WHEN lead_score > 0 THEN lead_score END) as avg_lead_score,
+                MIN(lead_score) as min_score,
+                MAX(lead_score) as max_score
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE ij.user_id = :user_id
+        """)
+        
+        result = await session.execute(stats_query, {"user_id": user_id})
+        stats = result.first()
+        
+        total_contacts = stats[0] or 0
+        scored_contacts = stats[1] or 0
+        reliability_set = stats[2] or 0
+        avg_lead_score = float(stats[3] or 0)
+        min_score = stats[4] or 0
+        max_score = stats[5] or 0
+        
+        scoring_percentage = (scored_contacts / total_contacts * 100) if total_contacts > 0 else 0
+        reliability_percentage = (reliability_set / total_contacts * 100) if total_contacts > 0 else 0
+        
+        return {
+            "total_contacts": total_contacts,
+            "scored_contacts": scored_contacts,
+            "reliability_set": reliability_set,
+            "scoring_percentage": round(scoring_percentage, 1),
+            "reliability_percentage": round(reliability_percentage, 1),
+            "avg_lead_score": round(avg_lead_score, 1),
+            "score_range": f"{min_score}-{max_score}",
+            "needs_recalculation": scoring_percentage < 80,
+            "status": "good" if scoring_percentage >= 80 else "needs_update"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking lead scores status: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
