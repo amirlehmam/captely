@@ -1186,6 +1186,27 @@ async def handle_subscription_updated(subscription_data, db: Session):
         if not subscription:
             return
         
+        # Get the new package info from price metadata
+        price_id = subscription_data["items"]["data"][0]["price"]["id"]
+        price = stripe.Price.retrieve(price_id)
+        package_id = price.metadata.get("package_id")
+        
+        if package_id:
+            subscription.package_id = package_id
+            
+            # Allocate new credits for the updated package
+            package = db.query(Package).filter(Package.id == package_id).first()
+            if package:
+                expires_at = datetime.fromtimestamp(subscription_data["current_period_end"])
+                CreditService.allocate_credits(
+                    user_id=subscription.user_id,
+                    credits=package.credits_monthly,
+                    source="subscription_update",
+                    expires_at=expires_at,
+                    db=db,
+                    subscription_id=subscription.id
+                )
+        
         # Update status and periods
         subscription.status = SubscriptionStatus(subscription_data["status"])
         subscription.current_period_start = datetime.fromtimestamp(subscription_data["current_period_start"])
