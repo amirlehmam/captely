@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CreditCard, Calendar, TrendingUp, Clock, Star, Check, X, 
-  AlertCircle, Info, ChevronRight, Download, RefreshCw, Zap,
+  AlertCircle, Info, ChevronRight, ChevronDown, Download, RefreshCw, Zap,
   Target, BarChart3, Users, Shield, Headphones, Globe, Crown,
   ArrowRight, CheckCircle, XCircle, Timer, History, Eye,
   Plus, Trash2, ExternalLink, Lock, DollarSign, FileText,
@@ -103,6 +103,7 @@ const BillingPage: React.FC = () => {
   const [selectedProPlan, setSelectedProPlan] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
+  const [paymentMethodsExpanded, setPaymentMethodsExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   
@@ -565,57 +566,7 @@ const BillingPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Credit Consumption Info Box */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`rounded-xl border p-6 mb-8 ${
-          theme === 'dark' 
-            ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-400/30' 
-            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
-        }`}
-      >
-        <div className="flex items-start space-x-4">
-          <Info className={`w-6 h-6 flex-shrink-0 mt-1 ${
-            theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-          }`} />
-          <div className="flex-1">
-            <h3 className={`text-lg font-semibold mb-3 ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>
-               {t('billing.creditConsumptionLogicTitle')}
-            </h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className={`text-sm flex items-center ${
-                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  <Zap className={`w-4 h-4 mr-2 ${
-                    theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
-                  }`} />
-                  <strong> 1 email found = 1 credit</strong>
-                </p>
-                <p className={`text-sm flex items-center ${
-                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  <Zap className={`w-4 h-4 mr-2 ${
-                    theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
-                  }`} />
-                  <strong> 1 phone found = 10 credits</strong>
-                </p>
-                <p className={`text-sm flex items-center ${
-                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  <CheckCircle className={`w-4 h-4 mr-2 ${
-                    theme === 'dark' ? 'text-green-400' : 'text-green-500'
-                  }`} />
-                  <strong> No result = No charge</strong>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+
 
       {/* Current Plan & Credits Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
@@ -760,43 +711,66 @@ const BillingPage: React.FC = () => {
         }`}
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className={`text-lg font-semibold ${
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
-          }`}>
-             {t('billing.paymentMethodsTitle')}
-          </h3>
           <button
-            onClick={() => setShowAddPaymentMethod(true)}
-            className={`inline-flex items-center px-4 py-2 rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 ${
-              theme === 'dark'
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
-                : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
-            } text-white`}
+            onClick={() => setPaymentMethodsExpanded(!paymentMethodsExpanded)}
+            className="flex items-center space-x-2 group"
           >
-            <Plus className="w-4 h-4 mr-2" />
-             {t('billing.addPaymentMethod')}
+            <h3 className={`text-lg font-semibold transition-colors ${
+              theme === 'dark' ? 'text-white group-hover:text-emerald-400' : 'text-gray-900 group-hover:text-teal-600'
+            }`}>
+               {t('billing.paymentMethodsTitle')}
+            </h3>
+            <ChevronDown 
+              className={`w-5 h-5 transition-transform duration-200 ${
+                paymentMethodsExpanded ? 'rotate-180' : ''
+              } ${
+                theme === 'dark' ? 'text-gray-400 group-hover:text-emerald-400' : 'text-gray-500 group-hover:text-teal-600'
+              }`}
+            />
           </button>
+          {paymentMethodsExpanded && (
+            <button
+              onClick={() => setShowAddPaymentMethod(true)}
+              className={`inline-flex items-center px-4 py-2 rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                  : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
+              } text-white`}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+               {t('billing.addPaymentMethod')}
+            </button>
+          )}
         </div>
 
-        {paymentMethods.length === 0 ? (
-          <div className="text-center py-8">
-            <CreditCard className={`w-12 h-12 mx-auto mb-3 ${
-              theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-            }`} />
-            <p className={`${
-              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-            }`}>
-              {t('billing.noPaymentMethods')}
-            </p>
-            <p className={`text-sm mt-1 ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              {t('billing.addPaymentMethodDescription')}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {paymentMethods.map((method) => (
+        <AnimatePresence>
+          {paymentMethodsExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              {paymentMethods.length === 0 ? (
+                <div className="text-center py-8">
+                  <CreditCard className={`w-12 h-12 mx-auto mb-3 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
+                  <p className={`${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    {t('billing.noPaymentMethods')}
+                  </p>
+                  <p className={`text-sm mt-1 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    {t('billing.addPaymentMethodDescription')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {paymentMethods.map((method) => (
               <div
                 key={method.id}
                 className={`border rounded-lg p-4 transition-all duration-200 ${
@@ -868,9 +842,12 @@ const BillingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Billing Type Toggle */}
@@ -1271,6 +1248,58 @@ const BillingPage: React.FC = () => {
           </div>
         </motion.div>
       )}
+
+      {/* Credit Consumption Info Box */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`rounded-xl border p-6 mb-8 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-400/30' 
+            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+        }`}
+      >
+        <div className="flex items-start space-x-4">
+          <Info className={`w-6 h-6 flex-shrink-0 mt-1 ${
+            theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+          }`} />
+          <div className="flex-1">
+            <h3 className={`text-lg font-semibold mb-3 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+               {t('billing.creditConsumptionLogicTitle')}
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <p className={`text-sm flex items-center ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <Zap className={`w-4 h-4 mr-2 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
+                  }`} />
+                  <strong> 1 email found = 1 credit</strong>
+                </p>
+                <p className={`text-sm flex items-center ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <Zap className={`w-4 h-4 mr-2 ${
+                    theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
+                  }`} />
+                  <strong> 1 phone found = 10 credits</strong>
+                </p>
+                <p className={`text-sm flex items-center ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <CheckCircle className={`w-4 h-4 mr-2 ${
+                    theme === 'dark' ? 'text-green-400' : 'text-green-500'
+                  }`} />
+                  <strong> No result = No charge</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Enrichment History */}
       <AnimatePresence>
