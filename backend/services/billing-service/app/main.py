@@ -574,33 +574,51 @@ async def create_subscription_checkout(
         
         customer_id = StripeService.get_or_create_customer(user_id, user_email, db)
         
-        # Create Stripe price if it doesn't exist
-        price_amount = int((package.price_annual if data.billing_cycle == "annual" else package.price_monthly) * 100)
-        price_interval = "year" if data.billing_cycle == "annual" else "month"
+        # Get the correct Stripe price ID from database
+        if data.billing_cycle == "annual":
+            price_id = package.stripe_price_id_annual
+        else:
+            price_id = package.stripe_price_id_monthly
         
-        try:
-            stripe_price = stripe.Price.create(
-                unit_amount=price_amount,
-                currency="eur",
-                recurring={"interval": price_interval},
-                product_data={
-                    "name": f"{package.display_name} Plan"
-                    # Removed description - not supported in newer Stripe API
-                },
-                metadata={
-                    "package_id": str(package.id),
-                    "billing_cycle": data.billing_cycle
-                }
-            )
-        except AttributeError as attr_error:
-            logger.error(f"Stripe library AttributeError in price creation: {attr_error}")
-            raise HTTPException(status_code=503, detail="Payment processing temporarily unavailable - Price creation failed")
+        logger.info(f"💰 Using Stripe price ID: {price_id} for {package.display_name} ({data.billing_cycle})")
+        
+        # Fallback: Create price if not configured (for new packages)
+        if not price_id:
+            logger.warning(f"⚠️ No Stripe price ID configured for {package.name} ({data.billing_cycle}), creating one")
+            price_amount = int((package.price_annual if data.billing_cycle == "annual" else package.price_monthly) * 100)
+            price_interval = "year" if data.billing_cycle == "annual" else "month"
+            
+            try:
+                stripe_price = stripe.Price.create(
+                    unit_amount=price_amount,
+                    currency="eur",
+                    recurring={"interval": price_interval},
+                    product_data={
+                        "name": f"{package.display_name} Plan"
+                    },
+                    metadata={
+                        "package_id": str(package.id),
+                        "billing_cycle": data.billing_cycle
+                    }
+                )
+                price_id = stripe_price.id
+                
+                # Update package with new price ID
+                if data.billing_cycle == "annual":
+                    package.stripe_price_id_annual = price_id
+                else:
+                    package.stripe_price_id_monthly = price_id
+                db.commit()
+                
+            except AttributeError as attr_error:
+                logger.error(f"Stripe library AttributeError in price creation: {attr_error}")
+                raise HTTPException(status_code=503, detail="Payment processing temporarily unavailable - Price creation failed")
         
         # Create checkout session with error handling
         try:
             checkout_session = StripeService.create_checkout_session(
                 customer_id=customer_id,
-                price_id=stripe_price.id,
+                price_id=price_id,
                 success_url="https://captely.com/billing?success=true&session_id={CHECKOUT_SESSION_ID}",
                 cancel_url="https://captely.com/billing?canceled=true"
             )
