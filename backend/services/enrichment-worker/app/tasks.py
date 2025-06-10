@@ -2896,9 +2896,9 @@ def verify_existing_contacts(self, job_id: str):
                             }
                         )
                     
-                    # Update contact with verification results
+                    # Update contact with verification results using enhanced scoring
                     if verification_data:
-                        await update_contact(
+                        await update_contact_with_scoring(
                             session,
                             contact_id,
                             verification_data=verification_data
@@ -3162,34 +3162,68 @@ def verify_all_existing_contacts(self, user_id: Optional[str] = None):
                         phone_verified = False
                         phone_verification_score = 0.0
                 
-                # Update contact with verification results
-                update_fields = []
-                update_params = {"contact_id": contact_id}
-                
-                if email and email.strip():
-                    update_fields.append("email_verified = :email_verified")
-                    update_fields.append("email_verification_score = :email_verification_score")
-                    update_params["email_verified"] = email_verified
-                    update_params["email_verification_score"] = email_verification_score
-                
-                if phone and phone.strip():
-                    update_fields.append("phone_verified = :phone_verified")
-                    update_fields.append("phone_verification_score = :phone_verification_score")
-                    update_params["phone_verified"] = phone_verified
-                    update_params["phone_verification_score"] = phone_verification_score
-                
-                if update_fields:
-                    update_fields.append("updated_at = CURRENT_TIMESTAMP")
-                    update_query = text(f"""
-                        UPDATE contacts 
-                        SET {', '.join(update_fields)}
-                        WHERE id = :contact_id
+                # Update contact with verification results and recalculate lead scores
+                if email or phone:
+                    # Get current contact data for scoring
+                    get_contact_query = text("""
+                        SELECT email, phone, company, position, profile_url, enrichment_score
+                        FROM contacts WHERE id = :contact_id
                     """)
+                    contact_result = session.execute(get_contact_query, {"contact_id": contact_id})
+                    contact_data = contact_result.fetchone()
                     
-                    session.execute(update_query, update_params)
-                    verified_count += 1
-                    
-                    print(f"✅ Updated contact {contact_id} verification status")
+                    if contact_data:
+                        # Calculate new lead score and email reliability
+                        lead_score = calculate_lead_score(
+                            email=contact_data[0],
+                            phone=contact_data[1],
+                            email_verified=email_verified if email else False,
+                            phone_verified=phone_verified if phone else False,
+                            email_verification_score=email_verification_score,
+                            phone_verification_score=phone_verification_score,
+                            company=contact_data[2],
+                            position=contact_data[3],
+                            profile_url=contact_data[4],
+                            enrichment_score=contact_data[5]
+                        )
+                        
+                        email_reliability = calculate_email_reliability(
+                            email=contact_data[0],
+                            email_verified=email_verified if email else False,
+                            email_verification_score=email_verification_score
+                        )
+                        
+                        # Build update query with verification results AND scores
+                        update_fields = ["lead_score = :lead_score", "email_reliability = :email_reliability"]
+                        update_params = {
+                            "contact_id": contact_id,
+                            "lead_score": lead_score,
+                            "email_reliability": email_reliability
+                        }
+                        
+                        if email and email.strip():
+                            update_fields.append("email_verified = :email_verified")
+                            update_fields.append("email_verification_score = :email_verification_score")
+                            update_params["email_verified"] = email_verified
+                            update_params["email_verification_score"] = email_verification_score
+                        
+                        if phone and phone.strip():
+                            update_fields.append("phone_verified = :phone_verified")
+                            update_fields.append("phone_verification_score = :phone_verification_score")
+                            update_params["phone_verified"] = phone_verified
+                            update_params["phone_verification_score"] = phone_verification_score
+                        
+                        update_fields.append("updated_at = CURRENT_TIMESTAMP")
+                        update_query = text(f"""
+                            UPDATE contacts 
+                            SET {', '.join(update_fields)}
+                            WHERE id = :contact_id
+                        """)
+                        
+                        session.execute(update_query, update_params)
+                        verified_count += 1
+                        
+                        print(f"✅ Updated contact {contact_id}: verification + lead_score={lead_score} + email_reliability={email_reliability}")
             
             session.commit()
             logger.info(f"Verified {verified_count} contacts")
@@ -3640,3 +3674,441 @@ def get_ultra_fast_summary():
         },
         "system_status": "ULTRA-FAST MODE ACTIVE ⚡"
     }
+
+# ----- LEAD SCORING AND EMAIL RELIABILITY CALCULATIONS ----- #
+
+def calculate_lead_score(
+    email: Optional[str] = None,
+    phone: Optional[str] = None,
+    email_verified: bool = False,
+    phone_verified: bool = False,
+    email_verification_score: Optional[float] = None,
+    phone_verification_score: Optional[float] = None,
+    company: Optional[str] = None,
+    position: Optional[str] = None,
+    profile_url: Optional[str] = None,
+    enrichment_score: Optional[float] = None
+) -> int:
+    """
+    Calculate lead score (0-100) based on contact data and verification status
+    
+    Scoring criteria:
+    - Base score: 20 points (minimum for any contact)
+    - Email presence: +20 points
+    - Phone presence: +15 points
+    - Email verified: +25 points (excellent verification +35)
+    - Phone verified: +20 points (mobile +25, excellent score +30)
+    - Company info: +10 points
+    - Position/title: +10 points
+    - LinkedIn profile: +10 points
+    - High enrichment confidence: +10 points
+    """
+    score = 20  # Base score
+    
+    # Email scoring (max 55 points for email)
+    if email and email.strip():
+        score += 20  # Has email
+        
+        if email_verified:
+            if email_verification_score and email_verification_score >= 0.9:
+                score += 35  # Excellent verification
+            elif email_verification_score and email_verification_score >= 0.7:
+                score += 30  # Good verification
+            elif email_verification_score and email_verification_score >= 0.5:
+                score += 25  # Fair verification
+            else:
+                score += 20  # Basic verification
+        else:
+            # Email exists but not verified gets partial credit
+            if email_verification_score and email_verification_score > 0:
+                score += int(email_verification_score * 15)  # Partial credit based on score
+    
+    # Phone scoring (max 35 points for phone)
+    if phone and phone.strip():
+        score += 15  # Has phone
+        
+        if phone_verified:
+            if phone_verification_score and phone_verification_score >= 0.9:
+                score += 30  # Excellent phone verification
+            elif phone_verification_score and phone_verification_score >= 0.7:
+                score += 25  # Mobile/good verification
+            else:
+                score += 20  # Basic verification
+        else:
+            # Phone exists but not verified gets partial credit
+            if phone_verification_score and phone_verification_score > 0:
+                score += int(phone_verification_score * 10)  # Partial credit
+    
+    # Additional data quality factors (max 30 points)
+    if company and company.strip() and company.lower() != 'unknown':
+        score += 10  # Has company info
+        
+    if position and position.strip() and position.lower() != 'unknown':
+        score += 10  # Has position/title
+        
+    if profile_url and profile_url.strip():
+        score += 10  # Has LinkedIn/profile URL
+    
+    # Enrichment quality bonus (max 10 points)
+    if enrichment_score and enrichment_score >= 0.8:
+        score += 10  # High confidence enrichment
+    elif enrichment_score and enrichment_score >= 0.6:
+        score += 5   # Medium confidence enrichment
+    
+    # Cap at 100
+    return min(score, 100)
+
+
+def calculate_email_reliability(
+    email: Optional[str] = None,
+    email_verified: bool = False,
+    email_verification_score: Optional[float] = None,
+    is_disposable: bool = False,
+    is_role_based: bool = False,
+    is_catchall: bool = False
+) -> str:
+    """
+    Calculate email reliability category based on verification data
+    
+    Categories:
+    - excellent: Verified with score ≥ 0.9, not disposable/role-based
+    - good: Verified with score ≥ 0.7 or good verification flags
+    - fair: Verified with score ≥ 0.5 or partial verification
+    - poor: Failed verification or problematic flags
+    - unknown: Email exists but not verified
+    - no_email: No email address available
+    """
+    if not email or not email.strip():
+        return 'no_email'
+    
+    # Check for problematic email flags
+    if is_disposable:
+        return 'poor'  # Disposable emails are unreliable
+    
+    if not email_verified:
+        return 'unknown'  # Email exists but not verified
+    
+    # Verified email - check score and flags
+    if email_verification_score is None:
+        email_verification_score = 0.5  # Default if no score available
+    
+    # Excellent category
+    if email_verification_score >= 0.9 and not is_role_based and not is_catchall:
+        return 'excellent'
+    
+    # Good category
+    if email_verification_score >= 0.7:
+        if is_role_based:
+            return 'fair'  # Role-based emails downgrade to fair
+        return 'good'
+    
+    # Fair category
+    if email_verification_score >= 0.5:
+        return 'fair'
+    
+    # Poor category
+    return 'poor'
+
+
+def calculate_phone_reliability(
+    phone: Optional[str] = None,
+    phone_verified: bool = False,
+    phone_verification_score: Optional[float] = None,
+    phone_type: Optional[str] = None
+) -> str:
+    """
+    Calculate phone reliability category
+    
+    Categories:
+    - excellent: Mobile phone with high verification score
+    - good: Landline or verified phone with good score
+    - fair: Verified phone with lower score
+    - poor: Failed verification
+    - unknown: Phone exists but not verified
+    - no_phone: No phone available
+    """
+    if not phone or not phone.strip():
+        return 'no_phone'
+    
+    if not phone_verified:
+        return 'unknown'
+    
+    if phone_verification_score is None:
+        phone_verification_score = 0.5
+    
+    # Excellent - mobile with high score
+    if phone_type == 'mobile' and phone_verification_score >= 0.8:
+        return 'excellent'
+    
+    # Good - any verified phone with good score
+    if phone_verification_score >= 0.7:
+        return 'good'
+    
+    # Fair - verified with lower score
+    if phone_verification_score >= 0.5:
+        return 'fair'
+    
+    # Poor - low verification score
+    return 'poor'
+
+
+# Update the existing update_contact function to include lead score and email reliability
+async def update_contact_with_scoring(
+    session: AsyncSession, 
+    contact_id: int, 
+    email: Optional[str] = None, 
+    phone: Optional[str] = None,
+    enrichment_data: Optional[Dict[str, Any]] = None,
+    verification_data: Optional[Dict[str, Any]] = None
+):
+    """
+    Enhanced version of update_contact that also calculates lead score and email reliability
+    """
+    try:
+        # First, get the current contact data
+        get_contact_query = text("""
+            SELECT 
+                email, phone, company, position, profile_url,
+                email_verified, phone_verified, 
+                email_verification_score, phone_verification_score,
+                enrichment_score, is_disposable, is_role_based, is_catchall
+            FROM contacts 
+            WHERE id = :contact_id
+        """)
+        
+        result = await session.execute(get_contact_query, {"contact_id": contact_id})
+        current_data = result.fetchone()
+        
+        if not current_data:
+            logger.error(f"Contact {contact_id} not found for scoring update")
+            return
+        
+        # Get current values
+        current_email = current_data[0] or email
+        current_phone = current_data[1] or phone
+        company = current_data[2]
+        position = current_data[3]
+        profile_url = current_data[4]
+        email_verified = current_data[5]
+        phone_verified = current_data[6]
+        email_verification_score = current_data[7]
+        phone_verification_score = current_data[8]
+        enrichment_score = current_data[9]
+        is_disposable = current_data[10] or False
+        is_role_based = current_data[11] or False
+        is_catchall = current_data[12] or False
+        
+        # Update with new data if provided
+        if enrichment_data:
+            email_verified = enrichment_data.get('email_verified', email_verified)
+            phone_verified = enrichment_data.get('phone_verified', phone_verified)
+            enrichment_score = enrichment_data.get('enrichment_score', enrichment_score)
+            
+        if verification_data:
+            email_verification_score = verification_data.get('email_verification_score', email_verification_score)
+            phone_verification_score = verification_data.get('phone_verification_score', phone_verification_score)
+            email_verified = verification_data.get('email_verified', email_verified)
+            phone_verified = verification_data.get('phone_verified', phone_verified)
+            is_disposable = verification_data.get('is_disposable', is_disposable)
+            is_role_based = verification_data.get('is_role_based', is_role_based)
+            is_catchall = verification_data.get('is_catchall', is_catchall)
+        
+        # Calculate lead score and email reliability
+        lead_score = calculate_lead_score(
+            email=current_email,
+            phone=current_phone,
+            email_verified=email_verified,
+            phone_verified=phone_verified,
+            email_verification_score=email_verification_score,
+            phone_verification_score=phone_verification_score,
+            company=company,
+            position=position,
+            profile_url=profile_url,
+            enrichment_score=enrichment_score
+        )
+        
+        email_reliability = calculate_email_reliability(
+            email=current_email,
+            email_verified=email_verified,
+            email_verification_score=email_verification_score,
+            is_disposable=is_disposable,
+            is_role_based=is_role_based,
+            is_catchall=is_catchall
+        )
+        
+        # Build update query dynamically
+        update_fields = ["lead_score = :lead_score", "email_reliability = :email_reliability", "updated_at = CURRENT_TIMESTAMP"]
+        update_params = {
+            "contact_id": contact_id,
+            "lead_score": lead_score,
+            "email_reliability": email_reliability
+        }
+        
+        # Add email and phone if provided
+        if email is not None:
+            update_fields.append("email = :email")
+            update_params["email"] = email
+            
+        if phone is not None:
+            update_fields.append("phone = :phone")
+            update_params["phone"] = phone
+        
+        # Add enrichment data if provided
+        if enrichment_data:
+            for field, value in enrichment_data.items():
+                if field not in ['lead_score', 'email_reliability']:  # Don't override our calculations
+                    update_fields.append(f"{field} = :{field}")
+                    update_params[field] = value
+        
+        # Add verification data if provided  
+        if verification_data:
+            for field, value in verification_data.items():
+                if field not in ['lead_score', 'email_reliability']:  # Don't override our calculations
+                    update_fields.append(f"{field} = :{field}")
+                    update_params[field] = value
+        
+        # Execute update
+        update_query = text(f"""
+            UPDATE contacts 
+            SET {', '.join(update_fields)}
+            WHERE id = :contact_id
+        """)
+        
+        await session.execute(update_query, update_params)
+        
+        logger.info(f"✅ Updated contact {contact_id}: lead_score={lead_score}, email_reliability={email_reliability}")
+        
+    except Exception as e:
+        logger.error(f"Error updating contact {contact_id} with scoring: {str(e)}")
+        raise
+
+# ----- NEW TASK: RECALCULATE LEAD SCORES AND EMAIL RELIABILITY ----- #
+
+@celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.recalculate_all_lead_scores')
+def recalculate_all_lead_scores(self, user_id: Optional[str] = None):
+    """
+    Recalculate lead scores and email reliability for all existing contacts
+    This should be run after implementing the new scoring system
+    """
+    try:
+        logger.info(f"Starting lead score recalculation for user: {user_id or 'ALL'}")
+        
+        with SyncSessionLocal() as session:
+            # Build query conditions
+            where_conditions = []
+            params = {}
+            
+            if user_id:
+                where_conditions.append("ij.user_id = :user_id")
+                params["user_id"] = user_id
+            
+            where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+            
+            # Get all contacts that need score recalculation
+            stmt = text(f"""
+                SELECT 
+                    c.id, c.email, c.phone, c.company, c.position, c.profile_url,
+                    c.email_verified, c.phone_verified, 
+                    c.email_verification_score, c.phone_verification_score,
+                    c.enrichment_score, c.is_disposable, c.is_role_based, c.is_catchall,
+                    c.phone_type
+                FROM contacts c
+                JOIN import_jobs ij ON c.job_id = ij.id
+                {where_clause}
+                ORDER BY c.id
+            """)
+            
+            result = session.execute(stmt, params)
+            contacts = result.fetchall()
+            
+            logger.info(f"Found {len(contacts)} contacts for score recalculation")
+            print(f"🔢 Found {len(contacts)} contacts for score recalculation")
+            
+            updated_count = 0
+            batch_size = 100
+            
+            for i in range(0, len(contacts), batch_size):
+                batch = contacts[i:i + batch_size]
+                
+                for contact in batch:
+                    contact_id = contact[0]
+                    email = contact[1]
+                    phone = contact[2]
+                    company = contact[3]
+                    position = contact[4]
+                    profile_url = contact[5]
+                    email_verified = contact[6] or False
+                    phone_verified = contact[7] or False
+                    email_verification_score = contact[8]
+                    phone_verification_score = contact[9]
+                    enrichment_score = contact[10]
+                    is_disposable = contact[11] or False
+                    is_role_based = contact[12] or False
+                    is_catchall = contact[13] or False
+                    phone_type = contact[14]
+                    
+                    # Calculate new lead score and email reliability
+                    lead_score = calculate_lead_score(
+                        email=email,
+                        phone=phone,
+                        email_verified=email_verified,
+                        phone_verified=phone_verified,
+                        email_verification_score=email_verification_score,
+                        phone_verification_score=phone_verification_score,
+                        company=company,
+                        position=position,
+                        profile_url=profile_url,
+                        enrichment_score=enrichment_score
+                    )
+                    
+                    email_reliability = calculate_email_reliability(
+                        email=email,
+                        email_verified=email_verified,
+                        email_verification_score=email_verification_score,
+                        is_disposable=is_disposable,
+                        is_role_based=is_role_based,
+                        is_catchall=is_catchall
+                    )
+                    
+                    # Update the contact
+                    update_query = text("""
+                        UPDATE contacts 
+                        SET 
+                            lead_score = :lead_score,
+                            email_reliability = :email_reliability,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :contact_id
+                    """)
+                    
+                    session.execute(update_query, {
+                        "contact_id": contact_id,
+                        "lead_score": lead_score,
+                        "email_reliability": email_reliability
+                    })
+                    
+                    updated_count += 1
+                    
+                    if updated_count % 50 == 0:
+                        print(f"🔢 Updated {updated_count} contacts...")
+                
+                # Commit after each batch
+                session.commit()
+                print(f"✅ Committed batch {i//batch_size + 1}/{(len(contacts) + batch_size - 1)//batch_size}")
+            
+            logger.info(f"Lead score recalculation complete: {updated_count} contacts updated")
+            print(f"✅ Lead score recalculation complete: {updated_count} contacts updated")
+            
+            return {
+                "success": True,
+                "updated_count": updated_count,
+                "user_id": user_id
+            }
+        
+    except Exception as e:
+        logger.error(f"Error in recalculate_all_lead_scores: {str(e)}")
+        print(f"❌ Lead score recalculation failed: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "updated_count": 0
+        }
