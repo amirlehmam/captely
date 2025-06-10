@@ -1172,13 +1172,19 @@ const BillingPage: React.FC = () => {
                     </h4>
                     <div className="space-y-3">
                       {(() => {
+                        // Handle null/undefined features
+                        if (!pack.features) return [];
+                        
                         try {
                           // Try to parse as JSON first
-                          const features = JSON.parse(pack.features || '[]');
+                          const features = JSON.parse(pack.features);
                           return Array.isArray(features) ? features : [];
                         } catch {
-                          // If not JSON, split by comma/semicolon and clean up
-                          return pack.features ? pack.features.split(/[,;]/).map(f => f.trim()).filter(f => f) : [];
+                          // If not JSON and features is a string, split by comma/semicolon and clean up
+                          if (typeof pack.features === 'string') {
+                            return pack.features.split(/[,;]/).map(f => f.trim()).filter(f => f);
+                          }
+                          return [];
                         }
                       })().map((feature: string, index: number) => (
                         <div key={index} className={`flex items-center text-sm ${
