@@ -711,7 +711,7 @@ async def get_dashboard_analytics(
                     {"name": "Export Ready", "status": "completed", "duration": "Ready"}
                 ]
         
-        # 🎯 FIXED: Get current batch stats (not cumulative)
+        # 🎯 FIXED: Get current batch stats (not cumulative) - CORRECTED FIELD NAMES
         current_batch_emails = 0
         current_batch_phones = 0
         current_batch_total = 0
@@ -720,9 +720,15 @@ async def get_dashboard_analytics(
         if current_batch:
             current_batch_emails = current_batch.get('emails_found', 0)
             current_batch_phones = current_batch.get('phones_found', 0)
-            current_batch_total = current_batch.get('total_contacts', 0)
+            current_batch_total = current_batch.get('total', 0)  # 🔧 FIXED: Field is called 'total', not 'total_contacts'
             if current_batch_total > 0:
                 current_batch_email_hit_rate = (current_batch_emails / current_batch_total) * 100
+        
+        # Debug current batch calculation
+        print(f"🔧 CURRENT BATCH HIT RATE CALCULATION:")
+        print(f"   - Current batch emails: {current_batch_emails}")
+        print(f"   - Current batch total: {current_batch_total}")
+        print(f"   - Calculated hit rate: {current_batch_email_hit_rate:.1f}%")
         
         response_data = {
             "overview": {
