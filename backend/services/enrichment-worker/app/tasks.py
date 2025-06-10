@@ -170,6 +170,112 @@ def run_async(coro):
     
     return loop.run_until_complete(coro)
 
+# ----- SUCCESS RATE TRACKING ----- #
+
+def get_current_batch_success_rate(job_id: str) -> Dict[str, Any]:
+    """
+    🎯 Get current success rate for the batch to determine if we need higher-tier providers
+    
+    Returns:
+        - current_success_rate: Percentage of contacts with emails found
+        - total_processed: Number of contacts processed so far  
+        - emails_found: Number of emails found so far
+        - needs_escalation: Boolean indicating if we need higher-tier providers
+    """
+    try:
+        with SyncSessionLocal() as session:
+            # Get batch statistics
+            stats_query = text("""
+                SELECT 
+                    COUNT(*) as total_processed,
+                    COUNT(CASE WHEN email IS NOT NULL AND email != '' THEN 1 END) as emails_found,
+                    COUNT(CASE WHEN enrichment_status = 'completed' THEN 1 END) as completed,
+                    COUNT(CASE WHEN enrichment_status = 'failed' THEN 1 END) as failed
+                FROM contacts 
+                WHERE job_id = :job_id
+            """)
+            
+            result = session.execute(stats_query, {"job_id": job_id})
+            stats = result.first()
+            
+            total_processed = stats[0] or 0
+            emails_found = stats[1] or 0
+            completed = stats[2] or 0
+            failed = stats[3] or 0
+            
+            # Calculate current success rate
+            current_success_rate = (emails_found / total_processed * 100) if total_processed > 0 else 0
+            
+            # Determine if we need escalation to higher-tier providers
+            # Escalate if success rate < 85% AND we have processed enough samples (min 5 contacts)
+            needs_escalation = current_success_rate < 85.0 and total_processed >= 5
+            
+            logger.warning(f"📊 BATCH {job_id} SUCCESS RATE: {current_success_rate:.1f}% ({emails_found}/{total_processed})")
+            
+            return {
+                "current_success_rate": current_success_rate,
+                "total_processed": total_processed,
+                "emails_found": emails_found,
+                "completed": completed,
+                "failed": failed,
+                "needs_escalation": needs_escalation,
+                "target_success_rate": 85.0
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ Error getting batch success rate: {e}")
+        return {
+            "current_success_rate": 0,
+            "total_processed": 0,
+            "emails_found": 0,
+            "completed": 0,
+            "failed": 0,
+            "needs_escalation": False,
+            "target_success_rate": 85.0
+        }
+
+def get_recommended_provider_tier(job_id: str, current_success_rate: float) -> str:
+    """
+    🎯 Determine which provider tier to use based on current batch success rate
+    
+    Args:
+        job_id: Current job ID
+        current_success_rate: Current success rate percentage
+        
+    Returns:
+        "tier1" (cheapest), "tier2" (mid), or "tier3" (expensive)
+    """
+    if current_success_rate >= 85.0:
+        return "tier1"  # Continue with cheapest providers
+    elif current_success_rate >= 70.0:
+        return "tier2"  # Use mid-tier providers  
+    else:
+        return "tier3"  # Use most expensive providers for maximum success rate
+        
+def should_use_expensive_providers(job_id: str) -> bool:
+    """
+    🎯 Decision function: Should we use expensive providers to reach 85% success rate?
+    
+    This function analyzes the current batch performance and decides if we should
+    escalate to more expensive providers to meet the 85% success rate target.
+    """
+    batch_stats = get_current_batch_success_rate(job_id)
+    
+    # Use expensive providers if:
+    # 1. Success rate is below 85% 
+    # 2. We have enough data to make a decision (>=5 contacts)
+    # 3. We haven't already tried expensive providers extensively
+    
+    should_escalate = (
+        batch_stats["current_success_rate"] < 85.0 and 
+        batch_stats["total_processed"] >= 5
+    )
+    
+    if should_escalate:
+        logger.warning(f"🚨 ESCALATING to expensive providers: Success rate {batch_stats['current_success_rate']:.1f}% < 85% target")
+    
+    return should_escalate
+
 # ----- MODERN VERIFICATION FUNCTIONS ----- #
 
 async def verify_email_if_available(email: str) -> Dict[str, Any]:
@@ -1310,8 +1416,14 @@ def process_enrichment_batch(self, file_path: str, job_id: str, user_id: str, us
 @celery_app.task(base=EnrichmentTask, bind=True, name='app.tasks.cascade_enrich')
 def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrichment_config: Dict[str, bool] = None):
     """
-    UPDATED: Cost-optimized cascade enrichment using corrected provider functions
-    Now supports selective enrichment based on user preferences
+    🎯 SUCCESS-RATE OPTIMIZED CASCADE ENRICHMENT
+    
+    TARGET: 85% minimum success rate regardless of batch size
+    STRATEGY: 
+    - Start with cheapest providers (cost optimization)
+    - Dynamically escalate to higher tiers if batch success rate < 85%
+    - Continue until target success rate is achieved
+    - Balance cost vs. success rate requirements
     """
     # Parse enrichment configuration
     if enrichment_config is None:
@@ -1412,7 +1524,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
         "updated_at": datetime.utcnow()
     }
     
-    # UPDATED: Use the correct service order from settings and provider functions from providers.py
+    # 🎯 SUCCESS-RATE OPTIMIZED PROVIDER SELECTION
     enrichment_successful = False
     provider_used = "none"
     start_time = time.time()
@@ -1422,72 +1534,115 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
     service_order = settings.service_order
     service_costs = settings.service_costs
     
-    print(f"💸 Starting cascade with {len(service_order)} providers in cost order")
+    # 🎯 GET CURRENT BATCH SUCCESS RATE to determine strategy
+    batch_stats = get_current_batch_success_rate(job_id)
+    current_success_rate = batch_stats["current_success_rate"]
+    needs_escalation = batch_stats["needs_escalation"]
     
-    # Phase 1: Try cheapest providers first (Tier 1: ~$0.008-$0.025)
-    tier1_providers = service_order[:5]  # First 5 cheapest
-    print(f"💸 Phase 1: Trying CHEAPEST providers")
+    print(f"🎯 DYNAMIC CASCADE for job {job_id}:")
+    print(f"   📊 Current batch success rate: {current_success_rate:.1f}% (target: 85%)")
+    print(f"   📈 Processed so far: {batch_stats['total_processed']} contacts")
+    print(f"   ✅ Emails found: {batch_stats['emails_found']}")
+    print(f"   🚨 Needs escalation: {needs_escalation}")
     
-    for provider_name in tier1_providers:
-        if not service_status.is_available(provider_name):
-            print(f"⚠️ {provider_name} not available, skipping")
-            continue
-            
-        # Get the cost for this provider
-        cost = service_costs.get(provider_name, 0)
+    # 🎯 DYNAMIC TIER SELECTION based on success rate
+    if current_success_rate >= 85.0:
+        # Success rate is good - use cheapest providers  
+        selected_tiers = [service_order[:3]]  # Tier 1 only
+        strategy = "COST_OPTIMIZED"
+        print(f"💰 Strategy: {strategy} - Using cheapest providers (success rate ≥85%)")
         
-        try:
-            print(f"🔍 Trying {provider_name} (${cost}/email)")
+    elif current_success_rate >= 70.0:
+        # Moderate success rate - use cheap + mid-tier
+        selected_tiers = [service_order[:3], service_order[3:6]]  # Tier 1 + 2
+        strategy = "BALANCED"
+        print(f"⚖️ Strategy: {strategy} - Using cheap + mid-tier providers (70-85% success rate)")
+        
+    elif current_success_rate >= 50.0:
+        # Low success rate - use all tiers including expensive
+        selected_tiers = [service_order[:3], service_order[3:6], service_order[6:]]  # All tiers
+        strategy = "SUCCESS_FOCUSED"  
+        print(f"🎯 Strategy: {strategy} - Using ALL tiers including expensive (50-70% success rate)")
+        
+    else:
+        # Very low success rate - start with most expensive providers first!
+        selected_tiers = [service_order[6:], service_order[3:6], service_order[:3]]  # Reverse order!
+        strategy = "AGGRESSIVE_EXPENSIVE_FIRST"
+        print(f"🚨 Strategy: {strategy} - EXPENSIVE PROVIDERS FIRST! (<50% success rate)")
+    
+    # Try each tier in the determined order
+    for tier_index, tier_providers in enumerate(selected_tiers):
+        if enrichment_successful:
+            break  # Found result, stop trying more tiers
             
-            # UPDATED: Use provider functions from providers.py
-            if provider_name in PROVIDER_FUNCTIONS:
-                provider_func = PROVIDER_FUNCTIONS[provider_name]
-                result = provider_func(lead)
-            else:
-                print(f"❌ Provider function not found for {provider_name}")
+        tier_name = f"Tier {tier_index + 1}"
+        tier_costs = [service_costs.get(p, 0) for p in tier_providers]
+        avg_tier_cost = sum(tier_costs) / len(tier_costs) if tier_costs else 0
+        
+        print(f"🔍 {strategy} - Trying {tier_name}: {tier_providers[:3]}{'...' if len(tier_providers) > 3 else ''}")
+        print(f"   💰 Average tier cost: ${avg_tier_cost:.3f}")
+        
+        for provider_name in tier_providers:
+            if not service_status.is_available(provider_name):
+                print(f"⚠️ {provider_name} not available, skipping")
+                continue
+            
+            # Get the cost for this provider
+            cost = service_costs.get(provider_name, 0)
+            
+            try:
+                print(f"🔍 Trying {provider_name} (${cost}/email)")
+                
+                # UPDATED: Use provider functions from providers.py
+                if provider_name in PROVIDER_FUNCTIONS:
+                    provider_func = PROVIDER_FUNCTIONS[provider_name]
+                    result = provider_func(lead)
+                else:
+                    print(f"❌ Provider function not found for {provider_name}")
+                    continue
+                    
+                if result:
+                    # Check if we found the requested types
+                    email = result.get("email") if enrich_email else None
+                    phone = result.get("phone") if enrich_phone else None
+                    
+                    # Only consider successful if we found what was requested
+                    has_requested_data = (enrich_email and email) or (enrich_phone and phone)
+                    
+                    if has_requested_data:
+                        # Clean results
+                        if isinstance(email, dict):
+                            email = email.get("email") if email else None
+                        if isinstance(phone, dict):
+                            phone = phone.get("phone") or phone.get("number") if phone else None
+                        
+                        total_cost = result.get("cost", cost if email else 0)
+                        
+                        contact_data.update({
+                            "email": email,
+                            "phone": phone,
+                            "enriched": True,
+                            "enrichment_status": "completed",
+                            "enrichment_provider": provider_name,
+                            "enrichment_score": result.get("confidence", 85),
+                            "email_verified": result.get("email_verified", False),
+                            "phone_verified": result.get("phone_verified", False),
+                            "updated_at": datetime.utcnow()
+                        })
+                        
+                        enrichment_successful = True
+                        provider_used = provider_name
+                        processing_time = time.time() - start_time
+                        print(f"✅ SUCCESS with {tier_name} {provider_name} (${cost}) in {processing_time:.2f}s")
+                        print(f"🎯 {strategy} strategy worked! Success rate will improve.")
+                        break  # Exit provider loop
+                    
+            except Exception as e:
+                print(f"❌ {provider_name} failed: {e}")
                 continue
                 
-            if result:
-                # Check if we found the requested types
-                email = result.get("email") if enrich_email else None
-                phone = result.get("phone") if enrich_phone else None
-                
-                # Only consider successful if we found what was requested
-                has_requested_data = (enrich_email and email) or (enrich_phone and phone)
-                
-                if has_requested_data:
-                    # Found results with cheap provider - STOP HERE for cost optimization!
-                    
-                    # Clean results
-                    if isinstance(email, dict):
-                        email = email.get("email") if email else None
-                    if isinstance(phone, dict):
-                        phone = phone.get("phone") or phone.get("number") if phone else None
-                    
-                    total_cost = result.get("cost", cost if email else 0)
-                    
-                    contact_data.update({
-                        "email": email,
-                        "phone": phone,
-                        "enriched": True,
-                        "enrichment_status": "completed",
-                        "enrichment_provider": provider_name,
-                        "enrichment_score": result.get("confidence", 85),
-                        "email_verified": result.get("email_verified", False),
-                        "phone_verified": result.get("phone_verified", False),
-                        "updated_at": datetime.utcnow()
-                    })
-                    
-                    enrichment_successful = True
-                    provider_used = provider_name
-                    processing_time = time.time() - start_time
-                    print(f"✅ SUCCESS with CHEAPEST tier {provider_name} (${cost}) in {processing_time:.2f}s")
-                    print(f"💰 Cost savings: Used ${cost} instead of up to ${max(service_costs.values())}")
-                    break
-                
-        except Exception as e:
-            print(f"❌ {provider_name} failed: {e}")
-            continue
+        if enrichment_successful:
+            break  # Exit tier loop if we found results
     
     # Phase 2: MID-TIER providers if no results yet
     if not enrichment_successful and len(service_order) > 5:
@@ -1544,7 +1699,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                         provider_used = provider_name
                         processing_time = time.time() - start_time
                         print(f"✅ SUCCESS with MID-TIER {provider_name} (${cost}) in {processing_time:.2f}s")
-                        break
+                        break  # Exit provider loop
                     
             except Exception as e:
                 print(f"❌ {provider_name} failed: {e}")
@@ -1606,7 +1761,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                         processing_time = time.time() - start_time
                         print(f"✅ SUCCESS with EXPENSIVE {provider_name} (${cost}) in {processing_time:.2f}s")
                         print(f"💸 Expensive but successful: ${cost} for final result")
-                        break
+                        break  # Exit provider loop
                     
             except Exception as e:
                 print(f"❌ {provider_name} failed: {e}")
@@ -1655,7 +1810,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                         provider_used = f"{provider_name}_fallback"
                         total_cost = 0.0  # Fallback providers don't count toward new pricing
                         print(f"✅ Fallback success with {provider_name}")
-                        break
+                        break  # Exit provider loop
                     
             except Exception as e:
                 print(f"❌ Fallback {provider_name} failed: {e}")

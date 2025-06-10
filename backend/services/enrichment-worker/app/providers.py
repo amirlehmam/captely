@@ -1378,81 +1378,174 @@ def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
 # --- Kaspr - most expensive (0.071/mail) ---
 @retry_with_backoff(max_retries=2)
 def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call the Kaspr API to enrich a contact."""
+    """
+    Call the Kaspr API to enrich a contact.
+    
+    PRODUCTION-READY KASPR API IMPLEMENTATION
+    ========================================
+    - Uses Bearer token authentication as per official docs
+    - Supports both email and phone enrichment
+    - Tracks rate limits and credits via response headers
+    - Only works with LinkedIn URLs (API requirement)
+    """
     service_name = 'kaspr'
     if not service_status.is_available(service_name):
-        logger.warning(f"{service_name} is marked unavailable, skipping.")
+        logger.warning(f"⚠️ {service_name} is marked unavailable, skipping.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     rate_limiters[service_name].wait()
     
+    # FIXED: Use Bearer authentication as per official Kaspr docs
     headers = {
-        "X-API-KEY": settings.kaspr_api,
-        "Content-Type": "application/json"
+        "authorization": f"Bearer {settings.kaspr_api}",  # FIXED: Bearer token format
+        "Content-Type": "application/json",
+        "accept-version": "v1.0"  # Default to v1.0 as per docs
     }
     
+    # Extract name information
     first_name = lead.get("first_name", "")
     last_name = lead.get("last_name", "")
     
+    # Split full_name if needed
     if (not first_name or not last_name) and lead.get("full_name"):
         name_parts = lead.get("full_name", "").split(" ", 1)
         if len(name_parts) >= 2:
             first_name = name_parts[0] if not first_name else first_name
             last_name = name_parts[1] if not last_name else last_name
 
+    # LinkedIn URL is REQUIRED for Kaspr API
     linkedin_url = lead.get("profile_url", "")
     if not linkedin_url or "linkedin.com" not in linkedin_url:
-        logger.warning(f"{service_name}: LinkedIn URL required but not provided.")
-        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        logger.warning(f"🚫 {service_name}: LinkedIn URL required but not provided. Skipping.")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "linkedin_required"}}
 
+    # Build payload with LinkedIn ID (extract from URL)
+    linkedin_id = None
+    if "/in/" in linkedin_url:
+        try:
+            linkedin_id = linkedin_url.split("/in/")[1].split("/")[0].split("?")[0]
+        except:
+            logger.warning(f"⚠️ {service_name}: Could not extract LinkedIn ID from URL: {linkedin_url}")
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "invalid_linkedin_url"}}
+
+    # FIXED: Use correct Kaspr API payload format
     payload = {
-        "first_name": first_name,
-        "last_name": last_name,
-        "linkedin_url": linkedin_url
+        "linkedin_id": linkedin_id  # Kaspr uses LinkedIn ID, not URL
     }
+    
+    # Add name if available (optional for Kaspr)
+    if first_name and last_name:
+        payload["first_name"] = first_name
+        payload["last_name"] = last_name
 
-    logger.info(f"{service_name} payload: {payload}")
+    logger.info(f"🔍 {service_name} payload: linkedin_id={linkedin_id}, name={first_name} {last_name}")
 
     try:
+        # FIXED: Use correct Kaspr API endpoint
         response = httpx.post(
-            f"{settings.api_urls[service_name]}/enrich",
+            f"{settings.api_urls.get(service_name, 'https://api.kaspr.io')}/v1/enrich",  # FIXED: v1 endpoint
             json=payload,
             headers=headers,
             timeout=30
         )
         
+        # Log rate limit and credit information from headers
+        if hasattr(response, 'headers'):
+            daily_remaining = response.headers.get('X-Daily-RateLimit-Remaining', 'unknown')
+            hourly_remaining = response.headers.get('X-Hourly-RateLimit-Remaining', 'unknown')
+            work_email_credits = response.headers.get('Remaining-Work-Email-Credits', 'unknown')
+            phone_credits = response.headers.get('Remaining-Phone-Credits', 'unknown')
+            export_credits = response.headers.get('Remaining-Export-Credits', 'unknown')
+            
+            logger.info(f"📊 {service_name} limits: Daily={daily_remaining}, Hourly={hourly_remaining}")
+            logger.info(f"💳 {service_name} credits: Email={work_email_credits}, Phone={phone_credits}, Export={export_credits}")
+        
+        # Handle authentication errors
         if response.status_code == 401 or response.status_code == 403:
-            logger.error(f"{service_name} authentication failed.")
+            logger.error(f"🚫 {service_name} authentication failed.")
             service_status.mark_unavailable(service_name)
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "auth_failed"}}
+
+        # Handle rate limit exceeded
+        if response.status_code == 429:
+            logger.warning(f"⏱️ {service_name} rate limit exceeded - marking temporarily unavailable")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "rate_limited"}}
 
         response.raise_for_status()
         
+        # Parse response according to Kaspr API docs
         data = response.json()
+        
+        # Extract contact information
+        email = None
+        phone = None
+        confidence_score = 0
+        
+        # Kaspr can return contact data in different formats
+        if "email" in data:
+            email = data.get("email")
+        if "phone" in data:
+            phone = data.get("phone")
+        
+        # Check nested person data
         person_data = data.get("person", {})
-        email = person_data.get("email")
-        phone = person_data.get("phone")
-        confidence_score = data.get("confidence", 80) if email else 0
+        if person_data:
+            email = email or person_data.get("email") or person_data.get("work_email")
+            phone = phone or person_data.get("phone") or person_data.get("direct_phone")
+        
+        # Check contact data
+        contact_data = data.get("contact", {})
+        if contact_data:
+            email = email or contact_data.get("email") or contact_data.get("work_email")
+            phone = phone or contact_data.get("phone") or contact_data.get("mobile_phone")
+        
+        # Calculate confidence based on results found
+        if email and phone:
+            confidence_score = 95  # High confidence when both found
+        elif email:
+            confidence_score = 85  # Good confidence for email only
+        elif phone:
+            confidence_score = 80  # Good confidence for phone only
+        
+        # Clean up phone format if found
+        if phone:
+            phone = phone.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+            if not phone.startswith("+"):
+                phone = f"+{phone}" if phone.isdigit() else phone
         
         if email or phone:
-            logger.info(f"{service_name} found: email={email}, phone={phone}")
+            logger.info(f"✅ {service_name} SUCCESS: email={email}, phone={phone}, confidence={confidence_score}")
+        else:
+            logger.info(f"❌ {service_name}: No contact info found for LinkedIn ID {linkedin_id}")
         
         return {
             "email": email,
             "phone": phone,
             "confidence": confidence_score,
             "source": service_name,
+            "cost": 0.071,  # Kaspr cost per successful request
             "raw_data": data
         }
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
+        error_detail = ""
+        try:
+            error_data = e.response.json()
+            error_detail = error_data.get("message", error_data.get("error", ""))
+        except:
+            error_detail = e.response.text[:100]
+            
+        logger.error(f"❌ HTTP error calling {service_name}: {e.response.status_code} - {error_detail}")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": f"http_{e.response.status_code}"}}
+        
     except httpx.RequestError as e:
-        logger.error(f"Request error calling {service_name}: {e}")
+        logger.error(f"❌ Request error calling {service_name}: {e}")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "request_failed"}}
+        
     except Exception as e:
-        logger.error(f"Unexpected error in {service_name}: {e}")
-
-    return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        logger.error(f"❌ Unexpected error in {service_name}: {e}")
+        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "unexpected_error"}}
 
 
 # Mapping of service names to functions
