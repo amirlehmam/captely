@@ -932,7 +932,10 @@ const BillingPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {packages
-            .filter(pack => pack.plan_type !== 'enterprise')
+            .filter(pack => 
+              pack.plan_type !== 'enterprise' && 
+              ![1000, 3000, 15000, 30000].includes(pack.credits_monthly)
+            )
             .sort((a, b) => a.price_monthly - b.price_monthly)
             .map((pack) => {
             const monthlyPrice = billingType === 'annual' ? pack.price_annual / 12 : pack.price_monthly;
