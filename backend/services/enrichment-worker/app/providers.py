@@ -635,8 +635,14 @@ def enrich_with_clearbit(lead: Dict[str, Any]) -> Dict[str, Any]:
 
 # --- Enrow - cheapest (0.008/mail) ---
 @retry_with_backoff(max_retries=2)
-def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call the Enrow API to enrich a contact."""
+def call_enrow(lead: Dict[str, Any], enrich_email: bool = True, enrich_phone: bool = True) -> Dict[str, Any]:
+    """
+    Call the Enrow API to enrich a contact with BOTH email AND phone when requested.
+    
+    🎯 FIXED: Now calls BOTH email/find/single AND phone/single endpoints
+    📧 Email endpoint: https://api.enrow.io/email/find/single  
+    📱 Phone endpoint: https://api.enrow.io/phone/single
+    """
     service_name = 'enrow'
     
     # FIXED: Reset service status to allow retry
@@ -654,10 +660,10 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "x-api-key": settings.enrow_api  # FIXED: Correct header name from docs
+        "x-api-key": settings.enrow_api
     }
     
-    # Get full name from available data
+    # Get full name and prepare data
     full_name = lead.get("full_name", "")
     if not full_name:
         first_name = lead.get("first_name", "")
@@ -671,117 +677,155 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"{service_name}: No full name available for contact.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-    # FIXED: Use exact payload format from Enrow documentation
-    payload = {
-        "fullname": full_name  # REQUIRED field per docs
-    }
+    # Base payload for both email and phone requests
+    base_payload = {"fullname": full_name}
     
-    # Add company_domain if available (preferred by Enrow)
+    # Add company info
     if lead.get("company_domain"):
-        payload["company_domain"] = lead.get("company_domain")
-    
-    # Add company_name if available
+        base_payload["company_domain"] = lead.get("company_domain")
     if lead.get("company"):
-        payload["company_name"] = lead.get("company")
+        base_payload["company_name"] = lead.get("company")
     
-    # Ensure we have at least company info
-    if not payload.get("company_domain") and not payload.get("company_name"):
+    if not base_payload.get("company_domain") and not base_payload.get("company_name"):
         logger.warning(f"{service_name}: No company information available.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-    logger.info(f"{service_name} payload: {payload}")
+    logger.info(f"{service_name} payload: {base_payload}")
+
+    # Initialize results
+    email = None
+    phone = None
+    email_confidence = 0
+    phone_confidence = 0
+    raw_data = {}
 
     try:
-        # STEP 1: POST to start the search (async pattern from docs)
-        response = httpx.post(
-            "https://api.enrow.io/email/find/single",
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
-        
-        logger.info(f"Enrow POST response: {response.status_code} - {response.text[:200]}")
-        
-        if response.status_code == 401:
-            logger.error(f"{service_name} authentication failed - check API key.")
-            service_status.mark_unavailable(service_name)
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
-        
-        if response.status_code == 404:
-            logger.error(f"{service_name} endpoint not found.")
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
-
-        response.raise_for_status()
-        
-        start_data = response.json()
-        search_id = start_data.get("id")
-        
-        if not search_id:
-            logger.error(f"{service_name} did not return search ID. Response: {start_data}")
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": start_data}
+        # 🎯 STEP 1: EMAIL ENRICHMENT (if requested)
+        if enrich_email:
+            logger.info(f"📧 {service_name}: Starting EMAIL search...")
             
-        logger.info(f"{service_name} search started with ID: {search_id}")
-        
-        # STEP 2: GET to retrieve results (polling pattern)
-        wait_times = [2, 3, 5, 8, 12]  # Progressive waiting
-        
-        for i, wait_time in enumerate(wait_times):
-            time.sleep(wait_time)
-            
-            # FIXED: Use GET endpoint with search ID as per docs
-            poll_response = httpx.get(
-                f"https://api.enrow.io/email/find/single?id={search_id}",
-                headers={"accept": "application/json", "x-api-key": settings.enrow_api},
-                timeout=20
+            email_response = httpx.post(
+                "https://api.enrow.io/email/find/single",
+                json=base_payload,
+                headers=headers,
+                timeout=30
             )
             
-            logger.info(f"Enrow GET attempt {i+1}: {poll_response.status_code} - {poll_response.text[:200]}")
+            logger.info(f"{service_name} EMAIL POST: {email_response.status_code} - {email_response.text[:200]}")
             
-            if poll_response.status_code == 202:
-                logger.info(f"{service_name} polling {i+1}: still processing")
-                continue
-            elif poll_response.status_code == 404:
-                logger.warning(f"{service_name} search ID not found")
-                break
-            elif poll_response.status_code != 200:
-                logger.warning(f"{service_name} polling error: {poll_response.status_code}")
-                continue
+            if email_response.status_code == 401:
+                logger.error(f"{service_name} authentication failed - check API key.")
+                service_status.mark_unavailable(service_name)
+                return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
             
-            # Parse results
-            poll_data = poll_response.json()
-            
-            # Extract email from response based on Enrow response format
-            email = poll_data.get("email")
-            status = poll_data.get("status", "")
-            qualification = poll_data.get("qualification", "")
-            
-            # Map Enrow status to confidence
-            confidence = 0
-            if email:
-                if status == "valid" or qualification == "valid":
-                    confidence = 95
-                elif status == "catch_all" or qualification == "catch_all":
-                    confidence = 75
-                elif status == "unknown" or qualification == "unknown":
-                    confidence = 65
-                else:
-                    confidence = 80
+            if email_response.status_code == 200:
+                email_data = email_response.json()
+                email_search_id = email_data.get("id")
                 
-                logger.info(f"{service_name} SUCCESS: email={email}, status={status}, confidence={confidence}")
-            else:
-                logger.info(f"{service_name} no email found. Response: {poll_data}")
+                if email_search_id:
+                    logger.info(f"{service_name} email search started with ID: {email_search_id}")
+                    
+                    # Poll for email results
+                    for i in range(5):  # Try 5 times
+                        time.sleep(2 + i)  # Progressive waiting
+                        
+                        email_poll = httpx.get(
+                            f"https://api.enrow.io/email/find/single?id={email_search_id}",
+                            headers={"accept": "application/json", "x-api-key": settings.enrow_api},
+                            timeout=20
+                        )
+                        
+                        logger.info(f"{service_name} EMAIL GET attempt {i+1}: {email_poll.status_code} - {email_poll.text[:200]}")
+                        
+                        if email_poll.status_code == 200:
+                            email_result = email_poll.json()
+                            email = email_result.get("email")
+                            
+                            if email:
+                                qualification = email_result.get("qualification", "")
+                                if qualification == "valid":
+                                    email_confidence = 95
+                                elif qualification == "catch_all":
+                                    email_confidence = 75
+                                else:
+                                    email_confidence = 85
+                                
+                                logger.info(f"{service_name} EMAIL SUCCESS: {email} (confidence: {email_confidence})")
+                                raw_data["email_data"] = email_result
+                                break
+                        elif email_poll.status_code == 202:
+                            logger.info(f"{service_name} email polling {i+1}: still processing")
+                            continue
+                        else:
+                            break
+
+        # 🎯 STEP 2: PHONE ENRICHMENT (if requested) 
+        if enrich_phone:
+            logger.info(f"📱 {service_name}: Starting PHONE search...")
+            
+            # Use LinkedIn URL if available (required for phone)
+            phone_payload = base_payload.copy()
+            if lead.get("profile_url") and "linkedin.com" in lead.get("profile_url", ""):
+                phone_payload["linkedin_url"] = lead.get("profile_url")
+            
+            phone_response = httpx.post(
+                "https://api.enrow.io/phone/single",  # 🎯 PHONE endpoint!
+                json=phone_payload,
+                headers=headers,
+                timeout=30
+            )
+            
+            logger.info(f"{service_name} PHONE POST: {phone_response.status_code} - {phone_response.text[:200]}")
+            
+            if phone_response.status_code == 200:
+                phone_data = phone_response.json()
+                phone_search_id = phone_data.get("id")
+                
+                if phone_search_id:
+                    logger.info(f"{service_name} phone search started with ID: {phone_search_id}")
+                    
+                    # Poll for phone results
+                    for i in range(5):  # Try 5 times
+                        time.sleep(2 + i)  # Progressive waiting
+                        
+                        phone_poll = httpx.get(
+                            f"https://api.enrow.io/phone/single?id={phone_search_id}",
+                            headers={"accept": "application/json", "x-api-key": settings.enrow_api},
+                            timeout=20
+                        )
+                        
+                        logger.info(f"{service_name} PHONE GET attempt {i+1}: {phone_poll.status_code} - {phone_poll.text[:200]}")
+                        
+                        if phone_poll.status_code == 200:
+                            phone_result = phone_poll.json()
+                            phone = phone_result.get("phone")
+                            
+                            if phone:
+                                phone_confidence = 85  # Default confidence for phones
+                                logger.info(f"{service_name} PHONE SUCCESS: {phone} (confidence: {phone_confidence})")
+                                raw_data["phone_data"] = phone_result
+                                break
+                        elif phone_poll.status_code == 202:
+                            logger.info(f"{service_name} phone polling {i+1}: still processing")
+                            continue
+                        else:
+                            break
+
+        # Calculate overall confidence
+        overall_confidence = max(email_confidence, phone_confidence)
+        
+        if email or phone:
+            logger.info(f"✅ {service_name} COMBINED SUCCESS: email={email}, phone={phone}, confidence={overall_confidence}")
+        else:
+            logger.info(f"❌ {service_name}: No results found")
         
         return {
             "email": email,
-            "phone": None,  # Enrow focuses on email
-            "confidence": confidence,
+            "phone": phone,
+            "confidence": overall_confidence,
             "source": service_name,
-            "raw_data": poll_data
+            "raw_data": raw_data
         }
-        
-        # Polling timeout
-        logger.warning(f"{service_name} polling timeout for search ID {search_id}")
-        return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error calling {service_name}: {e.response.status_code} - {e.response.text}")
@@ -797,8 +841,14 @@ def call_enrow(lead: Dict[str, Any]) -> Dict[str, Any]:
 
 # --- Datagma (0.016/mail) ---
 @retry_with_backoff(max_retries=2)
-def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
-    """Call the Datagma API to enrich a contact."""
+def call_datagma(lead: Dict[str, Any], enrich_email: bool = True, enrich_phone: bool = True) -> Dict[str, Any]:
+    """
+    Call the Datagma API to enrich a contact with BOTH email AND phone when requested.
+    
+    🎯 FIXED: Now uses BOTH email and phone search endpoints
+    📧 Email: https://gateway.datagma.net/api/ingress/v8/findEmail
+    📱 Phone: https://gateway.datagma.net/api/ingress/v1/search (phone search)
+    """
     service_name = 'datagma'
     if not service_status.is_available(service_name):
         logger.warning(f"{service_name} is marked unavailable, skipping.")
@@ -835,84 +885,125 @@ def call_datagma(lead: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"{service_name}: Missing required data (full_name and company).")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
 
-    # FIXED: Use correct Datagma query parameters based on docs
-    params = {
-        "apiId": settings.datagma_api,  # FIXED: API key as query param
-        "fullName": full_name,  # FIXED: Use fullName parameter
-        "company": company_domain if company_domain else company  # FIXED: Use company parameter
-    }
-    
-    # Add individual names if available (optional)
-    if first_name:
-        params["firstName"] = first_name
-    if last_name:
-        params["lastName"] = last_name
-    
-    # Add LinkedIn company slug if available
-    if linkedin_url := lead.get("company_linkedin", ""):
-        params["linkedInSlug"] = linkedin_url
-
-    logger.info(f"{service_name} params: {params}")
+    # Initialize results
+    email = None
+    phone = None
+    email_confidence = 0
+    phone_confidence = 0
+    raw_data = {}
 
     try:
-        # FIXED: Use correct Datagma endpoint and method
-        response = httpx.get(
-            "https://gateway.datagma.net/api/ingress/v8/findEmail",  # FIXED: Correct endpoint
-            params=params,  # FIXED: Use query parameters instead of JSON body
-            headers={"accept": "application/json"},  # FIXED: Simple headers, no auth
-            timeout=30
-        )
-        
-        logger.info(f"Datagma response: {response.status_code} - {response.text[:200]}")
-        
-        if response.status_code == 401 or response.status_code == 403:
-            logger.error(f"{service_name} authentication failed.")
-            service_status.mark_unavailable(service_name)
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
-        
-        if response.status_code == 400:
-            logger.error(f"{service_name} bad request - invalid parameters.")
-            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+        # 🎯 STEP 1: EMAIL ENRICHMENT (if requested)
+        if enrich_email:
+            logger.info(f"📧 {service_name}: Starting EMAIL search...")
+            
+            email_params = {
+                "apiId": settings.datagma_api,
+                "fullName": full_name,
+                "company": company_domain if company_domain else company
+            }
+            
+            if first_name:
+                email_params["firstName"] = first_name
+            if last_name:
+                email_params["lastName"] = last_name
 
-        response.raise_for_status()
+            email_response = httpx.get(
+                "https://gateway.datagma.net/api/ingress/v8/findEmail",
+                params=email_params,
+                headers={"accept": "application/json"},
+                timeout=30
+            )
+            
+            logger.info(f"{service_name} EMAIL response: {email_response.status_code} - {email_response.text[:200]}")
+            
+            if email_response.status_code == 401 or email_response.status_code == 403:
+                logger.error(f"{service_name} authentication failed.")
+                service_status.mark_unavailable(service_name)
+                return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {}}
+            
+            if email_response.status_code == 200:
+                email_data = email_response.json()
+                
+                # Extract email from Datagma response
+                if email_data.get("emailOutput"):
+                    email = email_data.get("emailOutput")
+                    email_confidence = 90  # High confidence for verified emails
+                    logger.info(f"{service_name} EMAIL SUCCESS: {email} (verified)")
+                elif email_data.get("mostProbableEmailOutput"):
+                    email = email_data.get("mostProbableEmailOutput")
+                    email_confidence = 60  # Lower confidence for probable emails
+                    logger.info(f"{service_name} EMAIL SUCCESS: {email} (probable)")
+                elif email_data.get("email"):
+                    email = email_data.get("email")
+                    email_confidence = 75
+                
+                if email:
+                    raw_data["email_data"] = email_data
+
+        # 🎯 STEP 2: PHONE ENRICHMENT (if requested)
+        if enrich_phone:
+            logger.info(f"📱 {service_name}: Starting PHONE search...")
+            
+            # Use the phone search endpoint with username/email for better results
+            phone_params = {
+                "apiId": settings.datagma_api,
+                "minimumMatch": 1,  # Standard match level
+                "whatsapp_check": True  # Check if mobile is WhatsApp
+            }
+            
+            # Add username (LinkedIn URL if available)
+            if lead.get("profile_url") and "linkedin.com" in lead.get("profile_url", ""):
+                phone_params["username"] = lead.get("profile_url")
+            
+            # Add email if we found one or already have one
+            if email or lead.get("email"):
+                phone_params["email"] = email or lead.get("email")
+            
+            # Only proceed if we have a username or email for phone search
+            if phone_params.get("username") or phone_params.get("email"):
+                phone_response = httpx.get(
+                    "https://gateway.datagma.net/api/ingress/v1/search",  # 🎯 Phone search endpoint
+                    params=phone_params,
+                    headers={"accept": "application/json"},
+                    timeout=30
+                )
+                
+                logger.info(f"{service_name} PHONE response: {phone_response.status_code} - {phone_response.text[:200]}")
+                
+                if phone_response.status_code == 200:
+                    phone_data = phone_response.json()
+                    
+                    # Extract phone from response
+                    phones = phone_data.get("phones", [])
+                    if phones and len(phones) > 0:
+                        phone_obj = phones[0]
+                        if isinstance(phone_obj, dict):
+                            phone = phone_obj.get("phone") or phone_obj.get("number")
+                        else:
+                            phone = phone_obj
+                        
+                        if phone:
+                            phone_confidence = 80  # Good confidence for Datagma phone
+                            logger.info(f"{service_name} PHONE SUCCESS: {phone} (confidence: {phone_confidence})")
+                            raw_data["phone_data"] = phone_data
+            else:
+                logger.info(f"{service_name}: Skipping phone search - need LinkedIn URL or email")
+
+        # Calculate overall confidence
+        overall_confidence = max(email_confidence, phone_confidence)
         
-        data = response.json()
-        
-        # Extract email from Datagma response based on their docs
-        email = None
-        confidence = 0
-        
-        # Handle Datagma response format
-        if data.get("emailOutput"):
-            # Verified email - charge for this
-            email = data.get("emailOutput")
-            confidence = 90  # High confidence for verified emails
-            logger.info(f"{service_name} found verified email: {email}")
-        elif data.get("mostProbableEmailOutput"):
-            # Catchall email (not billed according to docs) - lower confidence
-            email = data.get("mostProbableEmailOutput")
-            confidence = 60  # Lower confidence for probable emails
-            logger.info(f"{service_name} found probable email: {email} (catchall)")
-        
-        # Handle other possible response formats
-        elif data.get("email"):
-            email = data.get("email")
-            confidence = 75
-        elif data.get("result", {}).get("email"):
-            email = data.get("result", {}).get("email")
-            confidence = 75
-        
-        if email:
-            logger.info(f"{service_name} SUCCESS: email={email}, confidence={confidence}")
+        if email or phone:
+            logger.info(f"✅ {service_name} COMBINED SUCCESS: email={email}, phone={phone}, confidence={overall_confidence}")
         else:
-            logger.info(f"{service_name} no email found. Response: {data}")
-        
+            logger.info(f"❌ {service_name}: No results found")
+
         return {
             "email": email,
-            "phone": None,  # Datagma email endpoint focuses on email
-            "confidence": confidence,
+            "phone": phone,
+            "confidence": overall_confidence,
             "source": service_name,
-            "raw_data": data
+            "raw_data": raw_data
         }
 
     except httpx.HTTPStatusError as e:
@@ -1377,14 +1468,17 @@ def call_findymail(lead: Dict[str, Any]) -> Dict[str, Any]:
 
 # --- Kaspr - most expensive (0.071/mail) ---
 @retry_with_backoff(max_retries=2)
-def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
+def call_kaspr(lead: Dict[str, Any], enrich_email: bool = True, enrich_phone: bool = True) -> Dict[str, Any]:
     """
-    Call the Kaspr API to enrich a contact.
+    Call the Kaspr API to enrich a contact with BOTH email AND phone when requested.
+    
+    🎯 FIXED: Now properly requests phones using isPhoneRequired parameter
+    📧📱 Endpoint: https://api.developers.kaspr.io/profile/linkedin
     
     PRODUCTION-READY KASPR API IMPLEMENTATION
     ========================================
     - Uses Bearer token authentication as per official docs
-    - Supports both email and phone enrichment
+    - Supports both email and phone enrichment via isPhoneRequired
     - Tracks rate limits and credits via response headers
     - Only works with LinkedIn URLs (API requirement)
     """
@@ -1397,9 +1491,9 @@ def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
     
     # FIXED: Use Bearer authentication as per official Kaspr docs
     headers = {
-        "authorization": f"Bearer {settings.kaspr_api}",  # FIXED: Bearer token format
+        "authorization": settings.kaspr_api,  # 🎯 FIXED: Use provided format from user
         "Content-Type": "application/json",
-        "accept-version": "v1.0"  # Default to v1.0 as per docs
+        "Accept": "application/json"
     }
     
     # Extract name information
@@ -1413,13 +1507,16 @@ def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
             first_name = name_parts[0] if not first_name else first_name
             last_name = name_parts[1] if not last_name else last_name
 
+    # Create full name
+    full_name = f"{first_name} {last_name}".strip() if first_name and last_name else lead.get("full_name", "")
+
     # LinkedIn URL is REQUIRED for Kaspr API
     linkedin_url = lead.get("profile_url", "")
     if not linkedin_url or "linkedin.com" not in linkedin_url:
         logger.warning(f"🚫 {service_name}: LinkedIn URL required but not provided. Skipping.")
         return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "linkedin_required"}}
 
-    # Build payload with LinkedIn ID (extract from URL)
+    # Extract LinkedIn ID from URL
     linkedin_id = None
     if "/in/" in linkedin_url:
         try:
@@ -1428,22 +1525,19 @@ def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
             logger.warning(f"⚠️ {service_name}: Could not extract LinkedIn ID from URL: {linkedin_url}")
             return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "invalid_linkedin_url"}}
 
-    # FIXED: Use correct Kaspr API payload format
+    # 🎯 FIXED: Use correct Kaspr API payload format with isPhoneRequired
     payload = {
-        "linkedin_id": linkedin_id  # Kaspr uses LinkedIn ID, not URL
+        "id": linkedin_id,  # LinkedIn ID as per docs
+        "name": full_name,  # Full name as per docs
+        "isPhoneRequired": enrich_phone  # 🎯 KEY FIX: Request phone numbers!
     }
-    
-    # Add name if available (optional for Kaspr)
-    if first_name and last_name:
-        payload["first_name"] = first_name
-        payload["last_name"] = last_name
 
-    logger.info(f"🔍 {service_name} payload: linkedin_id={linkedin_id}, name={first_name} {last_name}")
+    logger.info(f"🔍 {service_name} payload: id={linkedin_id}, name={full_name}, isPhoneRequired={enrich_phone}")
 
     try:
-        # FIXED: Use correct Kaspr API endpoint
+        # 🎯 FIXED: Use correct Kaspr API endpoint from user documentation
         response = httpx.post(
-            f"{settings.api_urls.get(service_name, 'https://api.kaspr.io')}/v1/enrich",  # FIXED: v1 endpoint
+            "https://api.developers.kaspr.io/profile/linkedin",  # 🎯 CORRECT endpoint
             json=payload,
             headers=headers,
             timeout=30
@@ -1460,6 +1554,8 @@ def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
             logger.info(f"📊 {service_name} limits: Daily={daily_remaining}, Hourly={hourly_remaining}")
             logger.info(f"💳 {service_name} credits: Email={work_email_credits}, Phone={phone_credits}, Export={export_credits}")
         
+        logger.info(f"{service_name} response: {response.status_code} - {response.text[:300]}")
+        
         # Handle authentication errors
         if response.status_code == 401 or response.status_code == 403:
             logger.error(f"🚫 {service_name} authentication failed.")
@@ -1472,52 +1568,64 @@ def call_kaspr(lead: Dict[str, Any]) -> Dict[str, Any]:
             service_status.mark_unavailable(service_name)
             return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "rate_limited"}}
 
+        # Handle payment required
+        if response.status_code == 402:
+            logger.warning(f"💳 {service_name} insufficient credits - marking temporarily unavailable")
+            service_status.mark_unavailable(service_name)
+            return {"email": None, "phone": None, "confidence": 0, "source": service_name, "raw_data": {"error": "insufficient_credits"}}
+
         response.raise_for_status()
         
         # Parse response according to Kaspr API docs
         data = response.json()
         
-        # Extract contact information
+        # Extract contact information from profile data
         email = None
         phone = None
         confidence_score = 0
         
-        # Kaspr can return contact data in different formats
-        if "email" in data:
+        # Get profile data (as per Kaspr docs structure)
+        profile_data = data.get("profile", {})
+        
+        if profile_data:
+            # Extract emails
+            if enrich_email:
+                # Try different email fields as per Kaspr docs
+                email = (profile_data.get("professionalEmail") or 
+                        profile_data.get("personalEmail") or
+                        (profile_data.get("emails", [{}])[0].get("email") if profile_data.get("emails") else None))
+            
+            # Extract phone
+            if enrich_phone:
+                # Try different phone fields as per Kaspr docs
+                phone = (profile_data.get("phone") or 
+                        profile_data.get("starryPhone") or
+                        (profile_data.get("phones", [])[0] if profile_data.get("phones") else None))
+        
+        # Fallback: check top-level data
+        if not email and enrich_email:
             email = data.get("email")
-        if "phone" in data:
+        if not phone and enrich_phone:
             phone = data.get("phone")
-        
-        # Check nested person data
-        person_data = data.get("person", {})
-        if person_data:
-            email = email or person_data.get("email") or person_data.get("work_email")
-            phone = phone or person_data.get("phone") or person_data.get("direct_phone")
-        
-        # Check contact data
-        contact_data = data.get("contact", {})
-        if contact_data:
-            email = email or contact_data.get("email") or contact_data.get("work_email")
-            phone = phone or contact_data.get("phone") or contact_data.get("mobile_phone")
         
         # Calculate confidence based on results found
         if email and phone:
             confidence_score = 95  # High confidence when both found
+            logger.info(f"✅ {service_name} BOTH found: email={email}, phone={phone}")
         elif email:
             confidence_score = 85  # Good confidence for email only
+            logger.info(f"✅ {service_name} EMAIL found: {email}")
         elif phone:
             confidence_score = 80  # Good confidence for phone only
+            logger.info(f"✅ {service_name} PHONE found: {phone}")
+        else:
+            logger.info(f"❌ {service_name}: No contact info found for LinkedIn ID {linkedin_id}")
         
         # Clean up phone format if found
         if phone:
             phone = phone.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
             if not phone.startswith("+"):
                 phone = f"+{phone}" if phone.isdigit() else phone
-        
-        if email or phone:
-            logger.info(f"✅ {service_name} SUCCESS: email={email}, phone={phone}, confidence={confidence_score}")
-        else:
-            logger.info(f"❌ {service_name}: No contact info found for LinkedIn ID {linkedin_id}")
         
         return {
             "email": email,

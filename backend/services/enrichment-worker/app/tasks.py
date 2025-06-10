@@ -1593,10 +1593,24 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
             try:
                 print(f"🔍 Trying {provider_name} (${cost}/email)")
                 
-                # UPDATED: Use provider functions from providers.py
+                # UPDATED: Use provider functions from providers.py with enrichment config
                 if provider_name in PROVIDER_FUNCTIONS:
                     provider_func = PROVIDER_FUNCTIONS[provider_name]
-                    result = provider_func(lead)
+                    
+                    # 🎯 FIXED: Pass enrichment configuration to provider functions
+                    try:
+                        # Check if provider function supports enrichment config parameters
+                        import inspect
+                        sig = inspect.signature(provider_func)
+                        if 'enrich_email' in sig.parameters and 'enrich_phone' in sig.parameters:
+                            # Provider supports enrichment config - pass it
+                            result = provider_func(lead, enrich_email=enrich_email, enrich_phone=enrich_phone)
+                        else:
+                            # Legacy provider - call without config
+                            result = provider_func(lead)
+                    except TypeError:
+                        # Fallback for any signature issues
+                        result = provider_func(lead)
                 else:
                     print(f"❌ Provider function not found for {provider_name}")
                     continue
@@ -1659,11 +1673,26 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
             try:
                 print(f"🔍 Trying {provider_name} (${cost}/email)")
                 
-                # UPDATED: Use provider functions from providers.py
+                # UPDATED: Use provider functions from providers.py with enrichment config
                 if provider_name in PROVIDER_FUNCTIONS:
                     provider_func = PROVIDER_FUNCTIONS[provider_name]
-                    result = provider_func(lead)
+                    
+                    # 🎯 FIXED: Pass enrichment configuration to provider functions
+                    try:
+                        # Check if provider function supports enrichment config parameters
+                        import inspect
+                        sig = inspect.signature(provider_func)
+                        if 'enrich_email' in sig.parameters and 'enrich_phone' in sig.parameters:
+                            # Provider supports enrichment config - pass it
+                            result = provider_func(lead, enrich_email=enrich_email, enrich_phone=enrich_phone)
+                        else:
+                            # Legacy provider - call without config
+                            result = provider_func(lead)
+                    except TypeError:
+                        # Fallback for any signature issues
+                        result = provider_func(lead)
                 else:
+                    print(f"❌ Provider function not found for {provider_name}")
                     continue
                     
                 if result:
@@ -1720,11 +1749,26 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
             try:
                 print(f"🔍 Trying EXPENSIVE {provider_name} (${cost}/email) - LAST RESORT")
                 
-                # UPDATED: Use provider functions from providers.py
+                # UPDATED: Use provider functions from providers.py with enrichment config
                 if provider_name in PROVIDER_FUNCTIONS:
                     provider_func = PROVIDER_FUNCTIONS[provider_name]
-                    result = provider_func(lead)
+                    
+                    # 🎯 FIXED: Pass enrichment configuration to provider functions
+                    try:
+                        # Check if provider function supports enrichment config parameters
+                        import inspect
+                        sig = inspect.signature(provider_func)
+                        if 'enrich_email' in sig.parameters and 'enrich_phone' in sig.parameters:
+                            # Provider supports enrichment config - pass it
+                            result = provider_func(lead, enrich_email=enrich_email, enrich_phone=enrich_phone)
+                        else:
+                            # Legacy provider - call without config
+                            result = provider_func(lead)
+                    except TypeError:
+                        # Fallback for any signature issues
+                        result = provider_func(lead)
                 else:
+                    print(f"❌ Provider function not found for {provider_name}")
                     continue
                     
                 if result:
@@ -1783,7 +1827,17 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                 
             try:
                 print(f"🔄 Fallback: Trying {provider_name}")
-                result = provider_func(lead)
+                
+                # 🎯 FIXED: Pass enrichment configuration to fallback providers too
+                try:
+                    import inspect
+                    sig = inspect.signature(provider_func)
+                    if 'enrich_email' in sig.parameters and 'enrich_phone' in sig.parameters:
+                        result = provider_func(lead, enrich_email=enrich_email, enrich_phone=enrich_phone)
+                    else:
+                        result = provider_func(lead)
+                except TypeError:
+                    result = provider_func(lead)
                 
                 if result:
                     # Check if we found the requested types
