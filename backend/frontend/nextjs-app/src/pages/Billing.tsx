@@ -1171,7 +1171,16 @@ const BillingPage: React.FC = () => {
                       🚀 Premium Features
                     </h4>
                     <div className="space-y-3">
-                      {JSON.parse(pack.features || '[]').map((feature: string, index: number) => (
+                      {(() => {
+                        try {
+                          // Try to parse as JSON first
+                          const features = JSON.parse(pack.features || '[]');
+                          return Array.isArray(features) ? features : [];
+                        } catch {
+                          // If not JSON, split by comma/semicolon and clean up
+                          return pack.features ? pack.features.split(/[,;]/).map(f => f.trim()).filter(f => f) : [];
+                        }
+                      })().map((feature: string, index: number) => (
                         <div key={index} className={`flex items-center text-sm ${
                           theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                         }`}>
