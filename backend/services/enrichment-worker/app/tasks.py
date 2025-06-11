@@ -505,7 +505,7 @@ async def update_job_status(session: AsyncSession, job_id: str, status: str):
     await session.commit()
 
 async def consume_credits(session: AsyncSession, user_id: str, contact_id: int, email_found: bool, phone_found: bool, provider: str):
-    """Consume credits based on successful enrichment results."""
+    """Consume credits based on successful enrichment results using NEW BILLING SYSTEM."""
     try:
         credits_used = 0
         
@@ -516,34 +516,97 @@ async def consume_credits(session: AsyncSession, user_id: str, contact_id: int, 
             credits_used += 10  # 10 credits for phone
         
         if credits_used > 0:
-            # Update user credits
-            user_update = text("UPDATE users SET credits = credits - :credits WHERE id = :user_id")
-            await session.execute(user_update, {"credits": credits_used, "user_id": user_id})
+            logger.info(f"💳 Attempting to consume {credits_used} credits for user {user_id}")
             
-            # Log the credit consumption
+            # Check available credits from credit_allocations (NEW BILLING SYSTEM)
+            available_query = text("""
+                SELECT COALESCE(SUM(credits_remaining), 0) as available_credits
+                FROM credit_allocations 
+                WHERE user_id = :user_id AND expires_at > CURRENT_TIMESTAMP
+            """)
+            available_result = await session.execute(available_query, {"user_id": user_id})
+            available_credits = available_result.scalar() or 0
+            
+            if available_credits < credits_used:
+                logger.warning(f"❌ Insufficient credits for user {user_id}: has {available_credits}, needs {credits_used}")
+                return 0
+            
+            # Deduct credits from allocations (FIFO - oldest expiration first)
+            remaining_to_deduct = credits_used
+            deduction_query = text("""
+                SELECT id, credits_remaining, expires_at
+                FROM credit_allocations 
+                WHERE user_id = :user_id AND credits_remaining > 0 AND expires_at > CURRENT_TIMESTAMP
+                ORDER BY expires_at ASC
+            """)
+            allocations_result = await session.execute(deduction_query, {"user_id": user_id})
+            allocations = allocations_result.fetchall()
+            
+            for allocation in allocations:
+                if remaining_to_deduct <= 0:
+                    break
+                    
+                allocation_id, credits_remaining, expires_at = allocation
+                deduct_from_this = min(remaining_to_deduct, credits_remaining)
+                
+                # Update the allocation
+                update_query = text("""
+                    UPDATE credit_allocations 
+                    SET credits_remaining = credits_remaining - :deduct_amount
+                    WHERE id = :allocation_id
+                """)
+                await session.execute(update_query, {
+                    "deduct_amount": deduct_from_this,
+                    "allocation_id": allocation_id
+                })
+                
+                remaining_to_deduct -= deduct_from_this
+                logger.info(f"💰 Deducted {deduct_from_this} from allocation {allocation_id}")
+
+            # Log the credit consumption in credit_logs
             credit_log = text("""
                 INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at) 
                 VALUES (:user_id, :operation_type, :cost, :change, :reason, CURRENT_TIMESTAMP)
             """)
+            
+            reason_parts = []
+            if email_found:
+                reason_parts.append("email (+1)")
+            if phone_found:
+                reason_parts.append("phone (+10)")
+            
+            reason = f"Enrichment via {provider}: {', '.join(reason_parts)}"
+            
             await session.execute(credit_log, {
                 "user_id": user_id,
                 "operation_type": "enrichment",
                 "cost": credits_used,
                 "change": -credits_used,
-                "reason": f"Enrichment via {provider} - Email: {email_found}, Phone: {phone_found}"
+                "reason": reason
             })
             
+            # Update used_credits in credit_balances
+            balance_update_query = text("""
+                UPDATE credit_balances 
+                SET used_credits = used_credits + :credits_used
+                WHERE user_id = :user_id
+            """)
+            await session.execute(balance_update_query, {
+                "credits_used": credits_used,
+                "user_id": user_id
+            })
+
             # Update contact with credits consumed
             contact_update = text("UPDATE contacts SET credits_consumed = :credits WHERE id = :contact_id")
             await session.execute(contact_update, {"credits": credits_used, "contact_id": contact_id})
             
             await session.commit()
-            logger.info(f"Consumed {credits_used} credits for contact {contact_id} via {provider}")
+            logger.info(f"✅ Consumed {credits_used} credits for contact {contact_id} via {provider}")
             
         return credits_used
         
     except Exception as e:
-        logger.error(f"Error consuming credits: {e}")
+        logger.error(f"❌ Error consuming credits: {e}")
         await session.rollback()
         return 0
 
@@ -1947,21 +2010,17 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
     if credits_to_charge > 0:
         try:
             with SyncSessionLocal() as session:
-                # Check user credits
-                user_result = session.execute(
-                    text("SELECT credits FROM users WHERE id = :user_id"), 
-                    {"user_id": user_id}
-                )
-                user_row = user_result.first()
+                # Check available credits from NEW BILLING SYSTEM
+                available_query = text("""
+                    SELECT COALESCE(SUM(credits_remaining), 0) as available_credits
+                    FROM credit_allocations 
+                    WHERE user_id = :user_id AND expires_at > CURRENT_TIMESTAMP
+                """)
+                available_result = session.execute(available_query, {"user_id": user_id})
+                available_credits = available_result.scalar() or 0
                 
-                if not user_row:
-                    print(f"❌ User {user_id} does not exist in database")
-                    return {"status": "failed", "reason": "user_not_found"}
-                else:
-                    current_credits = user_row[0] if user_row[0] is not None else 0
-                
-                if current_credits < credits_to_charge:
-                    print(f"❌ Insufficient credits for user {user_id}. Has {current_credits}, needs {credits_to_charge}")
+                if available_credits < credits_to_charge:
+                    print(f"❌ Insufficient credits for user {user_id}. Has {available_credits}, needs {credits_to_charge}")
                     print(f"⚠️  Results found but not enough credits to charge - marking as credit_insufficient")
                     
                     # Update job status to reflect credit issue
@@ -1972,10 +2031,45 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                     session.commit()
                     return {"status": "failed", "reason": "insufficient_credits"}
                 
-                # Deduct the calculated credits
+                # Deduct credits from allocations (FIFO - oldest expiration first)
+                remaining_to_deduct = credits_to_charge
+                deduction_query = text("""
+                    SELECT id, credits_remaining, expires_at
+                    FROM credit_allocations 
+                    WHERE user_id = :user_id AND credits_remaining > 0 AND expires_at > CURRENT_TIMESTAMP
+                    ORDER BY expires_at ASC
+                """)
+                allocations_result = session.execute(deduction_query, {"user_id": user_id})
+                allocations = allocations_result.fetchall()
+                
+                for allocation in allocations:
+                    if remaining_to_deduct <= 0:
+                        break
+                        
+                    allocation_id, credits_remaining, expires_at = allocation
+                    deduct_from_this = min(remaining_to_deduct, credits_remaining)
+                    
+                    # Update the allocation
+                    session.execute(
+                        text("""
+                            UPDATE credit_allocations 
+                            SET credits_remaining = credits_remaining - :deduct_amount
+                            WHERE id = :allocation_id
+                        """),
+                        {"deduct_amount": deduct_from_this, "allocation_id": allocation_id}
+                    )
+                    
+                    remaining_to_deduct -= deduct_from_this
+                    print(f"💰 Deducted {deduct_from_this} from allocation {allocation_id}")
+                
+                # Update used_credits in credit_balances
                 session.execute(
-                    text("UPDATE users SET credits = credits - :credits WHERE id = :user_id"),
-                    {"user_id": user_id, "credits": credits_to_charge}
+                    text("""
+                        UPDATE credit_balances 
+                        SET used_credits = used_credits + :credits_used
+                        WHERE user_id = :user_id
+                    """),
+                    {"credits_used": credits_to_charge, "user_id": user_id}
                 )
                 
                 # Log credit transaction with detailed breakdown
@@ -2004,7 +2098,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                 )
                 session.commit()
                 
-                print(f"💳 Charged {credits_to_charge} credits from user {user_id}. Remaining: {current_credits - credits_to_charge}")
+                print(f"💳 Charged {credits_to_charge} credits from user {user_id}. Remaining: {available_credits - credits_to_charge}")
         
         except Exception as e:
             print(f"❌ Credit charging failed: {e}")
@@ -2334,20 +2428,54 @@ def ultra_fast_single_enrich(self, lead: Dict[str, Any], job_id: str, user_id: s
                 
                 # Charge credits if email found
                 if credits_to_charge > 0:
-                    # Check and deduct credits
-                    user_check = session.execute(
-                        text("SELECT credits FROM users WHERE id = :user_id"),
-                        {"user_id": user_id}
-                    )
-                    user_row = user_check.first()
+                    # Check available credits from NEW BILLING SYSTEM
+                    available_query = text("""
+                        SELECT COALESCE(SUM(credits_remaining), 0) as available_credits
+                        FROM credit_allocations 
+                        WHERE user_id = :user_id AND expires_at > CURRENT_TIMESTAMP
+                    """)
+                    available_result = session.execute(available_query, {"user_id": user_id})
+                    available_credits = available_result.scalar() or 0
                     
-                    if user_row and user_row[0] >= credits_to_charge:
-                        current_credits = user_row[0]
+                    if available_credits >= credits_to_charge:
+                        # Deduct credits from allocations (FIFO - oldest expiration first)
+                        remaining_to_deduct = credits_to_charge
+                        deduction_query = text("""
+                            SELECT id, credits_remaining, expires_at
+                            FROM credit_allocations 
+                            WHERE user_id = :user_id AND credits_remaining > 0 AND expires_at > CURRENT_TIMESTAMP
+                            ORDER BY expires_at ASC
+                        """)
+                        allocations_result = session.execute(deduction_query, {"user_id": user_id})
+                        allocations = allocations_result.fetchall()
                         
-                        # Deduct credits
+                        for allocation in allocations:
+                            if remaining_to_deduct <= 0:
+                                break
+                                
+                            allocation_id, credits_remaining, expires_at = allocation
+                            deduct_from_this = min(remaining_to_deduct, credits_remaining)
+                            
+                            # Update the allocation
+                            session.execute(
+                                text("""
+                                    UPDATE credit_allocations 
+                                    SET credits_remaining = credits_remaining - :deduct_amount
+                                    WHERE id = :allocation_id
+                                """),
+                                {"deduct_amount": deduct_from_this, "allocation_id": allocation_id}
+                            )
+                            
+                            remaining_to_deduct -= deduct_from_this
+                        
+                        # Update used_credits in credit_balances
                         session.execute(
-                            text("UPDATE users SET credits = credits - :credits WHERE id = :user_id"),
-                            {"credits": credits_to_charge, "user_id": user_id}
+                            text("""
+                                UPDATE credit_balances 
+                                SET used_credits = used_credits + :credits_used
+                                WHERE user_id = :user_id
+                            """),
+                            {"credits_used": credits_to_charge, "user_id": user_id}
                         )
                         
                         # Log credit transaction
@@ -2365,7 +2493,7 @@ def ultra_fast_single_enrich(self, lead: Dict[str, Any], job_id: str, user_id: s
                             }
                         )
                         
-                        logger.warning(f"💳 Charged {credits_to_charge} credits. Remaining: {current_credits - credits_to_charge}")
+                        logger.warning(f"💳 Charged {credits_to_charge} credits. Remaining: {available_credits - credits_to_charge}")
                     else:
                         logger.error(f"❌ Insufficient credits for user {user_id}")
                 

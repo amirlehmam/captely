@@ -377,15 +377,98 @@ router = APIRouter(prefix="/api/credits")
 async def check_and_decrement(data: dict, session: AsyncSession = Depends(get_async_session)):
     user_id = data.get("user_id")
     count = int(data.get("count", 0))
-    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-    if not user:
-        raise HTTPException(404, "User not found")
-    if user.credits < count:
-        raise HTTPException(402, "Not enough credits")
-    user.credits -= count
-    session.add(CreditLog(user_id=user_id, change=-count, reason="enrichment"))
-    await session.commit()
-    return {"ok": True, "remaining": user.credits}
+    
+    try:
+        print(f"🔍 Credit deduction request: {count} credits for user {user_id}")
+        
+        # Check available credits from credit_allocations (NEW BILLING SYSTEM)
+        available_query = text("""
+            SELECT COALESCE(SUM(credits_remaining), 0) as available_credits
+            FROM credit_allocations 
+            WHERE user_id = :user_id AND expires_at > CURRENT_TIMESTAMP
+        """)
+        available_result = await session.execute(available_query, {"user_id": user_id})
+        available_credits = available_result.scalar() or 0
+        
+        print(f"💳 Available credits: {available_credits}")
+        
+        if available_credits < count:
+            print(f"❌ Insufficient credits: need {count}, have {available_credits}")
+            raise HTTPException(402, f"Not enough credits. Available: {available_credits}, Required: {count}")
+        
+        # Deduct credits from allocations (FIFO - oldest expiration first)
+        remaining_to_deduct = count
+        deduction_query = text("""
+            SELECT id, credits_remaining, expires_at
+            FROM credit_allocations 
+            WHERE user_id = :user_id AND credits_remaining > 0 AND expires_at > CURRENT_TIMESTAMP
+            ORDER BY expires_at ASC
+        """)
+        allocations_result = await session.execute(deduction_query, {"user_id": user_id})
+        allocations = allocations_result.fetchall()
+        
+        for allocation in allocations:
+            if remaining_to_deduct <= 0:
+                break
+                
+            allocation_id, credits_remaining, expires_at = allocation
+            deduct_from_this = min(remaining_to_deduct, credits_remaining)
+            
+            # Update the allocation
+            update_query = text("""
+                UPDATE credit_allocations 
+                SET credits_remaining = credits_remaining - :deduct_amount,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :allocation_id
+            """)
+            await session.execute(update_query, {
+                "deduct_amount": deduct_from_this,
+                "allocation_id": allocation_id
+            })
+            
+            remaining_to_deduct -= deduct_from_this
+            print(f"💰 Deducted {deduct_from_this} from allocation {allocation_id}")
+        
+        # Log the transaction in credit_logs
+        log_query = text("""
+            INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
+            VALUES (:user_id, 'enrichment', :cost, :change, :reason, CURRENT_TIMESTAMP)
+        """)
+        await session.execute(log_query, {
+            "user_id": user_id,
+            "operation_type": "enrichment",
+            "cost": count,
+            "change": -count,
+            "reason": "Credit deduction via API"
+        })
+        
+        # Update used_credits in credit_balances
+        balance_update_query = text("""
+            UPDATE credit_balances 
+            SET used_credits = used_credits + :credits_used,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = :user_id
+        """)
+        await session.execute(balance_update_query, {
+            "credits_used": count,
+            "user_id": user_id
+        })
+        
+        await session.commit()
+        
+        # Calculate remaining credits
+        remaining_credits = available_credits - count
+        print(f"✅ Successfully deducted {count} credits. Remaining: {remaining_credits}")
+        
+        return {"ok": True, "remaining": remaining_credits, "deducted": count}
+        
+    except HTTPException:
+        await session.rollback()
+        raise
+    except Exception as e:
+        await session.rollback()
+        print(f"❌ Credit deduction error: {e}")
+        raise HTTPException(500, f"Credit deduction failed: {str(e)}")
 
 app.include_router(router)
 
