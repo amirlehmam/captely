@@ -18,6 +18,12 @@ interface CreditData {
     avg_confidence: number;
     success_rate: number;
   };
+  debug?: {
+    total_allocated: number;
+    used_credits: number;
+    remaining_credits: number;
+    usage_percentage: number;
+  };
 }
 
 interface CreditContextType {

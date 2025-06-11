@@ -17,6 +17,31 @@ const CreditUsage: React.FC = () => {
     : 0;
 
   const usedCredits = creditData?.used_this_month || 0;
+  const totalCredits = creditData?.limit_monthly || 500;
+  const remainingCredits = creditData?.balance || 0;
+  
+  // Debug logging to check the math
+  React.useEffect(() => {
+    if (creditData) {
+      console.log('🔍 Credit Usage Debug:');
+      console.log(`  Total: ${totalCredits}`);
+      console.log(`  Used: ${usedCredits}`);
+      console.log(`  Remaining: ${remainingCredits}`);
+      console.log(`  Calculated %: ${usagePercent}%`);
+      console.log(`  Math Check: ${usedCredits} + ${remainingCredits} = ${usedCredits + remainingCredits} (should equal ${totalCredits})`);
+      
+      // If debug info is available, use it
+      if (creditData.debug) {
+        console.log('🐛 Backend Debug Info:', creditData.debug);
+      }
+    }
+  }, [creditData, usagePercent, usedCredits, totalCredits, remainingCredits]);
+
+  // FIXED: Calculate the actual total credits correctly
+  const actualTotal = usedCredits + remainingCredits;
+  const correctedUsagePercent = actualTotal > 0 
+    ? Math.round((usedCredits / actualTotal) * 100) 
+    : 0;
 
   // Calculate projections
   const avgDailyUsage = creditData?.used_this_month ? creditData.used_this_month / 30 : 0;
@@ -113,8 +138,8 @@ const CreditUsage: React.FC = () => {
                   {/* Foreground circle */}
                   <circle 
                     className={`transition-all duration-1000 ease-in-out ${
-                      usagePercent > 80 ? 'text-red-500' : 
-                      usagePercent > 60 ? 'text-yellow-500' : 'text-green-500'
+                      correctedUsagePercent > 80 ? 'text-red-500' : 
+                      correctedUsagePercent > 60 ? 'text-yellow-500' : 'text-green-500'
                     }`}
                     strokeWidth="6"
                     strokeLinecap="round"
@@ -124,7 +149,7 @@ const CreditUsage: React.FC = () => {
                     cx="50"
                     cy="50"
                     strokeDasharray="282.7"
-                    strokeDashoffset={`${282.7 * (1 - usagePercent / 100)}`}
+                    strokeDashoffset={`${282.7 * (1 - correctedUsagePercent / 100)}`}
                     transform="rotate(-90 50 50)"
                     style={{
                       filter: 'drop-shadow(0 4px 6px rgba(15, 118, 110, 0.2))'
@@ -135,7 +160,7 @@ const CreditUsage: React.FC = () => {
                 {/* Center text */}
                 <div className="relative text-center">
                   <div className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {usagePercent}%
+                    {correctedUsagePercent}%
                   </div>
                   <div className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {t('common.used')}
@@ -157,7 +182,7 @@ const CreditUsage: React.FC = () => {
                   {t('common.total')}
                 </div>
                 <div className={`text-xl font-bold mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {creditData?.limit_monthly?.toLocaleString() || '0'}
+                  {actualTotal.toLocaleString()}
                 </div>
               </div>
               <div className={`text-center rounded-xl p-4 border ${
@@ -185,7 +210,7 @@ const CreditUsage: React.FC = () => {
                   {t('common.left')}
                 </div>
                 <div className={`text-xl font-bold mt-1 ${isDark ? 'text-green-300' : 'text-green-900'}`}>
-                  {creditData?.balance?.toLocaleString() || '0'}
+                  {remainingCredits.toLocaleString()}
                 </div>
               </div>
             </div>

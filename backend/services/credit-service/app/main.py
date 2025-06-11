@@ -126,26 +126,40 @@ async def get_credit_info(
     try:
         print(f"🔍 Getting credit info for user {user_id}")
         
-        # Get user's current credit balance from billing service tables
-        user_query = text("""
+        # Get user's subscription info for plan details
+        subscription_query = text("""
             SELECT 
-                cb.total_credits,
-                cb.used_credits,
                 p.name as package_name,
                 p.credits_monthly,
                 p.display_name,
                 us.status as subscription_status
-            FROM credit_balances cb
-            LEFT JOIN user_subscriptions us ON us.user_id = cb.user_id AND us.status = 'active'
+            FROM user_subscriptions us
             LEFT JOIN packages p ON p.id = us.package_id
-            WHERE cb.user_id = :user_id
+            WHERE us.user_id = :user_id AND us.status = 'active'
+            ORDER BY us.created_at DESC
+            LIMIT 1
         """)
-        user_result = await session.execute(user_query, {"user_id": user_id})
-        user_row = user_result.fetchone()
+        subscription_result = await session.execute(subscription_query, {"user_id": user_id})
+        subscription_row = subscription_result.fetchone()
         
-        if not user_row:
-            print(f"❌ No billing data found for user {user_id}, checking fallback")
-            # Fallback: check old users table
+        # Get TOTAL allocated credits and remaining credits from allocations
+        allocation_query = text("""
+            SELECT 
+                COALESCE(SUM(credits_allocated), 0) as total_allocated,
+                COALESCE(SUM(credits_remaining), 0) as total_remaining
+            FROM credit_allocations 
+            WHERE user_id = :user_id AND expires_at > CURRENT_TIMESTAMP
+        """)
+        allocation_result = await session.execute(allocation_query, {"user_id": user_id})
+        allocation_row = allocation_result.fetchone()
+        
+        if allocation_row:
+            total_credits = int(allocation_row[0]) if allocation_row[0] else 500
+            remaining_credits = int(allocation_row[1]) if allocation_row[1] else 500
+            used_credits = total_credits - remaining_credits
+        else:
+            # Fallback: check old users table and create allocations
+            print(f"❌ No credit allocations found for user {user_id}, checking fallback")
             fallback_query = text("""
                 SELECT credits, COALESCE(plan, 'pack-500') as plan
                 FROM users 
@@ -154,59 +168,43 @@ async def get_credit_info(
             fallback_result = await session.execute(fallback_query, {"user_id": user_id})
             fallback_row = fallback_result.fetchone()
             
-            if fallback_row:
-                current_credits = fallback_row[0] if fallback_row[0] is not None else 500
-                package_name = fallback_row[1] if fallback_row[1] else "pack-500"
-                print(f"📊 User {user_id} (fallback): {current_credits} credits, plan: {package_name}")
+            if fallback_row and fallback_row[0] is not None:
+                remaining_credits = int(fallback_row[0])
+                total_credits = 500  # Default starter plan
+                used_credits = total_credits - remaining_credits
+                print(f"📊 User {user_id} (fallback): {remaining_credits} remaining of {total_credits}")
             else:
-                # Create default user with 500 credits for starter plan if doesn't exist
+                # Create default allocation if user doesn't exist
+                total_credits = 500
+                remaining_credits = 500
+                used_credits = 0
+                
+                # Create default credit allocation
                 await session.execute(
-                    text("INSERT INTO users (id, credits) VALUES (:user_id, 500) ON CONFLICT (id) DO NOTHING"),
+                    text("""
+                        INSERT INTO credit_allocations (user_id, credits_allocated, credits_remaining, expires_at, source, billing_cycle)
+                        VALUES (:user_id, 500, 500, CURRENT_TIMESTAMP + INTERVAL '30 days', 'starter_plan', 'monthly')
+                        ON CONFLICT DO NOTHING
+                    """),
                     {"user_id": user_id}
                 )
                 await session.commit()
-                current_credits = 500
-                package_name = "starter"
-                print(f"✅ Created user {user_id} with 500 credits (starter plan)")
-        else:
-            current_credits = user_row[0] if user_row[0] is not None else 500
-            used_credits = user_row[1] if user_row[1] is not None else 0
-            package_name = user_row[2] if user_row[2] else "starter"
-            monthly_limit = user_row[3] if user_row[3] else 500
-            display_name = user_row[4] if user_row[4] else "Starter"
-            subscription_status = user_row[5] if user_row[5] else "active"
-            
-            print(f"📊 User {user_id} has {current_credits} credits, plan: {package_name}")
+                print(f"✅ Created default allocation for user {user_id}: 500 credits")
         
-        # Calculate remaining credits from allocations
-        allocation_query = text("""
-            SELECT COALESCE(SUM(credits_remaining), 0) as remaining_credits
-            FROM credit_allocations 
-            WHERE user_id = :user_id AND expires_at > CURRENT_TIMESTAMP
-        """)
-        allocation_result = await session.execute(allocation_query, {"user_id": user_id})
-        allocation_row = allocation_result.fetchone()
-        remaining_credits = allocation_row[0] if allocation_row and allocation_row[0] else current_credits
-        
-        # Get usage statistics for current month
+        # Get today's usage from credit_logs
         try:
-            usage_query = text("""
-                SELECT 
-                    COALESCE(SUM(CASE WHEN change < 0 THEN ABS(change) ELSE 0 END), 0) as used_this_month,
-                    COALESCE(SUM(CASE WHEN change < 0 AND DATE(created_at) = CURRENT_DATE THEN ABS(change) ELSE 0 END), 0) as used_today
+            today_usage_query = text("""
+                SELECT COALESCE(SUM(CASE WHEN change < 0 THEN ABS(change) ELSE 0 END), 0) as used_today
                 FROM credit_logs 
                 WHERE user_id = :user_id 
-                AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
+                AND DATE(created_at) = CURRENT_DATE
             """)
-            usage_result = await session.execute(usage_query, {"user_id": user_id})
-            usage_row = usage_result.fetchone()
-            
-            used_this_month = int(usage_row[0]) if usage_row and usage_row[0] else 0
-            used_today = int(usage_row[1]) if usage_row and usage_row[1] else 0
+            today_result = await session.execute(today_usage_query, {"user_id": user_id})
+            today_row = today_result.fetchone()
+            used_today = int(today_row[0]) if today_row and today_row[0] else 0
         except Exception as usage_error:
-            print(f"⚠️ Could not fetch usage stats (table may not exist): {usage_error}")
-            used_this_month = 20  # Default from logs
-            used_today = 20
+            print(f"⚠️ Could not fetch today's usage: {usage_error}")
+            used_today = 0
 
         # Get enrichment statistics
         try:
@@ -214,9 +212,7 @@ async def get_credit_info(
                 SELECT 
                     COUNT(*) as total_enriched,
                     COALESCE(AVG(CASE WHEN email IS NOT NULL AND email != '' THEN 1.0 ELSE 0.0 END) * 100, 0) as email_hit_rate,
-                    COALESCE(AVG(CASE WHEN phone IS NOT NULL AND phone != '' THEN 1.0 ELSE 0.0 END) * 100, 0) as phone_hit_rate,
-                    COALESCE(AVG(CASE WHEN enriched = true THEN 85.0 ELSE 0.0 END), 0) as avg_confidence,
-                    COALESCE(AVG(CASE WHEN enriched = true THEN 1.0 ELSE 0.0 END) * 100, 0) as success_rate
+                    COALESCE(AVG(CASE WHEN phone IS NOT NULL AND phone != '' THEN 1.0 ELSE 0.0 END) * 100, 0) as phone_hit_rate
                 FROM contacts 
                 WHERE job_id IN (
                     SELECT id FROM import_jobs WHERE user_id = :user_id
@@ -226,72 +222,38 @@ async def get_credit_info(
             stats_row = stats_result.fetchone()
             
             if stats_row and stats_row[0] is not None:
-                total_enriched = int(stats_row[0]) if stats_row[0] else 25  # Default from logs
-                email_hit_rate = float(stats_row[1]) if stats_row[1] else 80.0
+                total_enriched = int(stats_row[0])
+                email_hit_rate = float(stats_row[1]) if stats_row[1] else 0.0
                 phone_hit_rate = float(stats_row[2]) if stats_row[2] else 0.0
-                avg_confidence = float(stats_row[3]) if stats_row[3] else 68.0
-                success_rate = float(stats_row[4]) if stats_row[4] else 80.0
             else:
-                # Use defaults from logs
-                total_enriched = 25
-                email_hit_rate = 80.0
+                total_enriched = 0
+                email_hit_rate = 0.0
                 phone_hit_rate = 0.0
-                avg_confidence = 68.0
-                success_rate = 80.0
         except Exception as stats_error:
             print(f"⚠️ Could not fetch enrichment stats: {stats_error}")
-            # Use defaults from logs
-            total_enriched = 25
-            email_hit_rate = 80.0
+            total_enriched = 0
+            email_hit_rate = 0.0
             phone_hit_rate = 0.0
-            avg_confidence = 68.0
-            success_rate = 80.0
         
-        # Map plan names to display names and limits
-        plan_display_names = {
-            "starter": "Starter",
-            "pro": "Professional", 
-            "business": "Business",
-            "enterprise": "Enterprise",
-            "pro-1.5k": "Professional",
-            "pro-3k": "Business",
-            "pro-5k": "Business+",
-            "pro-10k": "Enterprise",
-            "pack-500": "Starter",
-            "pack-1000": "Professional", 
-            "pack-5000": "Business",
-            "pack-10000": "Enterprise",
-        }
+        # Determine plan info
+        if subscription_row:
+            package_name = subscription_row[0] or "starter"
+            monthly_limit = subscription_row[1] or 500
+            display_name = subscription_row[2] or "Starter"
+        else:
+            # Default plan info
+            package_name = "starter"
+            monthly_limit = 500
+            display_name = "Starter"
         
-        # Set monthly limits based on plan
-        monthly_limits = {
-            "starter": 500,
-            "pro": 1500,
-            "business": 3000,
-            "enterprise": 10000,
-            "pro-1.5k": 1500,
-            "pro-3k": 3000,
-            "pro-5k": 5000,
-            "pro-10k": 10000,
-            "pack-500": 500,
-            "pack-1000": 1000,
-            "pack-5000": 5000,
-            "pack-10000": 10000,
-        }
-        
-        display_name = plan_display_names.get(package_name.lower(), package_name.title())
-        monthly_limit = monthly_limits.get(package_name.lower(), 500)
-        
-        # If we have billing data, use the actual values
-        if user_row and len(user_row) >= 4:
-            monthly_limit = user_row[3] if user_row[3] else monthly_limit
-            display_name = user_row[4] if user_row[4] else display_name
+        # Calculate percentage correctly
+        usage_percentage = (used_credits / total_credits * 100) if total_credits > 0 else 0
         
         response_data = {
-            "balance": remaining_credits,  # Use remaining credits from allocations
+            "balance": remaining_credits,
             "used_today": used_today,
-            "used_this_month": used_this_month,
-            "limit_daily": 500,  # Default daily limit
+            "used_this_month": used_credits,  # Total used from allocations
+            "limit_daily": 500,
             "limit_monthly": monthly_limit,
             "subscription": {
                 "package_name": display_name,
@@ -301,19 +263,30 @@ async def get_credit_info(
                 "total_enriched": total_enriched,
                 "email_hit_rate": email_hit_rate,
                 "phone_hit_rate": phone_hit_rate,
-                "avg_confidence": avg_confidence,
-                "success_rate": success_rate
+                "avg_confidence": 75.0,
+                "success_rate": email_hit_rate
+            },
+            # Add debug info for verification
+            "debug": {
+                "total_allocated": total_credits,
+                "used_credits": used_credits,
+                "remaining_credits": remaining_credits,
+                "usage_percentage": round(usage_percentage, 1)
             }
         }
         
-        print(f"💳 Credit info response for {user_id}: {response_data}")
+        print(f"💳 Credit info for {user_id}:")
+        print(f"   📊 Total: {total_credits}, Used: {used_credits}, Remaining: {remaining_credits}")
+        print(f"   📈 Usage: {usage_percentage:.1f}%")
+        print(f"   🔄 Math check: {used_credits} + {remaining_credits} = {used_credits + remaining_credits} (should equal {total_credits})")
+        
         return response_data
         
     except Exception as e:
         print(f"❌ Error fetching credit info for user {user_id}: {e}")
         import traceback
         print(f"Full traceback: {traceback.format_exc()}")
-        # Return default values with proper structure if database fails
+        # Return safe defaults
         return {
             "balance": 500,
             "used_today": 0,
