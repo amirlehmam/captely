@@ -7,7 +7,7 @@ import {
   Play, BarChart3, TrendingUp, Users, Mail, Phone, Zap,
   AlertCircle, Info, Calendar, Timer, Activity, Loader, FileText
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -73,9 +73,32 @@ const getStatusBadge = (status: string) => {
 const BatchesPage: React.FC = () => {
   const { t } = useLanguage();
   const { isDark } = useTheme();
-  
+  const location = useLocation();
+
+  // Get highlight parameter from URL
+  const searchParams = new URLSearchParams(location.search);
+  const highlightJobId = searchParams.get('highlight');
+
   // Hooks
   const { jobs: jobsData, loading, error, refetch } = useJobs();
+
+  // Scroll to highlighted job when page loads
+  useEffect(() => {
+    if (highlightJobId && !loading) {
+      const timer = setTimeout(() => {
+        const element = document.querySelector(`tr[data-job-id="${highlightJobId}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Show a toast notification
+          toast.success('📦 New batch created from extension!', {
+            duration: 4000,
+            position: 'top-right'
+          });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightJobId, loading]);
   
   // Extract jobs array from the response
   const jobs = jobsData || [];
@@ -578,7 +601,8 @@ const BatchesPage: React.FC = () => {
             <tbody className={`divide-y ${isDark ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'}`}>
               {currentJobs.map((job) => (
                 <motion.tr 
-                  key={job.id} 
+                  key={job.id}
+                  data-job-id={job.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   whileHover={{ scale: 1.005 }}
@@ -586,6 +610,12 @@ const BatchesPage: React.FC = () => {
                     isDark 
                       ? 'hover:bg-gray-750 hover:shadow-lg' 
                       : 'hover:bg-gray-50 hover:shadow-lg'
+                  } ${
+                    highlightJobId === job.id 
+                      ? isDark
+                        ? 'bg-green-900/30 border-l-4 border-green-500 shadow-lg shadow-green-500/10'
+                        : 'bg-green-50 border-l-4 border-green-500 shadow-lg shadow-green-500/20'
+                      : ''
                   }`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -456,68 +456,76 @@ async function sendToEnrichment() {
   }
   
   try {
-      // Send to backend for enrichment in batches
-      const batchSize = 20;
-      let sentCount = 0;
-    const totalCount = scrapedLeads.length;
-      
-    updateStatus('Sending leads to Captely for enrichment...', 'info', '📤');
-      
-      for (let i = 0; i < scrapedLeads.length; i += batchSize) {
-        const batch = scrapedLeads.slice(i, i + batchSize);
-        try {
-          const response = await sendToBackend(batch, apiToken);
-          sentCount += batch.length;
-          
-          if (response.job_id && !jobId) {
-             jobId = response.job_id;
-             // Open dashboard page for progress
-             chrome.tabs.create({ url: `https://captely.com/dashboard?job=${jobId}` });
-             // Start checking job status
-             checkJobStatus(jobId);
-          }
-          
-        updateStatus(`Sent ${sentCount}/${totalCount} leads to Captely`, 'info', '📤');
-        updateProgress(totalCount, sentCount, 0, totalCount);
-          
-          // Small delay between batches
-          await new Promise(r => setTimeout(r, 500));
-        } catch (error) {
-        updateStatus(`Error sending batch: ${error.message}`, 'error', '❌');
-          console.error('Error sending batch:', error);
-        throw error; // Re-throw to handle in the caller
-      }
+    updateStatus('Preparing leads for enrichment...', 'info', '📤');
+    
+    // Transform scraped leads to match the API format
+    const apiLeads = scrapedLeads.map(lead => ({
+      first_name: lead.firstName || '',
+      last_name: lead.lastName || '',
+      position: lead.position || '',
+      company: lead.company || '',
+      profile_url: lead.profileUrl || '',
+      location: lead.location || '',
+      industry: lead.industry || ''
+    }));
+    
+    console.log('🚀 Sending leads to Captely:', apiLeads);
+    updateStatus(`Sending ${apiLeads.length} leads to Captely for enrichment...`, 'info', '📤');
+    
+    // Send all leads in one batch to the correct endpoint
+    const response = await fetch(`${API_BASE}/scraper/leads`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiToken}`
+      },
+      body: JSON.stringify(apiLeads)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
     
-    updateStatus(`All ${totalCount} leads sent for enrichment.`, 'success', '✅');
+    const result = await response.json();
+    const jobId = result.job_id;
+    
+    if (jobId) {
+      console.log('✅ Enrichment job created:', jobId);
+      updateStatus(`Enrichment started! Opening batch page...`, 'success', '✅');
+      
+      // Open the batch page in a new tab to show progress
+      chrome.tabs.create({ 
+        url: `https://captely.com/batches?highlight=${jobId}`,
+        active: true  // Make the new tab active
+      });
+      
+      // Update progress
+      updateProgress(scrapedLeads.length, scrapedLeads.length, 0, scrapedLeads.length);
+      
+      // Start polling for job status to update the extension UI
+      setTimeout(() => {
+        checkJobStatus(jobId);
+      }, 2000);
+      
+      updateStatus(`Successfully sent ${scrapedLeads.length} leads for enrichment! View progress in the new tab.`, 'success', '🎉');
+    } else {
+      throw new Error('No job ID returned from server');
+    }
+    
   } catch (error) {
     updateStatus(`Error sending leads for enrichment: ${error.message}`, 'error', '❌');
     console.error('Error in sendToEnrichment:', error);
+    
+    // Re-enable the enrich button
+    chrome.runtime.sendMessage({ 
+      action: 'done', 
+      enrichmentComplete: false,
+      total: scrapedLeads.length 
+    });
+    
     throw error;
   }
-}
-
-// Send leads to the backend
-async function sendToBackend(leads, apiToken) {
-  const response = await fetch(`${API_BASE}/imports/leads`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiToken}`
-    },
-    body: JSON.stringify({
-      leads: leads,
-      source: 'sales_navigator_extension',
-      auto_enrich: true
-    })
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${errorText}`);
-  }
-  
-  return await response.json();
 }
 
 // Check the status of an enrichment job
@@ -536,22 +544,47 @@ async function checkJobStatus(jobId) {
     });
     
     if (!response.ok) {
-      throw new Error(`Job status error: ${response.statusText}`);
+      console.log(`Job status check failed: ${response.status} ${response.statusText}`);
+      return;
     }
     
     const jobData = await response.json();
-    updateProgress(jobData.total, jobData.completed, 0, jobData.total);
+    console.log('📊 Job status update:', jobData);
     
-    // If job completed, open dashboard in new tab
+    // Update progress in extension UI
+    updateProgress(jobData.total, jobData.completed, jobData.completed, jobData.total);
+    
+    // Update status message
+    const progress = jobData.progress || 0;
+    const statusText = jobData.status === 'completed' 
+      ? `Enrichment complete! ${jobData.completed}/${jobData.total} contacts processed.`
+      : `Enrichment in progress... ${jobData.completed}/${jobData.total} (${progress}%) contacts processed.`;
+    
+    updateStatus(statusText, jobData.status === 'completed' ? 'success' : 'info', 
+                jobData.status === 'completed' ? '✅' : '⏳');
+    
+    // If job completed, notify the UI
     if (jobData.status === 'completed') {
-      chrome.tabs.create({ url: `https://captely.com/dashboard?job=${jobId}` });
-      chrome.runtime.sendMessage({ action: 'done', enrichmentComplete: true, total: jobData.total });
-    } else {
-      // Poll again after 5 seconds
+      chrome.runtime.sendMessage({ 
+        action: 'done', 
+        enrichmentComplete: true, 
+        total: jobData.total,
+        enriched: jobData.completed 
+      });
+    } else if (jobData.status === 'processing' || jobData.status === 'pending') {
+      // Continue polling for updates
       setTimeout(() => checkJobStatus(jobId), 5000);
+    } else if (jobData.status === 'failed') {
+      updateStatus(`Enrichment failed. Please check the batch page for details.`, 'error', '❌');
+      chrome.runtime.sendMessage({ 
+        action: 'done', 
+        enrichmentComplete: false, 
+        total: jobData.total 
+      });
     }
   } catch (error) {
     console.error('Job status check error:', error);
+    // Don't show error to user for status checks, just log it
   }
 }
 
