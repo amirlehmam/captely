@@ -26,10 +26,6 @@ COPY . /app
 # Set PYTHONPATH so Python can find the common package
 ENV PYTHONPATH=/app:/app/common
 
-# Make wait script executable
-COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
-RUN chmod +x /usr/local/bin/wait-for-db.sh
-
 # Add a debug command - creates an init file if it doesn't exist
 RUN mkdir -p /app/common && touch /app/common/__init__.py
 

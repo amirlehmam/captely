@@ -29,11 +29,6 @@ RUN mkdir -p /app/logs /app/csv
 COPY app/ /app/app/
 COPY common/ /app/common/
 COPY enrichment/ /app/enrichment/
-COPY wait-for-db.sh /app/
-
-# Make wait script executable and change ownership
-RUN chmod +x /app/wait-for-db.sh && \
-    chown -R celeryuser:celeryuser /app
 
 # 🎯 SPEED OPTIMIZATION: Set Python for maximum performance
 ENV PYTHONUNBUFFERED=1

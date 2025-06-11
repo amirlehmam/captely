@@ -18,10 +18,6 @@ COPY app/ ./app/
 # Set PYTHONPATH to include both app and common directories
 ENV PYTHONPATH=/app:/app/common
 
-# Copy wait script
-COPY wait-for-db.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/wait-for-db.sh
-
 # Expose the port
 EXPOSE 8000
 

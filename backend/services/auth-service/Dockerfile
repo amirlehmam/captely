@@ -27,8 +27,4 @@ COPY . /app
 # 5) Set PYTHONPATH
 ENV PYTHONPATH=/app:/app/common
 
-# 6) (Optional) wait-for-db then launch
-COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
-RUN chmod +x /usr/local/bin/wait-for-db.sh
-
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]
