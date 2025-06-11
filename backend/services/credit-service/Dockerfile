@@ -20,4 +20,5 @@ RUN pip install --upgrade pip setuptools wheel \
 # 3) Copy app
 COPY . .
 
-ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]
+# Start FastAPI with uvicorn
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

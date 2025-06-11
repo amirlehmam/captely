@@ -29,4 +29,5 @@ ENV PYTHONPATH=/app:/app/common
 # Add a debug command - creates an init file if it doesn't exist
 RUN mkdir -p /app/common && touch /app/common/__init__.py
 
-ENTRYPOINT ["/bin/sh", "/usr/local/bin/wait-for-db.sh"]
+# Start FastAPI with uvicorn
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
