@@ -22,13 +22,17 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# Create directories for logs and CSV files
-RUN mkdir -p /app/logs /app/csv
+# Create directories for logs and CSV files and give ownership to celeryuser
+RUN mkdir -p /app/logs /app/csv && \
+    chown -R celeryuser:celeryuser /app/logs /app/csv
 
 # Copy application files
 COPY app/ /app/app/
 COPY common/ /app/common/
 COPY enrichment/ /app/enrichment/
+
+# Give celeryuser ownership of all app files
+RUN chown -R celeryuser:celeryuser /app
 
 # 🎯 SPEED OPTIMIZATION: Set Python for maximum performance
 ENV PYTHONUNBUFFERED=1
