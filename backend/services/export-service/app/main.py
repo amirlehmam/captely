@@ -66,6 +66,12 @@ class ZapierWebhook(BaseModel):
     url: str
     event_type: str = "enrichment_complete"
 
+class CrmExportRequest(BaseModel):
+    contact_ids: List[str]
+    format: str = "csv"  # csv, json, excel
+    columns: Optional[List[str]] = None
+    filters: Optional[Dict[str, Any]] = None
+
 # Export endpoints
 @app.post("/api/export/download")
 async def export_data(
@@ -536,6 +542,83 @@ async def get_available_columns(
             "company", "position", "enrichment_score"
         ]
     }
+
+# CRM CONTACTS EXPORT ENDPOINT
+@app.post("/api/export/crm-contacts")
+async def export_crm_contacts(
+    request: CrmExportRequest,
+    user_id: str = Depends(verify_jwt),
+    session: AsyncSession = Depends(get_session)
+):
+    """Export CRM contacts in various formats"""
+    
+    # Get contacts for the specified IDs (with user verification)
+    query = """
+        SELECT 
+            c.id, c.first_name, c.last_name, c.email, c.phone, 
+            c.company, c.position, c.location, c.industry,
+            c.enriched, c.enrichment_status, c.enrichment_provider, 
+            c.enrichment_score, c.credits_consumed,
+            c.email_verified, c.phone_verified, c.created_at, c.updated_at,
+            c.job_id,
+            j.file_name as batch_name, j.created_at as batch_created_at
+        FROM contacts c
+        JOIN import_jobs j ON c.job_id = j.id
+        WHERE c.id = ANY(:contact_ids) AND j.user_id = :user_id
+        ORDER BY c.created_at DESC
+    """
+    
+    result = await session.execute(query, {
+        "contact_ids": request.contact_ids, 
+        "user_id": user_id
+    })
+    contacts = result.fetchall()
+    
+    if not contacts:
+        raise HTTPException(status_code=404, detail="No contacts found or access denied")
+    
+    # Convert to DataFrame for easy manipulation
+    df = pd.DataFrame([dict(contact) for contact in contacts])
+    
+    # Apply column selection if specified
+    if request.columns:
+        available_columns = [col for col in request.columns if col in df.columns]
+        df = df[available_columns]
+    
+    # Apply filters if specified
+    if request.filters:
+        for field, value in request.filters.items():
+            if field in df.columns:
+                df = df[df[field] == value]
+    
+    # Generate export based on format
+    if request.format == "csv":
+        output = io.StringIO()
+        df.to_csv(output, index=False)
+        output.seek(0)
+        
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode()),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=crm_contacts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+        )
+    
+    elif request.format == "excel":
+        output = io.BytesIO()
+        df.to_excel(output, index=False, engine='openpyxl')
+        output.seek(0)
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=crm_contacts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"}
+        )
+    
+    elif request.format == "json":
+        return JSONResponse(df.to_dict(orient="records"))
+    
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported format")
 
 # Health check endpoints
 @app.get("/health")

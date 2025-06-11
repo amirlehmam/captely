@@ -14,6 +14,8 @@ import { useTheme } from '../contexts/ThemeContext';
 
 // Updated hooks for production
 import { useJobs, useExport, useJob } from '../hooks/useApi';
+import ExportModal from '../components/modals/ExportModal';
+import { apiService } from '../services/api';
 
 interface JobDetails {
   id: string;
@@ -89,6 +91,11 @@ const BatchesPage: React.FC = () => {
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState<string | null>(null);
+  
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportJobId, setExportJobId] = useState<string | null>(null);
+  const [bulkExportJobs, setBulkExportJobs] = useState<string[]>([]);
   
   const handleRefresh = async () => {
     setRefreshing(true);

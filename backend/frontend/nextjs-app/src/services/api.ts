@@ -660,22 +660,98 @@ class ApiService {
   // EXPORT
   // ==========================================
 
-  async exportData(jobId: string, format: 'csv' | 'excel' | 'json' = 'csv'): Promise<Blob> {
+  async exportData(jobId: string, format: 'csv' | 'excel' | 'json' = 'csv'): Promise<void> {
     try {
       const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
-      const response = await fetch(`${API_CONFIG.importUrl}/jobs/${jobId}/export?format=${format}`, {
+      
+      const response = await fetch(`${API_CONFIG.exportUrl}/api/export/download`, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          job_id: jobId,
+          format: format
+        })
       });
 
       if (!response.ok) {
         throw new Error(`Export failed with status ${response.status}`);
       }
 
+      // Handle different response types
+      if (format === 'json') {
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        this.downloadBlob(blob, `enriched_data_${jobId}.json`);
+      } else {
+        const blob = await response.blob();
+        const filename = format === 'excel' 
+          ? `enriched_data_${jobId}.xlsx` 
+          : `enriched_data_${jobId}.csv`;
+        this.downloadBlob(blob, filename);
+      }
+
       toast.success('Data exported successfully!');
-      return response.blob();
     } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Export failed. Please try again.');
+      throw error;
+    }
+  }
+
+  // Helper method to trigger file download
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  async exportCrmContacts(
+    contactIds: string[],
+    format: 'csv' | 'excel' | 'json' = 'csv'
+  ): Promise<void> {
+    try {
+      const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+      
+      const response = await fetch(`${API_CONFIG.exportUrl}/api/export/crm-contacts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contact_ids: contactIds,
+          format: format
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Export failed with status ${response.status}`);
+      }
+
+      // Handle different response types
+      if (format === 'json') {
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        this.downloadBlob(blob, `crm_contacts_${new Date().toISOString().split('T')[0]}.json`);
+      } else {
+        const blob = await response.blob();
+        const filename = format === 'excel' 
+          ? `crm_contacts_${new Date().toISOString().split('T')[0]}.xlsx` 
+          : `crm_contacts_${new Date().toISOString().split('T')[0]}.csv`;
+        this.downloadBlob(blob, filename);
+      }
+
+      toast.success(`Successfully exported ${contactIds.length} contacts!`);
+    } catch (error) {
+      console.error('CRM export error:', error);
       toast.error('Export failed. Please try again.');
       throw error;
     }
