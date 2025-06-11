@@ -1,0 +1,5 @@
+2025-05-21 20:05:33,884 - enrichment_cli - WARNING - Celery tasks not available, running in local mode
+2025-05-21 20:05:33,884 - enrichment_cli - INFO - Processing file: csv\linkedin_leads_2025-05-19T15-53-50.csv
+2025-05-21 20:05:33,884 - enrichment_cli - WARNING - Missing required column: First Name in csv\linkedin_leads_2025-05-19T15-53-50.csv
+2025-05-21 20:05:33,884 - enrichment_cli - ERROR - Skipping invalid file: csv\linkedin_leads_2025-05-19T15-53-50.csv
+2025-05-21 20:05:33,884 - enrichment_cli - ERROR - No jobs were started
