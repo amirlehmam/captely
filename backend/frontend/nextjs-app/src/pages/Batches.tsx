@@ -76,7 +76,6 @@ const BatchesPage: React.FC = () => {
   
   // Hooks
   const { jobs: jobsData, loading, error, refetch } = useJobs();
-  const { exportData, exporting, error: exportError } = useExport();
   
   // Extract jobs array from the response
   const jobs = jobsData || [];
@@ -104,17 +103,15 @@ const BatchesPage: React.FC = () => {
     toast.success(t('success.settingsSaved'));
   };
 
-  const handleExport = async (jobId: string, format: 'csv' | 'excel' | 'json' = 'csv') => {
-    try {
-      await exportData(jobId, format);
-    } catch (error) {
-      // Error handling is done in the hook
-    }
+  const handleSingleExport = (jobId: string) => {
+    setExportJobId(jobId);
+    setBulkExportJobs([]);
+    setShowExportModal(true);
   };
 
-  const handleBulkExport = async (format: 'csv' | 'excel' | 'json' = 'csv') => {
+  const handleBulkExport = () => {
     if (selectedJobs.size === 0) {
-      toast.error(t('errors.validation'));
+      toast.error('Please select batches to export');
       return;
     }
 
@@ -124,16 +121,32 @@ const BatchesPage: React.FC = () => {
     });
 
     if (completedSelectedJobs.length === 0) {
-      toast.error(t('errors.validation'));
+      toast.error('No completed batches selected for export');
       return;
     }
 
-    for (const jobId of completedSelectedJobs) {
-      await handleExport(jobId, format);
+    setExportJobId(null);
+    setBulkExportJobs(completedSelectedJobs);
+    setShowExportModal(true);
+  };
+
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json') => {
+    try {
+      if (exportJobId) {
+        // Single job export
+        await apiService.exportData(exportJobId, format);
+      } else if (bulkExportJobs.length > 0) {
+        // Bulk export - export each job
+        for (const jobId of bulkExportJobs) {
+          await apiService.exportData(jobId, format);
+        }
+        setSelectedJobs(new Set());
+        toast.success(`Successfully exported ${bulkExportJobs.length} batches!`);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      throw error; // Let the modal handle the error display
     }
-    
-    setSelectedJobs(new Set());
-    toast.success(t('success.contactsExported'));
   };
 
   const handleSelectAll = () => {
@@ -477,14 +490,15 @@ const BatchesPage: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleBulkExport('csv')}
+                  onClick={handleBulkExport}
                   className={`px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
                     isDark 
-                      ? 'bg-green-600 text-white hover:bg-green-700' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
                   }`}
                 >
-                  {t('common.export')} CSV ({selectedJobs.size})
+                  <Download className="w-4 h-4 mr-2 inline" />
+                  Export ({selectedJobs.size})
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -662,12 +676,13 @@ const BatchesPage: React.FC = () => {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => handleExport(job.id)}
+                          onClick={() => handleSingleExport(job.id)}
                           className={`transition-colors ${
                             isDark 
-                              ? 'text-green-400 hover:text-green-300' 
-                              : 'text-green-600 hover:text-green-900'
+                              ? 'text-emerald-400 hover:text-emerald-300' 
+                              : 'text-emerald-600 hover:text-emerald-900'
                           }`}
+                          title="Export batch data"
                         >
                           <Download className="h-4 w-4" />
                         </motion.button>
@@ -826,6 +841,25 @@ const BatchesPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => {
+          setShowExportModal(false);
+          setExportJobId(null);
+          setBulkExportJobs([]);
+        }}
+        onExport={handleExportConfirm}
+        title={exportJobId ? "Export Batch" : "Bulk Export Batches"}
+        description={
+          exportJobId 
+            ? "Choose your preferred format to export this batch"
+            : `Export ${bulkExportJobs.length} selected batches`
+        }
+        exportCount={exportJobId ? 1 : bulkExportJobs.length}
+        type="batch"
+      />
     </div>
   );
 };

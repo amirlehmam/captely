@@ -369,7 +369,23 @@ export const useExport = () => {
     }
   }, []);
 
-  return { exportData, exporting, error };
+  const exportCrmContacts = useCallback(async (contactIds: string[], format: 'csv' | 'excel' | 'json' = 'csv') => {
+    try {
+      setExporting('crm-bulk');
+      setError(null);
+      
+      await apiService.exportCrmContacts(contactIds, format);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Export failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setExporting(null);
+    }
+  }, []);
+
+  return { exportData, exportCrmContacts, exporting, error };
 };
 
 // ============================

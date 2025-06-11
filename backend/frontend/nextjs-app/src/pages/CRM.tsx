@@ -16,6 +16,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 import { apiService } from '../services/api';
+import ExportModal from '../components/modals/ExportModal';
 
 // Enhanced Contact interface for CRM
 interface CrmContact {
@@ -109,6 +110,10 @@ const CRMPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalContacts, setTotalContacts] = useState(0);
   const limit = 25;
+
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState<'single' | 'bulk'>('bulk');
 
   // Fetch data
   const fetchContacts = useCallback(async () => {
@@ -243,18 +248,13 @@ const CRMPage: React.FC = () => {
     setEditForm({ position: '', notes: '' });
   };
 
-  const handleBulkExport = async (exportType: 'hubspot' | 'csv') => {
+  const handleBulkExport = () => {
     if (selectedContacts.size === 0) {
       toast.error('Please select contacts to export');
       return;
     }
-
-    try {
-      await apiService.bulkExportCrmContacts(Array.from(selectedContacts), exportType);
-      setSelectedContacts(new Set());
-    } catch (error) {
-      console.error('Export failed:', error);
-    }
+    setExportType('bulk');
+    setShowExportModal(true);
   };
 
   const handleSingleExport = async (contactId: string) => {
@@ -262,6 +262,18 @@ const CRMPage: React.FC = () => {
       await apiService.exportContactToHubSpot(contactId);
     } catch (error) {
       console.error('Export failed:', error);
+    }
+  };
+
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json') => {
+    try {
+      if (exportType === 'bulk' && selectedContacts.size > 0) {
+        await apiService.exportCrmContacts(Array.from(selectedContacts), format);
+        setSelectedContacts(new Set());
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      throw error; // Let the modal handle the error display
     }
   };
 
@@ -433,7 +445,7 @@ const CRMPage: React.FC = () => {
               {selectedContacts.size > 0 && (
                 <>
                   <button
-                    onClick={() => handleBulkExport('hubspot')}
+                    onClick={() => apiService.bulkExportCrmContacts(Array.from(selectedContacts), 'hubspot')}
                     className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                     style={{ willChange: 'transform, box-shadow' }}
                   >
@@ -441,12 +453,12 @@ const CRMPage: React.FC = () => {
                     Export to HubSpot ({selectedContacts.size})
                   </button>
                   <button
-                    onClick={() => handleBulkExport('csv')}
+                    onClick={handleBulkExport}
                     className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                     style={{ willChange: 'transform, box-shadow' }}
                   >
                     <FileDown className="h-5 w-5 mr-2" />
-                    Export CSV ({selectedContacts.size})
+                    Export Data ({selectedContacts.size})
                   </button>
                 </>
               )}
@@ -1142,6 +1154,20 @@ const CRMPage: React.FC = () => {
             </div>
         </div>
       </motion.div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => {
+          setShowExportModal(false);
+          setExportType('bulk');
+        }}
+        onExport={handleExportConfirm}
+        title="Export CRM Contacts"
+        description="Choose your preferred format to export selected contacts"
+        exportCount={selectedContacts.size}
+        type="crm"
+      />
     </div>
   );
 };
