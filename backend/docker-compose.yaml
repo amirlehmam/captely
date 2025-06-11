@@ -1,23 +1,4 @@
 services:
-  db:
-    image: postgres:15
-    container_name: captely-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespw
-      POSTGRES_DB: postgres
-      POSTGRES_HOST_AUTH_METHOD: trust
-    ports:
-      - "5432:5432"
-    volumes:
-      - captely_db-data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: captely-redis
@@ -40,8 +21,6 @@ services:
     container_name: captely-auth-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -49,12 +28,11 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-placeholder-google-client-id}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-placeholder-google-client-secret}
       - RESEND_API_KEY=${RESEND_API_KEY:-placeholder-resend-api-key}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -69,8 +47,6 @@ services:
     container_name: captely-import-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -78,9 +54,8 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -95,8 +70,6 @@ services:
     container_name: captely-credit-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -104,9 +77,8 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -121,15 +93,13 @@ services:
     container_name: captely-enrichment-worker
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
       - ./services/common:/app/common
       - ./csv:/app/csv
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://redis:6379/0
       - PYTHONPATH=/app
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -165,8 +135,6 @@ services:
     container_name: captely-export-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -174,9 +142,8 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -191,8 +158,6 @@ services:
     container_name: captely-analytics-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -200,9 +165,8 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -217,8 +181,6 @@ services:
     container_name: captely-notification-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -226,10 +188,9 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://redis:6379/0
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -244,8 +205,6 @@ services:
     container_name: captely-billing-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -253,13 +212,12 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${BILLING_DATABASE_URL:-${DATABASE_URL}}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -274,8 +232,6 @@ services:
     container_name: captely-crm-service
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -283,10 +239,9 @@ services:
     volumes:
       - ./services/common:/app/common
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespw@db:5432/postgres
+      - DATABASE_URL=${DATABASE_URL}
       - PYTHONPATH=/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    entrypoint: ["/usr/local/bin/wait-for-db.sh", "db"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -352,5 +307,4 @@ services:
       retries: 3
 
 volumes:
-  captely_db-data: 
   redis-data: 
