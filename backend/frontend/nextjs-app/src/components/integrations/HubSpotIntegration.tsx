@@ -178,8 +178,16 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       }
       
       const data = await response.json();
-      toast.success(`Successfully imported ${data.imported_count} contacts from HubSpot!`);
-      loadSyncLogs(); // Refresh logs
+      
+      // Check if import requires redirect to enrichment  
+      if (data.redirect === 'enrichment' && data.job_id) {
+        toast.success(`Successfully imported ${data.imported_count} contacts from HubSpot!`);
+        // Navigate to import page which will trigger enrichment dialog
+        window.location.href = `/import?hubspot_job=${data.job_id}&imported=${data.imported_count}`;
+      } else {
+        toast.success(`Successfully imported ${data.imported_count || 0} contacts from HubSpot!`);
+        loadSyncLogs(); // Refresh logs
+      }
     } catch (error) {
       console.error('Import error:', error);
       toast.error('Failed to start import from HubSpot');

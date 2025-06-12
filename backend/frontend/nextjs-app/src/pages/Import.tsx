@@ -83,13 +83,70 @@ const ImportPage: React.FC = () => {
   // Validation
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  const handleHubSpotEnrichment = async (jobId: string, importedCount: number) => {
+    try {
+      // Show enrichment confirmation modal for HubSpot import
+      const enrichmentType = await confirm(`HubSpot Import - ${importedCount} contacts`);
+      
+      if (!enrichmentType) {
+        // User cancelled, redirect to batches page
+        navigate(`/batches`);
+        return;
+      }
+
+      // Start enrichment for the HubSpot job
+      const response = await fetch(`/api/import/jobs/${jobId}/enrich`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt')}`
+        },
+        body: JSON.stringify({
+          enrichment_config: enrichmentType
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start HubSpot enrichment');
+      }
+
+      toast.success(`Started enrichment for ${importedCount} HubSpot contacts!`);
+      setCurrentJobId(jobId);
+      setUploadSuccess(true);
+      refetchJobs();
+      
+      // Auto-navigate to batches page after 3 seconds
+      setTimeout(() => {
+        navigate(`/batches`);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('HubSpot enrichment failed:', error);
+      toast.error('Failed to start enrichment for HubSpot contacts');
+      // Redirect to batches page even on error
+      navigate(`/batches`);
+    }
+  };
+
   // Reset states when component mounts
   useEffect(() => {
     reset();
     setUploadSuccess(false);
     setCurrentJobId(null);
     setValidationErrors([]);
-  }, [reset]);
+    
+    // Check for HubSpot import redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const hubspotJobId = urlParams.get('hubspot_job');
+    const importedCount = urlParams.get('imported');
+    
+    if (hubspotJobId && importedCount) {
+      // Auto-trigger enrichment dialog for HubSpot import
+      handleHubSpotEnrichment(hubspotJobId, parseInt(importedCount));
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [reset, confirm, navigate, refetchJobs]);
 
   // File validation
   const validateFile = useCallback((file: File): string[] => {
