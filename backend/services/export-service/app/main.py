@@ -215,7 +215,7 @@ async def export_to_hubspot(
         
         # Check if token needs refresh
         access_token = integration.access_token
-        if integration.expires_at and integration.expires_at < datetime.utcnow():
+        if integration.expires_at and integration.expires_at.replace(tzinfo=None) < datetime.utcnow():
             hubspot = get_integration("hubspot", {})
             try:
                 token_data = await hubspot.refresh_access_token(integration.refresh_token)
@@ -498,7 +498,7 @@ async def import_contacts_from_hubspot(
         
         # Check if token needs refresh
         access_token = integration.access_token
-        if integration.expires_at and integration.expires_at < datetime.utcnow():
+        if integration.expires_at and integration.expires_at.replace(tzinfo=None) < datetime.utcnow():
             print("Token expired, refreshing...")
             hubspot = get_integration("hubspot", {})
             try:
@@ -781,7 +781,7 @@ async def export_single_contact_to_hubspot(
         
         # Check if token needs refresh
         access_token = integration.access_token
-        if integration.expires_at and integration.expires_at < datetime.utcnow():
+        if integration.expires_at and integration.expires_at.replace(tzinfo=None) < datetime.utcnow():
             hubspot = get_integration("hubspot", {})
             try:
                 token_data = await hubspot.refresh_access_token(integration.refresh_token)
@@ -981,7 +981,7 @@ async def export_batch_to_hubspot(
         
         # Check if token needs refresh
         access_token = integration.access_token
-        if integration.expires_at and integration.expires_at < datetime.utcnow():
+        if integration.expires_at and integration.expires_at.replace(tzinfo=None) < datetime.utcnow():
             hubspot = get_integration("hubspot", {})
             try:
                 token_data = await hubspot.refresh_access_token(integration.refresh_token)
