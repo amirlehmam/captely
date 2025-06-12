@@ -758,7 +758,7 @@ async def export_single_contact_to_hubspot(
             WHERE c.id = :contact_id AND ij.user_id = :user_id
         """)
         
-        contact_result = await session.execute(contact_query, {"contact_id": contact_id, "user_id": user_id})
+        contact_result = await session.execute(contact_query, {"contact_id": int(contact_id), "user_id": user_id})
         contact_row = contact_result.fetchone()
         
         if not contact_row:
