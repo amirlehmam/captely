@@ -86,9 +86,7 @@ const Header: React.FC = () => {
             <LanguageSwitcher variant="minimal" />
             
             {/* Credit Display - PRODUCTION READY */}
-            <div className="flex items-center" style={{ height: '40px' }}>
-              <CreditDisplay variant="compact" showRefresh={false} />
-            </div>
+            <CreditDisplay variant="compact" showRefresh={false} />
             
             <button 
               onClick={() => setShowNotifications(!showNotifications)}

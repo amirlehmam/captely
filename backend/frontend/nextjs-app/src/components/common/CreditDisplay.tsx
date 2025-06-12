@@ -32,7 +32,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
 
   if (variant === 'compact') {
     return (
-      <div className="flex items-center space-x-3" style={{ minWidth: '200px', height: '40px' }}>
+      <div className="flex items-center space-x-3" style={{ minWidth: '200px' }}>
         {/* Credit balance - Always present with stable dimensions to prevent flashing */}
         <div className="flex items-center space-x-2" style={{ minWidth: '120px' }}>
           <div className={`p-2 rounded-lg transition-colors duration-200 ${
