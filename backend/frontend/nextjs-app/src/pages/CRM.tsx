@@ -340,11 +340,7 @@ const CRMPage: React.FC = () => {
   }
 
   return (
-    <div className={`max-w-7xl mx-auto min-h-screen transition-all duration-300 ${
-      isDark 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-        : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
-    }`}>
+    <div className="max-w-7xl mx-auto min-h-screen transition-all duration-300">
       {/* Enhanced Header with Better Content */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}

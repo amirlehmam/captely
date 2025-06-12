@@ -157,7 +157,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className={`rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto ${
+          className={`rounded-xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-hidden ${
             isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'
           }`}
           onClick={(e) => e.stopPropagation()}
@@ -194,10 +194,10 @@ const ExportModal: React.FC<ExportModalProps> = ({
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-4">
             {loadingSettings ? (
-              <div className="text-center py-8">
-                <Loader className={`h-8 w-8 animate-spin mx-auto ${
+              <div className="text-center py-6">
+                <Loader className={`h-6 w-6 animate-spin mx-auto ${
                   isDark ? 'text-emerald-400' : 'text-emerald-600'
                 }`} />
                 <p className={`mt-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -207,7 +207,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
             ) : (
               <>
                 {/* Format Selection */}
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2 mb-4">
                   <label className={`block text-sm font-medium ${
                     isDark ? 'text-gray-300' : 'text-gray-700'
                   }`}>
@@ -220,7 +220,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       onClick={() => setSelectedFormat(format.value)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                      className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
                         selectedFormat === format.value
                           ? format.bgColor
                           : isDark
@@ -267,22 +267,22 @@ const ExportModal: React.FC<ExportModalProps> = ({
 
                 {/* HubSpot Notice if not connected */}
                 {!hubspotConnected && !checkingHubspot && (
-                  <div className={`p-4 rounded-lg border mb-4 ${
+                  <div className={`p-3 rounded-lg border mb-3 ${
                     isDark 
                       ? 'bg-gray-700 border-gray-600' 
                       : 'bg-gray-50 border-gray-200'
                   }`}>
                     <div className="flex items-start">
-                      <AlertCircle className={`h-5 w-5 mt-0.5 mr-3 flex-shrink-0 ${
+                      <AlertCircle className={`h-4 w-4 mt-0.5 mr-2 flex-shrink-0 ${
                         isDark ? 'text-gray-400' : 'text-gray-500'
                       }`} />
                       <div>
-                        <h5 className={`font-medium mb-1 ${
+                        <h5 className={`font-medium mb-1 text-sm ${
                           isDark ? 'text-gray-300' : 'text-gray-700'
                         }`}>
                           🟠 HubSpot Integration
                         </h5>
-                        <p className={`text-sm ${
+                        <p className={`text-xs ${
                           isDark ? 'text-gray-400' : 'text-gray-600'
                         }`}>
                           Connect HubSpot in{' '}
@@ -295,31 +295,31 @@ const ExportModal: React.FC<ExportModalProps> = ({
                 )}
 
                 {/* Additional Info */}
-                <div className={`p-4 rounded-lg border ${
+                <div className={`p-3 rounded-lg border ${
                   isDark 
                     ? 'bg-blue-500/20 border-blue-400/30' 
                     : 'bg-blue-50 border-blue-200'
                 }`}>
                   <div className="flex items-start">
-                    <AlertCircle className={`h-5 w-5 mt-0.5 mr-3 flex-shrink-0 ${
+                    <AlertCircle className={`h-4 w-4 mt-0.5 mr-2 flex-shrink-0 ${
                       isDark ? 'text-blue-400' : 'text-blue-600'
                     }`} />
                     <div>
-                      <h5 className={`font-medium mb-1 ${
+                      <h5 className={`font-medium mb-1 text-sm ${
                         isDark ? 'text-blue-300' : 'text-blue-900'
                       }`}>
                         ℹ️ Export Information
                       </h5>
-                      <ul className={`text-sm space-y-1 ${
+                      <ul className={`text-xs space-y-0.5 ${
                         isDark ? 'text-blue-200' : 'text-blue-700'
                       }`}>
-                        <li>• 📧 Includes all enriched contact data</li>
-                        <li>• ✅ Email and phone verification status</li>
-                        <li>• 🔢 Lead scores and reliability ratings</li>
-                        {type === 'batch' && <li>• 📊 Enrichment provider information</li>}
-                        {type === 'crm' && <li>• 📁 Batch and campaign associations</li>}
+                        <li>• 📧 Enriched contact data included</li>
+                        <li>• ✅ Verification status</li>
+                        <li>• 🔢 Lead scores & ratings</li>
+                        {type === 'batch' && <li>• 📊 Provider information</li>}
+                        {type === 'crm' && <li>• 📁 Batch associations</li>}
                         {selectedFormat === 'hubspot' && (
-                          <li>• 🚀 Syncs directly to your HubSpot contacts</li>
+                          <li>• 🚀 Direct HubSpot sync</li>
                         )}
                       </ul>
                     </div>
@@ -330,7 +330,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className={`p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+          <div className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex items-center justify-between">
               <button
                 onClick={onClose}
