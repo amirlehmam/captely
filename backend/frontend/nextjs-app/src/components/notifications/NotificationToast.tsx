@@ -67,66 +67,66 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
       case 'success':
         return {
           icon: CheckCircle,
-          bgColor: 'from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20',
-          borderColor: 'border-emerald-200 dark:border-emerald-700',
-          iconColor: 'text-emerald-600 dark:text-emerald-400',
-          progressColor: 'bg-emerald-500'
+          bgColor: 'bg-emerald-500 dark:bg-emerald-600',
+          borderColor: 'border-emerald-400 dark:border-emerald-500',
+          iconColor: 'text-white',
+          progressColor: 'bg-emerald-300'
         };
       case 'error':
         return {
           icon: XCircle,
-          bgColor: 'from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20',
-          borderColor: 'border-red-200 dark:border-red-700',
-          iconColor: 'text-red-600 dark:text-red-400',
-          progressColor: 'bg-red-500'
+          bgColor: 'bg-red-500 dark:bg-red-600',
+          borderColor: 'border-red-400 dark:border-red-500',
+          iconColor: 'text-white',
+          progressColor: 'bg-red-300'
         };
       case 'warning':
         return {
           icon: AlertTriangle,
-          bgColor: 'from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20',
-          borderColor: 'border-amber-200 dark:border-amber-700',
-          iconColor: 'text-amber-600 dark:text-amber-400',
-          progressColor: 'bg-amber-500'
+          bgColor: 'bg-amber-500 dark:bg-amber-600',
+          borderColor: 'border-amber-400 dark:border-amber-500',
+          iconColor: 'text-white',
+          progressColor: 'bg-amber-300'
         };
       case 'job_completed':
         return {
           icon: Briefcase,
-          bgColor: 'from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20',
-          borderColor: 'border-blue-200 dark:border-blue-700',
-          iconColor: 'text-blue-600 dark:text-blue-400',
-          progressColor: 'bg-blue-500'
+          bgColor: 'bg-blue-500 dark:bg-blue-600',
+          borderColor: 'border-blue-400 dark:border-blue-500',
+          iconColor: 'text-white',
+          progressColor: 'bg-blue-300'
         };
       case 'low_credits':
         return {
           icon: CreditCard,
-          bgColor: 'from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20',
-          borderColor: 'border-orange-200 dark:border-orange-700',
-          iconColor: 'text-orange-600 dark:text-orange-400',
-          progressColor: 'bg-orange-500'
+          bgColor: 'bg-orange-500 dark:bg-orange-600',
+          borderColor: 'border-orange-400 dark:border-orange-500',
+          iconColor: 'text-white',
+          progressColor: 'bg-orange-300'
         };
       case 'credit_purchase':
         return {
           icon: Star,
-          bgColor: 'from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20',
-          borderColor: 'border-purple-200 dark:border-purple-700',
-          iconColor: 'text-purple-600 dark:text-purple-400',
-          progressColor: 'bg-purple-500'
+          bgColor: 'bg-purple-500 dark:bg-purple-600',
+          borderColor: 'border-purple-400 dark:border-purple-500',
+          iconColor: 'text-white',
+          progressColor: 'bg-purple-300'
         };
       case 'system_update':
         return {
           icon: Zap,
-          bgColor: 'from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20',
-          borderColor: 'border-cyan-200 dark:border-cyan-700',
-          iconColor: 'text-cyan-600 dark:text-cyan-400',
-          progressColor: 'bg-cyan-500'
+          bgColor: 'bg-cyan-500 dark:bg-cyan-600',
+          borderColor: 'border-cyan-400 dark:border-cyan-500',
+          iconColor: 'text-white',
+          progressColor: 'bg-cyan-300'
         };
       default:
         return {
           icon: Info,
-          bgColor: 'from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20',
-          borderColor: 'border-gray-200 dark:border-gray-700',
-          iconColor: 'text-gray-600 dark:text-gray-400',
-          progressColor: 'bg-gray-500'
+          bgColor: 'bg-gray-600 dark:bg-gray-700',
+          borderColor: 'border-gray-500 dark:border-gray-600',
+          iconColor: 'text-white',
+          progressColor: 'bg-gray-400'
         };
     }
   };
@@ -149,7 +149,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
             x: 0, 
             scale: 1,
             rotate: 0,
-            y: position * 80
+            y: position * 100
           }}
           exit={{ 
             opacity: 0, 
@@ -173,11 +173,11 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
               transition: { duration: 0.2 }
             }}
             whileTap={{ scale: 0.98 }}
-            className={`
-              relative max-w-sm w-full bg-gradient-to-br ${config.bgColor} 
-              border ${config.borderColor} rounded-xl shadow-xl backdrop-blur-sm
-              overflow-hidden cursor-pointer group
-            `}
+                      className={`
+            relative max-w-sm w-full ${config.bgColor} 
+            border ${config.borderColor} rounded-xl shadow-xl
+            overflow-hidden cursor-pointer group
+          `}
             onClick={notification.action?.onClick}
           >
             {/* Progress bar */}
@@ -227,7 +227,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-sm font-semibold text-gray-900 dark:text-white"
+                    className="text-sm font-semibold text-white"
                   >
                     {notification.title}
                   </motion.p>
@@ -235,7 +235,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="text-sm text-gray-600 dark:text-gray-300 mt-1"
+                    className="text-sm text-white/90 mt-1"
                   >
                     {notification.message}
                   </motion.p>
@@ -251,7 +251,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
                         notification.action!.onClick();
                       }}
                       className={`
-                        mt-2 text-xs font-medium ${config.iconColor} 
+                        mt-2 text-xs font-medium text-white/90 hover:text-white
                         hover:underline flex items-center space-x-1
                         transition-colors duration-200
                       `}
@@ -273,8 +273,8 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
                   }}
                   className="
                     opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                    p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700
-                    text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200
+                    p-1 rounded-full hover:bg-white/20
+                    text-white/70 hover:text-white
                   "
                 >
                   <X className="h-4 w-4" />

@@ -28,6 +28,9 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
+// Enhanced notification system
+import { showManualImportStarted, showError } from '../components/notifications/NotificationManager';
+
 // Updated hooks for production
 import { useFileUpload, useJobs, useJob } from '../hooks/useApi';
 import { useEnrichmentConfirm } from '../hooks/useEnrichmentConfirm';
@@ -323,7 +326,7 @@ const ImportPage: React.FC = () => {
       setManualContacts([]);
       refetchJobs();
       
-      toast.success(formatMessage('import.manual.enrichmentStarted', { count: manualContacts.length }));
+      showManualImportStarted(manualContacts.length);
       
       // Auto-navigate to batches page after 3 seconds
       setTimeout(() => {
@@ -332,7 +335,10 @@ const ImportPage: React.FC = () => {
       
     } catch (error) {
       console.error('Manual enrichment failed:', error);
-      toast.error(t('import.manual.enrichmentFailed'));
+      showError(
+        'Manual Import Failed ❌',
+        'Failed to start enrichment for manually added contacts. Please try again.'
+      );
     } finally {
       setIsStartingManualEnrichment(false);
     }

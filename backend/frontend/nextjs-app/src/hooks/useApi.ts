@@ -90,6 +90,7 @@ export const useJobs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completedJobs, setCompletedJobs] = useState<Set<string>>(new Set());
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const fetchJobs = useCallback(async (silent = false) => {
     try {
@@ -99,22 +100,29 @@ export const useJobs = () => {
       const response = await apiService.getJobs();
       const newJobs = response.jobs || [];
       
-      // Check for newly completed jobs and show notifications
-      newJobs.forEach(job => {
-        if (job.status === 'completed' && !completedJobs.has(job.id)) {
-          // Show enhanced notification for completed job
-          showJobCompleted(job.id, job.file_name || `Job ${job.id.slice(0, 8)}`, {
-            total_contacts: job.total || 0,
-            emails_found: job.emails_found || 0,
-            phones_found: job.phones_found || 0,
-            success_rate: job.success_rate || 0,
-            credits_used: job.credits_used || 0
-          });
-          
-          // Add to completed jobs set
-          setCompletedJobs((prev: Set<string>) => new Set([...prev, job.id]));
-        }
-      });
+      // Only show notifications for newly completed jobs, not on initial load
+      if (!initialLoad) {
+        newJobs.forEach(job => {
+          if (job.status === 'completed' && !completedJobs.has(job.id)) {
+            // Show enhanced notification for completed job
+            showJobCompleted(job.id, job.file_name || `Job ${job.id.slice(0, 8)}`, {
+              total_contacts: job.total || 0,
+              emails_found: job.emails_found || 0,
+              phones_found: job.phones_found || 0,
+              success_rate: job.success_rate || 0,
+              credits_used: job.credits_used || 0
+            });
+            
+            // Add to completed jobs set
+            setCompletedJobs((prev: Set<string>) => new Set([...prev, job.id]));
+          }
+        });
+      } else {
+        // On initial load, just populate the completed jobs set without showing notifications
+        const alreadyCompleted = newJobs.filter(job => job.status === 'completed').map(job => job.id);
+        setCompletedJobs(new Set(alreadyCompleted));
+        setInitialLoad(false);
+      }
       
       setJobs(newJobs);
     } catch (err) {
@@ -126,7 +134,7 @@ export const useJobs = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [completedJobs]);
+  }, [completedJobs, initialLoad]);
 
   useEffect(() => {
     fetchJobs();

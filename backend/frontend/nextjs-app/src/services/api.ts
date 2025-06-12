@@ -598,7 +598,7 @@ class ApiService {
             try {
               const response = JSON.parse(xhr.responseText);
               
-              // Show success message with enrichment type info
+              // Show enhanced success notification with enrichment type info
               const typeText = enrichmentType?.email && enrichmentType?.phone 
                 ? 'Email + Phone enrichment'
                 : enrichmentType?.email 
@@ -607,7 +607,10 @@ class ApiService {
                     ? 'Phone enrichment'
                     : 'Full enrichment';
               
-              toast.success(`File uploaded successfully! ${typeText} started.`);
+              showSuccess(
+                'File Upload Complete! 🚀',
+                `Your file has been uploaded successfully. ${typeText} is now starting...`
+              );
               resolve(response);
             } catch (error) {
               reject(new Error('Invalid response format'));
@@ -640,7 +643,10 @@ class ApiService {
         xhr.send(formData);
       });
     } catch (error) {
-      toast.error('File upload failed. Please try again.');
+      showError(
+        'Upload Failed ❌',
+        'File upload failed. Please check your file and try again.'
+      );
       throw error;
     }
   }

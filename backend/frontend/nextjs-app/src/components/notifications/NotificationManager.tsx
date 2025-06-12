@@ -47,6 +47,18 @@ const NotificationManager: React.FC<NotificationManagerProps> = ({
 
   // Add notification to queue
   const addNotification = useCallback((notification: NotificationToastData) => {
+    // Prevent duplicate notifications within a short time frame
+    const duplicateKey = `${notification.type}-${notification.title}`;
+    const lastShown = localStorage.getItem(`notification-${duplicateKey}`);
+    const now = Date.now();
+    
+    if (lastShown && (now - parseInt(lastShown)) < 2000) {
+      // Skip if same notification was shown within 2 seconds
+      return;
+    }
+    
+    localStorage.setItem(`notification-${duplicateKey}`, now.toString());
+    
     const priority = getPriority(notification.type);
     const queuedNotification: QueuedNotification = {
       ...notification,
@@ -142,7 +154,7 @@ const NotificationManager: React.FC<NotificationManagerProps> = ({
             "
             onClick={clearAll}
             style={{ 
-              marginTop: `${maxVisible * 80 + 10}px`,
+              marginTop: `${maxVisible * 100 + 10}px`,
               willChange: 'background-color'
             }}
           >
@@ -230,6 +242,24 @@ export const showCreditPurchase = (amount: number) => {
     title: 'Credits Added! ✨',
     message: `${amount.toLocaleString()} credits have been added to your account`,
     duration: 4000
+  });
+};
+
+export const showFileImportStarted = (fileName: string, enrichmentType: string) => {
+  showNotification({
+    type: 'success',
+    title: 'Import Started! 📤',
+    message: `${fileName} - ${enrichmentType} enrichment is now processing`,
+    duration: 5000
+  });
+};
+
+export const showManualImportStarted = (contactCount: number) => {
+  showNotification({
+    type: 'success', 
+    title: 'Manual Import Started! ✍️',
+    message: `${contactCount} manually added contacts are now being enriched`,
+    duration: 5000
   });
 };
 
