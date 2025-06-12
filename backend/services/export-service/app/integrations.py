@@ -23,13 +23,12 @@ class HubSpotIntegration:
         self.auth_url = "https://app-eu1.hubspot.com/oauth/authorize"
         self.token_url = "https://api.hubapi.com/oauth/v1/token"
         
-        # HubSpot scopes - using modern granular scopes only
+        # HubSpot scopes - using modern granular scopes only (removed oauth scope to fix mismatch)
         self.scopes = [
             "crm.objects.contacts.read",
             "crm.objects.contacts.write", 
             "crm.lists.read",
-            "crm.lists.write",
-            "oauth"
+            "crm.lists.write"
         ]
         
         self.headers = {

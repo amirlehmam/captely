@@ -15,7 +15,7 @@ import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, text
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from common.config import get_settings
@@ -319,22 +319,26 @@ async def get_hubspot_oauth_url(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate OAuth URL: {str(e)}")
 
+# Request model for OAuth callback
+class OAuthCallbackRequest(BaseModel):
+    code: str
+    state: str
+
 @app.post("/api/export/hubspot/oauth/callback")
 async def hubspot_oauth_callback(
-    code: str,
-    state: str,
+    request: OAuthCallbackRequest,
     user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Handle HubSpot OAuth callback and store tokens"""
     try:
         # Verify state parameter contains user_id
-        if not state.startswith(user_id):
+        if not request.state.startswith(user_id):
             raise HTTPException(status_code=400, detail="Invalid state parameter")
         
         # Exchange code for tokens
         hubspot = get_integration("hubspot", {})
-        token_data = await hubspot.exchange_code_for_token(code)
+        token_data = await hubspot.exchange_code_for_token(request.code)
         
         # Get portal info
         portal_info = await hubspot.get_portal_info()
