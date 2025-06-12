@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import apiService, { Job, Contact, DashboardStats, CreditData, User } from '../services/api';
 import toast from 'react-hot-toast';
 
+// Enhanced notification system
+import { showJobCompleted } from '../components/notifications/NotificationManager';
+
 // ============================
 // DASHBOARD STATS HOOK - PRODUCTION READY
 // ============================
@@ -86,6 +89,7 @@ export const useJobs = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [completedJobs, setCompletedJobs] = useState<Set<string>>(new Set());
 
   const fetchJobs = useCallback(async (silent = false) => {
     try {
@@ -93,7 +97,26 @@ export const useJobs = () => {
       setError(null);
       
       const response = await apiService.getJobs();
-      setJobs(response.jobs || []);
+      const newJobs = response.jobs || [];
+      
+      // Check for newly completed jobs and show notifications
+      newJobs.forEach(job => {
+        if (job.status === 'completed' && !completedJobs.has(job.id)) {
+          // Show enhanced notification for completed job
+          showJobCompleted(job.id, job.file_name || `Job ${job.id.slice(0, 8)}`, {
+            total_contacts: job.total || 0,
+            emails_found: job.emails_found || 0,
+            phones_found: job.phones_found || 0,
+            success_rate: job.success_rate || 0,
+            credits_used: job.credits_used || 0
+          });
+          
+          // Add to completed jobs set
+          setCompletedJobs((prev: Set<string>) => new Set([...prev, job.id]));
+        }
+      });
+      
+      setJobs(newJobs);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load jobs';
       setError(errorMessage);
@@ -103,7 +126,7 @@ export const useJobs = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [completedJobs]);
 
   useEffect(() => {
     fetchJobs();

@@ -7,6 +7,9 @@ import {
 } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
+// Enhanced Notification System
+import NotificationManager from './components/notifications/NotificationManager';
+
 // Language Context Provider - NEW
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -82,6 +85,13 @@ function App() {
           <CreditProvider>
             <Router>
               <Toaster position="top-right" />
+              
+              {/* Enhanced Notification System */}
+              <NotificationManager
+                maxVisible={5}
+                enableSounds={true}
+                soundVolume={0.5}
+              />
 
           <Routes>
             {/* Legal pages - always accessible */}

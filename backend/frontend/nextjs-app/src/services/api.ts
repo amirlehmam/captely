@@ -5,6 +5,16 @@
 
 import toast from 'react-hot-toast';
 
+// Enhanced notification system
+import { 
+  showNotification, 
+  showSuccess, 
+  showError, 
+  showJobCompleted, 
+  showLowCredits, 
+  showCreditPurchase 
+} from '../components/notifications/NotificationManager';
+
 interface ApiConfig {
   authUrl: string;
   importUrl: string;

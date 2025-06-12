@@ -4,7 +4,7 @@ import { Bell, Search } from 'lucide-react';
 import CreditDisplay from './common/CreditDisplay';
 import LanguageSwitcher from './common/LanguageSwitcher';
 import DarkModeToggle from './common/DarkModeToggle';
-import NotificationPanel from './common/NotificationPanel';
+import EnhancedNotificationPanel from './notifications/EnhancedNotificationPanel';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import apiService from '../services/api';
@@ -114,8 +114,8 @@ const Header: React.FC = () => {
         </div>
       </div>
       
-      {/* Notification Panel */}
-      <NotificationPanel 
+      {/* Enhanced Notification Panel */}
+      <EnhancedNotificationPanel 
         isOpen={showNotifications} 
         onClose={() => setShowNotifications(false)} 
       />
