@@ -2269,32 +2269,43 @@ async def import_from_hubspot(
     user_id: str = Depends(verify_api_token),
     session: Session = Depends(get_session)
 ):
-    """Import contacts from HubSpot to Captely"""
+    """Import contacts from HubSpot to Captely and redirect to enrichment"""
     try:
-        # Create a new import job
-        job_id = str(uuid.uuid4())
+        # Forward to export service for actual import
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://export-service:8000/api/export/hubspot/import",
+                headers={
+                    "Authorization": f"Bearer {user_id}",  # Pass user_id as token
+                    "Content-Type": "application/json"
+                },
+                timeout=60.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                job_id = result.get("job_id")
+                
+                # Return response that triggers enrichment flow
+                return {
+                    "success": True,
+                    "job_id": job_id,
+                    "imported_count": result.get("imported_count", 0),
+                    "total_contacts": result.get("total_contacts", 0),
+                    "message": result.get("message", "Import completed"),
+                    "redirect": "enrichment",  # Signal frontend to show enrichment dialog
+                    "redirect_url": f"/batches/{job_id}"  # Redirect to batch page
+                }
+            else:
+                error_text = response.text
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"HubSpot import failed: {error_text}"
+                )
         
-        job_insert_sql = text("""
-            INSERT INTO import_jobs (id, user_id, total, status, file_name, created_at, updated_at)
-            VALUES (:job_id, :user_id, 0, 'processing', 'HubSpot Import', NOW(), NOW())
-        """)
-        
-        session.execute(job_insert_sql, {
-            "job_id": job_id,
-            "user_id": user_id
-        })
-        session.commit()
-        
-        # Start import in background
-        result = await hubspot_service.import_contacts_from_hubspot(session, user_id, job_id)
-        
-        return {
-            "success": True,
-            "job_id": job_id,
-            "imported": result["imported"],
-            "failed": result["failed"]
-        }
-        
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail="Export service unavailable")
     except Exception as e:
         if session is not None:
             session.rollback()
@@ -2334,44 +2345,7 @@ async def export_to_hubspot(
             detail=f"HubSpot export failed: {str(e)}"
         )
 
-@app.post("/api/integrations/hubspot/export-batch")
-async def export_batch_to_hubspot(
-    job_id: str,
-    user_id: str = Depends(verify_api_token),
-    session: Session = Depends(get_session)
-):
-    """Export entire batch/job to HubSpot"""
-    try:
-        # Get all contact IDs from the job
-        contacts_query = text("""
-            SELECT id FROM contacts WHERE job_id = :job_id
-        """)
-        contacts_result = session.execute(contacts_query, {"job_id": job_id})
-        contact_ids = [row[0] for row in contacts_result.fetchall()]
-        
-        if not contact_ids:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No contacts found in this batch"
-            )
-        
-        result = await hubspot_service.export_contacts_to_hubspot(session, user_id, contact_ids)
-        
-        return {
-            "success": True,
-            "job_id": job_id,
-            "exported": result["exported"],
-            "failed": result["failed"],
-            "sync_log_id": result["sync_log_id"]
-        }
-        
-    except Exception as e:
-        if session is not None:
-            session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Batch export to HubSpot failed: {str(e)}"
-        )
+# Removed duplicate endpoint - using proxy below
 
 @app.get("/api/integrations/hubspot/sync-logs")
 async def get_hubspot_sync_logs(
