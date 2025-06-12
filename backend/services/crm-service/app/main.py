@@ -635,6 +635,45 @@ async def delete_contact(
         print(f"Error deleting contact: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# HUBSPOT EXPORT PROXY ENDPOINT 
+@app.post("/api/contacts/{contact_id}/export/hubspot")
+async def export_contact_to_hubspot_proxy(
+    contact_id: str,
+    authorization: str = Header(...),
+):
+    """Proxy endpoint to forward HubSpot export requests to the export service"""
+    try:
+        print(f"🔧 CRM: Proxying HubSpot export for contact {contact_id}")
+        
+        # Forward the request to the export service
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"http://export-service:8000/api/export/contacts/{contact_id}/export/hubspot",
+                headers={
+                    "Authorization": authorization,
+                    "Content-Type": "application/json"
+                },
+                timeout=60.0
+            )
+            
+            print(f"🔧 CRM: Export service response: {response.status_code}")
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"❌ CRM: Export service error: {response.text}")
+                raise HTTPException(
+                    status_code=response.status_code, 
+                    detail=f"Export failed: {response.text}"
+                )
+                
+    except httpx.RequestError as e:
+        print(f"❌ CRM: Request error to export service: {e}")
+        raise HTTPException(status_code=503, detail="Export service unavailable")
+    except Exception as e:
+        print(f"❌ CRM: Export proxy failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
 # Activity endpoints
 @app.get("/api/activities", response_model=List[ActivityResponse])
 async def get_activities(

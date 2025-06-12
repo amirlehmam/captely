@@ -2461,119 +2461,43 @@ async def disconnect_hubspot(
             detail=f"Failed to disconnect HubSpot: {str(e)}"
         )
 
+# HUBSPOT BATCH EXPORT PROXY ENDPOINT 
 @app.post("/api/integrations/hubspot/export-batch")
-async def export_batch_to_hubspot(
+async def export_batch_to_hubspot_proxy(
     request: dict,
-    user_id: str = Depends(verify_api_token),
-    session: Session = Depends(get_session)
+    authorization: str = Header(...),
 ):
-    """Export a batch to HubSpot"""
+    """Proxy endpoint to forward HubSpot batch export requests to the export service"""
     try:
-        job_id = request.get("job_id")
-        if not job_id:
-            raise HTTPException(status_code=400, detail="job_id is required")
+        print(f"🔧 IMPORT: Proxying HubSpot batch export: {request}")
         
-        # Get contacts from the batch
-        contacts_query = text("""
-            SELECT 
-                c.id, c.first_name, c.last_name, c.email, c.phone, 
-                c.company, c.position, c.location, c.industry,
-                c.enriched, c.enrichment_status, c.enrichment_provider, 
-                c.enrichment_score, c.credits_consumed,
-                c.email_verified, c.phone_verified, c.created_at, c.updated_at,
-                c.job_id
-            FROM contacts c
-            JOIN import_jobs j ON c.job_id = j.id
-            WHERE c.job_id = :job_id AND j.user_id = :user_id AND c.enriched = TRUE
-            ORDER BY c.created_at DESC
-        """)
-        
-        result = session.execute(contacts_query, {
-            "job_id": job_id, 
-            "user_id": user_id
-        })
-        contacts = result.fetchall()
-        
-        if not contacts:
-            raise HTTPException(status_code=404, detail="No enriched contacts found in this batch")
-        
-        # Get HubSpot integration
-        integration_query = text("""
-            SELECT hubspot_portal_id, access_token, is_active
-            FROM hubspot_integrations 
-            WHERE user_id = :user_id AND is_active = TRUE
-            ORDER BY created_at DESC
-            LIMIT 1
-        """)
-        integration_result = session.execute(integration_query, {"user_id": user_id})
-        integration = integration_result.fetchone()
-        
-        if not integration:
-            raise HTTPException(status_code=400, detail="HubSpot integration not found. Please connect HubSpot first.")
-        
-        portal_id, access_token, is_active = integration
-        
-        if not is_active:
-            raise HTTPException(status_code=400, detail="HubSpot integration is inactive")
-        
-        # Export to HubSpot using the service
-        exported_count = 0
-        failed_count = 0
-        
-        # Convert contacts to HubSpot format
-        hubspot_contacts = []
-        for contact in contacts:
-            if contact[2]:  # has email
-                contact_data = {
-                    "properties": {
-                        "firstname": contact[1] or "",
-                        "lastname": contact[2] or "",
-                        "email": contact[3] or "",
-                        "phone": contact[4] or "",
-                        "company": contact[5] or "",
-                        "jobtitle": contact[6] or "",
-                        "city": contact[7] or "",
-                        "industry": contact[8] or "",
-                        "captely_contact_id": str(contact[0]),
-                        "captely_enriched": str(contact[9]).lower(),
-                        "captely_enrichment_score": str(contact[11]) if contact[11] else "0"
-                    }
-                }
-                hubspot_contacts.append(contact_data)
-        
-        # Send to HubSpot in batches of 100
+        # Forward the request to the export service
         import httpx
         async with httpx.AsyncClient() as client:
-            for i in range(0, len(hubspot_contacts), 100):
-                batch = hubspot_contacts[i:i+100]
-                
-                response = await client.post(
-                    "https://api.hubapi.com/crm/v3/objects/contacts/batch",
-                    headers={
-                        "Authorization": f"Bearer {access_token}",
-                        "Content-Type": "application/json"
-                    },
-                    json={"inputs": batch}
+            response = await client.post(
+                "http://export-service:8000/api/export/integrations/hubspot/export-batch",
+                headers={
+                    "Authorization": authorization,
+                    "Content-Type": "application/json"
+                },
+                json=request,
+                timeout=120.0
+            )
+            
+            print(f"🔧 IMPORT: Export service response: {response.status_code}")
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"❌ IMPORT: Export service error: {response.text}")
+                raise HTTPException(
+                    status_code=response.status_code, 
+                    detail=f"Batch export failed: {response.text}"
                 )
                 
-                if response.status_code == 201:
-                    batch_result = response.json()
-                    exported_count += len(batch_result.get("results", []))
-                else:
-                    failed_count += len(batch)
-                    print(f"HubSpot batch export failed: {response.status_code} - {response.text}")
-        
-        return {
-            "success": True,
-            "job_id": job_id,
-            "exported": exported_count,
-            "failed": failed_count,
-            "total_contacts": len(contacts)
-        }
-        
+    except httpx.RequestError as e:
+        print(f"❌ IMPORT: Request error to export service: {e}")
+        raise HTTPException(status_code=503, detail="Export service unavailable")
     except Exception as e:
-        print(f"Error exporting batch to HubSpot: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to export batch to HubSpot: {str(e)}"
-        )
+        print(f"❌ IMPORT: Batch export proxy failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Batch export failed: {str(e)}")
