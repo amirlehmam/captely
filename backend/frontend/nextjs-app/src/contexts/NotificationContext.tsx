@@ -18,6 +18,7 @@ interface NotificationContextType {
   fetchNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  deleteAllNotifications: () => Promise<void>;
   addNotification: (notification: Omit<Notification, 'id' | 'created_at'>) => void;
 }
 
@@ -34,6 +35,7 @@ export const useNotifications = () => {
       fetchNotifications: async () => {},
       markAsRead: async () => {},
       markAllAsRead: async () => {},
+      deleteAllNotifications: async () => {},
       addNotification: () => {},
     };
   }
@@ -84,16 +86,25 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, []);
 
+  const deleteAllNotifications = useCallback(async () => {
+    try {
+      await apiService.deleteAllNotifications();
+      setNotifications([]);
+    } catch (error) {
+      console.error('Failed to delete all notifications:', error);
+    }
+  }, []);
+
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'created_at'>) => {
     const newNotification: Notification = {
       ...notification,
       id: Date.now().toString(),
       created_at: new Date().toISOString(),
     };
-    setNotifications(prev => [newNotification, ...prev]);
+    setNotifications((prev: Notification[]) => [newNotification, ...prev]);
   }, []);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.read).length;
 
   // Fetch notifications when component mounts and periodically
   useEffect(() => {
@@ -141,6 +152,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchNotifications,
     markAsRead,
     markAllAsRead,
+    deleteAllNotifications,
     addNotification,
   };
 

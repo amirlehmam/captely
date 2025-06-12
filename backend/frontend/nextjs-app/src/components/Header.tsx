@@ -78,7 +78,7 @@ const Header: React.FC = () => {
           </div>
 
           {/* Right side items */}
-          <div className="flex items-center space-x-4" style={{ minWidth: '320px' }}>
+          <div className="flex items-center space-x-6" style={{ minWidth: '320px' }}>
             {/* Dark Mode Toggle */}
             <DarkModeToggle size="sm" />
             
@@ -86,7 +86,9 @@ const Header: React.FC = () => {
             <LanguageSwitcher variant="minimal" />
             
             {/* Credit Display - PRODUCTION READY */}
-            <CreditDisplay variant="compact" />
+            <div className="flex items-center" style={{ height: '40px' }}>
+              <CreditDisplay variant="compact" showRefresh={false} />
+            </div>
             
             <button 
               onClick={() => setShowNotifications(!showNotifications)}

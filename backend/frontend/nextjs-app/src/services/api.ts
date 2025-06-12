@@ -1405,6 +1405,10 @@ class ApiService {
     return client.post('/api/notifications/mark-all-read');
   }
 
+  async deleteAllNotifications(): Promise<{ success: boolean }> {
+    return client.delete('/api/notifications/all');
+  }
+
   async getHubSpotIntegrationStatus(): Promise<{
     connected: boolean;
     portal_id?: string;

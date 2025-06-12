@@ -25,7 +25,7 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
   isOpen, 
   onClose 
 }) => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteAllNotifications, loading } = useNotifications();
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -143,9 +143,9 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
   const groupedNotifications = groupNotificationsByDate(filteredNotifications);
 
   // Handle notification click
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = async (notification: any) => {
     if (!notification.read) {
-      markAsRead(notification.id);
+      await markAsRead(notification.id);
     }
 
     // Navigate based on notification type
@@ -503,6 +503,21 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
                           Mark all read
                         </motion.button>
                       )}
+                      
+                      {notifications.length > 0 && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={deleteAllNotifications}
+                          className={`text-xs ${
+                            isDark 
+                              ? 'text-red-400 hover:text-red-300' 
+                              : 'text-red-600 hover:text-red-800'
+                          }`}
+                        >
+                          Delete all
+                        </motion.button>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -512,7 +527,7 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(600px - 200px)' }}>
-            {loading ? (
+            {loading && notifications.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
