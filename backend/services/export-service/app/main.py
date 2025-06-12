@@ -85,7 +85,7 @@ class CrmExportRequest(BaseModel):
 @app.post("/api/export/download")
 async def export_data(
     request: ExportRequest,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Export enriched data in various formats"""
@@ -612,7 +612,7 @@ async def get_hubspot_sync_logs(
 @app.get("/api/export/columns/{job_id}")
 async def get_available_columns(
     job_id: str,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Get available columns for export customization"""
@@ -659,7 +659,7 @@ async def get_available_columns(
 @app.post("/api/export/crm-contacts")
 async def export_crm_contacts(
     request: CrmExportRequest,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Export CRM contacts in various formats"""
