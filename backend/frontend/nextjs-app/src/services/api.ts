@@ -676,11 +676,33 @@ class ApiService {
   // EXPORT
   // ==========================================
 
-  async exportData(jobId: string, format: 'csv' | 'excel' | 'json' = 'csv'): Promise<void> {
+  async exportData(jobId: string, format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv'): Promise<void> {
     try {
       const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
       
-      const response = await fetch(`${API_CONFIG.exportUrl}/api/export/download`, {
+      // Handle HubSpot export differently
+      if (format === 'hubspot') {
+        const response = await fetch(`${API_CONFIG.importUrl}/integrations/hubspot/export-batch`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            job_id: jobId
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HubSpot export failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        toast.success(`🚀 Successfully exported ${result.exported || 'batch'} to HubSpot!`);
+        return;
+      }
+      
+      const response = await fetch(`${API_CONFIG.exportUrl}/export/download`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -731,12 +753,35 @@ class ApiService {
 
   async exportCrmContacts(
     contactIds: string[],
-    format: 'csv' | 'excel' | 'json' = 'csv'
+    format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv'
   ): Promise<void> {
     try {
       const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
       
-      const response = await fetch(`${API_CONFIG.exportUrl}/api/export/crm-contacts`, {
+      // Handle HubSpot export differently
+      if (format === 'hubspot') {
+        const response = await fetch(`${API_CONFIG.importUrl}/crm/contacts/bulk-export`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contact_ids: contactIds,
+            export_type: 'hubspot'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HubSpot export failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        toast.success(`🚀 Successfully exported ${result.exported || contactIds.length} contacts to HubSpot!`);
+        return;
+      }
+      
+      const response = await fetch(`${API_CONFIG.exportUrl}/export/crm-contacts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

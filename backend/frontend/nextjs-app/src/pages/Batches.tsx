@@ -153,18 +153,25 @@ const BatchesPage: React.FC = () => {
     setShowExportModal(true);
   };
 
-  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json') => {
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot') => {
     try {
       if (exportJobId) {
         // Single job export
         await apiService.exportData(exportJobId, format);
+        if (format === 'hubspot') {
+          toast.success('🚀 Batch exported to HubSpot successfully!');
+        }
       } else if (bulkExportJobs.length > 0) {
         // Bulk export - export each job
         for (const jobId of bulkExportJobs) {
           await apiService.exportData(jobId, format);
         }
         setSelectedJobs(new Set());
-        toast.success(`Successfully exported ${bulkExportJobs.length} batches!`);
+        if (format === 'hubspot') {
+          toast.success(`🚀 Successfully exported ${bulkExportJobs.length} batches to HubSpot!`);
+        } else {
+          toast.success(`Successfully exported ${bulkExportJobs.length} batches!`);
+        }
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -889,6 +896,7 @@ const BatchesPage: React.FC = () => {
         }
         exportCount={exportJobId ? 1 : bulkExportJobs.length}
         type="batch"
+        jobId={exportJobId || undefined}
       />
     </div>
   );

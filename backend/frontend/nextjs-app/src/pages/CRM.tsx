@@ -265,11 +265,14 @@ const CRMPage: React.FC = () => {
     }
   };
 
-  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json') => {
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot') => {
     try {
       if (exportType === 'bulk' && selectedContacts.size > 0) {
         await apiService.exportCrmContacts(Array.from(selectedContacts), format);
         setSelectedContacts(new Set());
+        if (format === 'hubspot') {
+          toast.success(`🚀 Successfully exported ${selectedContacts.size} contacts to HubSpot!`);
+        }
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -1166,7 +1169,8 @@ const CRMPage: React.FC = () => {
         title="Export CRM Contacts"
         description="Choose your preferred format to export selected contacts"
         exportCount={selectedContacts.size}
-        type="crm"
+        type="contacts"
+        contactIds={Array.from(selectedContacts)}
       />
     </div>
   );

@@ -384,7 +384,7 @@ export const useExport = () => {
   const [exporting, setExporting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const exportData = useCallback(async (jobId: string, format: 'csv' | 'excel' | 'json' = 'csv') => {
+  const exportData = useCallback(async (jobId: string, format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv') => {
     try {
       setExporting(jobId);
       setError(null);
@@ -400,7 +400,7 @@ export const useExport = () => {
     }
   }, []);
 
-  const exportCrmContacts = useCallback(async (contactIds: string[], format: 'csv' | 'excel' | 'json' = 'csv') => {
+  const exportCrmContacts = useCallback(async (contactIds: string[], format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv') => {
     try {
       setExporting('crm-bulk');
       setError(null);
