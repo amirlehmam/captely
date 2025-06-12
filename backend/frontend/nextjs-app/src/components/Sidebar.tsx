@@ -124,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
 
   return (
     <div className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 z-50 transition-all duration-300 ${
-      isCollapsed ? 'md:w-20' : 'md:w-72'
+      isCollapsed ? 'md:w-20' : 'md:w-64'
     }`}>
       <div className={`flex flex-col flex-grow border-r transition-colors duration-300 relative ${
         isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
@@ -149,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
         </div>
 
         {/* Logo Section - centered as it was */}
-        <div className={`flex flex-col items-center justify-center px-6 py-8 border-b ${
+        <div className={`flex flex-col items-center justify-center px-6 py-6 border-b ${
           isDark ? 'border-gray-700' : 'border-gray-100'
         }`}>
           <Logo 
@@ -162,14 +162,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
         </div>
         
         {/* Navigation */}
-        <nav className={`flex-1 py-8 space-y-2 ${isCollapsed ? 'px-3' : 'px-5'}`}>
+        <nav className={`flex-1 py-4 space-y-1 ${isCollapsed ? 'px-2' : 'px-4'}`}>
           {/* Main Navigation */}
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) => 
-                `group flex items-center ${isCollapsed ? 'px-3 py-4 justify-center' : 'px-4 py-4'} text-sm font-medium rounded-xl transition-all duration-200 ${
+                `group flex items-center ${isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3'} text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive 
                     ? isDark 
                       ? 'bg-primary-900/30 text-primary-300 shadow-sm border border-primary-700/50' 
@@ -182,12 +182,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
               title={isCollapsed ? item.label : undefined}
             >
               {item.icon}
-              {!isCollapsed && <span className="ml-4">{item.label}</span>}
+              {!isCollapsed && <span className="ml-3">{item.label}</span>}
             </NavLink>
           ))}
 
           {/* Separator with better spacing */}
-          <div className={`py-6 ${isCollapsed ? 'px-2' : 'px-0'}`}>
+          <div className={`py-3 ${isCollapsed ? 'px-2' : 'px-0'}`}>
             <div className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}></div>
           </div>
 
@@ -197,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
               key={item.path}
               to={item.path}
               className={({ isActive }) => 
-                `group flex items-center ${isCollapsed ? 'px-3 py-4 justify-center' : 'px-4 py-4'} text-sm font-medium rounded-xl transition-all duration-200 ${
+                `group flex items-center ${isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3'} text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive 
                     ? isDark 
                       ? 'bg-primary-900/30 text-primary-300 shadow-sm border border-primary-700/50' 
@@ -210,7 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
               title={isCollapsed ? item.label : undefined}
             >
               {item.icon}
-              {!isCollapsed && <span className="ml-4">{item.label}</span>}
+              {!isCollapsed && <span className="ml-3">{item.label}</span>}
             </NavLink>
           ))}
         </nav>
@@ -285,16 +285,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
         )}
       
         {/* User Section - Responsive to collapse */}
-        <div className={`border-t p-5 ${isDark ? 'border-gray-700' : 'border-gray-200'} ${
-          isCollapsed ? 'px-3' : 'px-5'
+        <div className={`border-t p-4 ${isDark ? 'border-gray-700' : 'border-gray-200'} ${
+          isCollapsed ? 'px-2' : 'px-4'
         }`}>
-          <div className={`flex items-center ${isCollapsed ? 'flex-col space-y-3' : ''}`}>
-            <div className="flex-shrink-0 h-11 w-11 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 flex items-center justify-center">
+          <div className={`flex items-center ${isCollapsed ? 'flex-col space-y-2' : ''}`}>
+            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 flex items-center justify-center">
               <span className="text-sm font-medium text-white">{userInfo.initials}</span>
             </div>
             {!isCollapsed && (
               <>
-                <div className="ml-4 flex-1">
+                <div className="ml-3 flex-1">
                   <p className={`text-sm font-medium truncate ${
                     isDark ? 'text-white' : 'text-gray-900'
                   }`}>

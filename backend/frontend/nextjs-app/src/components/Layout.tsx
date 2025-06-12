@@ -26,7 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         onToggleCollapse={handleToggleSidebar}
       />
       <div className={`flex flex-col flex-1 transition-all duration-300 ${
-        isSidebarCollapsed ? 'md:pl-20' : 'md:pl-72'
+        isSidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
       }`}>
         <Header />
         <main className="flex-1">
