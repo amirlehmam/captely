@@ -14,7 +14,7 @@ import json
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, text
-from jose import jwt, JWTError
+
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -56,14 +56,7 @@ app.add_middleware(
 
 security = HTTPBearer()
 
-def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """Verify JWT token and return user ID"""
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        return payload["sub"]
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+
 
 # Pydantic models
 class ExportRequest(BaseModel):
@@ -312,7 +305,7 @@ async def export_to_hubspot(
 # HubSpot OAuth endpoints (using /api/export/ prefix for nginx routing)
 @app.get("/api/export/hubspot/oauth/url")
 async def get_hubspot_oauth_url(
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Generate HubSpot OAuth URL for user authorization"""
@@ -330,7 +323,7 @@ async def get_hubspot_oauth_url(
 async def hubspot_oauth_callback(
     code: str,
     state: str,
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Handle HubSpot OAuth callback and store tokens"""
@@ -387,7 +380,7 @@ async def hubspot_oauth_callback(
 
 @app.get("/api/export/hubspot/status")
 async def get_hubspot_integration_status(
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Get HubSpot integration status for user"""
@@ -419,7 +412,7 @@ async def get_hubspot_integration_status(
 
 @app.delete("/api/export/hubspot/disconnect")
 async def disconnect_hubspot(
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Disconnect HubSpot integration"""
@@ -442,7 +435,7 @@ async def disconnect_hubspot(
 async def import_contacts_from_hubspot(
     limit: int = Query(100, le=500, description="Number of contacts to import"),
     after: str = Query(None, description="Pagination cursor"),
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Import contacts from HubSpot to Captely for enrichment"""
@@ -574,7 +567,7 @@ async def import_contacts_from_hubspot(
 async def get_hubspot_sync_logs(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=50),
-    user_id: str = Depends(verify_jwt),
+    user_id: str = Depends(verify_api_token),
     session: AsyncSession = Depends(get_async_session)
 ):
     """Get HubSpot sync history logs"""
