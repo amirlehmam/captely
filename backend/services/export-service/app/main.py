@@ -165,7 +165,19 @@ async def export_data(
         )
     
     elif request.format == "json":
-        return JSONResponse(df.to_dict(orient="records"))
+        # Convert datetime columns to strings for JSON serialization
+        df_json = df.copy()
+        # Convert all datetime columns to strings
+        datetime_cols = df_json.select_dtypes(include=['datetime64', 'datetime']).columns
+        for col in datetime_cols:
+            df_json[col] = df_json[col].astype(str)
+        
+        # Also handle any remaining non-serializable objects
+        object_cols = df_json.select_dtypes(include=['object']).columns
+        for col in object_cols:
+            df_json[col] = df_json[col].astype(str)
+        
+        return JSONResponse(df_json.to_dict(orient="records"))
     
     else:
         raise HTTPException(status_code=400, detail="Unsupported format")
@@ -389,7 +401,19 @@ async def export_crm_contacts(
         )
     
     elif request.format == "json":
-        return JSONResponse(df.to_dict(orient="records"))
+        # Convert datetime columns to strings for JSON serialization
+        df_json = df.copy()
+        # Convert all datetime columns to strings
+        datetime_cols = df_json.select_dtypes(include=['datetime64', 'datetime']).columns
+        for col in datetime_cols:
+            df_json[col] = df_json[col].astype(str)
+        
+        # Also handle any remaining non-serializable objects
+        object_cols = df_json.select_dtypes(include=['object']).columns
+        for col in object_cols:
+            df_json[col] = df_json[col].astype(str)
+        
+        return JSONResponse(df_json.to_dict(orient="records"))
     
     else:
         raise HTTPException(status_code=400, detail="Unsupported format")
