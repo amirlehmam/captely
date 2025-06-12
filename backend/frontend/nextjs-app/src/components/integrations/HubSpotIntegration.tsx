@@ -59,7 +59,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
     try {
       setActionLoading('callback');
       
-      const response = await fetch('/api/hubspot/oauth/callback', {
+      const response = await fetch('/api/export/hubspot/oauth/callback', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -86,7 +86,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
     try {
       setLoading(true);
       
-      const response = await fetch('/api/hubspot/status', {
+      const response = await fetch('/api/export/hubspot/status', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -114,7 +114,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
 
   const loadSyncLogs = async () => {
     try {
-      const response = await fetch('/api/hubspot/sync-logs?page=1&limit=10', {
+      const response = await fetch('/api/export/hubspot/sync-logs?page=1&limit=10', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -138,7 +138,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       setActionLoading('connect');
       
       // Make API call to get OAuth URL
-      const response = await fetch('/api/hubspot/oauth/url', {
+      const response = await fetch('/api/export/hubspot/oauth/url', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -165,7 +165,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
     try {
       setActionLoading('import');
       
-      const response = await fetch('/api/hubspot/import', {
+      const response = await fetch('/api/export/hubspot/import', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -196,7 +196,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
     try {
       setActionLoading('disconnect');
       
-      const response = await fetch('/api/hubspot/disconnect', {
+      const response = await fetch('/api/export/hubspot/disconnect', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -23,8 +23,9 @@ class HubSpotIntegration:
         self.auth_url = "https://app-eu1.hubspot.com/oauth/authorize"
         self.token_url = "https://api.hubapi.com/oauth/v1/token"
         
-        # Correct HubSpot scopes
+        # HubSpot scopes (including both granular and legacy scopes for compatibility)
         self.scopes = [
+            "contacts",  # Legacy broad scope that might be what you need
             "crm.objects.contacts.read",
             "crm.objects.contacts.write", 
             "crm.lists.read",

@@ -309,8 +309,8 @@ async def export_to_hubspot(
         raise HTTPException(status_code=500, detail=str(e))
 
 # Integration endpoints temporarily disabled
-# HubSpot OAuth endpoints
-@app.get("/api/hubspot/oauth/url")
+# HubSpot OAuth endpoints (using /api/export/ prefix for nginx routing)
+@app.get("/api/export/hubspot/oauth/url")
 async def get_hubspot_oauth_url(
     user_id: str = Depends(verify_jwt),
     session: AsyncSession = Depends(get_async_session)
@@ -326,7 +326,7 @@ async def get_hubspot_oauth_url(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate OAuth URL: {str(e)}")
 
-@app.post("/api/hubspot/oauth/callback")
+@app.post("/api/export/hubspot/oauth/callback")
 async def hubspot_oauth_callback(
     code: str,
     state: str,
@@ -385,7 +385,7 @@ async def hubspot_oauth_callback(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
 
-@app.get("/api/hubspot/status")
+@app.get("/api/export/hubspot/status")
 async def get_hubspot_integration_status(
     user_id: str = Depends(verify_jwt),
     session: AsyncSession = Depends(get_async_session)
@@ -417,7 +417,7 @@ async def get_hubspot_integration_status(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
 
-@app.delete("/api/hubspot/disconnect")
+@app.delete("/api/export/hubspot/disconnect")
 async def disconnect_hubspot(
     user_id: str = Depends(verify_jwt),
     session: AsyncSession = Depends(get_async_session)
@@ -438,7 +438,7 @@ async def disconnect_hubspot(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to disconnect: {str(e)}")
 
-@app.post("/api/hubspot/import")
+@app.post("/api/export/hubspot/import")
 async def import_contacts_from_hubspot(
     limit: int = Query(100, le=500, description="Number of contacts to import"),
     after: str = Query(None, description="Pagination cursor"),
@@ -570,7 +570,7 @@ async def import_contacts_from_hubspot(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
-@app.get("/api/hubspot/sync-logs")
+@app.get("/api/export/hubspot/sync-logs")
 async def get_hubspot_sync_logs(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=50),
