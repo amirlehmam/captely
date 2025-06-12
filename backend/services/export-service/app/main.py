@@ -205,23 +205,50 @@ async def export_to_hubspot(
         if not contacts:
             raise HTTPException(status_code=404, detail="No enriched contacts found")
         
-        # Get user's HubSpot integration config
-        config_query = text("""
-            SELECT api_key FROM integration_configs 
-            WHERE user_id = :user_id AND provider = 'hubspot' AND is_active = true
+        # Get user's HubSpot OAuth integration
+        integration_query = text("""
+            SELECT access_token, refresh_token, expires_at
+            FROM hubspot_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
             LIMIT 1
         """)
         
-        config_result = await session.execute(config_query, {"user_id": user_id})
-        config = config_result.fetchone()
+        integration_result = await session.execute(integration_query, {"user_id": user_id})
+        integration = integration_result.fetchone()
         
-        if not config:
-            # Use provided config if no saved config
-            if not request.config or not request.config.get("api_key"):
-                raise HTTPException(status_code=400, detail="HubSpot API key required")
-            api_key = request.config["api_key"]
-        else:
-            api_key = config.api_key
+        if not integration:
+            raise HTTPException(status_code=400, detail="HubSpot integration not found. Please connect your HubSpot account first.")
+        
+        # Check if token needs refresh
+        access_token = integration.access_token
+        if integration.expires_at and integration.expires_at < datetime.utcnow():
+            hubspot = get_integration("hubspot", {})
+            try:
+                token_data = await hubspot.refresh_access_token(integration.refresh_token)
+                
+                # Update stored tokens
+                update_query = text("""
+                    UPDATE hubspot_integrations 
+                    SET access_token = :access_token, 
+                        refresh_token = :refresh_token,
+                        expires_at = :expires_at,
+                        updated_at = NOW()
+                    WHERE user_id = :user_id AND is_active = true
+                """)
+                
+                new_expires_at = datetime.utcnow() + timedelta(seconds=token_data.get("expires_in", 21600))
+                await session.execute(update_query, {
+                    "user_id": user_id,
+                    "access_token": token_data["access_token"],
+                    "refresh_token": token_data["refresh_token"],
+                    "expires_at": new_expires_at
+                })
+                await session.commit()
+                
+                access_token = token_data["access_token"]
+            except Exception as e:
+                raise HTTPException(status_code=401, detail=f"Token refresh failed: {str(e)}")
         
         # Prepare contact data
         contact_data = []
@@ -246,22 +273,29 @@ async def export_to_hubspot(
             
             contact_data.append(data)
         
-        # Use HubSpot integration
-        hubspot = get_integration("hubspot", {"api_key": api_key})
+        # Use HubSpot integration with OAuth token
+        hubspot = get_integration("hubspot", {"access_token": access_token})
         result = await hubspot.create_or_update_contacts(contact_data)
         
-        # Log export to database
-        log_query = text("""
-            INSERT INTO export_logs (user_id, job_id, export_type, status, exported_count, export_config)
-            VALUES (:user_id, :job_id, 'hubspot', :status, :exported_count, :export_config)
+        # Log export to HubSpot sync logs
+        log_sync_query = text("""
+            INSERT INTO hubspot_sync_logs 
+            (user_id, integration_id, sync_type, operation, status, total_records, processed_records, failed_records)
+            SELECT :user_id, hi.id, 'export', 'contacts', :status, :total_records, :processed_records, :failed_records
+            FROM hubspot_integrations hi 
+            WHERE hi.user_id = :user_id AND hi.is_active = true
+            LIMIT 1
         """)
         
-        await session.execute(log_query, {
+        exported_count = result.get("created", 0) + result.get("updated", 0)
+        failed_count = len(result.get("errors", []))
+        
+        await session.execute(log_sync_query, {
             "user_id": user_id,
-            "job_id": request.job_id,
             "status": "completed" if not result.get("errors") else "partial",
-            "exported_count": result.get("created", 0) + result.get("updated", 0),
-            "export_config": json.dumps(request.dict())
+            "total_records": len(contact_data),
+            "processed_records": exported_count,
+            "failed_records": failed_count
         })
         await session.commit()
         
@@ -275,6 +309,305 @@ async def export_to_hubspot(
         raise HTTPException(status_code=500, detail=str(e))
 
 # Integration endpoints temporarily disabled
+# HubSpot OAuth endpoints
+@app.get("/api/hubspot/oauth/url")
+async def get_hubspot_oauth_url(
+    user_id: str = Depends(verify_jwt),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Generate HubSpot OAuth URL for user authorization"""
+    try:
+        hubspot = get_integration("hubspot", {})
+        state = f"{user_id}_{datetime.now().timestamp()}"
+        oauth_url = hubspot.get_auth_url(state=state)
+        
+        return {"oauth_url": oauth_url, "state": state}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate OAuth URL: {str(e)}")
+
+@app.post("/api/hubspot/oauth/callback")
+async def hubspot_oauth_callback(
+    code: str,
+    state: str,
+    user_id: str = Depends(verify_jwt),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Handle HubSpot OAuth callback and store tokens"""
+    try:
+        # Verify state parameter contains user_id
+        if not state.startswith(user_id):
+            raise HTTPException(status_code=400, detail="Invalid state parameter")
+        
+        # Exchange code for tokens
+        hubspot = get_integration("hubspot", {})
+        token_data = await hubspot.exchange_code_for_token(code)
+        
+        # Get portal info
+        portal_info = await hubspot.get_portal_info()
+        portal_id = str(portal_info.get("portalId", ""))
+        
+        # Store or update integration in database
+        upsert_query = text("""
+            INSERT INTO hubspot_integrations 
+            (user_id, hubspot_portal_id, access_token, refresh_token, expires_at, scopes, is_active)
+            VALUES (:user_id, :portal_id, :access_token, :refresh_token, :expires_at, :scopes, true)
+            ON CONFLICT (user_id, hubspot_portal_id) 
+            DO UPDATE SET 
+                access_token = EXCLUDED.access_token,
+                refresh_token = EXCLUDED.refresh_token,
+                expires_at = EXCLUDED.expires_at,
+                scopes = EXCLUDED.scopes,
+                is_active = true,
+                updated_at = NOW()
+        """)
+        
+        expires_at = datetime.utcnow() + timedelta(seconds=token_data.get("expires_in", 21600))
+        scopes = token_data.get("scope", "").split(" ") if token_data.get("scope") else []
+        
+        await session.execute(upsert_query, {
+            "user_id": user_id,
+            "portal_id": portal_id,
+            "access_token": token_data["access_token"],
+            "refresh_token": token_data["refresh_token"],
+            "expires_at": expires_at,
+            "scopes": scopes
+        })
+        await session.commit()
+        
+        return {
+            "status": "success",
+            "portal_id": portal_id,
+            "scopes": scopes,
+            "expires_at": expires_at.isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
+
+@app.get("/api/hubspot/status")
+async def get_hubspot_integration_status(
+    user_id: str = Depends(verify_jwt),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get HubSpot integration status for user"""
+    try:
+        query = text("""
+            SELECT hubspot_portal_id, expires_at, scopes, is_active, created_at
+            FROM hubspot_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        result = await session.execute(query, {"user_id": user_id})
+        integration = result.fetchone()
+        
+        if integration:
+            return {
+                "connected": True,
+                "portal_id": integration.hubspot_portal_id,
+                "expires_at": integration.expires_at.isoformat() if integration.expires_at else None,
+                "scopes": integration.scopes,
+                "connected_at": integration.created_at.isoformat() if integration.created_at else None
+            }
+        else:
+            return {"connected": False}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
+@app.delete("/api/hubspot/disconnect")
+async def disconnect_hubspot(
+    user_id: str = Depends(verify_jwt),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Disconnect HubSpot integration"""
+    try:
+        query = text("""
+            UPDATE hubspot_integrations 
+            SET is_active = false, updated_at = NOW()
+            WHERE user_id = :user_id
+        """)
+        
+        await session.execute(query, {"user_id": user_id})
+        await session.commit()
+        
+        return {"status": "success", "message": "HubSpot integration disconnected"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect: {str(e)}")
+
+@app.post("/api/hubspot/import")
+async def import_contacts_from_hubspot(
+    limit: int = Query(100, le=500, description="Number of contacts to import"),
+    after: str = Query(None, description="Pagination cursor"),
+    user_id: str = Depends(verify_jwt),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Import contacts from HubSpot to Captely for enrichment"""
+    try:
+        # Get user's HubSpot integration
+        integration_query = text("""
+            SELECT access_token, refresh_token, expires_at
+            FROM hubspot_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration_result = await session.execute(integration_query, {"user_id": user_id})
+        integration = integration_result.fetchone()
+        
+        if not integration:
+            raise HTTPException(status_code=400, detail="HubSpot integration not found")
+        
+        # Check if token needs refresh
+        if integration.expires_at and integration.expires_at < datetime.utcnow():
+            hubspot = get_integration("hubspot", {})
+            try:
+                token_data = await hubspot.refresh_access_token(integration.refresh_token)
+                
+                # Update stored tokens
+                update_query = text("""
+                    UPDATE hubspot_integrations 
+                    SET access_token = :access_token, 
+                        refresh_token = :refresh_token,
+                        expires_at = :expires_at,
+                        updated_at = NOW()
+                    WHERE user_id = :user_id AND is_active = true
+                """)
+                
+                new_expires_at = datetime.utcnow() + timedelta(seconds=token_data.get("expires_in", 21600))
+                await session.execute(update_query, {
+                    "user_id": user_id,
+                    "access_token": token_data["access_token"],
+                    "refresh_token": token_data["refresh_token"],
+                    "expires_at": new_expires_at
+                })
+                await session.commit()
+                
+                access_token = token_data["access_token"]
+            except Exception as e:
+                raise HTTPException(status_code=401, detail=f"Token refresh failed: {str(e)}")
+        else:
+            access_token = integration.access_token
+        
+        # Import contacts from HubSpot
+        hubspot = get_integration("hubspot", {"access_token": access_token})
+        import_result = await hubspot.import_contacts(limit=limit, after=after)
+        
+        # Create a new import job
+        job_id = f"hubspot_import_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        create_job_query = text("""
+            INSERT INTO import_jobs (id, user_id, status, total, file_name, type)
+            VALUES (:job_id, :user_id, 'completed', :total, :file_name, 'hubspot_import')
+        """)
+        
+        await session.execute(create_job_query, {
+            "job_id": job_id,
+            "user_id": user_id,
+            "total": import_result["total"],
+            "file_name": f"HubSpot Import - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        })
+        
+        # Insert imported contacts
+        imported_count = 0
+        for contact in import_result["contacts"]:
+            if contact.get("email"):  # Only import contacts with emails
+                insert_contact_query = text("""
+                    INSERT INTO contacts 
+                    (job_id, first_name, last_name, email, phone, company, position, 
+                     enriched, enrichment_status, notes)
+                    VALUES 
+                    (:job_id, :first_name, :last_name, :email, :phone, :company, :position,
+                     false, 'pending', :notes)
+                    ON CONFLICT (job_id, email) DO NOTHING
+                """)
+                
+                await session.execute(insert_contact_query, {
+                    "job_id": job_id,
+                    "first_name": contact.get("first_name"),
+                    "last_name": contact.get("last_name"),
+                    "email": contact.get("email"),
+                    "phone": contact.get("phone"),
+                    "company": contact.get("company"),
+                    "position": contact.get("position"),
+                    "notes": f"Imported from HubSpot (ID: {contact.get('hubspot_id')})"
+                })
+                imported_count += 1
+        
+        await session.commit()
+        
+        # Log the import
+        log_sync_query = text("""
+            INSERT INTO hubspot_sync_logs 
+            (user_id, integration_id, sync_type, operation, status, total_records, processed_records)
+            SELECT :user_id, hi.id, 'import', 'contacts', 'completed', :total_records, :processed_records
+            FROM hubspot_integrations hi 
+            WHERE hi.user_id = :user_id AND hi.is_active = true
+            LIMIT 1
+        """)
+        
+        await session.execute(log_sync_query, {
+            "user_id": user_id,
+            "total_records": import_result["total"],
+            "processed_records": imported_count
+        })
+        await session.commit()
+        
+        return {
+            "status": "success",
+            "job_id": job_id,
+            "imported_count": imported_count,
+            "total_contacts": import_result["total"],
+            "paging": import_result.get("paging", {})
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
+@app.get("/api/hubspot/sync-logs")
+async def get_hubspot_sync_logs(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=50),
+    user_id: str = Depends(verify_jwt),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get HubSpot sync history logs"""
+    try:
+        offset = (page - 1) * limit
+        
+        query = text("""
+            SELECT sync_type, operation, status, total_records, processed_records, 
+                   failed_records, error_message, started_at, completed_at
+            FROM hubspot_sync_logs hsl
+            JOIN hubspot_integrations hi ON hsl.integration_id = hi.id
+            WHERE hi.user_id = :user_id
+            ORDER BY hsl.started_at DESC
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        result = await session.execute(query, {
+            "user_id": user_id,
+            "limit": limit,
+            "offset": offset
+        })
+        logs = result.fetchall()
+        
+        return {
+            "logs": [dict(log._mapping) for log in logs],
+            "page": page,
+            "limit": limit,
+            "total": len(logs)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get sync logs: {str(e)}")
+
 # @app.post("/api/integrations/lemlist")
 # @app.post("/api/integrations/smartlead") 
 # @app.post("/api/integrations/salesforce")

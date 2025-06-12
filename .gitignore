@@ -197,3 +197,4 @@ auth_logs.txt
 # Docker and production
 docker-compose.override.yml
 .dockerignore
+HUBSPOT_INTEGRATION_GUIDE.md

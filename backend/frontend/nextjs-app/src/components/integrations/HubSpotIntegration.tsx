@@ -58,7 +58,20 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
   const handleOAuthCallback = async (code: string, state: string) => {
     try {
       setActionLoading('callback');
-      await apiService.hubspotOAuthCallback(code, state);
+      
+      const response = await fetch('/api/hubspot/oauth/callback', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code, state })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`OAuth callback failed: ${response.status}`);
+      }
+      
       await checkIntegrationStatus();
       toast.success('🎉 HubSpot connected successfully!');
     } catch (error) {
@@ -72,11 +85,24 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
   const checkIntegrationStatus = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getHubSpotIntegrationStatus();
-      setStatus(response);
-      onStatusChange?.(response.connected);
       
-      if (response.connected) {
+      const response = await fetch('/api/hubspot/status', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Status check failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setStatus(data);
+      onStatusChange?.(data.connected);
+      
+      if (data.connected) {
         loadSyncLogs();
       }
     } catch (error) {
@@ -88,8 +114,20 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
 
   const loadSyncLogs = async () => {
     try {
-      const response = await apiService.getHubSpotSyncLogs(1, 10);
-      setSyncLogs(response.logs);
+      const response = await fetch('/api/hubspot/sync-logs?page=1&limit=10', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Sync logs failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setSyncLogs(data.logs);
     } catch (error) {
       console.error('Failed to load sync logs:', error);
     }
@@ -98,11 +136,26 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
   const handleConnect = async () => {
     try {
       setActionLoading('connect');
-      const response = await apiService.getHubSpotOAuthUrl();
+      
+      // Make API call to get OAuth URL
+      const response = await fetch('/api/hubspot/oauth/url', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
       
       // Redirect to HubSpot OAuth in the same window
-      window.location.href = response.oauth_url;
+      window.location.href = data.oauth_url;
     } catch (error) {
+      console.error('OAuth URL error:', error);
       toast.error('Failed to initiate HubSpot connection');
       setActionLoading(null);
     }
@@ -111,8 +164,24 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
   const handleImport = async () => {
     try {
       setActionLoading('import');
-      await apiService.importContactsFromHubSpot();
+      
+      const response = await fetch('/api/hubspot/import', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Import failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      toast.success(`Successfully imported ${data.imported_count} contacts from HubSpot!`);
+      loadSyncLogs(); // Refresh logs
     } catch (error) {
+      console.error('Import error:', error);
       toast.error('Failed to start import from HubSpot');
     } finally {
       setActionLoading(null);
@@ -126,7 +195,19 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
 
     try {
       setActionLoading('disconnect');
-      await apiService.disconnectHubSpot();
+      
+      const response = await fetch('/api/hubspot/disconnect', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Disconnect failed: ${response.status}`);
+      }
+      
       setStatus({ connected: false });
       setSyncLogs([]);
       onStatusChange?.(false);
