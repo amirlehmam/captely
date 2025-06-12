@@ -62,7 +62,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       const response = await fetch('/api/export/hubspot/oauth/callback', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ code, state })
@@ -89,7 +89,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       const response = await fetch('/api/export/hubspot/status', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -117,7 +117,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       const response = await fetch('/api/export/hubspot/sync-logs?page=1&limit=10', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -141,7 +141,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       const response = await fetch('/api/export/hubspot/oauth/url', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -168,7 +168,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       const response = await fetch('/api/export/hubspot/import', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -199,7 +199,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({ onStatusChange 
       const response = await fetch('/api/export/hubspot/disconnect', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('captely_jwt')}`,
           'Content-Type': 'application/json'
         }
       });
