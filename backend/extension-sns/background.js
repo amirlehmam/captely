@@ -457,7 +457,7 @@ async function sendToEnrichment() {
   
   try {
     updateStatus('Preparing leads for enrichment...', 'info', '📤');
-    
+      
     // Transform scraped leads to match the API format
     const apiLeads = scrapedLeads.map(lead => ({
       first_name: lead.firstName || '',
@@ -474,19 +474,19 @@ async function sendToEnrichment() {
     
     // Send all leads in one batch to the correct endpoint
     const response = await fetch(`${API_BASE}/scraper/leads`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiToken}`
-      },
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiToken}`
+    },
       body: JSON.stringify(apiLeads)
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-    
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+  }
+  
     const result = await response.json();
     const jobId = result.job_id;
     

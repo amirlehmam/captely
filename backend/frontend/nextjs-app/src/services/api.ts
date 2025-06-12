@@ -684,7 +684,7 @@ class ApiService {
       if (format === 'hubspot') {
         const response = await fetch(`${API_CONFIG.importUrl}/integrations/hubspot/export-batch`, {
           method: 'POST',
-          headers: {
+        headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },

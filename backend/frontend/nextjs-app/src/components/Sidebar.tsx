@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
             animated={false}
             showText={!isCollapsed}
             className="transition-all duration-300"
-          />
+            />
         </div>
         
         {/* Navigation */}
@@ -217,71 +217,71 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
         
         {/* Credit Usage Box - Better positioned and responsive to collapse */}
         {!isCollapsed && (
-          <div className="px-4 pb-4" style={{ minHeight: '120px' }}>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${
-              isDark 
-                ? 'bg-gradient-to-br from-primary-900/30 to-primary-800/30 border-primary-700/50' 
-                : 'bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200'
-            }`}
-            style={{ 
-              willChange: 'background, border-color',
-              minHeight: '100px'
-            }}>
-              <div className="flex items-center justify-between mb-3" style={{ height: '20px' }}>
-                <h4 className={`text-sm font-semibold ${
-                  isDark ? 'text-white' : 'text-gray-900'
+        <div className="px-4 pb-4" style={{ minHeight: '120px' }}>
+          <div className={`rounded-xl p-4 border transition-all duration-300 ${
+            isDark 
+              ? 'bg-gradient-to-br from-primary-900/30 to-primary-800/30 border-primary-700/50' 
+              : 'bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200'
+          }`}
+          style={{ 
+            willChange: 'background, border-color',
+            minHeight: '100px'
+          }}>
+            <div className="flex items-center justify-between mb-3" style={{ height: '20px' }}>
+              <h4 className={`text-sm font-semibold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                {t('common.credit_usage')}
+              </h4>
+              <CreditCard className={`h-4 w-4 ${
+                isDark ? 'text-primary-400' : 'text-primary-600'
+              }`} />
+            </div>
+            <div className="space-y-2" style={{ minHeight: '60px' }}>
+              <div className="flex items-center justify-between" style={{ height: '16px' }}>
+                <span className={`text-xs ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
                 }`}>
-                  {t('common.credit_usage')}
-                </h4>
-                <CreditCard className={`h-4 w-4 ${
-                  isDark ? 'text-primary-400' : 'text-primary-600'
-                }`} />
-              </div>
-              <div className="space-y-2" style={{ minHeight: '60px' }}>
-                <div className="flex items-center justify-between" style={{ height: '16px' }}>
-                  <span className={`text-xs ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    Usage
-                  </span>
-                  <span className={`text-xs font-medium ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}
-                  style={{ 
-                    minWidth: '80px',
-                    textAlign: 'right',
-                    display: 'inline-block'
-                  }}>
-                    {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} / ${creditData?.limit_monthly || 5000}`}
-                  </span>
-                </div>
-                <div className={`w-full rounded-full h-2 overflow-hidden ${
-                  isDark ? 'bg-gray-700' : 'bg-gray-200'
-                }`}
-                style={{ willChange: 'background-color' }}>
-                  <div 
-                    className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full transition-all duration-500" 
-                    style={{
-                      width: creditData && creditData.limit_monthly > 0 
-                        ? `${Math.min(100, (creditData.used_this_month / creditData.limit_monthly) * 100)}%`
-                        : '0%',
-                      willChange: 'width'
-                    }}
-                  ></div>
-                </div>
-                <div className={`text-xs font-medium ${
-                  isDark ? 'text-primary-400' : 'text-primary-600'
+                  Usage
+                </span>
+                <span className={`text-xs font-medium ${
+                  isDark ? 'text-white' : 'text-gray-900'
                 }`}
                 style={{ 
-                  height: '14px',
-                  display: 'flex',
-                  alignItems: 'center'
+                  minWidth: '80px',
+                  textAlign: 'right',
+                  display: 'inline-block'
                 }}>
-                  {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} used`}
-                </div>
+                  {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} / ${creditData?.limit_monthly || 5000}`}
+                </span>
+              </div>
+              <div className={`w-full rounded-full h-2 overflow-hidden ${
+                isDark ? 'bg-gray-700' : 'bg-gray-200'
+              }`}
+              style={{ willChange: 'background-color' }}>
+                <div 
+                  className="bg-gradient-to-r from-primary-500 to-primary-400 h-2 rounded-full transition-all duration-500" 
+                  style={{
+                    width: creditData && creditData.limit_monthly > 0 
+                      ? `${Math.min(100, (creditData.used_this_month / creditData.limit_monthly) * 100)}%`
+                      : '0%',
+                    willChange: 'width'
+                  }}
+                ></div>
+              </div>
+              <div className={`text-xs font-medium ${
+                isDark ? 'text-primary-400' : 'text-primary-600'
+              }`}
+              style={{ 
+                height: '14px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                {creditLoading ? 'Loading...' : `${creditData?.used_this_month || 0} used`}
               </div>
             </div>
           </div>
+        </div>
         )}
       
         {/* User Section - Responsive to collapse */}
@@ -294,29 +294,29 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, isCollapsed, onToggleCollap
             </div>
             {!isCollapsed && (
               <>
-                <div className="ml-3 flex-1">
-                  <p className={`text-sm font-medium truncate ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    {userInfo.name}
-                  </p>
-                  <p className={`text-xs font-medium ${
-                    isDark ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    {userInfo.plan} {t('billing.currentPlan').toLowerCase()}
-                  </p>
-                </div>
-                <button 
-                  onClick={onLogout}
-                  className={`ml-2 flex-shrink-0 p-2 rounded-full transition-all duration-200 ${
-                    isDark 
-                      ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800' 
-                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                  }`}
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
+            <div className="ml-3 flex-1">
+              <p className={`text-sm font-medium truncate ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                {userInfo.name}
+              </p>
+              <p className={`text-xs font-medium ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {userInfo.plan} {t('billing.currentPlan').toLowerCase()}
+              </p>
+            </div>
+            <button 
+              onClick={onLogout}
+              className={`ml-2 flex-shrink-0 p-2 rounded-full transition-all duration-200 ${
+                isDark 
+                  ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
               </>
             )}
             {isCollapsed && (

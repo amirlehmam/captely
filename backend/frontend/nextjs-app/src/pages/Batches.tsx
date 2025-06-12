@@ -78,7 +78,7 @@ const BatchesPage: React.FC = () => {
   // Get highlight parameter from URL
   const searchParams = new URLSearchParams(location.search);
   const highlightJobId = searchParams.get('highlight');
-
+  
   // Hooks
   const { jobs: jobsData, loading, error, refetch } = useJobs();
 
@@ -165,8 +165,8 @@ const BatchesPage: React.FC = () => {
         // Bulk export - export each job
         for (const jobId of bulkExportJobs) {
           await apiService.exportData(jobId, format);
-        }
-        setSelectedJobs(new Set());
+    }
+    setSelectedJobs(new Set());
         if (format === 'hubspot') {
           toast.success(`🚀 Successfully exported ${bulkExportJobs.length} batches to HubSpot!`);
         } else {
@@ -608,7 +608,7 @@ const BatchesPage: React.FC = () => {
             <tbody className={`divide-y ${isDark ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'}`}>
               {currentJobs.map((job) => (
                 <motion.tr 
-                  key={job.id}
+                  key={job.id} 
                   data-job-id={job.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

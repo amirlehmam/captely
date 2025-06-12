@@ -16,9 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, text
 from jose import jwt, JWTError
 from datetime import datetime
+from sqlalchemy.orm import Session
 
 from common.config import get_settings
-from common.db import get_session
+from common.db import get_async_session
 from common.auth import verify_api_token
 from app.integrations import get_integration
 
@@ -92,7 +93,7 @@ class CrmExportRequest(BaseModel):
 async def export_data(
     request: ExportRequest,
     user_id: str = Depends(verify_jwt),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Export enriched data in various formats"""
     
@@ -169,13 +170,97 @@ async def export_data(
     else:
         raise HTTPException(status_code=400, detail="Unsupported format")
 
-# CRM Integration endpoints - Currently disabled due to missing dependencies
-# TODO: Re-enable after proper model imports are configured
-
-# @app.post("/api/integrations/hubspot") 
-# async def export_to_hubspot(...):
-#     """Export data to HubSpot CRM - Currently disabled"""
-#     raise HTTPException(status_code=501, detail="Integration endpoints temporarily disabled")
+# CRM Integration endpoints
+@app.post("/api/integrations/hubspot")
+async def export_to_hubspot(
+    request: IntegrationRequest,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Export data to HubSpot CRM"""
+    try:
+        # Get contacts from job with user verification
+        contacts_query = text("""
+            SELECT c.first_name, c.last_name, c.email, c.phone, c.company, c.position
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id
+            WHERE c.job_id = :job_id AND c.enriched = true AND c.email IS NOT NULL AND j.user_id = :user_id
+        """)
+        
+        contacts_result = await session.execute(contacts_query, {"job_id": request.job_id, "user_id": user_id})
+        contacts = contacts_result.fetchall()
+        
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No enriched contacts found")
+        
+        # Get user's HubSpot integration config
+        config_query = text("""
+            SELECT api_key FROM integration_configs 
+            WHERE user_id = :user_id AND provider = 'hubspot' AND is_active = true
+            LIMIT 1
+        """)
+        
+        config_result = await session.execute(config_query, {"user_id": user_id})
+        config = config_result.fetchone()
+        
+        if not config:
+            # Use provided config if no saved config
+            if not request.config or not request.config.get("api_key"):
+                raise HTTPException(status_code=400, detail="HubSpot API key required")
+            api_key = request.config["api_key"]
+        else:
+            api_key = config.api_key
+        
+        # Prepare contact data
+        contact_data = []
+        for contact in contacts:
+            contact_dict = dict(contact._mapping)
+            data = {
+                "first_name": contact_dict.get("first_name"),
+                "last_name": contact_dict.get("last_name"),
+                "email": contact_dict.get("email"),
+                "phone": contact_dict.get("phone"),
+                "company": contact_dict.get("company"),
+                "position": contact_dict.get("position")
+            }
+            
+            # Apply field mapping if provided
+            if request.mapping:
+                mapped_data = {}
+                for captely_field, hubspot_field in request.mapping.items():
+                    if captely_field in contact_dict:
+                        mapped_data[hubspot_field] = contact_dict[captely_field]
+                data.update(mapped_data)
+            
+            contact_data.append(data)
+        
+        # Use HubSpot integration
+        hubspot = get_integration("hubspot", {"api_key": api_key})
+        result = await hubspot.create_or_update_contacts(contact_data)
+        
+        # Log export to database
+        log_query = text("""
+            INSERT INTO export_logs (user_id, job_id, export_type, status, exported_count, export_config)
+            VALUES (:user_id, :job_id, 'hubspot', :status, :exported_count, :export_config)
+        """)
+        
+        await session.execute(log_query, {
+            "user_id": user_id,
+            "job_id": request.job_id,
+            "status": "completed" if not result.get("errors") else "partial",
+            "exported_count": result.get("created", 0) + result.get("updated", 0),
+            "export_config": json.dumps(request.dict())
+        })
+        await session.commit()
+        
+        return {
+            "status": "success",
+            "exported_count": result.get("created", 0) + result.get("updated", 0),
+            "errors": result.get("errors", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Integration endpoints temporarily disabled
 # @app.post("/api/integrations/lemlist")
@@ -190,7 +275,7 @@ async def export_data(
 async def get_available_columns(
     job_id: str,
     user_id: str = Depends(verify_jwt),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Get available columns for export customization"""
     
@@ -237,7 +322,7 @@ async def get_available_columns(
 async def export_crm_contacts(
     request: CrmExportRequest,
     user_id: str = Depends(verify_jwt),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Export CRM contacts in various formats"""
     
