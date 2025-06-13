@@ -277,21 +277,23 @@ const ImportPage: React.FC = () => {
 
     try {
       // Show enrichment confirmation modal
-      const enrichmentType = await confirmEnrichment(selectedFile.name);
+      const result = await confirmEnrichment(selectedFile.name);
       
-      // If user cancelled the modal, enrichmentType will be null
-      if (!enrichmentType) {
+      // If user cancelled the modal, result will be null
+      if (!result) {
         console.log('❌ User cancelled file upload enrichment');
         return;
       }
+
+      const { enrichmentType, customFilename } = result;
 
       // **🚀 INSTANT CREDIT DEDUCTION** - Estimate credits needed
       const estimatedCredits = 10; // Estimate or calculate based on file size
       fireCreditUsedEvent(estimatedCredits, 'File Upload Enrichment');
 
-      // Proceed with upload using selected enrichment type
-      const result = await uploadFile(selectedFile, enrichmentType);
-      setCurrentJobId(result.job_id);
+      // Proceed with upload using selected enrichment type and custom filename
+      const uploadResult = await uploadFile(selectedFile, enrichmentType, customFilename);
+      setCurrentJobId(uploadResult.job_id);
       setUploadSuccess(true);
       setSelectedFile(null);
       refetchJobs(); // Refresh the jobs list
@@ -309,7 +311,7 @@ const ImportPage: React.FC = () => {
           : enrichmentType?.phone 
             ? 'Phone'
             : 'Full';
-      showFileImportStarted(selectedFile.name, enrichmentTypeText);
+      showFileImportStarted(customFilename || selectedFile.name, enrichmentTypeText);
       
       // 🚫 REMOVED: Old toast notification - keeping only the new green notification system
       // toast.success(`🎉 File uploaded successfully! Starting enrichment...`);
@@ -425,13 +427,15 @@ const ImportPage: React.FC = () => {
       setIsStartingManualEnrichment(true);
       
       // Show enrichment confirmation modal
-      const enrichmentType = await confirmEnrichment(`${manualContacts.length} manually added contacts`);
+      const result = await confirmEnrichment(`${manualContacts.length} manually added contacts`);
       
-      if (!enrichmentType) {
+      if (!result) {
         console.log('❌ User cancelled manual enrichment');
         setIsStartingManualEnrichment(false);
         return;
       }
+
+      const { enrichmentType, customFilename } = result;
 
       // **🚀 INSTANT CREDIT DEDUCTION** - Calculate credits for manual contacts
       const estimatedCredits = manualContacts.length * 2; // 2 credits per contact estimate
@@ -446,7 +450,8 @@ const ImportPage: React.FC = () => {
         },
         body: JSON.stringify({
           contacts: manualContacts,
-          enrichment_config: enrichmentType
+          enrichment_config: enrichmentType,
+          custom_filename: customFilename
         })
       });
 
@@ -454,8 +459,8 @@ const ImportPage: React.FC = () => {
         throw new Error('Failed to start manual enrichment');
       }
 
-      const result = await response.json();
-      setCurrentJobId(result.job_id);
+      const uploadResult = await response.json();
+      setCurrentJobId(uploadResult.job_id);
       setUploadSuccess(true);
       setManualContacts([]);
       refetchJobs();

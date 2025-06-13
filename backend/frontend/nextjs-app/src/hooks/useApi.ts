@@ -245,7 +245,8 @@ export const useFileUpload = () => {
 
   const uploadFile = useCallback(async (
     file: File, 
-    enrichmentType?: { email: boolean; phone: boolean }
+    enrichmentType?: { email: boolean; phone: boolean },
+    customFilename?: string
   ): Promise<{ job_id: string }> => {
     try {
       setUploading(true);
@@ -254,7 +255,7 @@ export const useFileUpload = () => {
 
       const result = await apiService.uploadFile(file, (progress) => {
         setProgress(progress);
-      }, enrichmentType);
+      }, enrichmentType, customFilename);
 
       setProgress(100);
       return result;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Phone, Zap, CheckCircle, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
+import { X, Mail, Phone, Zap, CheckCircle, AlertCircle, Sparkles, ArrowRight, Edit3 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -12,7 +12,7 @@ export type EnrichmentType = {
 interface EnrichmentConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (enrichmentType: EnrichmentType) => void;
+  onConfirm: (enrichmentType: EnrichmentType, customFilename?: string) => void;
   fileName?: string;
 }
 
@@ -27,22 +27,24 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
   
   const [selectedEmail, setSelectedEmail] = useState(true);
   const [selectedPhone, setSelectedPhone] = useState(true);
+  const [customFilename, setCustomFilename] = useState('');
   const [isConfirming, setIsConfirming] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // Set default filename when modal opens
+  useEffect(() => {
+    if (isOpen && fileName) {
+      // Remove file extension and set as default
+      const nameWithoutExtension = fileName.replace(/\.(csv|xlsx|xls)$/i, '');
+      setCustomFilename(nameWithoutExtension);
+    } else if (isOpen && !fileName) {
+      setCustomFilename('imported_contacts');
+    }
+  }, [isOpen, fileName]);
 
   // Prevent any background updates when modal is open
   useEffect(() => {
     if (isOpen) {
-      // Stop all polling/refreshing when modal is open
-      const stopPolling = () => {
-        // Clear any existing intervals that might be running
-        const highestId = setTimeout(() => {}, 0);
-        for (let i = 0; i < highestId; i++) {
-          clearTimeout(i);
-          clearInterval(i);
-        }
-      };
-      
       // Disable page scrolling
       document.body.style.overflow = 'hidden';
       
@@ -64,14 +66,14 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
   const handleConfirm = async () => {
     setIsConfirming(true);
     
-    // Prevent any potential state updates during confirmation
+    // Pass the custom filename to the parent
     setTimeout(() => {
       onConfirm({
         email: selectedEmail,
         phone: selectedPhone
-      });
+      }, customFilename.trim() || fileName);
       setIsConfirming(false);
-    }, 800); // Smooth delay for better UX
+    }, 800);
   };
 
   const containerVariants = {
@@ -270,6 +272,26 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 mb-6 text-center">
                     Choose your enrichment options:
                   </h3>
+                </motion.div>
+
+                {/* Filename Input Section */}
+                <motion.div variants={childVariants} className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    📝 Batch Name
+                  </label>
+                  <div className="relative">
+                    <Edit3 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={customFilename}
+                      onChange={(e) => setCustomFilename(e.target.value)}
+                      placeholder="Enter batch name..."
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 bg-gray-50 hover:bg-white"
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    💡 Customize the name to help you track your batches
+                  </p>
                 </motion.div>
 
                 <div className="space-y-4">

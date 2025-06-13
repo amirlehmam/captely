@@ -581,12 +581,18 @@ class ApiService {
   async uploadFile(
     file: File, 
     onProgress?: (progress: number) => void,
-    enrichmentType?: { email: boolean; phone: boolean }
+    enrichmentType?: { email: boolean; phone: boolean },
+    customFilename?: string
   ): Promise<{ job_id: string }> {
     try {
       // Create FormData with file and enrichment options
       const formData = new FormData();
       formData.append('file', file);
+      
+      // Add custom filename if provided
+      if (customFilename && customFilename.trim()) {
+        formData.append('custom_filename', customFilename.trim());
+      }
       
       // Add enrichment type parameters if provided
       if (enrichmentType) {

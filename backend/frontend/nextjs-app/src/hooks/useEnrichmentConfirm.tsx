@@ -5,17 +5,22 @@ interface UseEnrichmentConfirmOptions {
   fileName?: string;
 }
 
+interface EnrichmentResult {
+  enrichmentType: EnrichmentType;
+  customFilename?: string;
+}
+
 export const useEnrichmentConfirm = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [fileName, setFileName] = useState<string | undefined>();
-  const [resolveCallback, setResolveCallback] = useState<((value: EnrichmentType | null) => void) | null>(null);
+  const [resolveCallback, setResolveCallback] = useState<((value: EnrichmentResult | null) => void) | null>(null);
   
   // Prevent multiple simultaneous calls and infinite loops
   const isProcessingRef = useRef(false);
   const lastCallRef = useRef(0);
   const mountedRef = useRef(true);
 
-  const confirm = (fileNameParam?: string): Promise<EnrichmentType | null> => {
+  const confirm = (fileNameParam?: string): Promise<EnrichmentResult | null> => {
     const now = Date.now();
     
     // Safety check: Component must be mounted
@@ -43,13 +48,13 @@ export const useEnrichmentConfirm = () => {
     setFileName(fileNameParam);
     setIsOpen(true);
     
-    return new Promise<EnrichmentType | null>((resolve) => {
+    return new Promise<EnrichmentResult | null>((resolve) => {
       setResolveCallback(() => resolve);
     });
   };
 
-  const handleConfirm = (enrichmentType: EnrichmentType) => {
-    console.log('✅ Modal confirmed with:', enrichmentType);
+  const handleConfirm = (enrichmentType: EnrichmentType, customFilename?: string) => {
+    console.log('✅ Modal confirmed with:', enrichmentType, 'filename:', customFilename);
     
     // Safety check: Component must be mounted
     if (!mountedRef.current) {
@@ -61,7 +66,10 @@ export const useEnrichmentConfirm = () => {
     isProcessingRef.current = false;
     
     if (resolveCallback) {
-      resolveCallback(enrichmentType);
+      resolveCallback({
+        enrichmentType,
+        customFilename
+      });
       setResolveCallback(null);
     }
   };
