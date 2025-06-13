@@ -89,8 +89,8 @@ const ImportPage: React.FC = () => {
       const enrichmentType = await confirm(`HubSpot Import - ${importedCount} contacts`);
       
       if (!enrichmentType) {
-        // User cancelled, redirect to batches page
-        navigate(`/batches`);
+        // User cancelled - just stay on current page
+        console.log('❌ User cancelled HubSpot enrichment');
         return;
       }
 
@@ -110,21 +110,20 @@ const ImportPage: React.FC = () => {
         throw new Error('Failed to start HubSpot enrichment');
       }
 
-      toast.success(`Started enrichment for ${importedCount} HubSpot contacts!`);
+      toast.success(`🎉 Started enrichment for ${importedCount} HubSpot contacts!`);
       setCurrentJobId(jobId);
       setUploadSuccess(true);
       refetchJobs();
       
-      // Auto-navigate to batches page after 3 seconds
+      // Optional: Navigate after showing success message
       setTimeout(() => {
         navigate(`/batches`);
-      }, 3000);
+      }, 2000);
       
     } catch (error) {
       console.error('HubSpot enrichment failed:', error);
       toast.error('Failed to start enrichment for HubSpot contacts');
-      // Redirect to batches page even on error
-      navigate(`/batches`);
+      // Stay on current page - don't redirect on error
     }
   };
 
@@ -237,6 +236,7 @@ const ImportPage: React.FC = () => {
       
       // If user cancelled the modal, enrichmentType will be null
       if (!enrichmentType) {
+        console.log('❌ User cancelled file upload enrichment');
         return;
       }
 
@@ -247,10 +247,12 @@ const ImportPage: React.FC = () => {
       setSelectedFile(null);
       refetchJobs(); // Refresh the jobs list
       
-      // Auto-navigate to batches page after 3 seconds
+      toast.success(`🎉 File uploaded successfully! Starting enrichment...`);
+      
+      // Optional: Navigate after showing success
       setTimeout(() => {
         navigate(`/batches`);
-      }, 3000);
+      }, 2000);
       
     } catch (err) {
       console.error('Upload failed:', err);
@@ -361,6 +363,7 @@ const ImportPage: React.FC = () => {
       const enrichmentType = await confirm(`${manualContacts.length} manually added contacts`);
       
       if (!enrichmentType) {
+        console.log('❌ User cancelled manual enrichment');
         setIsStartingManualEnrichment(false);
         return;
       }
@@ -390,10 +393,10 @@ const ImportPage: React.FC = () => {
       
       showManualImportStarted(manualContacts.length);
       
-      // Auto-navigate to batches page after 3 seconds
+      // Optional: Navigate after showing success
       setTimeout(() => {
         navigate(`/batches`);
-      }, 3000);
+      }, 2000);
       
     } catch (error) {
       console.error('Manual enrichment failed:', error);
