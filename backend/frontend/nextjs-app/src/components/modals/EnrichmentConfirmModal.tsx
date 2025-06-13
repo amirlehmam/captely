@@ -160,7 +160,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-purple-900/95 backdrop-blur-2xl"
-          onClick={onClose}
+        onClick={onClose}
         />
 
         {/* Floating particles background */}
@@ -204,7 +204,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
             {/* Main card */}
             <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
               {/* Header with premium gradient */}
-              <motion.div 
+      <motion.div
                 variants={childVariants}
                 className="relative px-8 py-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden"
               >
@@ -231,7 +231,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                     >
                       <Zap className="w-6 h-6 text-white" />
                     </motion.div>
-                    <div>
+                <div>
                       <motion.h2 
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -250,9 +250,9 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                           📄 File selected: {fileName}
                         </motion.p>
                       )}
-                    </div>
-                  </div>
-                  
+            </div>
+          </div>
+
                   <motion.button
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
@@ -273,7 +273,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                 </motion.div>
 
                 <div className="space-y-4">
-                  {/* Email Option */}
+                {/* Email Option */}
                   <motion.div
                     variants={childVariants}
                     whileHover="hover"
@@ -356,9 +356,9 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                         </h4>
                         <p className="text-sm text-gray-500 mt-1">
                           Find and verify phone numbers
-                        </p>
-                      </div>
+                      </p>
                     </div>
+                  </div>
                     
                     {selectedPhone && (
                       <motion.div
@@ -387,12 +387,12 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                           >
                             <Sparkles className="w-6 h-6 text-purple-600" />
                           </motion.div>
-                          <div>
+                    <div>
                             <p className="text-sm font-semibold text-purple-800">
                               🎉 Both - Complete enrichment enabled - Maximum enrichment!
-                            </p>
-                          </div>
-                        </div>
+                      </p>
+                    </div>
+                  </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -440,7 +440,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                   </motion.button>
                 </motion.div>
 
-                {/* Warning if nothing selected */}
+            {/* Warning if nothing selected */}
                 <AnimatePresence>
                   {!selectedEmail && !selectedPhone && (
                     <motion.div
@@ -454,7 +454,7 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
                         <p className="text-sm text-amber-700">
                           Please select at least one enrichment option
                         </p>
-                      </div>
+                </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

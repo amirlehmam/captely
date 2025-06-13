@@ -838,6 +838,61 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                     
                     reason = f"Cache hit: {', '.join(reason_parts)} for {lead.get('company', 'unknown')} (saved API cost: ${api_savings:.3f})"
                     
+                    # ---------------------------------------------------------------
+                    # 💳 1) Deduct credits from the NEW BILLING SYSTEM allocations
+                    # ---------------------------------------------------------------
+                    # Check available credits first (should already be validated upstream, but double-check)
+                    available_query = text("""
+                        SELECT COALESCE(SUM(credits_remaining), 0) as available_credits
+                        FROM credit_allocations 
+                        WHERE user_id = :user_id AND expires_at > CURRENT_TIMESTAMP
+                    """)
+                    available_result = session.execute(available_query, {"user_id": user_id})
+                    available_credits = available_result.scalar() or 0
+                    
+                    if available_credits < credits_to_charge:
+                        # This should not happen – log loudly so we can investigate
+                        logger.error(f"❌ Inconsistent credit state for user {user_id}: available {available_credits} < needed {credits_to_charge} for global cache hit")
+                    else:
+                        remaining_to_deduct = credits_to_charge
+                        deduction_query = text("""
+                            SELECT id, credits_remaining
+                            FROM credit_allocations 
+                            WHERE user_id = :user_id AND credits_remaining > 0 AND expires_at > CURRENT_TIMESTAMP
+                            ORDER BY expires_at ASC
+                        """)
+                        allocations_result = session.execute(deduction_query, {"user_id": user_id})
+                        allocations = allocations_result.fetchall()
+                        
+                        for allocation in allocations:
+                            if remaining_to_deduct <= 0:
+                                break
+                            allocation_id, credits_remaining = allocation
+                            deduct_from_this = min(remaining_to_deduct, credits_remaining)
+                            session.execute(
+                                text("""
+                                    UPDATE credit_allocations 
+                                    SET credits_remaining = credits_remaining - :deduct_amount
+                                    WHERE id = :allocation_id
+                                """),
+                                {"deduct_amount": deduct_from_this, "allocation_id": allocation_id}
+                            )
+                            remaining_to_deduct -= deduct_from_this
+                            logger.warning(f"💰 Deducted {deduct_from_this} from allocation {allocation_id} (global cache hit)")
+                        
+                        # Update aggregate balance table
+                        session.execute(
+                            text("""
+                                UPDATE credit_balances 
+                                SET used_credits = used_credits + :credits_used
+                                WHERE user_id = :user_id
+                            """),
+                            {"credits_used": credits_to_charge, "user_id": user_id}
+                        )
+                        
+                    # ---------------------------------------------------------------
+                    # 💳 2) Log the transaction (negative change) for transparency
+                    # ---------------------------------------------------------------
                     session.execute(
                         text("""
                             INSERT INTO credit_logs (user_id, operation_type, cost, change, reason, created_at)
@@ -851,7 +906,7 @@ def cascade_enrich(self, lead: Dict[str, Any], job_id: str, user_id: str, enrich
                         }
                     )
                     
-                    print(f"💳 Charged {credits_to_charge} credits for cache hit (API savings: ${api_savings:.3f})")
+                    logger.warning(f"💳 Charged {credits_to_charge} credits for cache hit (API savings: ${api_savings:.3f})")
                 
                 # Insert contact record with cache data and scoring
                 contact_insert = text("""
