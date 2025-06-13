@@ -159,11 +159,16 @@ async def import_file(
     file: UploadFile = File(...),
     enrich_email: str = Form("true"),
     enrich_phone: str = Form("true"), 
+    custom_filename: str = Form(None),  # Add custom filename parameter
     user_id: str = Depends(verify_api_token),
     session: Session = Depends(get_session),
 ):
     try:
         print(f"📁 Processing file upload: {file.filename} for user: {user_id}")
+        
+        # Use custom filename if provided, otherwise fall back to original filename
+        display_filename = custom_filename.strip() if custom_filename and custom_filename.strip() else file.filename
+        print(f"📝 Using filename: {display_filename} (original: {file.filename})")
         
         # Parse enrichment type parameters
         should_enrich_email = enrich_email.lower() == "true"
@@ -197,7 +202,7 @@ async def import_file(
 
         job_id = str(uuid.uuid4())
         
-        # Create import job record using text SQL to avoid async issues
+        # Create import job record using custom filename
         job_insert_sql = text("""
             INSERT INTO import_jobs (id, user_id, total, status, file_name, created_at, updated_at)
             VALUES (:job_id, :user_id, :total, :status, :file_name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -208,10 +213,10 @@ async def import_file(
             "user_id": user_id,
             "total": len(df),
             "status": "processing",
-            "file_name": file.filename
+            "file_name": display_filename  # Use custom filename instead of file.filename
         })
         session.commit()
-        print(f"✅ Created file import job: {job_id} with {len(df)} contacts")
+        print(f"✅ Created file import job: {job_id} with {len(df)} contacts using filename: {display_filename}")
 
         # Process each row and send to enrichment with type specification
         for idx, row in df.iterrows():
@@ -236,10 +241,13 @@ async def import_file(
                 queue="cascade_enrichment"
             )
 
-        # Upload to S3 if available
+        # Upload to S3 if available - use custom filename in the S3 key
         if s3 and hasattr(settings, 's3_bucket_raw'):
             try:
-                key = f"{user_id}/{job_id}/{file.filename}"
+                # Use custom filename in S3 key but preserve original file extension
+                file_extension = os.path.splitext(file.filename)[1]  # Get .csv or .xlsx
+                s3_filename = f"{display_filename}{file_extension}" if not display_filename.endswith(file_extension) else display_filename
+                key = f"{user_id}/{job_id}/{s3_filename}"
                 s3.upload_fileobj(io.BytesIO(data), settings.s3_bucket_raw, key)
                 print(f"📁 Uploaded file to S3: {key}")
             except Exception as e:
@@ -249,6 +257,7 @@ async def import_file(
         return JSONResponse({
             "job_id": job_id, 
             "total_contacts": len(df),
+            "display_filename": display_filename,  # Return the filename being used
             "enrichment_type": {
                 "email": should_enrich_email,
                 "phone": should_enrich_phone
@@ -282,6 +291,7 @@ class ManualContact(BaseModel):
 class ManualContactsBatch(BaseModel):
     contacts: list[ManualContact]
     enrichment_config: dict = None
+    custom_filename: str = None  # Add custom filename support
 
 @app.post(
     "/api/imports/manual",
@@ -296,6 +306,10 @@ async def import_manual_contacts(
     try:
         print(f"📝 Processing manual contact import for user: {user_id}")
         print(f"🎯 Manual contacts count: {len(batch.contacts)}")
+        
+        # Use custom filename if provided, otherwise use default
+        display_filename = batch.custom_filename.strip() if batch.custom_filename and batch.custom_filename.strip() else f"Manual Import - {len(batch.contacts)} contacts"
+        print(f"📝 Using filename: {display_filename}")
         
         # Parse enrichment type parameters
         enrichment_config = batch.enrichment_config or {}
@@ -319,7 +333,7 @@ async def import_manual_contacts(
 
         job_id = str(uuid.uuid4())
         
-        # Create import job record
+        # Create import job record using custom filename
         job_insert_sql = text("""
             INSERT INTO import_jobs (id, user_id, total, status, file_name, created_at, updated_at)
             VALUES (:job_id, :user_id, :total, :status, :file_name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -330,10 +344,10 @@ async def import_manual_contacts(
             "user_id": user_id,
             "total": len(batch.contacts),
             "status": "processing",
-            "file_name": f"Manual Import - {len(batch.contacts)} contacts"
+            "file_name": display_filename  # Use custom filename
         })
         session.commit()
-        print(f"✅ Created manual import job: {job_id} with {len(batch.contacts)} contacts")
+        print(f"✅ Created manual import job: {job_id} with {len(batch.contacts)} contacts using filename: {display_filename}")
 
         # Process each manually entered contact
         for contact in batch.contacts:
@@ -364,6 +378,7 @@ async def import_manual_contacts(
         return JSONResponse({
             "job_id": job_id, 
             "total_contacts": len(batch.contacts),
+            "display_filename": display_filename,  # Return the filename being used
             "enrichment_type": {
                 "email": should_enrich_email,
                 "phone": should_enrich_phone

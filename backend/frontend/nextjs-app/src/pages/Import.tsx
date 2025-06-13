@@ -442,7 +442,7 @@ const ImportPage: React.FC = () => {
       fireCreditUsedEvent(estimatedCredits, 'Manual Contact Enrichment');
 
       // Send manual contacts to backend for enrichment
-      const response = await fetch('/api/import/imports/manual', {
+      const response = await fetch('/api/imports/manual', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -456,10 +456,13 @@ const ImportPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start manual enrichment');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || 'Failed to start manual enrichment');
       }
 
       const uploadResult = await response.json();
+      console.log('✅ Manual import started:', uploadResult);
+      
       setCurrentJobId(uploadResult.job_id);
       setUploadSuccess(true);
       setManualContacts([]);
@@ -470,6 +473,14 @@ const ImportPage: React.FC = () => {
         forceRefreshCredits();
       }, 2000);
       
+      // Show notification with custom filename
+      const enrichmentTypeText = enrichmentType?.email && enrichmentType?.phone 
+        ? 'Email + Phone'
+        : enrichmentType?.email 
+          ? 'Email'
+          : enrichmentType?.phone 
+            ? 'Phone'
+            : 'Full';
       showManualImportStarted(manualContacts.length);
       
       // Optional: Navigate after showing success
