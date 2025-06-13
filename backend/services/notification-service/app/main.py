@@ -279,7 +279,10 @@ async def notify_job_completion(
     
     # Get user email and preferences
     user_query = """
-        SELECT email, notification_preferences FROM users WHERE id = :user_id
+        SELECT u.email, np.job_completion_alerts, np.email_notifications
+        FROM users u
+        LEFT JOIN notification_preferences np ON u.id = np.user_id
+        WHERE u.id = :user_id
     """
     result = await session.execute(text(user_query), {"user_id": notification.user_id})
     user_data = result.fetchone()
@@ -288,10 +291,11 @@ async def notify_job_completion(
         raise HTTPException(status_code=404, detail="User not found")
     
     user_email = user_data[0]
-    preferences = user_data[1] or {}
+    job_completion_alerts = user_data[1] if user_data[1] is not None else True  # Default to True
+    email_notifications = user_data[2] if user_data[2] is not None else True  # Default to True
     
     # Check if user wants job completion notifications
-    if not preferences.get("job_completion_alerts", True):
+    if not job_completion_alerts or not email_notifications:
         return {"status": "skipped", "reason": "User has disabled job completion notifications"}
     
     # Prepare template data

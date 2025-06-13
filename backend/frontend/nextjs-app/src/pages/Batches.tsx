@@ -651,9 +651,11 @@ const BatchesPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(job.status)}`}>
-                      {getStatusIcon(job.status)}
-                      <span className="ml-1">{t(`enrichment.status.${job.status}`)}</span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                      job.progress >= 100 ? 'completed' : job.status
+                    )}`}>
+                      {getStatusIcon(job.progress >= 100 ? 'completed' : job.status)}
+                      <span className="ml-1">{t(`enrichment.status.${job.progress >= 100 ? 'completed' : job.status}`)}</span>
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -709,7 +711,8 @@ const BatchesPage: React.FC = () => {
                         <Eye className="h-4 w-4" />
                       </Link>
                       </motion.div>
-                      {job.status === 'completed' && (
+                      {/* 🔥 FIXED: Show export button when progress >= 100% OR status is completed */}
+                      {(job.status === 'completed' || job.progress >= 100) && (
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}

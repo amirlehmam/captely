@@ -120,7 +120,10 @@ export const useJobs = () => {
       // **🔥 DETECT NEWLY COMPLETED JOBS & FIRE EVENTS**
       if (!initialLoad) {
         newJobs.forEach(job => {
-          if (job.status === 'completed' && !completedJobs.has(job.id)) {
+          // 🚀 FIXED: Trigger completion notification for jobs at 100% progress OR completed status
+          const isJobCompleted = job.status === 'completed' || job.progress >= 100;
+          
+          if (isJobCompleted && !completedJobs.has(job.id)) {
             // Show enhanced notification for completed job
             showJobCompleted(job.id, job.file_name || `Job ${job.id.slice(0, 8)}`, {
               total_contacts: job.total || 0,
@@ -139,7 +142,7 @@ export const useJobs = () => {
         });
       } else {
         // On initial load, just populate the completed jobs set without showing notifications
-        const alreadyCompleted = newJobs.filter(job => job.status === 'completed').map(job => job.id);
+        const alreadyCompleted = newJobs.filter(job => job.status === 'completed' || job.progress >= 100).map(job => job.id);
         setCompletedJobs(new Set(alreadyCompleted));
         setInitialLoad(false);
       }

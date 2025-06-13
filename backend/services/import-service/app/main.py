@@ -539,9 +539,22 @@ async def get_user_jobs(
             progress = (total_processed / job.total * 100) if job.total > 0 else 0
             success_rate = (enriched_count / total_processed * 100) if total_processed > 0 else 0
             
+            # 🔥 AUTO-FIX: Update job status to "completed" if progress is 100% and status is still "processing"
+            current_status = job.status
+            if progress >= 100 and current_status == 'processing':
+                print(f"🔄 Auto-updating job {job.id} status from 'processing' to 'completed' (progress: {progress}%)")
+                update_status_query = text("""
+                    UPDATE import_jobs 
+                    SET status = 'completed', updated_at = CURRENT_TIMESTAMP 
+                    WHERE id = :job_id
+                """)
+                session.execute(update_status_query, {"job_id": job.id})
+                session.commit()
+                current_status = 'completed'
+            
             jobs.append({
                 "id": job.id,
-                "status": job.status,
+                "status": current_status,  # Use corrected status
                 "file_name": job.file_name,
                 "total": job.total,
                 "completed": total_processed,
@@ -600,10 +613,23 @@ async def get_job_status(
         email_hit_rate = (emails_found / total_processed * 100) if total_processed > 0 else 0
         phone_hit_rate = (phones_found / total_processed * 100) if total_processed > 0 else 0
         
+        # 🔥 AUTO-FIX: Update job status to "completed" if progress is 100% and status is still "processing"
+        current_status = job_data.status
+        if progress >= 100 and current_status == 'processing':
+            print(f"🔄 Auto-updating job {job_id} status from 'processing' to 'completed' (progress: {progress}%)")
+            update_status_query = text("""
+                UPDATE import_jobs 
+                SET status = 'completed', updated_at = CURRENT_TIMESTAMP 
+                WHERE id = :job_id
+            """)
+            session.execute(update_status_query, {"job_id": job_id})
+            session.commit()
+            current_status = 'completed'
+        
         return {
             "id": job_data.id,
             "user_id": job_data.user_id,
-            "status": job_data.status,
+            "status": current_status,  # Use corrected status instead of job_data.status
             "file_name": job_data.file_name,
             "total": job_data.total,
             "completed": total_processed,
