@@ -78,12 +78,30 @@ const ImportPage: React.FC = () => {
   const { uploadFile, uploading, progress, error: uploadError, reset } = useFileUpload();
   const { jobs, loading: jobsLoading, error: jobsError, serviceDown, refetch: refetchJobs } = useJobs();
   const { job: currentJob, loading: jobLoading } = useJob(currentJobId);
-  const { confirm: confirmEnrichment, EnrichmentConfirmDialog } = useEnrichmentConfirm();
+  const { confirm: confirmEnrichment, EnrichmentConfirmDialog, isOpen: modalIsOpen } = useEnrichmentConfirm();
 
   // Validation
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Enhanced notification system available from imports
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Pause all auto-refresh when modal is open
+  useEffect(() => {
+    setIsPaused(modalIsOpen);
+    
+    if (modalIsOpen) {
+      // Stop all intervals when modal opens
+      console.log('🛑 Modal opened - pausing all auto-refresh');
+      const highestTimeoutId = setTimeout(() => {}, 0);
+      for (let i = 0; i < highestTimeoutId; i++) {
+        clearTimeout(i);
+        clearInterval(i);
+      }
+    } else {
+      console.log('▶️ Modal closed - resuming auto-refresh');
+    }
+  }, [modalIsOpen]);
 
   const handleHubSpotEnrichment = async (jobId: string, importedCount: number) => {
     try {
