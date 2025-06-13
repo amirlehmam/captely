@@ -462,7 +462,10 @@ class ContactCacheOptimizer:
                     total_api_cost_saved = cache_performance_metrics.total_api_cost_saved + EXCLUDED.total_api_cost_saved,
                     actual_api_cost = cache_performance_metrics.actual_api_cost + EXCLUDED.actual_api_cost,
                     avg_response_time_ms = (cache_performance_metrics.avg_response_time_ms + EXCLUDED.avg_response_time_ms) / 2,
-                    cache_hit_rate = (cache_performance_metrics.cache_hits * 1.0 / cache_performance_metrics.total_enrichments),
+                    cache_hit_rate = CASE 
+                        WHEN cache_performance_metrics.total_enrichments = 0 THEN 0.0
+                        ELSE (cache_performance_metrics.cache_hits * 1.0 / cache_performance_metrics.total_enrichments)
+                    END,
                     updated_at = CURRENT_TIMESTAMP
             """)
             
@@ -620,10 +623,22 @@ def check_contact_optimization(first_name: str, last_name: str, company: str, us
 
 
 def save_fresh_enrichment(first_name: str, last_name: str, company: str, email: str, phone: str,
-                         enrichment_data: Dict[str, Any], user_id: str, job_id: str = None,
-                         contact_id: int = None, api_cost: float = 0.0) -> bool:
+                         provider: str, confidence_score: float, email_verified: bool = False, 
+                         phone_verified: bool = False, email_verification_score: float = None,
+                         phone_verification_score: float = None, user_id: str = None, 
+                         job_id: str = None, contact_id: int = None, api_cost: float = 0.0) -> Dict[str, Any]:
     """Save fresh API enrichment results to cache for future use."""
     try:
+        # Build enrichment data dict
+        enrichment_data = {
+            "provider": provider,
+            "confidence_score": confidence_score,
+            "email_verified": email_verified,
+            "phone_verified": phone_verified,
+            "email_verification_score": email_verification_score or 0.0,
+            "phone_verification_score": phone_verification_score or 0.0
+        }
+        
         with ContactCacheOptimizer() as optimizer:
             # Save to global cache
             cache_id = optimizer.save_to_cache(
@@ -639,13 +654,25 @@ def save_fresh_enrichment(first_name: str, last_name: str, company: str, email: 
                 )
                 
                 print(f"✅ FRESH ENRICHMENT CACHED for future optimization")
-                return True
+                return {
+                    "cache_status": "success",
+                    "cache_id": cache_id,
+                    "message": f"Contact cached for future optimization"
+                }
             
-            return False
+            return {
+                "cache_status": "failed",
+                "cache_id": None,
+                "message": "Failed to save to cache"
+            }
             
     except Exception as e:
         print(f"❌ Error saving fresh enrichment: {e}")
-        return False
+        return {
+            "cache_status": "error",
+            "cache_id": None,
+            "message": f"Cache save error: {str(e)}"
+        }
 
 
 def record_cache_hit_usage(user_id: str, cache_id: str, credits_charged: int, source_type: str,
