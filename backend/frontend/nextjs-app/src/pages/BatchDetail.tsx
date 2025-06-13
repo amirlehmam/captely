@@ -320,12 +320,12 @@ const BatchDetailPage: React.FC = () => {
           whileHover={{ scale: 1.02, y: -4 }}
           className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
             isDark 
-              ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50 hover:shadow-green-500/20' 
-              : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:shadow-green-500/20'
+              ? 'bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700/50 hover:shadow-green-500/25' 
+              : 'bg-gradient-to-br from-green-50 to-green-100 border-green-300 hover:shadow-green-500/25'
           }`}
         >
           <div className="flex items-center">
-            <Mail className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
+            <Mail className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
             <div>
               <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('batches.details.emailsFound')}</p>
               <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{job.emails_found || 0}</p>

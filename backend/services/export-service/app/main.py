@@ -1166,6 +1166,12 @@ async def export_crm_contacts(
 ):
     """Export CRM contacts in various formats"""
     
+    # 🔥 FIX: Convert string contact IDs to integers
+    try:
+        contact_ids_int = [int(contact_id) for contact_id in request.contact_ids]
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid contact ID format: {str(e)}")
+    
     # Get contacts for the specified IDs (with user verification)
     query = text("""
         SELECT 
@@ -1183,7 +1189,7 @@ async def export_crm_contacts(
     """)
     
     result = await session.execute(query, {
-        "contact_ids": request.contact_ids, 
+        "contact_ids": contact_ids_int,  # 🔥 FIX: Use converted integer IDs
         "user_id": user_id
     })
     contacts = result.fetchall()

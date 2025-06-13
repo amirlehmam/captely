@@ -690,7 +690,7 @@ class ApiService {
   // EXPORT
   // ==========================================
 
-  async exportData(jobId: string, format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv'): Promise<void> {
+  async exportData(jobId: string, format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv', customFilename?: string): Promise<void> {
     try {
       const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
       
@@ -732,17 +732,21 @@ class ApiService {
         throw new Error(`Export failed with status ${response.status}`);
       }
 
+      // 🔥 NEW: Generate filename using custom name or default
+      const getFileName = (ext: string) => {
+        const baseName = customFilename || `enriched_data_${jobId}`;
+        return `${baseName}.${ext}`;
+      };
+
       // Handle different response types
       if (format === 'json') {
         const data = await response.json();
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        this.downloadBlob(blob, `enriched_data_${jobId}.json`);
+        this.downloadBlob(blob, getFileName('json'));
       } else {
         const blob = await response.blob();
-        const filename = format === 'excel' 
-          ? `enriched_data_${jobId}.xlsx` 
-          : `enriched_data_${jobId}.csv`;
-        this.downloadBlob(blob, filename);
+        const extension = format === 'excel' ? 'xlsx' : 'csv';
+        this.downloadBlob(blob, getFileName(extension));
       }
 
       toast.success('Data exported successfully!');
@@ -767,7 +771,8 @@ class ApiService {
 
   async exportCrmContacts(
     contactIds: string[],
-    format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv'
+    format: 'csv' | 'excel' | 'json' | 'hubspot' = 'csv',
+    customFilename?: string
   ): Promise<void> {
     try {
       const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
@@ -811,17 +816,22 @@ class ApiService {
         throw new Error(`Export failed with status ${response.status}`);
       }
 
+      // Generate filename using custom name or default
+      const getFileName = (ext: string) => {
+        const baseName = customFilename || 'crm_contacts';
+        const timestamp = new Date().toISOString().split('T')[0];
+        return `${baseName}_${timestamp}.${ext}`;
+      };
+
       // Handle different response types
       if (format === 'json') {
         const data = await response.json();
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        this.downloadBlob(blob, `crm_contacts_${new Date().toISOString().split('T')[0]}.json`);
+        this.downloadBlob(blob, getFileName('json'));
       } else {
         const blob = await response.blob();
-        const filename = format === 'excel' 
-          ? `crm_contacts_${new Date().toISOString().split('T')[0]}.xlsx` 
-          : `crm_contacts_${new Date().toISOString().split('T')[0]}.csv`;
-        this.downloadBlob(blob, filename);
+        const extension = format === 'excel' ? 'xlsx' : 'csv';
+        this.downloadBlob(blob, getFileName(extension));
       }
 
       toast.success(`Successfully exported ${contactIds.length} contacts!`);

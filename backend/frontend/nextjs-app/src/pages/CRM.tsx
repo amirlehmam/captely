@@ -262,7 +262,7 @@ const CRMPage: React.FC = () => {
     setShowExportModal(true);
   };
 
-  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot') => {
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot', customFilename?: string) => {
     try {
       if (exportContactId) {
         // Single contact export
@@ -270,13 +270,13 @@ const CRMPage: React.FC = () => {
           await apiService.exportContactToHubSpot(exportContactId);
           toast.success('🚀 Successfully exported contact to HubSpot!');
         } else {
-          // For other formats, export as CRM contact with single ID
-          await apiService.exportCrmContacts([exportContactId], format);
+          // For other formats, export as CRM contact with single ID and custom filename
+          await apiService.exportCrmContacts([exportContactId], format, customFilename);
           toast.success(`Successfully exported contact as ${format.toUpperCase()}!`);
         }
       } else if (selectedContacts.size > 0) {
         // Bulk export (fallback)
-        await apiService.exportCrmContacts(Array.from(selectedContacts), format);
+        await apiService.exportCrmContacts(Array.from(selectedContacts), format, customFilename);
         setSelectedContacts(new Set());
         if (format === 'hubspot') {
           toast.success(`🚀 Successfully exported ${selectedContacts.size} contacts to HubSpot!`);
@@ -1200,6 +1200,13 @@ const CRMPage: React.FC = () => {
         exportCount={exportContactId ? 1 : selectedContacts.size}
         type="contacts"
         contactIds={exportContactId ? [exportContactId] : Array.from(selectedContacts)}
+        originalFilename={
+          exportContactId 
+            ? contacts.find(contact => contact.id === exportContactId)?.batch_name
+            : contacts.length > 0 && selectedContacts.size === 1
+              ? contacts.find(contact => selectedContacts.has(contact.id))?.batch_name
+              : undefined
+        }
       />
     </div>
   );

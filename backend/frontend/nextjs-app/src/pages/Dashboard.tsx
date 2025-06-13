@@ -107,11 +107,11 @@ const Dashboard: React.FC = () => {
       value: stats?.overview?.current_batch_emails || 0,
       subtitle: `${Math.round((stats?.overview?.current_batch_email_hit_rate || 0))}% ${t('common.hit_rate')}`,
       icon: Mail,
-      color: 'blue',
-      bgColor: isDark ? 'bg-blue-900/20' : 'bg-blue-50',
-      iconColor: isDark ? 'text-blue-400' : 'text-blue-600',
-      textColor: isDark ? 'text-blue-300' : 'text-blue-900',
-      borderColor: isDark ? 'border-blue-700/50' : 'border-blue-200'
+      color: 'green',
+      bgColor: isDark ? 'bg-green-900/20' : 'bg-green-50',
+      iconColor: isDark ? 'text-green-400' : 'text-green-600',
+      textColor: isDark ? 'text-green-300' : 'text-green-900',
+      borderColor: isDark ? 'border-green-700/50' : 'border-green-200'
     },
     {
       title: t('dashboard.stats.phonesFound'),

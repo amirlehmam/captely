@@ -153,20 +153,20 @@ const BatchesPage: React.FC = () => {
     setShowExportModal(true);
   };
 
-  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot') => {
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot', customFilename?: string) => {
     try {
       if (exportJobId) {
-        // Single job export
-        await apiService.exportData(exportJobId, format);
+        // Single job export with custom filename
+        await apiService.exportData(exportJobId, format, customFilename);
         if (format === 'hubspot') {
           toast.success('🚀 Batch exported to HubSpot successfully!');
         }
       } else if (bulkExportJobs.length > 0) {
-        // Bulk export - export each job
+        // Bulk export - export each job with custom filename
         for (const jobId of bulkExportJobs) {
-          await apiService.exportData(jobId, format);
-    }
-    setSelectedJobs(new Set());
+          await apiService.exportData(jobId, format, customFilename);
+        }
+        setSelectedJobs(new Set());
         if (format === 'hubspot') {
           toast.success(`🚀 Successfully exported ${bulkExportJobs.length} batches to HubSpot!`);
         } else {
@@ -900,6 +900,13 @@ const BatchesPage: React.FC = () => {
         exportCount={exportJobId ? 1 : bulkExportJobs.length}
         type="batch"
         jobId={exportJobId || undefined}
+        originalFilename={
+          exportJobId 
+            ? jobs.find(job => job.id === exportJobId)?.file_name 
+            : bulkExportJobs.length === 1 
+              ? jobs.find(job => job.id === bulkExportJobs[0])?.file_name
+              : undefined
+        }
       />
     </div>
   );
