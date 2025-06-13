@@ -13,7 +13,7 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
   variant = 'compact', 
   showRefresh = true 
 }) => {
-  const { creditData, loading, error, refreshCredits } = useCreditContext();
+  const { creditData, loading, error, refreshCredits, isRealTime, lastUpdated } = useCreditContext();
   const { isDark } = useTheme();
   const navigate = useNavigate();
 
@@ -30,12 +30,23 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
   // Don't show error state if we're still loading or if plan is "Loading..."
   const isRealError = error && !loading && displayPlan !== 'Loading...';
 
+  // **🚀 REAL-TIME STATUS INDICATOR**
+  const getTimeAgo = (date: Date | null) => {
+    if (!date) return 'Never';
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    if (seconds < 10) return 'Just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    return `${Math.floor(minutes / 60)}h ago`;
+  };
+
   if (variant === 'compact') {
     return (
       <div className="flex items-center space-x-3" style={{ minWidth: '200px' }}>
         {/* Credit balance - Always present with stable dimensions to prevent flashing */}
         <div className="flex items-center space-x-2" style={{ minWidth: '120px' }}>
-          <div className={`p-2 rounded-lg transition-colors duration-200 ${
+          <div className={`p-2 rounded-lg transition-colors duration-200 relative ${
             isRealError ? isDark ? 'bg-red-900/20' : 'bg-red-100' :
             isCriticalCredits ? isDark ? 'bg-red-900/20' : 'bg-red-100' : 
             isLowCredits ? isDark ? 'bg-yellow-900/20' : 'bg-yellow-100' : 
@@ -49,6 +60,13 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
             alignItems: 'center',
             justifyContent: 'center'
           }}>
+            {/* **🔥 REAL-TIME PULSE INDICATOR** */}
+            {isRealTime && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg">
+                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+              </div>
+            )}
+            
             {isRealError ? (
               <AlertTriangle className="h-4 w-4 text-red-600" />
             ) : (
@@ -83,14 +101,20 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
               )}
               <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>credits</span>
             </div>
-            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+            <div className={`text-xs flex items-center justify-between ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
             style={{ 
               height: '14px',
               display: 'flex',
               alignItems: 'center'
             }}>
-              {loading || displayPlan === 'Loading...' ? 'Loading...' : isLowCredits ? `${displayPlan} Plan` : ''}
-              </div>
+              <span>{loading || displayPlan === 'Loading...' ? 'Loading...' : isLowCredits ? `${displayPlan} Plan` : ''}</span>
+              {/* **📅 LAST UPDATED INDICATOR** */}
+              {lastUpdated && !loading && (
+                <span className="text-xs text-green-500 font-medium" title={`Last updated: ${lastUpdated.toLocaleTimeString()}`}>
+                  {getTimeAgo(lastUpdated)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../services/api';
 
 interface CreditData {
@@ -33,6 +33,10 @@ interface CreditContextType {
   refreshCredits: () => Promise<void>;
   deductCredits: (amount: number) => void;
   hasEnoughCredits: (amount: number) => boolean;
+  // New real-time features
+  forceRefresh: () => Promise<void>;
+  isRealTime: boolean;
+  lastUpdated: Date | null;
 }
 
 const CreditContext = createContext<CreditContextType | undefined>(undefined);
@@ -54,6 +58,13 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isRealTime, setIsRealTime] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  
+  // Refs for managing intervals and preventing race conditions
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+  const retryCountRef = useRef(0);
 
   // Track authentication state changes
   useEffect(() => {
@@ -84,6 +95,7 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
         });
         setLoading(false);
         setError(null);
+        setLastUpdated(new Date());
       }
       
       return authenticated;
@@ -100,15 +112,17 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     window.addEventListener('storage', handleStorageChange);
     
     // Also listen for manual token changes
-    const interval = setInterval(checkAuth, 1000);
+    const authCheckInterval = setInterval(checkAuth, 2000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      clearInterval(authCheckInterval);
     };
   }, []);
 
   const fetchCreditData = useCallback(async (retryCount: number = 0, silent: boolean = false) => {
+    if (!isMountedRef.current) return;
+    
     try {
       if (!silent) setLoading(true);
       setError(null);
@@ -136,25 +150,44 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
           }
         });
         setLoading(false);
+        setLastUpdated(new Date());
+        retryCountRef.current = 0;
         return;
       }
 
       // Small delay to ensure token is properly set after login
       if (retryCount === 0) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       const data = await apiService.getCreditData();
-      setCreditData(data);
-      setError(null);
+      
+      if (isMountedRef.current) {
+        setCreditData(data);
+        setError(null);
+        setLastUpdated(new Date());
+        retryCountRef.current = 0;
+        
+        // Log real-time update for debugging
+        if (silent) {
+          console.log('🔄 Credit data auto-updated:', {
+            balance: data.balance,
+            used: data.used_this_month,
+            timestamp: new Date().toLocaleTimeString()
+          });
+        }
+      }
 
     } catch (err) {
+      if (!isMountedRef.current) return;
+      
       console.error('Credit fetch error:', err);
+      retryCountRef.current++;
       
       // If it's the first attempt and we just authenticated, retry once
-      if (retryCount === 0 && isAuthenticated) {
-        console.log('Retrying credit fetch after authentication...');
-        setTimeout(() => fetchCreditData(1, silent), 1000);
+      if (retryCount === 0 && isAuthenticated && retryCountRef.current < 3) {
+        console.log('🔄 Retrying credit fetch after authentication...');
+        setTimeout(() => fetchCreditData(1, silent), 1500);
         return;
       }
       
@@ -180,19 +213,25 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
           success_rate: 0
         }
       });
+      setLastUpdated(new Date());
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && isMountedRef.current) setLoading(false);
     }
   }, [isAuthenticated]);
 
   const refreshCredits = useCallback(async (silent: boolean = false) => {
-    if (isAuthenticated) {
+    if (isAuthenticated && isMountedRef.current) {
+      console.log('🔄 Manual credit refresh triggered');
       await fetchCreditData(0, silent);
     }
   }, [fetchCreditData, isAuthenticated]);
 
-  const deductCredits = useCallback((amount: number) => {
-    if (creditData) {
+  // **🚀 INSTANT OPTIMISTIC CREDIT DEDUCTION**
+  const deductCredits = useCallback((amount: number, reason: string = 'enrichment') => {
+    console.log(`💳 Deducting ${amount} credits for ${reason}`);
+    
+    if (creditData && isMountedRef.current) {
+      // **INSTANT UI UPDATE** - no waiting for server
       setCreditData(prev => prev ? {
         ...prev,
         balance: Math.max(0, prev.balance - amount),
@@ -203,32 +242,116 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
           total_enriched: prev.statistics.total_enriched + 1
         }
       } : null);
+      
+      setLastUpdated(new Date());
+      
+      // **SYNC WITH SERVER** after UI update (background)
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          console.log('🔄 Syncing credit deduction with server...');
+          fetchCreditData(0, true); // Silent sync
+        }
+      }, 1000);
     }
-  }, [creditData]);
+  }, [creditData, fetchCreditData]);
+
+  // **🚀 FORCE IMMEDIATE REFRESH** (for job completions)
+  const forceRefresh = useCallback(async () => {
+    console.log('⚡ Force refreshing credits immediately!');
+    if (isAuthenticated && isMountedRef.current) {
+      // Clear any existing intervals
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      
+      // Immediate refresh
+      await fetchCreditData(0, false);
+      
+      // Restart interval
+      startRealTimePolling();
+    }
+  }, [isAuthenticated, fetchCreditData]);
 
   const hasEnoughCredits = useCallback((amount: number): boolean => {
     return creditData ? creditData.balance >= amount : false;
   }, [creditData]);
 
+  // **🔥 REAL-TIME POLLING SYSTEM**
+  const startRealTimePolling = useCallback(() => {
+    if (!isAuthenticated || !isMountedRef.current) return;
+    
+    // Clear existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    console.log('🚀 Starting real-time credit polling (10s intervals)');
+    
+    // **FASTER POLLING** - 10 seconds instead of 30
+    intervalRef.current = setInterval(() => {
+      if (isAuthenticated && isMountedRef.current) {
+        fetchCreditData(0, true); // Silent background refresh
+      }
+    }, 10000); // 10 seconds for near real-time experience
+    
+    setIsRealTime(true);
+  }, [isAuthenticated, fetchCreditData]);
+
   // Fetch credits when authentication state changes to true
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('✅ User authenticated - fetching credits');
       fetchCreditData();
-    }
-  }, [isAuthenticated, fetchCreditData]);
-
-  // 🎯 SILENT auto-refresh every 30 seconds - no loading states shown
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const interval = setInterval(() => {
-      if (isAuthenticated) {
-        fetchCreditData(0, true); // Silent refresh - users won't see loading
+      startRealTimePolling();
+    } else {
+      console.log('❌ User not authenticated - stopping credit polling');
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-    }, 30000);
+      setIsRealTime(false);
+    }
+  }, [isAuthenticated, fetchCreditData, startRealTimePolling]);
+
+  // **🎯 LISTEN FOR JOB COMPLETION EVENTS**
+  useEffect(() => {
+    const handleJobCompleted = (event: any) => {
+      console.log('🎉 Job completed event detected - refreshing credits!');
+      forceRefresh();
+    };
+
+    const handleCreditUsed = (event: any) => {
+      console.log('💰 Credit used event detected - updating balance!');
+      if (event.detail?.amount) {
+        deductCredits(event.detail.amount, event.detail.reason || 'enrichment');
+      } else {
+        forceRefresh();
+      }
+    };
+
+    // Listen for custom events
+    window.addEventListener('jobCompleted', handleJobCompleted);
+    window.addEventListener('creditsUsed', handleCreditUsed);
     
-    return () => clearInterval(interval);
-  }, [fetchCreditData, isAuthenticated]);
+    return () => {
+      window.removeEventListener('jobCompleted', handleJobCompleted);
+      window.removeEventListener('creditsUsed', handleCreditUsed);
+    };
+  }, [forceRefresh, deductCredits]);
+
+  // **🧹 CLEANUP ON UNMOUNT**
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
 
   const value: CreditContextType = {
     creditData,
@@ -236,7 +359,10 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     error,
     refreshCredits,
     deductCredits,
-    hasEnoughCredits
+    hasEnoughCredits,
+    forceRefresh,
+    isRealTime,
+    lastUpdated
   };
 
   return (

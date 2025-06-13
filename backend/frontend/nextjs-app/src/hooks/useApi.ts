@@ -93,6 +93,21 @@ export const useJobs = () => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [serviceDown, setServiceDown] = useState(false);
 
+  // **🚀 FIRE CREDIT UPDATE EVENTS**
+  const fireJobCompletedEvent = useCallback((job: Job) => {
+    console.log('🎉 Firing job completed event for credit refresh!');
+    
+    // Dispatch custom event for credit system
+    const event = new CustomEvent('jobCompleted', {
+      detail: {
+        jobId: job.id,
+        creditsUsed: job.credits_used || 0,
+        contactsProcessed: job.total || 0
+      }
+    });
+    window.dispatchEvent(event);
+  }, []);
+
   const fetchJobs = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
@@ -102,7 +117,7 @@ export const useJobs = () => {
       const response = await apiService.getJobs();
       const newJobs = response.jobs || [];
       
-      // Only show notifications for newly completed jobs, not on initial load
+      // **🔥 DETECT NEWLY COMPLETED JOBS & FIRE EVENTS**
       if (!initialLoad) {
         newJobs.forEach(job => {
           if (job.status === 'completed' && !completedJobs.has(job.id)) {
@@ -114,6 +129,9 @@ export const useJobs = () => {
               success_rate: job.success_rate || 0,
               credits_used: job.credits_used || 0
             });
+            
+            // **⚡ FIRE CREDIT UPDATE EVENT**
+            fireJobCompletedEvent(job);
             
             // Add to completed jobs set
             setCompletedJobs((prev: Set<string>) => new Set([...prev, job.id]));
@@ -151,7 +169,7 @@ export const useJobs = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [completedJobs, initialLoad]);
+  }, [completedJobs, initialLoad, fireJobCompletedEvent]);
 
   useEffect(() => {
     fetchJobs();

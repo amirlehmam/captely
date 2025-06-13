@@ -37,6 +37,7 @@ import { useEnrichmentConfirm } from '../hooks/useEnrichmentConfirm';
 import { EnrichmentType } from '../components/modals/EnrichmentConfirmModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCreditContext } from '../contexts/CreditContext';
 
 // Type for manual contacts
 interface ManualContact {
@@ -79,12 +80,31 @@ const ImportPage: React.FC = () => {
   const { jobs, loading: jobsLoading, error: jobsError, serviceDown, refetch: refetchJobs } = useJobs();
   const { job: currentJob, loading: jobLoading } = useJob(currentJobId);
   const { confirm: confirmEnrichment, EnrichmentConfirmDialog, isOpen: modalIsOpen } = useEnrichmentConfirm();
+  const { forceRefresh: forceRefreshCredits, deductCredits } = useCreditContext();
 
   // Validation
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-
+  
   // Enhanced notification system available from imports
   const [isPaused, setIsPaused] = useState(false);
+
+  // **🚀 FIRE CREDIT DEDUCTION EVENT**
+  const fireCreditUsedEvent = useCallback((amount: number, reason: string) => {
+    console.log(`💳 Firing credit used event: ${amount} credits for ${reason}`);
+    
+    // Immediate optimistic update
+    deductCredits(amount);
+    
+    // Also fire global event for other components
+    const event = new CustomEvent('creditsUsed', {
+      detail: {
+        amount,
+        reason,
+        timestamp: new Date().toISOString()
+      }
+    });
+    window.dispatchEvent(event);
+  }, [deductCredits]);
 
   // Pause all auto-refresh when modal is open
   useEffect(() => {
@@ -260,12 +280,21 @@ const ImportPage: React.FC = () => {
         return;
       }
 
+      // **🚀 INSTANT CREDIT DEDUCTION** - Estimate credits needed
+      const estimatedCredits = 10; // Estimate or calculate based on file size
+      fireCreditUsedEvent(estimatedCredits, 'File Upload Enrichment');
+
       // Proceed with upload using selected enrichment type
       const result = await uploadFile(selectedFile, enrichmentType);
       setCurrentJobId(result.job_id);
       setUploadSuccess(true);
       setSelectedFile(null);
       refetchJobs(); // Refresh the jobs list
+      
+      // **⚡ FORCE REFRESH CREDITS** to sync with server
+      setTimeout(() => {
+        forceRefreshCredits();
+      }, 2000);
       
       toast.success(`🎉 File uploaded successfully! Starting enrichment...`);
       
@@ -388,6 +417,10 @@ const ImportPage: React.FC = () => {
         return;
       }
 
+      // **🚀 INSTANT CREDIT DEDUCTION** - Calculate credits for manual contacts
+      const estimatedCredits = manualContacts.length * 2; // 2 credits per contact estimate
+      fireCreditUsedEvent(estimatedCredits, 'Manual Contact Enrichment');
+
       // Send manual contacts to backend for enrichment
       const response = await fetch('/api/import/imports/manual', {
         method: 'POST',
@@ -410,6 +443,11 @@ const ImportPage: React.FC = () => {
       setUploadSuccess(true);
       setManualContacts([]);
       refetchJobs();
+      
+      // **⚡ FORCE REFRESH CREDITS** to sync with server
+      setTimeout(() => {
+        forceRefreshCredits();
+      }, 2000);
       
       showManualImportStarted(manualContacts.length);
       
