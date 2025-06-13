@@ -45,6 +45,7 @@ export const useNotifications = () => {
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [allMarkedAsRead, setAllMarkedAsRead] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     if (!apiService.isAuthenticated()) {
@@ -68,7 +69,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           type: 'job_completed',
           title: '🎉 Enrichment Complete!',
           message: 'Your CSV file has been processed successfully with 45 emails found.',
-          read: false,
+          read: allMarkedAsRead,
           created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
           data: { job_id: 'test-job-1', file_name: 'contacts.csv' }
         },
@@ -77,7 +78,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           type: 'low_credits',
           title: '⚠️ Low Credits Warning',
           message: 'You have 15 credits remaining. Consider topping up to continue.',
-          read: false,
+          read: allMarkedAsRead,
           created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
           data: { credits_remaining: 15 }
         },
@@ -97,7 +98,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [allMarkedAsRead]);
 
   const markAsRead = useCallback(async (id: string) => {
     try {
@@ -118,6 +119,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setNotifications(prev => 
         prev.map(notif => ({ ...notif, read: true }))
       );
+      setAllMarkedAsRead(true);
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
     }
@@ -127,6 +129,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       await apiService.deleteAllNotifications();
       setNotifications([]);
+      setAllMarkedAsRead(false);
     } catch (error) {
       console.error('Failed to delete all notifications:', error);
     }

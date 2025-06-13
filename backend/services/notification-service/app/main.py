@@ -560,7 +560,7 @@ async def get_user_notifications(
                 "type": notification_type,
                 "title": subject,
                 "message": _get_notification_message(template_name, subject),
-                "read": status == "delivered",
+                "read": status in ["delivered", "read"],
                 "created_at": created_at.isoformat(),
                 "data": notification_data
             })
@@ -676,6 +676,35 @@ async def mark_all_notifications_as_read(
     except Exception as e:
         logger.error(f"Error marking all notifications as read: {str(e)}")
         return {"success": False}
+
+@app.delete("/api/notifications/all")
+async def delete_all_notifications(
+    session: AsyncSession = Depends(get_async_session),
+    auth_user: str = Depends(verify_jwt)
+):
+    """Delete all notifications for the authenticated user"""
+    
+    try:
+        # Get user's email
+        user_query = "SELECT email FROM users WHERE id = :user_id"
+        user_result = await session.execute(text(user_query), {"user_id": auth_user})
+        user_email = user_result.scalar()
+        
+        if user_email:
+            # Delete all notification logs for this user
+            delete_query = """
+                DELETE FROM notification_logs 
+                WHERE recipient_email = :email
+            """
+            
+            await session.execute(text(delete_query), {"email": user_email})
+            await session.commit()
+        
+        return {"success": True, "message": "All notifications deleted"}
+        
+    except Exception as e:
+        logger.error(f"Error deleting all notifications: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 @app.get("/api/notifications/logs/{user_id}")
 async def get_notification_logs(
