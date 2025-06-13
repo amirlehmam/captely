@@ -113,7 +113,7 @@ const CRMPage: React.FC = () => {
 
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportType, setExportType] = useState<'single' | 'bulk'>('bulk');
+  const [exportContactId, setExportContactId] = useState<string | null>(null);
 
   // Fetch data
   const fetchContacts = useCallback(async () => {
@@ -253,25 +253,35 @@ const CRMPage: React.FC = () => {
       toast.error('Please select contacts to export');
       return;
     }
-    setExportType('bulk');
+    setExportContactId(null);
     setShowExportModal(true);
   };
 
-  const handleSingleExport = async (contactId: string) => {
-    try {
-      await apiService.exportContactToHubSpot(contactId);
-    } catch (error) {
-      console.error('Export failed:', error);
-    }
+  const handleSingleExport = (contactId: string) => {
+    setExportContactId(contactId);
+    setShowExportModal(true);
   };
 
   const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot') => {
     try {
-      if (exportType === 'bulk' && selectedContacts.size > 0) {
+      if (exportContactId) {
+        // Single contact export
+        if (format === 'hubspot') {
+          await apiService.exportContactToHubSpot(exportContactId);
+          toast.success('🚀 Successfully exported contact to HubSpot!');
+        } else {
+          // For other formats, export as CRM contact with single ID
+          await apiService.exportCrmContacts([exportContactId], format);
+          toast.success(`Successfully exported contact as ${format.toUpperCase()}!`);
+        }
+      } else if (selectedContacts.size > 0) {
+        // Bulk export (fallback)
         await apiService.exportCrmContacts(Array.from(selectedContacts), format);
         setSelectedContacts(new Set());
         if (format === 'hubspot') {
           toast.success(`🚀 Successfully exported ${selectedContacts.size} contacts to HubSpot!`);
+        } else {
+          toast.success(`Successfully exported ${selectedContacts.size} contacts as ${format.toUpperCase()}!`);
         }
       }
     } catch (error) {
@@ -426,40 +436,35 @@ const CRMPage: React.FC = () => {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex items-center space-x-3">
+            <div className="flex space-x-4">
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className={`inline-flex items-center px-6 py-3 border rounded-xl font-medium transition-all duration-200 ${
+                className={`inline-flex items-center px-6 py-3 border rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md ${
                   isDark 
-                    ? 'border-gray-600 text-gray-300 bg-gray-800 hover:bg-gray-700 disabled:opacity-50' 
+                    ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50' 
                     : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50'
-                } shadow-lg hover:shadow-xl disabled:cursor-not-allowed`}
-                style={{ willChange: 'background-color, transform' }}
+                }`}
+                style={{ willChange: 'background-color, box-shadow' }}
               >
                 <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 {t('common.refresh')}
               </button>
               
               {selectedContacts.size > 0 && (
-                <>
-                  <button
-                    onClick={() => apiService.bulkExportCrmContacts(Array.from(selectedContacts), 'hubspot')}
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                    style={{ willChange: 'transform, box-shadow' }}
-                  >
-                    <Upload className="h-5 w-5 mr-2" />
-                    Export to HubSpot ({selectedContacts.size})
-                  </button>
-                  <button
-                    onClick={handleBulkExport}
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                    style={{ willChange: 'transform, box-shadow' }}
-                  >
-                    <FileDown className="h-5 w-5 mr-2" />
-                    Export Data ({selectedContacts.size})
-                  </button>
-                </>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleBulkExport}
+                  className={`px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
+                    isDark 
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  <Download className="w-4 h-4 mr-2 inline" />
+                  Export ({selectedContacts.size})
+                </motion.button>
               )}
             </div>
           </div>
@@ -1069,29 +1074,53 @@ const CRMPage: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <button
-                            onClick={() => handleEditContact(contact.id)}
-                            className={`p-2 rounded-lg transition-all duration-200 ${
-                              isDark 
-                                ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
-                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                            }`}
-                            title="Edit Contact"
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                           >
-                            <Edit className="h-4 w-4" />
-                          </button>
+                            <button
+                              onClick={() => handleEditContact(contact.id)}
+                              className={`p-2 rounded-lg transition-all duration-200 ${
+                                isDark 
+                                  ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
+                                  : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                              }`}
+                              title="View Contact Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          </motion.div>
                           
-                          <button
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <button
+                              onClick={() => handleEditContact(contact.id)}
+                              className={`p-2 rounded-lg transition-all duration-200 ${
+                                isDark 
+                                  ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                              }`}
+                              title="Edit Contact"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                          </motion.div>
+                          
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={() => handleSingleExport(contact.id)}
                             className={`p-2 rounded-lg transition-all duration-200 ${
                               isDark 
-                                ? 'text-orange-400 hover:text-orange-300 hover:bg-orange-900/20' 
-                                : 'text-orange-500 hover:text-orange-600 hover:bg-orange-50'
+                                ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20' 
+                                : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
                             }`}
-                            title="Export to HubSpot"
+                            title="Export contact data"
                           >
-                            <Upload className="h-4 w-4" />
-                          </button>
+                            <Download className="h-4 w-4" />
+                          </motion.button>
                         </>
                       )}
                     </div>
@@ -1159,14 +1188,18 @@ const CRMPage: React.FC = () => {
         isOpen={showExportModal}
         onClose={() => {
           setShowExportModal(false);
-          setExportType('bulk');
+          setExportContactId(null);
         }}
         onExport={handleExportConfirm}
-        title="Export CRM Contacts"
-        description="Choose your preferred format to export selected contacts"
-        exportCount={selectedContacts.size}
+        title={exportContactId ? "Export Contact" : "Export Contacts"}
+        description={
+          exportContactId 
+            ? "Choose your preferred format to export this contact"
+            : "Choose your preferred format to export selected contacts"
+        }
+        exportCount={exportContactId ? 1 : selectedContacts.size}
         type="contacts"
-        contactIds={Array.from(selectedContacts)}
+        contactIds={exportContactId ? [exportContactId] : Array.from(selectedContacts)}
       />
     </div>
   );

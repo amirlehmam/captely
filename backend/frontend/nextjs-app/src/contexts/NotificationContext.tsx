@@ -46,6 +46,19 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [allMarkedAsRead, setAllMarkedAsRead] = useState(false);
+  const [deletedNotificationIds, setDeletedNotificationIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const savedDeletedIds = localStorage.getItem('captely_deleted_notifications');
+    if (savedDeletedIds) {
+      try {
+        const parsedIds = JSON.parse(savedDeletedIds);
+        setDeletedNotificationIds(new Set(parsedIds));
+      } catch (error) {
+        console.error('Error parsing deleted notifications from localStorage:', error);
+      }
+    }
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     if (!apiService.isAuthenticated()) {
@@ -58,11 +71,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       console.log('📡 NotificationContext: Fetching notifications...');
       const response = await apiService.getNotifications();
       console.log('✅ NotificationContext: Received response:', response);
-      setNotifications(response.notifications || []);
+      
+      const filteredNotifications = (response.notifications || []).filter(
+        (notif: Notification) => !deletedNotificationIds.has(notif.id)
+      );
+      setNotifications(filteredNotifications);
     } catch (error) {
       console.error('❌ NotificationContext: Failed to fetch notifications:', error);
       
-      // 🔥 FALLBACK: Add test notifications when API fails for debugging
       const testNotifications: Notification[] = [
         {
           id: 'test-1',
@@ -70,7 +86,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           title: '🎉 Enrichment Complete!',
           message: 'Your CSV file has been processed successfully with 45 emails found.',
           read: allMarkedAsRead,
-          created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
+          created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
           data: { job_id: 'test-job-1', file_name: 'contacts.csv' }
         },
         {
@@ -79,7 +95,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           title: '⚠️ Low Credits Warning',
           message: 'You have 15 credits remaining. Consider topping up to continue.',
           read: allMarkedAsRead,
-          created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+          created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
           data: { credits_remaining: 15 }
         },
         {
@@ -88,17 +104,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           title: '📊 Weekly Summary Ready',
           message: 'Your weekly activity report shows 150 contacts processed this week.',
           read: true,
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           data: { contacts_processed: 150 }
         }
       ];
       
-      console.log('🧪 NotificationContext: Using test notifications for debugging');
-      setNotifications(testNotifications);
+      const filteredTestNotifications = testNotifications.filter(
+        notif => !deletedNotificationIds.has(notif.id)
+      );
+      
+      console.log('🧪 NotificationContext: Using filtered test notifications for debugging');
+      setNotifications(filteredTestNotifications);
     } finally {
       setLoading(false);
     }
-  }, [allMarkedAsRead]);
+  }, [allMarkedAsRead, deletedNotificationIds]);
 
   const markAsRead = useCallback(async (id: string) => {
     try {
@@ -128,12 +148,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const deleteAllNotifications = useCallback(async () => {
     try {
       await apiService.deleteAllNotifications();
+      
+      // 🔥 Track all current notification IDs as deleted
+      const currentNotificationIds = notifications.map(n => n.id);
+      const updatedDeletedIds = new Set([...deletedNotificationIds, ...currentNotificationIds]);
+      setDeletedNotificationIds(updatedDeletedIds);
+      
+      // 🔥 Save to localStorage for persistence
+      localStorage.setItem('captely_deleted_notifications', JSON.stringify(Array.from(updatedDeletedIds)));
+      
       setNotifications([]);
-      setAllMarkedAsRead(false);
+      setAllMarkedAsRead(false); // 🔥 Reset flag when deleting all
     } catch (error) {
       console.error('Failed to delete all notifications:', error);
     }
-  }, []);
+  }, [notifications, deletedNotificationIds]);
 
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'created_at'>) => {
     const newNotification: Notification = {
@@ -144,18 +173,22 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setNotifications((prev: Notification[]) => [newNotification, ...prev]);
   }, []);
 
+  // 🔥 Clear deleted notifications from localStorage (useful for logout/reset)
+  const clearDeletedNotifications = useCallback(() => {
+    localStorage.removeItem('captely_deleted_notifications');
+    setDeletedNotificationIds(new Set());
+    console.log('🧹 Cleared deleted notifications from localStorage');
+  }, []);
+
   const unreadCount = notifications.filter((n: Notification) => !n.read).length;
 
-  // Fetch notifications when component mounts and periodically
   useEffect(() => {
     fetchNotifications();
     
-    // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Listen for batch completion and credit purchase events
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'batch_completed') {

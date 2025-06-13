@@ -108,12 +108,12 @@ const CreditDisplay: React.FC<CreditDisplayProps> = ({
               alignItems: 'center'
             }}>
               <span>{loading || displayPlan === 'Loading...' ? 'Loading...' : isLowCredits ? `${displayPlan} Plan` : ''}</span>
-              {/* **📅 LAST UPDATED INDICATOR** */}
-              {lastUpdated && !loading && (
+              {/* 🔥 REMOVED: Last updated indicator that was showing "Just now" */}
+              {/* {lastUpdated && !loading && (
                 <span className="text-xs text-green-500 font-medium" title={`Last updated: ${lastUpdated.toLocaleTimeString()}`}>
                   {getTimeAgo(lastUpdated)}
                 </span>
-              )}
+              )} */}
             </div>
           </div>
         </div>
