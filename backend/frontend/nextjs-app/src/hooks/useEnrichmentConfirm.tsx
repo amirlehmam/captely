@@ -10,15 +10,22 @@ export const useEnrichmentConfirm = () => {
   const [fileName, setFileName] = useState<string | undefined>();
   const [resolveCallback, setResolveCallback] = useState<((value: EnrichmentType | null) => void) | null>(null);
   
-  // Prevent multiple simultaneous calls
+  // Prevent multiple simultaneous calls and infinite loops
   const isProcessingRef = useRef(false);
   const lastCallRef = useRef(0);
+  const mountedRef = useRef(true);
 
   const confirm = (fileNameParam?: string): Promise<EnrichmentType | null> => {
     const now = Date.now();
     
-    // Debounce: Prevent calls within 500ms of each other
-    if (now - lastCallRef.current < 500) {
+    // Safety check: Component must be mounted
+    if (!mountedRef.current) {
+      console.log('🚫 Component unmounted, aborting modal');
+      return Promise.resolve(null);
+    }
+    
+    // Debounce: Prevent calls within 1000ms of each other (increased from 500ms)
+    if (now - lastCallRef.current < 1000) {
       console.log('🚫 Debounced: Too soon after last call');
       return Promise.resolve(null);
     }
@@ -43,6 +50,13 @@ export const useEnrichmentConfirm = () => {
 
   const handleConfirm = (enrichmentType: EnrichmentType) => {
     console.log('✅ Modal confirmed with:', enrichmentType);
+    
+    // Safety check: Component must be mounted
+    if (!mountedRef.current) {
+      console.log('🚫 Component unmounted during confirm');
+      return;
+    }
+    
     setIsOpen(false);
     isProcessingRef.current = false;
     
@@ -54,6 +68,13 @@ export const useEnrichmentConfirm = () => {
 
   const handleClose = () => {
     console.log('❌ Modal closed/cancelled');
+    
+    // Safety check: Component must be mounted
+    if (!mountedRef.current) {
+      console.log('🚫 Component unmounted during close');
+      return;
+    }
+    
     setIsOpen(false);
     isProcessingRef.current = false;
     
@@ -62,6 +83,15 @@ export const useEnrichmentConfirm = () => {
       setResolveCallback(null);
     }
   };
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      isProcessingRef.current = false;
+    };
+  }, []);
 
   const EnrichmentConfirmDialog = () => (
     <EnrichmentConfirmModal

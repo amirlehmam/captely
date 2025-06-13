@@ -134,7 +134,7 @@ const ImportPage: React.FC = () => {
     setCurrentJobId(null);
     setValidationErrors([]);
     
-    // Check for HubSpot import redirect
+    // Check for HubSpot import redirect (ONLY ONCE!)
     const urlParams = new URLSearchParams(window.location.search);
     const hubspotJobId = urlParams.get('hubspot_job');
     const importedCount = urlParams.get('imported');
@@ -142,15 +142,15 @@ const ImportPage: React.FC = () => {
     if (hubspotJobId && importedCount) {
       console.log('🔗 HubSpot redirect detected, triggering enrichment modal in 1 second...');
       
+      // Clean up URL parameters IMMEDIATELY to prevent re-triggering
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
       // Add delay to prevent conflicts with modal initialization
       setTimeout(() => {
         handleHubSpotEnrichment(hubspotJobId, parseInt(importedCount));
       }, 1000);
-      
-      // Clean up URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [reset, confirm, navigate, refetchJobs]);
+  }, []); // ✅ EMPTY DEPENDENCY ARRAY - ONLY RUN ONCE!
 
   // File validation
   const validateFile = useCallback((file: File): string[] => {
