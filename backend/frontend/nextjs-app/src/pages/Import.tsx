@@ -76,17 +76,19 @@ const ImportPage: React.FC = () => {
   
   // Hooks
   const { uploadFile, uploading, progress, error: uploadError, reset } = useFileUpload();
-  const { jobs, loading: jobsLoading, refetch: refetchJobs } = useJobs();
+  const { jobs, loading: jobsLoading, error: jobsError, serviceDown, refetch: refetchJobs } = useJobs();
   const { job: currentJob, loading: jobLoading } = useJob(currentJobId);
-  const { confirm, EnrichmentConfirmDialog } = useEnrichmentConfirm();
+  const { confirm: confirmEnrichment, EnrichmentConfirmDialog } = useEnrichmentConfirm();
 
   // Validation
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  // Enhanced notification system available from imports
+
   const handleHubSpotEnrichment = async (jobId: string, importedCount: number) => {
     try {
       // Show enrichment confirmation modal for HubSpot import
-      const enrichmentType = await confirm(`HubSpot Import - ${importedCount} contacts`);
+      const enrichmentType = await confirmEnrichment(`HubSpot Import - ${importedCount} contacts`);
       
       if (!enrichmentType) {
         // User cancelled - just stay on current page
@@ -232,7 +234,7 @@ const ImportPage: React.FC = () => {
 
     try {
       // Show enrichment confirmation modal
-      const enrichmentType = await confirm(selectedFile.name);
+      const enrichmentType = await confirmEnrichment(selectedFile.name);
       
       // If user cancelled the modal, enrichmentType will be null
       if (!enrichmentType) {
@@ -360,7 +362,7 @@ const ImportPage: React.FC = () => {
       setIsStartingManualEnrichment(true);
       
       // Show enrichment confirmation modal
-      const enrichmentType = await confirm(`${manualContacts.length} manually added contacts`);
+      const enrichmentType = await confirmEnrichment(`${manualContacts.length} manually added contacts`);
       
       if (!enrichmentType) {
         console.log('❌ User cancelled manual enrichment');
@@ -435,6 +437,62 @@ const ImportPage: React.FC = () => {
           {t('import.subtitle')}
         </p>
       </motion.div>
+
+      {/* Backend Service Status Warning */}
+      <AnimatePresence>
+        {(serviceDown || jobsError) && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`border rounded-xl p-6 ${
+              isDark 
+                ? 'bg-red-900/20 border-red-700/50' 
+                : 'bg-red-50 border-red-200'
+            }`}
+          >
+            <div className="flex items-start">
+              <AlertTriangle className="h-6 w-6 text-red-500 mr-4 mt-1" />
+              <div className="flex-1">
+                <h3 className={`text-lg font-semibold ${
+                  isDark ? 'text-red-300' : 'text-red-800'
+                }`}>
+                  🚨 Backend Services Unavailable
+                </h3>
+                <p className={`text-sm mt-2 ${
+                  isDark ? 'text-red-400' : 'text-red-700'
+                }`}>
+                  The backend services are temporarily down. This means:
+                </p>
+                <ul className={`text-sm mt-3 list-disc list-inside space-y-1 ${
+                  isDark ? 'text-red-400' : 'text-red-700'
+                }`}>
+                  <li>Cannot load recent batches/jobs</li>
+                  <li>Cannot upload new files for enrichment</li>
+                  <li>Cannot start manual contact enrichment</li>
+                  <li>Credit information may not be accurate</li>
+                </ul>
+                <div className={`mt-4 p-3 rounded-lg ${
+                  isDark ? 'bg-red-800/30' : 'bg-red-100'
+                }`}>
+                  <p className={`text-sm font-medium ${
+                    isDark ? 'text-red-200' : 'text-red-800'
+                  }`}>
+                    🔧 <strong>Solution:</strong> Contact your system administrator to restart the Docker services on the cloud server.
+                  </p>
+                </div>
+                <button
+                  onClick={() => refetchJobs()}
+                  className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-lg hover:bg-red-200 transition-colors"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quick Stats */}
       {jobs.length > 0 && (

@@ -120,6 +120,24 @@ class ApiClient {
       let errorMessage = `Request failed with status ${response.status}`;
       let errorData: any = null;
       
+      // Handle 502 Bad Gateway specifically
+      if (response.status === 502) {
+        showError(
+          'Backend Services Unavailable 🚨',
+          'Our services are temporarily down. Please contact your administrator to restart the backend services.'
+        );
+        throw new ApiError(502, 'Backend services are temporarily unavailable. Please try again later.');
+      }
+      
+      // Handle 503 Service Unavailable  
+      if (response.status === 503) {
+        showError(
+          'Service Temporarily Unavailable ⚠️',
+          'The service is temporarily down for maintenance. Please try again in a few minutes.'
+        );
+        throw new ApiError(503, 'Service temporarily unavailable');
+      }
+      
       try {
         const contentType = response.headers.get('content-type');
         if (contentType?.includes('application/json')) {

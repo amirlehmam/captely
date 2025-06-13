@@ -91,11 +91,13 @@ export const useJobs = () => {
   const [error, setError] = useState<string | null>(null);
   const [completedJobs, setCompletedJobs] = useState<Set<string>>(new Set());
   const [initialLoad, setInitialLoad] = useState(true);
+  const [serviceDown, setServiceDown] = useState(false);
 
   const fetchJobs = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
+      setServiceDown(false);
       
       const response = await apiService.getJobs();
       const newJobs = response.jobs || [];
@@ -125,11 +127,26 @@ export const useJobs = () => {
       }
       
       setJobs(newJobs);
-    } catch (err) {
+    } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load jobs';
-      setError(errorMessage);
-      if (!silent) {
-        console.error('Jobs error:', err);
+      
+      // Handle specific error types gracefully
+      if (err.status === 502 || err.status === 503) {
+        setServiceDown(true);
+        setError('Backend services temporarily unavailable');
+        // Don't retry as frequently when service is down
+        if (!silent) {
+          console.warn('Backend services down, reducing retry frequency');
+        }
+      } else if (err.status === 401) {
+        setError('Authentication required');
+        // Don't continue retrying if auth fails
+        return;
+      } else {
+        setError(errorMessage);
+        if (!silent) {
+          console.error('Jobs error:', err);
+        }
       }
     } finally {
       if (!silent) setLoading(false);
@@ -139,12 +156,19 @@ export const useJobs = () => {
   useEffect(() => {
     fetchJobs();
     
-    // Auto-refresh every 5 seconds for real-time updates
-    const interval = setInterval(() => fetchJobs(true), 5000);
+    // Auto-refresh with adaptive interval based on service status
+    const refreshInterval = serviceDown ? 30000 : 5000; // 30s if down, 5s if up
+    const interval = setInterval(() => fetchJobs(true), refreshInterval);
     return () => clearInterval(interval);
-  }, [fetchJobs]);
+  }, [fetchJobs, serviceDown]);
 
-  return { jobs, loading, error, refetch: fetchJobs };
+  return { 
+    jobs, 
+    loading, 
+    error, 
+    serviceDown, 
+    refetch: fetchJobs 
+  };
 };
 
 // ============================
