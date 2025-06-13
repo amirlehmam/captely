@@ -237,7 +237,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
                     </motion.div>
                     <div>
                       <h2 className="text-xl font-bold text-white tracking-wide">
-                        📥 {title}
+                        📥 NEW DESIGN ACTIVE - {title}
                       </h2>
                       <p className="text-white/80 text-sm mt-1 font-medium">
                         {description}
