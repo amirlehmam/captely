@@ -1458,13 +1458,50 @@ class ApiService {
   // Notification methods - Fixed to use correct notification service endpoints
   async getNotifications(): Promise<{ notifications: any[] }> {
     try {
-      console.log('📡 API Service: Making request to /api/notifications/');
+      const finalUrl = '/api/notifications/';
+      console.log('📡 API Service: Making request to:', finalUrl);
+      console.log('📡 API Service: Full URL will be:', window.location.origin + finalUrl);
+      console.log('📡 API Service: Auth token exists:', !!localStorage.getItem('captely_jwt'));
+      
+      // Check if we're authenticated
+      if (!this.isAuthenticated()) {
+        console.warn('📡 API Service: User not authenticated, skipping notification fetch');
+        return { notifications: [] };
+      }
+      
       // Use the notification service directly (nginx routes /api/notifications to notification-service)
       const result = await client.get('/api/notifications/');
-      console.log('✅ API Service: Notification response:', result);
+      console.log('✅ API Service: Notification response structure:', {
+        hasNotifications: !!result?.notifications,
+        isArray: Array.isArray(result?.notifications),
+        count: result?.notifications?.length || 0,
+        keys: Object.keys(result || {}),
+        sampleResponse: result
+      });
       return result;
-    } catch (error) {
-      console.warn('❌ API Service: Notifications API not available, error:', error);
+    } catch (error: any) {
+      console.error('❌ API Service: Notifications API error details:', {
+        name: error.name,
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        stack: error.stack?.split('\n')[0], // Only first line
+        type: typeof error,
+        constructorName: error.constructor?.name
+      });
+      
+      // Try to get more specific error information
+      if (error instanceof ApiError) {
+        console.error('❌ API Service: ApiError details:', {
+          status: error.status,
+          data: error.data
+        });
+      }
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('❌ API Service: Network error - possible CORS or connection issue');
+      }
+      
       console.warn('Returning empty array as fallback');
       return { notifications: [] };
     }
