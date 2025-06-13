@@ -141,8 +141,13 @@ const ImportPage: React.FC = () => {
     const importedCount = urlParams.get('imported');
     
     if (hubspotJobId && importedCount) {
-      // Auto-trigger enrichment dialog for HubSpot import
-      handleHubSpotEnrichment(hubspotJobId, parseInt(importedCount));
+      console.log('🔗 HubSpot redirect detected, triggering enrichment modal in 1 second...');
+      
+      // Add delay to prevent conflicts with modal initialization
+      setTimeout(() => {
+        handleHubSpotEnrichment(hubspotJobId, parseInt(importedCount));
+      }, 1000);
+      
       // Clean up URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }

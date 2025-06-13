@@ -131,8 +131,8 @@ const NotificationManager: React.FC<NotificationManagerProps> = ({
   if (!containerElement) return null;
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-50">
-      {/* Notification toasts */}
+    <div className="pointer-events-none fixed inset-0 z-40">
+      {/* Notification toasts - lower z-index to not conflict with modals */}
       {visibleNotifications.map((notification: QueuedNotification, index: number) => (
         <NotificationToast
           key={notification.id}
@@ -144,7 +144,7 @@ const NotificationManager: React.FC<NotificationManagerProps> = ({
 
       {/* Queue indicator for overflow */}
       {notifications.length > maxVisible && (
-        <div className="fixed top-4 right-4 pointer-events-auto z-50">
+        <div className="fixed top-4 right-4 pointer-events-auto z-40">
           <div 
             className="
               mt-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 
