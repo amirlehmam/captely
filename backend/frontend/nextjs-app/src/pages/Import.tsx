@@ -29,7 +29,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 // Enhanced notification system
-import { showManualImportStarted, showError } from '../components/notifications/NotificationManager';
+import { showManualImportStarted, showError, showFileImportStarted } from '../components/notifications/NotificationManager';
 
 // Updated hooks for production
 import { useFileUpload, useJobs, useJob } from '../hooks/useApi';
@@ -150,19 +150,24 @@ const ImportPage: React.FC = () => {
         throw new Error('Failed to start HubSpot enrichment');
       }
 
-      toast.success(`🎉 Started enrichment for ${importedCount} HubSpot contacts!`);
+      // 🚫 REMOVED: Old toast notification - keeping only the new green notification system
+      // toast.success(`🎉 Started enrichment for ${importedCount} HubSpot contacts!`);
       setCurrentJobId(jobId);
       setUploadSuccess(true);
       refetchJobs();
       
-      // Optional: Navigate after showing success message
+      // **⚡ FORCE REFRESH CREDITS** to sync with server
+      setTimeout(() => {
+        forceRefreshCredits();
+      }, 2000);
+      
+      // Optional: Navigate after showing success
       setTimeout(() => {
         navigate(`/batches`);
       }, 2000);
       
     } catch (error) {
       console.error('HubSpot enrichment failed:', error);
-      toast.error('Failed to start enrichment for HubSpot contacts');
       // Stay on current page - don't redirect on error
     }
   };
@@ -296,7 +301,18 @@ const ImportPage: React.FC = () => {
         forceRefreshCredits();
       }, 2000);
       
-      toast.success(`🎉 File uploaded successfully! Starting enrichment...`);
+      // ✅ NEW: Green notification for file upload consistency
+      const enrichmentTypeText = enrichmentType?.email && enrichmentType?.phone 
+        ? 'Email + Phone'
+        : enrichmentType?.email 
+          ? 'Email'
+          : enrichmentType?.phone 
+            ? 'Phone'
+            : 'Full';
+      showFileImportStarted(selectedFile.name, enrichmentTypeText);
+      
+      // 🚫 REMOVED: Old toast notification - keeping only the new green notification system
+      // toast.success(`🎉 File uploaded successfully! Starting enrichment...`);
       
       // Optional: Navigate after showing success
       setTimeout(() => {

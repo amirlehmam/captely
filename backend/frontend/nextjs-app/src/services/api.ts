@@ -625,10 +625,6 @@ class ApiService {
                     ? 'Phone enrichment'
                     : 'Full enrichment';
               
-              showSuccess(
-                'File Upload Complete! 🚀',
-                `Your file has been uploaded successfully. ${typeText} is now starting...`
-              );
               resolve(response);
             } catch (error) {
               reject(new Error('Invalid response format'));
