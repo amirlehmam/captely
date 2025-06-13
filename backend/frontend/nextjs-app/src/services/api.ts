@@ -1448,10 +1448,14 @@ class ApiService {
   // Notification methods - Fixed to use correct notification service endpoints
   async getNotifications(): Promise<{ notifications: any[] }> {
     try {
+      console.log('📡 API Service: Making request to /api/notifications/');
       // Use the notification service directly (nginx routes /api/notifications to notification-service)
-      return await client.get('/api/notifications/');
+      const result = await client.get('/api/notifications/');
+      console.log('✅ API Service: Notification response:', result);
+      return result;
     } catch (error) {
-      console.warn('Notifications API not available yet, returning empty array');
+      console.warn('❌ API Service: Notifications API not available, error:', error);
+      console.warn('Returning empty array as fallback');
       return { notifications: [] };
     }
   }
