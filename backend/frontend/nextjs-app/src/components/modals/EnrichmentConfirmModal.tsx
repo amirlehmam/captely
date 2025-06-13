@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Phone, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Mail, Phone, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -31,9 +30,8 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
   });
 
   const handleSubmit = () => {
-    // Validate that at least one option is selected
     if (!enrichmentType.email && !enrichmentType.phone) {
-      return; // Don't proceed if nothing is selected
+      return;
     }
     onConfirm(enrichmentType);
   };
@@ -45,265 +43,113 @@ const EnrichmentConfirmModal: React.FC<EnrichmentConfirmModalProps> = ({
     }));
   };
 
-  const hasSelection = enrichmentType.email || enrichmentType.phone;
+  if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0" style={{ zIndex: 99999 }}>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black bg-opacity-75"
-            style={{ zIndex: 99999 }}
-          />
+    <>
+      {/* Simple backdrop */}
+      <div 
+        className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80"
+        style={{ zIndex: 999999 }}
+        onClick={onClose}
+      />
+      
+      {/* Simple modal */}
+      <div 
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 max-w-full"
+        style={{ zIndex: 999999 }}
+      >
+        <div className={`rounded-lg shadow-xl p-6 ${
+          isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+        }`}>
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Choose Enrichment Options</h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="absolute inset-0 flex items-center justify-center p-4"
-            style={{ zIndex: 100000 }}
-          >
-            <div className={`rounded-2xl shadow-2xl border w-full max-w-md relative ${
-              isDark 
-                ? 'bg-gray-800 border-gray-700' 
-                : 'bg-white border-gray-200'
+          {/* File name */}
+          {fileName && (
+            <div className={`mb-4 p-3 rounded ${
+              isDark ? 'bg-blue-900/20' : 'bg-blue-50'
             }`}>
-              {/* Header */}
-              <div className="px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg mr-3">
-                      <Zap className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                        📤 {t('enrichment.modal.title')}
-                      </h3>
-                    </div>
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className={`transition-colors p-1 rounded-full ${
-                      isDark 
-                        ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                    }`}
-                    style={{ willChange: 'background-color, color' }}
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="px-6 pb-6">
-                {fileName && (
-                  <div className={`mb-6 p-4 border rounded-xl ${
-                    isDark 
-                      ? 'bg-blue-900/20 border-blue-700/50' 
-                      : 'bg-blue-50 border-blue-200'
-                  }`}>
-                    <div className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-blue-500 mr-2" />
-                      <span className={`text-sm font-medium ${
-                        isDark ? 'text-blue-300' : 'text-blue-900'
-                      }`}>
-                        {formatMessage('enrichment.modal.fileSelected', { fileName })}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mb-6">
-                  <h4 className={`text-base font-semibold mb-4 ${
-                    isDark ? 'text-gray-100' : 'text-gray-900'
-                  }`}>
-                    {t('enrichment.modal.chooseEnrichment')}
-                  </h4>
-                  
-                  <div className="space-y-3">
-                    {/* Email Option */}
-                    <label className={`cursor-pointer border border-solid rounded-xl p-4 transition-all duration-200 flex items-start ${
-                      enrichmentType.email 
-                        ? isDark
-                          ? 'border-green-600 bg-green-900/20 shadow-sm' 
-                          : 'border-green-300 bg-green-50 shadow-sm'
-                        : isDark
-                          ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700' 
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                    style={{ willChange: 'background-color, border-color' }}>
-                      <input
-                        type="checkbox"
-                        checked={enrichmentType.email}
-                        onChange={() => handleCheckboxChange('email')}
-                        className="sr-only"
-                      />
-                      <div className={`flex-shrink-0 w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
-                        enrichmentType.email 
-                          ? 'bg-green-500 border-green-500' 
-                          : isDark ? 'border-gray-500' : 'border-gray-300'
-                      }`}>
-                        {enrichmentType.email && (
-                          <CheckCircle className="h-3 w-3 text-white" />
-                        )}
-                      </div>
-                      <div className="flex items-center flex-1">
-                        <Mail className={`h-5 w-5 mr-3 ${
-                          enrichmentType.email 
-                            ? 'text-green-600' 
-                            : isDark ? 'text-gray-500' : 'text-gray-400'
-                        }`} />
-                        <div>
-                          <span className={`font-medium ${
-                            enrichmentType.email 
-                              ? isDark ? 'text-green-300' : 'text-green-900'
-                              : isDark ? 'text-gray-200' : 'text-gray-700'
-                          }`}>
-                            ☑️ {t('enrichment.modal.email.label')}
-                          </span>
-                          <p className={`text-sm ${
-                            enrichmentType.email 
-                              ? isDark ? 'text-green-400' : 'text-green-700'
-                              : isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
-                            {t('enrichment.modal.email.description')}
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-
-                    {/* Phone Option */}
-                    <label className={`cursor-pointer border border-solid rounded-xl p-4 transition-all duration-200 flex items-start ${
-                      enrichmentType.phone 
-                        ? isDark
-                          ? 'border-blue-600 bg-blue-900/20 shadow-sm' 
-                          : 'border-blue-300 bg-blue-50 shadow-sm'
-                        : isDark
-                          ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700' 
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                    style={{ willChange: 'background-color, border-color' }}>
-                      <input
-                        type="checkbox"
-                        checked={enrichmentType.phone}
-                        onChange={() => handleCheckboxChange('phone')}
-                        className="sr-only"
-                      />
-                      <div className={`flex-shrink-0 w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
-                        enrichmentType.phone 
-                          ? 'bg-blue-500 border-blue-500' 
-                          : isDark ? 'border-gray-500' : 'border-gray-300'
-                      }`}>
-                        {enrichmentType.phone && (
-                          <CheckCircle className="h-3 w-3 text-white" />
-                        )}
-                      </div>
-                      <div className="flex items-center flex-1">
-                        <Phone className={`h-5 w-5 mr-3 ${
-                          enrichmentType.phone 
-                            ? 'text-blue-600' 
-                            : isDark ? 'text-gray-500' : 'text-gray-400'
-                        }`} />
-                        <div>
-                          <span className={`font-medium ${
-                            enrichmentType.phone 
-                              ? isDark ? 'text-blue-300' : 'text-blue-900'
-                              : isDark ? 'text-gray-200' : 'text-gray-700'
-                          }`}>
-                            ☑️ {t('enrichment.modal.phone.label')}
-                          </span>
-                          <p className={`text-sm ${
-                            enrichmentType.phone 
-                              ? isDark ? 'text-blue-400' : 'text-blue-700'
-                              : isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
-                            {t('enrichment.modal.phone.description')}
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-
-                    {/* Both Selected Indicator */}
-                    {enrichmentType.email && enrichmentType.phone && (
-                      <div className={`p-3 border rounded-xl ${
-                        isDark 
-                          ? 'bg-purple-900/20 border-purple-700/50' 
-                          : 'bg-purple-50 border-purple-200'
-                      }`}>
-                        <div className="flex items-center">
-                          <Zap className="h-4 w-4 text-purple-600 mr-2" />
-                          <span className={`text-sm font-medium ${
-                            isDark ? 'text-purple-400' : 'text-purple-900'
-                          }`}>
-                            ☑️ {t('enrichment.modal.both')}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Warning if nothing selected */}
-                {!hasSelection && (
-                  <div className={`mb-4 p-3 border rounded-xl ${
-                    isDark 
-                      ? 'bg-red-900/20 border-red-700/50' 
-                      : 'bg-red-50 border-red-200'
-                  }`}>
-                    <div className="flex items-center">
-                      <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
-                      <span className={`text-sm font-medium ${
-                        isDark ? 'text-red-400' : 'text-red-900'
-                      }`}>
-                        {t('enrichment.modal.selectAtLeastOne')}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className={`px-6 py-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={onClose}
-                    className={`px-4 py-2 text-sm font-medium border rounded-lg transition-all duration-200 ${
-                      isDark 
-                        ? 'text-gray-300 bg-gray-700 border-gray-600 hover:bg-gray-600' 
-                        : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
-                    }`}
-                    style={{ willChange: 'background-color, border-color' }}
-                  >
-                    {t('enrichment.modal.cancel')}
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!hasSelection}
-                    className={`px-6 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      hasSelection
-                        ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
-                        : isDark 
-                          ? 'text-gray-500 bg-gray-700 cursor-not-allowed' 
-                        : 'text-gray-400 bg-gray-200 cursor-not-allowed'
-                    }`}
-                    style={{ willChange: 'background, box-shadow' }}
-                  >
-                    {t('enrichment.modal.startEnrichment')}
-                  </button>
-                </div>
-              </div>
+              <p className="text-sm">File: {fileName}</p>
             </div>
-          </motion.div>
+          )}
+
+          {/* Options */}
+          <div className="space-y-3 mb-6">
+            {/* Email Option */}
+            <label className={`flex items-center p-3 border rounded cursor-pointer ${
+              enrichmentType.email 
+                ? isDark ? 'border-green-500 bg-green-900/20' : 'border-green-500 bg-green-50'
+                : isDark ? 'border-gray-600' : 'border-gray-300'
+            }`}>
+              <input
+                type="checkbox"
+                checked={enrichmentType.email}
+                onChange={() => handleCheckboxChange('email')}
+                className="mr-3"
+              />
+              <Mail className="h-5 w-5 mr-2" />
+              <div>
+                <div className="font-medium">Email Enrichment</div>
+                <div className="text-sm opacity-75">Find and verify email addresses</div>
+              </div>
+            </label>
+
+            {/* Phone Option */}
+            <label className={`flex items-center p-3 border rounded cursor-pointer ${
+              enrichmentType.phone 
+                ? isDark ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50'
+                : isDark ? 'border-gray-600' : 'border-gray-300'
+            }`}>
+              <input
+                type="checkbox"
+                checked={enrichmentType.phone}
+                onChange={() => handleCheckboxChange('phone')}
+                className="mr-3"
+              />
+              <Phone className="h-5 w-5 mr-2" />
+              <div>
+                <div className="font-medium">Phone Enrichment</div>
+                <div className="text-sm opacity-75">Find and verify phone numbers</div>
+              </div>
+            </label>
+          </div>
+
+          {/* Warning */}
+          {!enrichmentType.email && !enrichmentType.phone && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded text-red-700">
+              Please select at least one enrichment option
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              className={`px-4 py-2 rounded ${
+                isDark 
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!enrichmentType.email && !enrichmentType.phone}
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Start Enrichment
+            </button>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+      </div>
+    </>
   );
 };
 

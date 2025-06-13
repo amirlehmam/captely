@@ -92,21 +92,42 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   // Google OAuth setup
   useEffect(() => {
     // Load Google OAuth script
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    
     script.onload = () => {
+      console.log('🟢 Google OAuth script loaded');
       if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          callback: handleGoogleResponse,
-          auto_select: false,
-        });
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        console.log('🔑 Google Client ID:', clientId ? 'Found' : 'Missing');
+        
+        if (!clientId) {
+          console.error('❌ VITE_GOOGLE_CLIENT_ID is not set');
+          return;
+        }
+        
+        try {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleGoogleResponse,
+            auto_select: false,
+          });
+          console.log('✅ Google OAuth initialized successfully');
+        } catch (error) {
+          console.error('❌ Error initializing Google OAuth:', error);
+        }
+      } else {
+        console.error('❌ Google accounts object not found');
       }
     };
+
+    script.onerror = () => {
+      console.error('❌ Failed to load Google OAuth script');
+    };
+
+    document.head.appendChild(script);
 
     return () => {
       if (document.head.contains(script)) {
@@ -116,8 +137,50 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   }, []);
 
   const triggerGoogleSignIn = () => {
-    if (window.google) {
-      window.google.accounts.id.prompt();
+    console.log('🚀 Triggering Google Sign In...');
+    
+    if (!window.google) {
+      console.error('❌ Google not loaded');
+      toast.error('Google authentication is not available. Please try again.');
+      return;
+    }
+    
+    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+      console.error('❌ Google Client ID not configured');
+      toast.error('Google authentication is not properly configured.');
+      return;
+    }
+    
+    try {
+      window.google.accounts.id.prompt((notification: any) => {
+        console.log('🔔 Google prompt notification:', notification);
+        if (notification.isNotDisplayed()) {
+          console.log('🚫 Google prompt not displayed, trying renderButton approach...');
+          // Fallback: create a temporary button and click it
+          const tempDiv = document.createElement('div');
+          tempDiv.style.position = 'absolute';
+          tempDiv.style.top = '-9999px';
+          document.body.appendChild(tempDiv);
+          
+          window.google.accounts.id.renderButton(tempDiv, {
+            theme: 'outline',
+            size: 'large',
+            width: 250
+          });
+          
+          // Find and click the button
+          setTimeout(() => {
+            const button = tempDiv.querySelector('div[role="button"]') as HTMLElement;
+            if (button) {
+              button.click();
+            }
+            document.body.removeChild(tempDiv);
+          }, 100);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error triggering Google sign in:', error);
+      toast.error('Failed to start Google authentication. Please try again.');
     }
   };
 
