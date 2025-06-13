@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Download, FileDown, Code2, Settings, 
@@ -5,8 +6,9 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { apiService } from '../../services/api';
 
-@@ -12,13 +12,14 @@ import { apiService } from '../../services/api';
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,23 +19,23 @@ interface ExportModalProps {
   type: 'batch' | 'crm' | 'contacts';
   jobId?: string;
   contactIds?: string[];
-
 }
 
 const ExportModal: React.FC<ExportModalProps> = ({
-
-@@ -30,34 +31,42 @@ const ExportModal: React.FC<ExportModalProps> = ({
+  isOpen,
+  onClose,
+  onExport,
+  title,
+  description,
   exportCount,
   type,
   jobId,
   contactIds
-
 }) => {
   const { isDark } = useTheme();
   const { t } = useLanguage();
   
   const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'json' | 'hubspot'>('csv');
-
   const [exporting, setExporting] = useState(false);
   const [userSettings, setUserSettings] = useState<any>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -41,15 +43,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
   const [checkingHubspot, setCheckingHubspot] = useState(true);
 
   // Load user's export preferences and check HubSpot status
-
-
-
-
-
-
-
-
-
   useEffect(() => {
     const loadUserSettings = async () => {
       try {
@@ -68,8 +61,24 @@ const ExportModal: React.FC<ExportModalProps> = ({
           setSelectedFormat('csv');
         }
       } catch (error) {
+        console.error('Error loading export settings:', error);
+        setSelectedFormat('csv');
+        setHubspotConnected(false);
+      } finally {
+        setLoadingSettings(false);
+        setCheckingHubspot(false);
+      }
+    };
 
-@@ -82,40 +91,39 @@ const ExportModal: React.FC<ExportModalProps> = ({
+    if (isOpen) {
+      loadUserSettings();
+    }
+  }, [isOpen]);
+
+  const getFormatOptions = () => {
+    const baseOptions = [
+      {
+        value: 'csv' as const,
         label: 'CSV',
         icon: FileDown,
         description: 'Comma-separated values - Excel compatible',
@@ -110,53 +119,28 @@ const ExportModal: React.FC<ExportModalProps> = ({
       });
     }
 
+    return baseOptions;
+  };
 
-@@ -125,9 +133,10 @@ const ExportModal: React.FC<ExportModalProps> = ({
   const handleExport = async () => {
     try {
       setExporting(true);
       await onExport(selectedFormat);
       
       // Save user's format preference (only for file formats)
-
-
       if (selectedFormat !== 'hubspot') {
         const currentSettings = userSettings || {};
         const updatedSettings = { ...currentSettings, format: selectedFormat };
-
-@@ -142,239 +151,269 @@ const ExportModal: React.FC<ExportModalProps> = ({
+        localStorage.setItem('dataExportSettings', JSON.stringify(updatedSettings));
+      }
+      
+      onClose();
+    } catch (error) {
+      // Error handling is done in the parent component
+    } finally {
+      setExporting(false);
     }
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   if (!isOpen) return null;
 
@@ -176,13 +160,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
           className={`rounded-xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-hidden ${
             isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'
           }`}
-
-
-
-
-
-
-
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -215,17 +192,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
               </button>
             </div>
           </div>
-
-
-
-
-
-
-
-
-
-
-
 
           {/* Content */}
           <div className="p-4">
@@ -271,16 +237,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
                           }`} />
                           <div>
                             <div className={`font-medium ${
-
-
-
-
-
-
-
-
-
-
                               selectedFormat === format.value
                                 ? format.color
                                 : isDark ? 'text-white' : 'text-gray-900'
@@ -292,22 +248,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
                                 }`}>
                                   Connected
                                 </span>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                               )}
                             </div>
                             <div className={`text-xs ${
@@ -354,7 +294,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
                   </div>
                 )}
 
-
                 {/* Additional Info */}
                 <div className={`p-3 rounded-lg border ${
                   isDark 
@@ -383,27 +322,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
                           <li>• 🚀 Direct HubSpot sync</li>
                         )}
                       </ul>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     </div>
                   </div>
                 </div>
@@ -460,4 +378,10 @@ const ExportModal: React.FC<ExportModalProps> = ({
             </div>
           </div>
         </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default ExportModal;
 
