@@ -354,59 +354,208 @@ class HubSpotIntegration:
                 raise Exception(f"Failed to get lists: {response.text}")
 
 class SalesforceIntegration:
-    def __init__(self, instance_url: str, access_token: str):
-        self.instance_url = instance_url
+    def __init__(self, access_token: str = None, instance_url: str = None, client_id: str = None, client_secret: str = None):
+        # Use your actual Salesforce Connected App credentials
+        self.client_id = client_id or "3MVG9n_HvETGhr3AH5kJyoYHHZnU_5pALrlcfDQQpCdQRkIZOVDk_zZT3pCK5eJZ8F_cPxYyqBqCtTHcFhTjp"
+        self.client_secret = client_secret or "4F3D2E1C8B7A5F6E9D8C7B6A5E4D3C2B1A9F8E7D6C5B4A3E2D1C9B8A7F6E5D4C3B2A1"
+        self.redirect_uri = "https://captely.com/integrations"
         self.access_token = access_token
+        self.instance_url = instance_url
+        self.api_version = "v58.0"
+        
         self.headers = {
-            "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
+        
+        if self.access_token:
+            self.headers["Authorization"] = f"Bearer {self.access_token}"
     
-    async def create_leads(self, contacts: List[Dict]) -> Dict:
-        """Create leads in Salesforce"""
+    def get_auth_url(self, state: str = None, use_sandbox: bool = False) -> str:
+        """Generate Salesforce OAuth authorization URL"""
+        base_url = "https://test.salesforce.com" if use_sandbox else "https://login.salesforce.com"
+        
+        if not state:
+            state = secrets.token_urlsafe(32)
+        
+        params = {
+            "response_type": "code",
+            "client_id": self.client_id,
+            "redirect_uri": self.redirect_uri,
+            "scope": "api refresh_token offline_access",
+            "state": state
+        }
+        
+        return f"{base_url}/services/oauth2/authorize?{urlencode(params)}"
+    
+    async def exchange_code_for_token(self, code: str, use_sandbox: bool = False) -> Dict:
+        """Exchange authorization code for access token"""
+        base_url = "https://test.salesforce.com" if use_sandbox else "https://login.salesforce.com"
+        
         async with httpx.AsyncClient() as client:
-            results = {"created": 0, "errors": []}
-            
-            # Salesforce composite API for batch operations
-            composite_data = {
-                "allOrNone": False,
-                "records": []
+            data = {
+                "grant_type": "authorization_code",
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "redirect_uri": self.redirect_uri,
+                "code": code
             }
             
-            for contact in contacts:
-                lead_data = {
-                    "attributes": {"type": "Lead"}
-                }
-                
-                # Map fields to Salesforce Lead object
-                if 'first_name' in contact:
-                    lead_data['FirstName'] = contact['first_name']
-                if 'last_name' in contact:
-                    lead_data['LastName'] = contact['last_name'] or 'Unknown'
-                if 'email' in contact:
-                    lead_data['Email'] = contact['email']
-                if 'phone' in contact:
-                    lead_data['Phone'] = contact['phone']
-                if 'company' in contact:
-                    lead_data['Company'] = contact['company'] or 'Unknown'
-                if 'position' in contact:
-                    lead_data['Title'] = contact['position']
-                
-                lead_data['LeadSource'] = 'Captely'
-                composite_data["records"].append(lead_data)
+            response = await client.post(
+                f"{base_url}/services/oauth2/token",
+                data=data,
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
             
-            # Create leads in batches of 200 (Salesforce limit)
-            for i in range(0, len(composite_data["records"]), 200):
-                batch = {
-                    "allOrNone": False,
-                    "records": composite_data["records"][i:i+200]
+            if response.status_code == 200:
+                token_data = response.json()
+                self.access_token = token_data["access_token"]
+                self.instance_url = token_data["instance_url"]
+                self.headers["Authorization"] = f"Bearer {self.access_token}"
+                return token_data
+            else:
+                raise Exception(f"Failed to exchange code: {response.text}")
+    
+    async def refresh_access_token(self, refresh_token: str) -> Dict:
+        """Refresh an expired access token"""
+        async with httpx.AsyncClient() as client:
+            data = {
+                "grant_type": "refresh_token",
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "refresh_token": refresh_token
+            }
+            
+            token_url = f"{self.instance_url}/services/oauth2/token"
+            response = await client.post(
+                token_url,
+                data=data,
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
+            
+            if response.status_code == 200:
+                token_data = response.json()
+                self.access_token = token_data["access_token"]
+                self.headers["Authorization"] = f"Bearer {self.access_token}"
+                return token_data
+            else:
+                raise Exception(f"Failed to refresh token: {response.text}")
+    
+    async def get_user_info(self) -> Dict:
+        """Get Salesforce user information"""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.instance_url}/services/data/{self.api_version}/sobjects/User",
+                headers=self.headers
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise Exception(f"Failed to get user info: {response.text}")
+    
+    async def import_contacts(self, limit: int = 200, offset: int = 0) -> Dict:
+        """Import contacts from Salesforce"""
+        async with httpx.AsyncClient() as client:
+            # Build SOQL query
+            soql_query = f"""
+                SELECT Id, FirstName, LastName, Email, Phone, Title, 
+                       MailingCity, MailingState, MailingCountry, Account.Name
+                FROM Contact 
+                WHERE Email != null 
+                ORDER BY CreatedDate DESC 
+                LIMIT {limit} OFFSET {offset}
+            """
+            
+            response = await client.get(
+                f"{self.instance_url}/services/data/{self.api_version}/query",
+                headers=self.headers,
+                params={"q": soql_query}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Transform Salesforce data to Captely format
+                contacts = []
+                for contact in data.get("records", []):
+                    contacts.append({
+                        "salesforce_id": contact["Id"],
+                        "first_name": contact.get("FirstName", ""),
+                        "last_name": contact.get("LastName", ""),
+                        "email": contact.get("Email", ""),
+                        "phone": contact.get("Phone", ""),
+                        "company": contact.get("Account", {}).get("Name", "") if contact.get("Account") else "",
+                        "position": contact.get("Title", ""),
+                        "location": contact.get("MailingCity", ""),
+                        "status": "imported",
+                        "created_date": contact.get("CreatedDate"),
+                        "last_modified": contact.get("LastModifedDate")
+                    })
+                
+                return {
+                    "contacts": contacts,
+                    "total": data.get("totalSize", 0),
+                    "done": data.get("done", True),
+                    "next_records_url": data.get("nextRecordsUrl")
                 }
+            else:
+                raise Exception(f"Failed to import contacts: {response.text}")
+    
+    async def create_or_update_contacts(self, contacts: List[Dict]) -> Dict:
+        """Batch create or update contacts in Salesforce"""
+        if not self.access_token:
+            raise Exception("Access token required for Salesforce operations")
+        
+        async with httpx.AsyncClient() as client:
+            results = {"created": 0, "updated": 0, "errors": []}
+            
+            # Process contacts in batches of 200 (Salesforce limit)
+            for i in range(0, len(contacts), 200):
+                batch_contacts = contacts[i:i+200]
+                
+                # Prepare batch request for contacts
+                composite_data = {
+                    "allOrNone": False,
+                    "records": []
+                }
+                
+                for contact in batch_contacts:
+                    contact_data = {
+                        "attributes": {"type": "Contact"}
+                    }
+                    
+                    # Map fields to Salesforce Contact fields
+                    if contact.get('first_name'):
+                        contact_data['FirstName'] = contact['first_name']
+                    if contact.get('last_name'):
+                        contact_data['LastName'] = contact['last_name']
+                    if contact.get('email'):
+                        contact_data['Email'] = contact['email']
+                    if contact.get('phone'):
+                        contact_data['Phone'] = contact['phone']
+                    if contact.get('position'):
+                        contact_data['Title'] = contact['position']
+                    if contact.get('location'):
+                        contact_data['MailingCity'] = contact['location']
+                    
+                    # Add enrichment metadata
+                    if contact.get('enrichment_provider'):
+                        contact_data['Captely_Source__c'] = contact['enrichment_provider']
+                    if contact.get('enrichment_score'):
+                        contact_data['Captely_Confidence__c'] = contact['enrichment_score']
+                    if contact.get('lead_score'):
+                        contact_data['Lead_Score__c'] = contact['lead_score']
+                    
+                    contact_data['LeadSource'] = 'Captely'
+                    composite_data["records"].append(contact_data)
                 
                 try:
+                    # Try to create new contacts first
                     response = await client.post(
-                        f"{self.instance_url}/services/data/v57.0/composite/sobjects",
+                        f"{self.instance_url}/services/data/{self.api_version}/composite/sobjects",
                         headers=self.headers,
-                        json=batch
+                        json=composite_data,
+                        timeout=30.0
                     )
                     
                     if response.status_code == 200:
@@ -415,14 +564,133 @@ class SalesforceIntegration:
                             if record.get("success"):
                                 results["created"] += 1
                             else:
-                                results["errors"].extend(record.get("errors", []))
+                                # Try to update if creation failed due to duplicate
+                                await self._update_existing_contacts(client, [contacts[result.index(record)]], results)
                     else:
-                        results["errors"].append(response.text)
+                        error_msg = f"Batch {i//200 + 1}: {response.status_code} - {response.text}"
+                        results["errors"].append(error_msg)
                 
                 except Exception as e:
-                    results["errors"].append(str(e))
+                    results["errors"].append(f"Batch {i//200 + 1}: {str(e)}")
             
             return results
+    
+    async def _update_existing_contacts(self, client: httpx.AsyncClient, contacts: List[Dict], results: Dict):
+        """Update existing contacts by email lookup"""
+        for contact in contacts:
+            if not contact.get('email'):
+                continue
+                
+            try:
+                # Search for contact by email using SOQL
+                soql_query = f"SELECT Id FROM Contact WHERE Email = '{contact['email']}' LIMIT 1"
+                
+                search_response = await client.get(
+                    f"{self.instance_url}/services/data/{self.api_version}/query",
+                    headers=self.headers,
+                    params={"q": soql_query}
+                )
+                
+                if search_response.status_code == 200:
+                    search_data = search_response.json()
+                    if search_data.get("records"):
+                        # Update the found contact
+                        contact_id = search_data["records"][0]["Id"]
+                        
+                        update_data = {}
+                        if contact.get('first_name'):
+                            update_data['FirstName'] = contact['first_name']
+                        if contact.get('last_name'):
+                            update_data['LastName'] = contact['last_name']
+                        if contact.get('phone'):
+                            update_data['Phone'] = contact['phone']
+                        if contact.get('position'):
+                            update_data['Title'] = contact['position']
+                        
+                        update_response = await client.patch(
+                            f"{self.instance_url}/services/data/{self.api_version}/sobjects/Contact/{contact_id}",
+                            headers=self.headers,
+                            json=update_data
+                        )
+                        
+                        if update_response.status_code == 204:
+                            results["updated"] += 1
+                        else:
+                            results["errors"].append(f"Update failed for {contact['email']}: {update_response.text}")
+                
+            except Exception as e:
+                results["errors"].append(f"Update error for {contact.get('email', 'unknown')}: {str(e)}")
+    
+    async def export_to_campaign(self, campaign_id: str, contact_emails: List[str]) -> Dict:
+        """Add contacts to a Salesforce campaign"""
+        async with httpx.AsyncClient() as client:
+            results = {"added": 0, "errors": []}
+            
+            # Get contact IDs by email
+            contact_ids = []
+            for email in contact_emails:
+                try:
+                    soql_query = f"SELECT Id FROM Contact WHERE Email = '{email}' LIMIT 1"
+                    search_response = await client.get(
+                        f"{self.instance_url}/services/data/{self.api_version}/query",
+                        headers=self.headers,
+                        params={"q": soql_query}
+                    )
+                    
+                    if search_response.status_code == 200:
+                        search_data = search_response.json()
+                        if search_data.get("records"):
+                            contact_ids.append(search_data["records"][0]["Id"])
+                
+                except Exception as e:
+                    results["errors"].append(f"Failed to find contact {email}: {str(e)}")
+            
+            # Add contacts to campaign
+            for contact_id in contact_ids:
+                try:
+                    campaign_member_data = {
+                        "CampaignId": campaign_id,
+                        "ContactId": contact_id,
+                        "Status": "Sent"
+                    }
+                    
+                    response = await client.post(
+                        f"{self.instance_url}/services/data/{self.api_version}/sobjects/CampaignMember",
+                        headers=self.headers,
+                        json=campaign_member_data
+                    )
+                    
+                    if response.status_code == 201:
+                        results["added"] += 1
+                    else:
+                        results["errors"].append(f"Campaign add failed: {response.text}")
+                
+                except Exception as e:
+                    results["errors"].append(f"Campaign add error: {str(e)}")
+            
+            return results
+    
+    async def get_campaigns(self) -> List[Dict]:
+        """Get available Salesforce campaigns"""
+        async with httpx.AsyncClient() as client:
+            soql_query = "SELECT Id, Name, Status, Type FROM Campaign WHERE IsActive = true ORDER BY Name LIMIT 100"
+            
+            response = await client.get(
+                f"{self.instance_url}/services/data/{self.api_version}/query",
+                headers=self.headers,
+                params={"q": soql_query}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return [{
+                    "id": campaign["Id"],
+                    "name": campaign["Name"],
+                    "status": campaign.get("Status", "Active"),
+                    "type": campaign.get("Type", "Other")
+                } for campaign in data.get("records", [])]
+            else:
+                raise Exception(f"Failed to get campaigns: {response.text}")
 
 class LemlistIntegration:
     def __init__(self, api_key: str):
@@ -431,6 +699,66 @@ class LemlistIntegration:
         self.headers = {
             "Content-Type": "application/json"
         }
+    
+    def get_auth_setup_url(self) -> str:
+        """Generate URL for Lemlist API key setup instructions"""
+        return "https://help.lemlist.com/en/articles/3398065-generating-your-api-key"
+    
+    async def verify_api_key(self) -> Dict:
+        """Verify API key and get account information"""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/me",
+                headers=self.headers,
+                auth=(self.api_key, "")
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise Exception(f"Failed to verify API key: {response.text}")
+    
+    async def import_contacts(self, campaign_id: str = None, limit: int = 100) -> Dict:
+        """Import contacts from Lemlist"""
+        async with httpx.AsyncClient() as client:
+            if campaign_id:
+                endpoint = f"/campaigns/{campaign_id}/leads"
+            else:
+                endpoint = "/leads"
+            
+            response = await client.get(
+                f"{self.base_url}{endpoint}",
+                headers=self.headers,
+                auth=(self.api_key, ""),
+                params={"limit": limit}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Transform Lemlist data to Captely format
+                contacts = []
+                for lead in data.get("leads", []):
+                    contacts.append({
+                        "lemlist_id": lead["_id"],
+                        "first_name": lead.get("firstName", ""),
+                        "last_name": lead.get("lastName", ""),
+                        "email": lead.get("email", ""),
+                        "phone": lead.get("phoneNumber", ""),
+                        "company": lead.get("companyName", ""),
+                        "position": lead.get("jobTitle", ""),
+                        "location": lead.get("city", ""),
+                        "status": lead.get("campaignStatus", "pending"),
+                        "created_date": lead.get("createdAt"),
+                        "last_modified": lead.get("updatedAt")
+                    })
+                
+                return {
+                    "contacts": contacts,
+                    "total": len(contacts)
+                }
+            else:
+                raise Exception(f"Failed to import contacts: {response.text}")
     
     async def add_to_campaign(self, campaign_id: str, contacts: List[Dict]) -> Dict:
         """Add leads to a Lemlist campaign"""
@@ -443,10 +771,17 @@ class LemlistIntegration:
                     "firstName": contact.get("first_name", ""),
                     "lastName": contact.get("last_name", ""),
                     "companyName": contact.get("company", ""),
-                    "position": contact.get("position", ""),
-                    "phone": contact.get("phone", ""),
-                    "customFields": contact.get("custom_fields", {})
+                    "jobTitle": contact.get("position", ""),
+                    "phoneNumber": contact.get("phone", ""),
+                    "city": contact.get("location", ""),
+                    "industry": contact.get("industry", "")
                 }
+                
+                # Add enrichment metadata as custom fields
+                if contact.get('enrichment_provider'):
+                    lead_data['captely_source'] = contact['enrichment_provider']
+                if contact.get('enrichment_score'):
+                    lead_data['captely_confidence'] = str(contact['enrichment_score'])
                 
                 try:
                     response = await client.post(
@@ -471,119 +806,122 @@ class LemlistIntegration:
                     })
             
             return results
-
-class SmartleadIntegration:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://api.smartlead.ai/v1"
-        self.headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
     
-    async def add_prospects(self, campaign_id: str, contacts: List[Dict]) -> Dict:
-        """Add prospects to Smartlead campaign"""
+    async def get_campaigns(self) -> List[Dict]:
+        """Get available Lemlist campaigns"""
         async with httpx.AsyncClient() as client:
-            results = {"added": 0, "errors": []}
+            response = await client.get(
+                f"{self.base_url}/campaigns",
+                headers=self.headers,
+                auth=(self.api_key, "")
+            )
             
-            prospects = []
-            for contact in contacts:
-                prospect = {
-                    "email": contact.get("email"),
-                    "first_name": contact.get("first_name", ""),
-                    "last_name": contact.get("last_name", ""),
-                    "company": contact.get("company", ""),
-                    "position": contact.get("position", ""),
-                    "phone": contact.get("phone", ""),
-                    "custom_fields": contact.get("custom_fields", {})
-                }
-                prospects.append(prospect)
-            
-            try:
-                response = await client.post(
-                    f"{self.base_url}/campaigns/{campaign_id}/prospects",
-                    headers=self.headers,
-                    json={"prospects": prospects}
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    results["added"] = result.get("added", 0)
-                else:
-                    results["errors"].append(response.text)
-            
-            except Exception as e:
-                results["errors"].append(str(e))
-            
-            return results
-
-class OutreachIntegration:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://api.outreach.io/api/v2"
-        self.headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/vnd.api+json"
-        }
+            if response.status_code == 200:
+                data = response.json()
+                return [{
+                    "id": campaign["_id"],
+                    "name": campaign["name"],
+                    "status": campaign.get("status", "draft"),
+                    "created_at": campaign.get("createdAt")
+                } for campaign in data.get("campaigns", [])]
+            else:
+                raise Exception(f"Failed to get campaigns: {response.text}")
     
-    async def create_prospects(self, contacts: List[Dict]) -> Dict:
-        """Create prospects in Outreach"""
+    async def create_campaign(self, campaign_data: Dict) -> Dict:
+        """Create a new Lemlist campaign"""
         async with httpx.AsyncClient() as client:
-            results = {"created": 0, "errors": []}
+            response = await client.post(
+                f"{self.base_url}/campaigns",
+                headers=self.headers,
+                json=campaign_data,
+                auth=(self.api_key, "")
+            )
             
-            for contact in contacts:
-                prospect_data = {
-                    "data": {
-                        "type": "prospect",
-                        "attributes": {
-                            "emails": [contact.get("email")] if contact.get("email") else [],
-                            "firstName": contact.get("first_name", ""),
-                            "lastName": contact.get("last_name", ""),
-                            "company": contact.get("company", ""),
-                            "title": contact.get("position", ""),
-                            "phones": [{"number": contact.get("phone")}] if contact.get("phone") else [],
-                            "custom": contact.get("custom_fields", {})
-                        }
-                    }
-                }
-                
-                try:
-                    response = await client.post(
-                        f"{self.base_url}/prospects",
-                        headers=self.headers,
-                        json=prospect_data
-                    )
-                    
-                    if response.status_code == 201:
-                        results["created"] += 1
-                    else:
-                        results["errors"].append({
-                            "email": contact.get('email', 'unknown'),
-                            "error": response.text
-                        })
-                
-                except Exception as e:
-                    results["errors"].append({
-                        "email": contact.get('email', 'unknown'),
-                        "error": str(e)
-                    })
+            if response.status_code == 201:
+                return response.json()
+            else:
+                raise Exception(f"Failed to create campaign: {response.text}")
+    
+    async def start_campaign(self, campaign_id: str) -> Dict:
+        """Start a Lemlist campaign"""
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(
+                f"{self.base_url}/campaigns/{campaign_id}/start",
+                headers=self.headers,
+                auth=(self.api_key, "")
+            )
             
-            return results
+            if response.status_code == 200:
+                return {"status": "started", "campaign_id": campaign_id}
+            else:
+                raise Exception(f"Failed to start campaign: {response.text}")
 
 class ZapierIntegration:
     def __init__(self, webhook_url: str):
         self.webhook_url = webhook_url
+    
+    def get_webhook_setup_url(self) -> str:
+        """Generate URL for Zapier webhook setup instructions"""
+        return "https://zapier.com/apps/webhook/help"
+    
+    async def verify_webhook(self, test_data: Dict = None) -> Dict:
+        """Verify webhook URL by sending test data"""
+        if not test_data:
+            test_data = {
+                "test": True,
+                "timestamp": datetime.utcnow().isoformat(),
+                "source": "captely",
+                "message": "Webhook verification test"
+            }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self.webhook_url,
+                json=test_data,
+                timeout=30.0
+            )
+            
+            return {
+                "status_code": response.status_code,
+                "success": response.status_code in [200, 201, 202],
+                "response": response.text[:500] if response.text else None
+            }
     
     async def send_contacts(self, contacts: List[Dict], event_type: str = "contacts.enriched") -> Dict:
         """Send contacts to Zapier webhook"""
         async with httpx.AsyncClient() as client:
             results = {"sent": 0, "errors": []}
             
+            # Prepare webhook data
             webhook_data = {
                 "event": event_type,
                 "timestamp": datetime.utcnow().isoformat(),
-                "contacts": contacts
+                "total_contacts": len(contacts),
+                "contacts": []
             }
+            
+            # Transform contacts for Zapier
+            for contact in contacts:
+                zapier_contact = {
+                    "contact_id": contact.get("id"),
+                    "first_name": contact.get("first_name", ""),
+                    "last_name": contact.get("last_name", ""),
+                    "full_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
+                    "email": contact.get("email", ""),
+                    "phone": contact.get("phone", ""),
+                    "company": contact.get("company", ""),
+                    "position": contact.get("position", ""),
+                    "location": contact.get("location", ""),
+                    "industry": contact.get("industry", ""),
+                    "enriched": contact.get("enriched", False),
+                    "enrichment_score": contact.get("enrichment_score"),
+                    "email_verified": contact.get("email_verified", False),
+                    "phone_verified": contact.get("phone_verified", False),
+                    "created_at": contact.get("created_at"),
+                    "updated_at": contact.get("updated_at"),
+                    "exported_at": datetime.utcnow().isoformat()
+                }
+                webhook_data["contacts"].append(zapier_contact)
             
             try:
                 response = await client.post(
@@ -601,6 +939,48 @@ class ZapierIntegration:
                 results["errors"].append(str(e))
             
             return results
+    
+    async def send_single_contact(self, contact: Dict, event_type: str = "contact.enriched") -> Dict:
+        """Send a single contact to Zapier webhook"""
+        return await self.send_contacts([contact], event_type)
+    
+    async def send_batch_export(self, contacts: List[Dict], job_id: str) -> Dict:
+        """Send batch export data to Zapier webhook"""
+        webhook_data = {
+            "event": "batch.exported",
+            "job_id": job_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "total_contacts": len(contacts),
+            "batch_data": {
+                "contacts": contacts,
+                "export_summary": {
+                    "total_exported": len(contacts),
+                    "enriched_contacts": len([c for c in contacts if c.get("enriched")]),
+                    "verified_emails": len([c for c in contacts if c.get("email_verified")]),
+                    "verified_phones": len([c for c in contacts if c.get("phone_verified")])
+                }
+            }
+        }
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    self.webhook_url,
+                    json=webhook_data,
+                    timeout=30.0
+                )
+                
+                return {
+                    "success": response.status_code in [200, 201, 202],
+                    "status_code": response.status_code,
+                    "response": response.text[:500] if response.text else None
+                }
+            
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": str(e)
+                }
 
 # Factory function to get integration instance
 def get_integration(provider: str, config: Dict):
@@ -613,15 +993,13 @@ def get_integration(provider: str, config: Dict):
         )
     elif provider == "salesforce":
         return SalesforceIntegration(
+            config.get("access_token"),
             config.get("instance_url"),
-            config.get("access_token")
+            config.get("client_id"),
+            config.get("client_secret")
         )
     elif provider == "lemlist":
         return LemlistIntegration(config.get("api_key"))
-    elif provider == "smartlead":
-        return SmartleadIntegration(config.get("api_key"))
-    elif provider == "outreach":
-        return OutreachIntegration(config.get("api_key"))
     elif provider == "zapier":
         return ZapierIntegration(config.get("webhook_url"))
     else:

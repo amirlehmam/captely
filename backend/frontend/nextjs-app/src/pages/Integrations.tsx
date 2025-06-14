@@ -11,6 +11,9 @@ import apiService from '../services/api';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import HubSpotIntegration from '../components/integrations/HubSpotIntegration';
+import SalesforceIntegration from '../components/integrations/SalesforceIntegration';
+import LemlistIntegration from '../components/integrations/LemlistIntegration';
+import ZapierIntegration from '../components/integrations/ZapierIntegration';
 
 interface Integration {
   id: string;
@@ -80,16 +83,7 @@ const integrations: Integration[] = [
 const IntegrationsPage: React.FC = () => {
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('all');
-  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [showConfig, setShowConfig] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
-  const [configForm, setConfigForm] = useState({
-    apiKey: '',
-    instanceUrl: '',
-    campaignId: '',
-    webhookUrl: ''
-  });
 
   useEffect(() => {
     fetchIntegrationConfigs();
@@ -121,80 +115,7 @@ const IntegrationsPage: React.FC = () => {
     }
   };
 
-  const handleConnect = async (integration: Integration) => {
-    setSelectedIntegration(integration);
-    setShowConfig(true);
-  };
 
-  const handleDisconnect = async (integrationId: string) => {
-    if (confirm('Are you sure you want to disconnect this integration?')) {
-      try {
-        setLoading(true);
-        // API call to disconnect
-        setConnectedIntegrations(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(integrationId);
-          return newSet;
-        });
-        toast.success('Integration disconnected successfully');
-      } catch (error) {
-        toast.error('Failed to disconnect integration');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleSaveConfig = async () => {
-    if (!selectedIntegration) return;
-
-    try {
-      setLoading(true);
-      
-      // Mock API calls for integration configuration
-      // In a real implementation, these would be actual API calls
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
-      
-      switch (selectedIntegration.id) {
-        case 'hubspot':
-          // await apiService.exportJobToHubSpot(configForm.apiKey);
-          console.log('Simulating HubSpot connection with API key:', configForm.apiKey);
-          break;
-        case 'salesforce':
-          // await apiService.exportToSalesforce(configForm.instanceUrl, configForm.apiKey);
-          console.log('Simulating Salesforce connection with URL:', configForm.instanceUrl);
-          break;
-        case 'lemlist':
-          // await apiService.exportToLemlist(configForm.apiKey);
-          console.log('Simulating Lemlist connection with API key:', configForm.apiKey);
-          break;
-        case 'smartlead':
-          // await apiService.exportToSmartlead(configForm.apiKey);
-          console.log('Simulating Smartlead connection with API key:', configForm.apiKey);
-          break;
-        case 'outreach':
-          // await apiService.exportToOutreach(configForm.apiKey);
-          console.log('Simulating Outreach connection with API key:', configForm.apiKey);
-          break;
-        case 'zapier':
-          // await apiService.registerZapierWebhook(configForm.webhookUrl);
-          console.log('Simulating Zapier webhook registration:', configForm.webhookUrl);
-          break;
-        default:
-          break;
-      }
-
-      setConnectedIntegrations(prev => new Set([...prev, selectedIntegration.id]));
-      toast.success(`${selectedIntegration.name} connected successfully! 🎉`);
-      setShowConfig(false);
-      setConfigForm({ apiKey: '', instanceUrl: '', campaignId: '', webhookUrl: '' });
-    } catch (error) {
-      console.error('Connection failed:', error);
-      toast.error('Failed to connect integration');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getCategoryIcon = (category: string) => {
     const iconClassName = `w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`;
@@ -522,20 +443,101 @@ const IntegrationsPage: React.FC = () => {
           }} />
         </motion.div>
 
-        {/* Other Integrations */}
+        {/* Salesforce Integration */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="mb-4">
+            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              ☁️ Salesforce CRM
+            </h2>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Connect with the world's #1 CRM platform
+            </p>
+          </div>
+          <SalesforceIntegration onStatusChange={(connected) => {
+            if (connected) {
+              setConnectedIntegrations(prev => new Set([...prev, 'salesforce']));
+            } else {
+              setConnectedIntegrations(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('salesforce');
+                return newSet;
+              });
+            }
+          }} />
+        </motion.div>
+
+        {/* Lemlist Integration */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="mb-4">
+            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              📧 Lemlist Outreach
+            </h2>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Add enriched contacts to your cold email campaigns
+            </p>
+          </div>
+          <LemlistIntegration onStatusChange={(connected) => {
+            if (connected) {
+              setConnectedIntegrations(prev => new Set([...prev, 'lemlist']));
+            } else {
+              setConnectedIntegrations(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('lemlist');
+                return newSet;
+              });
+            }
+          }} />
+        </motion.div>
+
+        {/* Zapier Integration */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="mb-4">
+            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              ⚡ Zapier Automation
+            </h2>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Connect to 5,000+ apps through webhooks
+            </p>
+          </div>
+          <ZapierIntegration onStatusChange={(connected) => {
+            if (connected) {
+              setConnectedIntegrations(prev => new Set([...prev, 'zapier']));
+            } else {
+              setConnectedIntegrations(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('zapier');
+                return newSet;
+              });
+            }
+          }} />
+        </motion.div>
+
+        {/* Other Integrations - Keep for future integrations */}
         <div>
           <div className="mb-4">
             <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              🔗 All Integrations
+              🔗 More Integrations Coming Soon
             </h2>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Connect with your favorite tools and platforms
+              Additional tools and platforms in development
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
-              {filteredIntegrations.filter(int => int.id !== 'hubspot').map((integration, index) => (
+              {filteredIntegrations.filter(int => !['hubspot', 'salesforce', 'lemlist', 'zapier'].includes(int.id)).map((integration, index) => (
                 <motion.div
                   key={integration.id}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -575,15 +577,11 @@ const IntegrationsPage: React.FC = () => {
                         </div>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                        integration.status === 'connected' 
-                          ? isDark 
-                            ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/50'
-                            : 'bg-green-100 text-green-800 border-green-200'
-                          : isDark
-                            ? 'bg-gray-700 text-gray-300 border-gray-600'
-                          : 'bg-gray-100 text-gray-800 border-gray-200'
+                        isDark
+                          ? 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
+                        : 'bg-yellow-100 text-yellow-800 border-yellow-200'
                       }`}>
-                        {integration.status === 'connected' ? '✅ Connected' : '⏳ Available'}
+                        🚧 Coming Soon
                       </div>
                     </div>
                     
@@ -592,23 +590,6 @@ const IntegrationsPage: React.FC = () => {
                     }`}>
                       {integration.description}
                     </p>
-
-                    {integration.status === 'connected' && (
-                      <div className="space-y-2 text-sm">
-                        <div className={`flex items-center ${
-                          isDark ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                          <Clock className="w-4 h-4 mr-2" />
-                          Last sync: 2 hours ago
-                        </div>
-                        <div className={`flex items-center ${
-                          isDark ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                          <Shield className="w-4 h-4 mr-2" />
-                          Connected securely
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   <div className={`px-6 py-4 border-t ${
@@ -616,38 +597,17 @@ const IntegrationsPage: React.FC = () => {
                       ? 'bg-gradient-to-r from-gray-800 to-gray-750 border-gray-700' 
                       : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
                   }`}>
-                    {integration.status === 'connected' ? (
-                      <div className="flex space-x-3">
-                        <button className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-semibold rounded-xl transition-all duration-200 ${
-                          isDark 
-                            ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 focus:ring-purple-500' 
-                            : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 focus:ring-primary-500'
-                        } focus:outline-none focus:ring-2 focus:ring-offset-2`}>
-                          <Settings className="w-4 h-4 mr-2" />
-                          Configure
-                        </button>
-                        <button 
-                          onClick={() => handleDisconnect(integration.id)}
-                          className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-semibold rounded-xl transition-all duration-200 ${
-                            isDark 
-                              ? 'border-red-600/50 text-red-400 bg-red-900/20 hover:bg-red-900/30 focus:ring-red-500' 
-                              : 'border-red-200 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500'
-                          } focus:outline-none focus:ring-2 focus:ring-offset-2`}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Disconnect
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleConnect(integration)}
-                        className="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl text-sm font-semibold transition-all duration-200 transform hover:scale-105"
-                        style={{ willChange: 'transform, box-shadow' }}
-                      >
-                        <PlusCircle className="w-4 h-4 mr-2" />
-                        Connect Now
-                      </button>
-                    )}
+                    <button
+                      disabled
+                      className={`w-full inline-flex justify-center items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                        isDark 
+                          ? 'bg-gray-700 text-gray-500 border border-gray-600 cursor-not-allowed' 
+                          : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                      }`}
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      Coming Soon
+                    </button>
                   </div>
                 </motion.div>
               ))}
@@ -656,245 +616,7 @@ const IntegrationsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Configuration Modal with Dark Mode */}
-      <AnimatePresence>
-        {showConfig && selectedIntegration && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50"
-            style={{ 
-              backdropFilter: 'blur(8px)',
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              willChange: 'opacity'
-            }}
-            onClick={() => setShowConfig(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: "spring", damping: 15 }}
-              className={`rounded-2xl shadow-2xl max-w-md w-full p-6 border transition-all duration-300 ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
-                  : 'bg-white border-gray-200 shadow-gray-500/50'
-              }`}
-              style={{ willChange: 'transform, opacity' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <span className={`text-3xl mr-3 p-2 rounded-xl ${
-                    isDark ? 'bg-gray-700' : 'bg-gray-50'
-                  }`}>
-                    {selectedIntegration.icon}
-                  </span>
-                  <h2 className={`text-xl font-bold ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    Connect {selectedIntegration.name}
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setShowConfig(false)}
-                  className={`p-1 rounded-xl transition-all duration-200 ${
-                    isDark 
-                      ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
-                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
-              </div>
 
-              <div className="space-y-4">
-                {selectedIntegration.id === 'hubspot' && (
-                  <div>
-                    <label className={`block text-sm font-semibold mb-2 ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      HubSpot API Key
-                    </label>
-                    <input
-                      type="password"
-                      value={configForm.apiKey}
-                      onChange={(e) => setConfigForm({ ...configForm, apiKey: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 ${
-                        isDark 
-                          ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500' 
-                          : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                      } focus:outline-none`}
-                      placeholder="pk_••••••••••••••••"
-                    />
-                    <p className={`mt-2 text-sm ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      Find your API key in HubSpot Settings → Integrations → API Key
-                    </p>
-                  </div>
-                )}
-
-                {selectedIntegration.id === 'salesforce' && (
-                  <>
-                    <div>
-                      <label className={`block text-sm font-semibold mb-2 ${
-                        isDark ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        Instance URL
-                      </label>
-                      <input
-                        type="url"
-                        value={configForm.instanceUrl}
-                        onChange={(e) => setConfigForm({ ...configForm, instanceUrl: e.target.value })}
-                        className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 ${
-                          isDark 
-                            ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500' 
-                            : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                        } focus:outline-none`}
-                        placeholder="https://your-instance.salesforce.com"
-                      />
-                    </div>
-                    <div>
-                      <label className={`block text-sm font-semibold mb-2 ${
-                        isDark ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        Access Token
-                      </label>
-                      <input
-                        type="password"
-                        value={configForm.apiKey}
-                        onChange={(e) => setConfigForm({ ...configForm, apiKey: e.target.value })}
-                        className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 ${
-                          isDark 
-                            ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500' 
-                            : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                        } focus:outline-none`}
-                        placeholder="00D••••••••••••••"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {(selectedIntegration.id === 'lemlist' || selectedIntegration.id === 'smartlead' || selectedIntegration.id === 'outreach') && (
-                  <div>
-                    <label className={`block text-sm font-semibold mb-2 ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      API Key
-                    </label>
-                    <input
-                      type="password"
-                      value={configForm.apiKey}
-                      onChange={(e) => setConfigForm({ ...configForm, apiKey: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 ${
-                        isDark 
-                          ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500' 
-                          : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                      } focus:outline-none`}
-                      placeholder={
-                        selectedIntegration.id === 'lemlist' ? 'lml_••••••••••••••••' :
-                        selectedIntegration.id === 'smartlead' ? 'sl_••••••••••••••••' :
-                        'api_••••••••••••••••'
-                      }
-                    />
-                    <p className={`mt-2 text-sm ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      {selectedIntegration.id === 'lemlist' && 'Find your API key in Lemlist → Settings → Integrations'}
-                      {selectedIntegration.id === 'smartlead' && 'Find your API key in Smartlead → Settings → API'}
-                      {selectedIntegration.id === 'outreach' && 'Find your API key in Outreach → Settings → API'}
-                    </p>
-                  </div>
-                )}
-
-                {selectedIntegration.id === 'zapier' && (
-                  <div>
-                    <label className={`block text-sm font-semibold mb-2 ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Webhook URL
-                    </label>
-                    <input
-                      type="url"
-                      value={configForm.webhookUrl}
-                      onChange={(e) => setConfigForm({ ...configForm, webhookUrl: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 ${
-                        isDark 
-                          ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500' 
-                          : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                      } focus:outline-none`}
-                      placeholder="https://hooks.zapier.com/..."
-                    />
-                    <p className={`mt-2 text-sm ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      Create a Zap with "Webhooks by Zapier" trigger to get this URL
-                    </p>
-                  </div>
-                )}
-
-                <div className={`mt-4 p-4 rounded-xl border ${
-                  isDark 
-                    ? 'bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-indigo-700/50' 
-                    : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
-                }`}>
-                  <div className="flex items-start">
-                    <Shield className={`w-5 h-5 mt-0.5 mr-3 flex-shrink-0 ${
-                      isDark ? 'text-indigo-400' : 'text-blue-600'
-                    }`} />
-                    <div className="text-sm">
-                      <p className={`font-semibold mb-1 ${
-                        isDark ? 'text-indigo-300' : 'text-blue-900'
-                      }`}>
-                        Secure Connection
-                      </p>
-                      <p className={isDark ? 'text-indigo-400' : 'text-blue-700'}>
-                        Your credentials are encrypted and never stored in plain text. 
-                        You can disconnect at any time.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <button
-                    onClick={() => setShowConfig(false)}
-                    className={`flex-1 px-4 py-3 border rounded-xl font-semibold transition-all duration-200 ${
-                      isDark 
-                        ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 focus:ring-purple-500' 
-                        : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 focus:ring-primary-500'
-                    } focus:outline-none focus:ring-2 focus:ring-offset-2`}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveConfig}
-                    disabled={loading || (
-                      selectedIntegration.id === 'hubspot' ? !configForm.apiKey :
-                      selectedIntegration.id === 'salesforce' ? !configForm.instanceUrl || !configForm.apiKey :
-                      selectedIntegration.id === 'zapier' ? !configForm.webhookUrl :
-                      !configForm.apiKey
-                    )}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 font-semibold"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                    ) : (
-                      '✨ Connect'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

@@ -575,6 +575,152 @@ CREATE TABLE IF NOT EXISTS hubspot_contact_mappings (
 );
 
 -- =============================================
+-- SALESFORCE INTEGRATION TABLES
+-- =============================================
+
+-- Salesforce integration configurations
+CREATE TABLE IF NOT EXISTS salesforce_integrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    salesforce_instance_url VARCHAR(255),
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    scopes TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, salesforce_instance_url)
+);
+
+-- Salesforce sync logs
+CREATE TABLE IF NOT EXISTS salesforce_sync_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    integration_id UUID NOT NULL REFERENCES salesforce_integrations(id) ON DELETE CASCADE,
+    sync_type VARCHAR(50) NOT NULL, -- 'export', 'import'
+    operation VARCHAR(50) NOT NULL, -- 'contacts', 'batch'
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'failed'
+    total_records INTEGER DEFAULT 0,
+    processed_records INTEGER DEFAULT 0,
+    failed_records INTEGER DEFAULT 0,
+    error_message TEXT,
+    sync_data JSONB DEFAULT '{}',
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Salesforce contact mappings
+CREATE TABLE IF NOT EXISTS salesforce_contact_mappings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    captely_contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    salesforce_contact_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(captely_contact_id, salesforce_contact_id)
+);
+
+-- =============================================
+-- LEMLIST INTEGRATION TABLES
+-- =============================================
+
+-- Lemlist integration configurations
+CREATE TABLE IF NOT EXISTS lemlist_integrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lemlist_api_key TEXT NOT NULL,
+    lemlist_account_id VARCHAR(255),
+    expires_at TIMESTAMP WITH TIME ZONE, -- API keys don't expire but we keep for consistency
+    scopes TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, lemlist_account_id)
+);
+
+-- Lemlist sync logs
+CREATE TABLE IF NOT EXISTS lemlist_sync_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    integration_id UUID NOT NULL REFERENCES lemlist_integrations(id) ON DELETE CASCADE,
+    sync_type VARCHAR(50) NOT NULL, -- 'export', 'import'
+    operation VARCHAR(50) NOT NULL, -- 'contacts', 'batch', 'campaigns'
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'failed'
+    total_records INTEGER DEFAULT 0,
+    processed_records INTEGER DEFAULT 0,
+    failed_records INTEGER DEFAULT 0,
+    error_message TEXT,
+    sync_data JSONB DEFAULT '{}',
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Lemlist contact mappings
+CREATE TABLE IF NOT EXISTS lemlist_contact_mappings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    captely_contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    lemlist_contact_id VARCHAR(255) NOT NULL,
+    lemlist_campaign_id VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(captely_contact_id, lemlist_contact_id)
+);
+
+-- =============================================
+-- ZAPIER INTEGRATION TABLES
+-- =============================================
+
+-- Zapier integration configurations
+CREATE TABLE IF NOT EXISTS zapier_integrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    zapier_webhook_url TEXT NOT NULL,
+    zapier_zap_id VARCHAR(255),
+    zapier_api_key TEXT, -- Optional for advanced features
+    expires_at TIMESTAMP WITH TIME ZONE, -- Webhooks don't expire but we keep for consistency
+    scopes TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, zapier_webhook_url)
+);
+
+-- Zapier sync logs
+CREATE TABLE IF NOT EXISTS zapier_sync_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    integration_id UUID NOT NULL REFERENCES zapier_integrations(id) ON DELETE CASCADE,
+    sync_type VARCHAR(50) NOT NULL, -- 'export', 'import', 'webhook'
+    operation VARCHAR(50) NOT NULL, -- 'contacts', 'batch', 'trigger'
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'failed'
+    total_records INTEGER DEFAULT 0,
+    processed_records INTEGER DEFAULT 0,
+    failed_records INTEGER DEFAULT 0,
+    error_message TEXT,
+    sync_data JSONB DEFAULT '{}',
+    webhook_response JSONB DEFAULT '{}',
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Zapier contact mappings
+CREATE TABLE IF NOT EXISTS zapier_contact_mappings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    captely_contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    zapier_record_id VARCHAR(255) NOT NULL,
+    zap_id VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(captely_contact_id, zapier_record_id)
+);
+
+-- =============================================
 -- CREATE ALL PERFORMANCE INDEXES
 -- =============================================
 
@@ -659,6 +805,45 @@ CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_user_id ON hubspot_conta
 CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_captely_contact_id ON hubspot_contact_mappings(captely_contact_id);
 CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_hubspot_contact_id ON hubspot_contact_mappings(hubspot_contact_id);
 CREATE INDEX IF NOT EXISTS idx_hubspot_contact_mappings_sync_status ON hubspot_contact_mappings(sync_status);
+
+-- Salesforce integration indexes
+CREATE INDEX IF NOT EXISTS idx_salesforce_integrations_user_id ON salesforce_integrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_salesforce_integrations_is_active ON salesforce_integrations(is_active);
+CREATE INDEX IF NOT EXISTS idx_salesforce_integrations_expires_at ON salesforce_integrations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_salesforce_sync_logs_user_id ON salesforce_sync_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_salesforce_sync_logs_integration_id ON salesforce_sync_logs(integration_id);
+CREATE INDEX IF NOT EXISTS idx_salesforce_sync_logs_sync_type ON salesforce_sync_logs(sync_type);
+CREATE INDEX IF NOT EXISTS idx_salesforce_sync_logs_status ON salesforce_sync_logs(status);
+CREATE INDEX IF NOT EXISTS idx_salesforce_sync_logs_created_at ON salesforce_sync_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_salesforce_contact_mappings_user_id ON salesforce_contact_mappings(user_id);
+CREATE INDEX IF NOT EXISTS idx_salesforce_contact_mappings_captely_contact_id ON salesforce_contact_mappings(captely_contact_id);
+CREATE INDEX IF NOT EXISTS idx_salesforce_contact_mappings_salesforce_contact_id ON salesforce_contact_mappings(salesforce_contact_id);
+
+-- Lemlist integration indexes
+CREATE INDEX IF NOT EXISTS idx_lemlist_integrations_user_id ON lemlist_integrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_lemlist_integrations_is_active ON lemlist_integrations(is_active);
+CREATE INDEX IF NOT EXISTS idx_lemlist_sync_logs_user_id ON lemlist_sync_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_lemlist_sync_logs_integration_id ON lemlist_sync_logs(integration_id);
+CREATE INDEX IF NOT EXISTS idx_lemlist_sync_logs_sync_type ON lemlist_sync_logs(sync_type);
+CREATE INDEX IF NOT EXISTS idx_lemlist_sync_logs_status ON lemlist_sync_logs(status);
+CREATE INDEX IF NOT EXISTS idx_lemlist_sync_logs_created_at ON lemlist_sync_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_lemlist_contact_mappings_user_id ON lemlist_contact_mappings(user_id);
+CREATE INDEX IF NOT EXISTS idx_lemlist_contact_mappings_captely_contact_id ON lemlist_contact_mappings(captely_contact_id);
+CREATE INDEX IF NOT EXISTS idx_lemlist_contact_mappings_lemlist_contact_id ON lemlist_contact_mappings(lemlist_contact_id);
+CREATE INDEX IF NOT EXISTS idx_lemlist_contact_mappings_campaign_id ON lemlist_contact_mappings(lemlist_campaign_id);
+
+-- Zapier integration indexes
+CREATE INDEX IF NOT EXISTS idx_zapier_integrations_user_id ON zapier_integrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_zapier_integrations_is_active ON zapier_integrations(is_active);
+CREATE INDEX IF NOT EXISTS idx_zapier_sync_logs_user_id ON zapier_sync_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_zapier_sync_logs_integration_id ON zapier_sync_logs(integration_id);
+CREATE INDEX IF NOT EXISTS idx_zapier_sync_logs_sync_type ON zapier_sync_logs(sync_type);
+CREATE INDEX IF NOT EXISTS idx_zapier_sync_logs_status ON zapier_sync_logs(status);
+CREATE INDEX IF NOT EXISTS idx_zapier_sync_logs_created_at ON zapier_sync_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_zapier_contact_mappings_user_id ON zapier_contact_mappings(user_id);
+CREATE INDEX IF NOT EXISTS idx_zapier_contact_mappings_captely_contact_id ON zapier_contact_mappings(captely_contact_id);
+CREATE INDEX IF NOT EXISTS idx_zapier_contact_mappings_zapier_record_id ON zapier_contact_mappings(zapier_record_id);
+CREATE INDEX IF NOT EXISTS idx_zapier_contact_mappings_zap_id ON zapier_contact_mappings(zap_id);
 
 -- =============================================
 -- INSERT SAMPLE DATA FOR TESTING
@@ -921,6 +1106,75 @@ BEGIN
     DROP TRIGGER IF EXISTS update_hubspot_contact_mappings_updated_at_trigger ON hubspot_contact_mappings;
     CREATE TRIGGER update_hubspot_contact_mappings_updated_at_trigger
         BEFORE UPDATE ON hubspot_contact_mappings
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+-- Salesforce integration triggers
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_salesforce_integrations_updated_at_trigger ON salesforce_integrations;
+    CREATE TRIGGER update_salesforce_integrations_updated_at_trigger
+        BEFORE UPDATE ON salesforce_integrations
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_salesforce_contact_mappings_updated_at_trigger ON salesforce_contact_mappings;
+    CREATE TRIGGER update_salesforce_contact_mappings_updated_at_trigger
+        BEFORE UPDATE ON salesforce_contact_mappings
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+-- Lemlist integration triggers
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_lemlist_integrations_updated_at_trigger ON lemlist_integrations;
+    CREATE TRIGGER update_lemlist_integrations_updated_at_trigger
+        BEFORE UPDATE ON lemlist_integrations
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_lemlist_contact_mappings_updated_at_trigger ON lemlist_contact_mappings;
+    CREATE TRIGGER update_lemlist_contact_mappings_updated_at_trigger
+        BEFORE UPDATE ON lemlist_contact_mappings
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+-- Zapier integration triggers
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_zapier_integrations_updated_at_trigger ON zapier_integrations;
+    CREATE TRIGGER update_zapier_integrations_updated_at_trigger
+        BEFORE UPDATE ON zapier_integrations
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at();
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    DROP TRIGGER IF EXISTS update_zapier_contact_mappings_updated_at_trigger ON zapier_contact_mappings;
+    CREATE TRIGGER update_zapier_contact_mappings_updated_at_trigger
+        BEFORE UPDATE ON zapier_contact_mappings
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at();
 EXCEPTION
