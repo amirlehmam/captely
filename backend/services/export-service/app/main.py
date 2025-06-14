@@ -1842,6 +1842,136 @@ async def export_batch_to_salesforce(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to export batch to Salesforce: {str(e)}")
 
+# Integration stats endpoints
+@app.get("/api/integrations/stats")
+async def get_integration_stats(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get integration statistics for the user"""
+    try:
+        # Count connected integrations
+        connected_query = text("""
+            SELECT COUNT(DISTINCT integration_type) as connected_count
+            FROM (
+                SELECT 'hubspot' as integration_type 
+                FROM hubspot_integrations 
+                WHERE user_id = :user_id AND is_active = true
+                UNION
+                SELECT 'lemlist' as integration_type 
+                FROM lemlist_integrations 
+                WHERE user_id = :user_id AND is_active = true
+                UNION
+                SELECT 'zapier' as integration_type 
+                FROM zapier_integrations 
+                WHERE user_id = :user_id AND is_active = true
+            ) connected_integrations
+        """)
+        
+        connected_result = await session.execute(connected_query, {"user_id": user_id})
+        connected_count = connected_result.scalar() or 0
+        
+        # Get sync stats for today
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        yesterday_start = today_start - timedelta(days=1)
+        
+        sync_query = text("""
+            SELECT 
+                COUNT(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 END) as today_syncs,
+                COUNT(CASE WHEN DATE(created_at) = CURRENT_DATE - INTERVAL '1 day' THEN 1 END) as yesterday_syncs
+            FROM (
+                SELECT created_at FROM hubspot_sync_logs WHERE user_id = :user_id AND status = 'completed'
+                UNION ALL
+                SELECT created_at FROM lemlist_sync_logs WHERE user_id = :user_id AND status = 'completed'
+                UNION ALL
+                SELECT created_at FROM zapier_sync_logs WHERE user_id = :user_id AND status = 'completed'
+            ) all_syncs
+        """)
+        
+        sync_result = await session.execute(sync_query, {"user_id": user_id})
+        sync_data = sync_result.fetchone()
+        
+        today_syncs = sync_data.today_syncs if sync_data else 0
+        yesterday_syncs = sync_data.yesterday_syncs if sync_data else 0
+        
+        # Calculate growth percentage
+        if yesterday_syncs > 0:
+            growth = ((today_syncs - yesterday_syncs) / yesterday_syncs) * 100
+        else:
+            growth = 100.0 if today_syncs > 0 else 0.0
+        
+        # Get API call stats (simulated for now - would need actual API tracking)
+        api_calls = min(today_syncs * 50, 50000)  # Estimate based on syncs
+        
+        return {
+            "connected": connected_count,
+            "available": 5 - connected_count,  # Total available integrations
+            "synced_today": today_syncs,
+            "synced_today_growth": round(growth, 1),
+            "api_calls": api_calls,
+            "uptime": 99.9  # Placeholder - would need actual uptime monitoring
+        }
+        
+    except Exception as e:
+        print(f"Error fetching integration stats: {e}")
+        # Return default stats if query fails
+        return {
+            "connected": 0,
+            "available": 5,
+            "synced_today": 0,
+            "synced_today_growth": 0.0,
+            "api_calls": 0,
+            "uptime": 99.9
+        }
+
+@app.get("/api/integrations/status")
+async def get_integration_statuses(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get status of all integrations for the user"""
+    try:
+        # Check HubSpot status
+        hubspot_query = text("""
+            SELECT 1 FROM hubspot_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            LIMIT 1
+        """)
+        hubspot_result = await session.execute(hubspot_query, {"user_id": user_id})
+        hubspot_connected = hubspot_result.fetchone() is not None
+        
+        # Check Lemlist status
+        lemlist_query = text("""
+            SELECT 1 FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            LIMIT 1
+        """)
+        lemlist_result = await session.execute(lemlist_query, {"user_id": user_id})
+        lemlist_connected = lemlist_result.fetchone() is not None
+        
+        # Check Zapier status
+        zapier_query = text("""
+            SELECT 1 FROM zapier_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            LIMIT 1
+        """)
+        zapier_result = await session.execute(zapier_query, {"user_id": user_id})
+        zapier_connected = zapier_result.fetchone() is not None
+        
+        return {
+            "hubspot": hubspot_connected,
+            "lemlist": lemlist_connected,
+            "zapier": zapier_connected
+        }
+        
+    except Exception as e:
+        print(f"Error fetching integration statuses: {e}")
+        return {
+            "hubspot": False,
+            "lemlist": False,
+            "zapier": False
+        }
+
 # Health check endpoints
 @app.get("/health")
 async def health_check():

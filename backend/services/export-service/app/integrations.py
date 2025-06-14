@@ -355,9 +355,9 @@ class HubSpotIntegration:
 
 class SalesforceIntegration:
     def __init__(self, access_token: str = None, instance_url: str = None, client_id: str = None, client_secret: str = None):
-        # Use your actual Salesforce Connected App credentials
-        self.client_id = client_id or "3MVG9n_HvETGhr3AH5kJyoYHHZnU_5pALrlcfDQQpCdQRkIZOVDk_zZT3pCK5eJZ8F_cPxYyqBqCtTHcFhTjp"
-        self.client_secret = client_secret or "4F3D2E1C8B7A5F6E9D8C7B6A5E4D3C2B1A9F8E7D6C5B4A3E2D1C9B8A7F6E5D4C3B2A1"
+        # Use environment variables or passed credentials
+        self.client_id = client_id or os.getenv("SALESFORCE_CLIENT_ID")
+        self.client_secret = client_secret or os.getenv("SALESFORCE_CLIENT_SECRET")
         self.redirect_uri = "https://captely.com/integrations"
         self.access_token = access_token
         self.instance_url = instance_url

@@ -11,9 +11,9 @@ import apiService from '../services/api';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import HubSpotIntegration from '../components/integrations/HubSpotIntegration';
-import SalesforceIntegration from '../components/integrations/SalesforceIntegration';
 import LemlistIntegration from '../components/integrations/LemlistIntegration';
 import ZapierIntegration from '../components/integrations/ZapierIntegration';
+import { integrationStatsService, IntegrationStats } from '../services/integrationStatsService';
 
 interface Integration {
   id: string;
@@ -38,14 +38,7 @@ const integrations: Integration[] = [
     category: 'CRM',
     status: 'disconnected',
   },
-  {
-    id: 'salesforce',
-    name: 'Salesforce',
-    icon: '☁️',
-    description: 'Sync leads with the world\'s #1 CRM platform',
-    category: 'CRM',
-    status: 'disconnected',
-  },
+
   {
     id: 'lemlist',
     name: 'Lemlist',
@@ -84,10 +77,29 @@ const IntegrationsPage: React.FC = () => {
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('all');
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
+  const [stats, setStats] = useState<IntegrationStats>({
+    connected: 0,
+    available: 5,
+    syncedToday: 0,
+    syncedTodayGrowth: 0,
+    apiCalls: 0,
+    uptime: 99.9,
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
     fetchIntegrationConfigs();
+    fetchStats();
   }, []);
+
+  useEffect(() => {
+    // Update stats when integrations change
+    setStats(prev => ({
+      ...prev,
+      connected: connectedIntegrations.size,
+      available: integrations.length - connectedIntegrations.size,
+    }));
+  }, [connectedIntegrations]);
 
   const fetchIntegrationConfigs = async () => {
     try {
@@ -96,6 +108,19 @@ const IntegrationsPage: React.FC = () => {
       setConnectedIntegrations(new Set(['hubspot', 'zapier']));
     } catch (error) {
       console.error('Failed to fetch integrations');
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      setIsLoadingStats(true);
+      const realStats = await integrationStatsService.getIntegrationStats();
+      setStats(realStats);
+    } catch (error) {
+      console.error('Failed to fetch integration stats:', error);
+      // Keep default stats if fetch fails
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
@@ -234,7 +259,13 @@ const IntegrationsPage: React.FC = () => {
               <p className={`text-3xl font-bold ${
                 isDark ? 'text-emerald-100' : 'text-green-900'
               }`}>
-                {connectedIntegrations.size}
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
+                  </div>
+                ) : (
+                  stats.connected
+                )}
               </p>
               <div className="flex items-center mt-2">
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -278,7 +309,13 @@ const IntegrationsPage: React.FC = () => {
               <p className={`text-3xl font-bold ${
                 isDark ? 'text-indigo-100' : 'text-blue-900'
               }`}>
-                {integrations.length - connectedIntegrations.size}
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
+                  </div>
+                ) : (
+                  stats.available
+                )}
               </p>
               <div className="flex items-center mt-2">
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -322,7 +359,13 @@ const IntegrationsPage: React.FC = () => {
               <p className={`text-3xl font-bold ${
                 isDark ? 'text-purple-100' : 'text-purple-900'
               }`}>
-                1,247
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+                  </div>
+                ) : (
+                  integrationStatsService.formatNumber(stats.syncedToday)
+                )}
               </p>
               <div className="flex items-center mt-2">
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -330,7 +373,13 @@ const IntegrationsPage: React.FC = () => {
                     ? 'bg-purple-500/20 text-purple-300' 
                     : 'bg-purple-100 text-purple-700'
                 }`}>
-                  +12% today
+                  {isLoadingStats ? (
+                    <div className="animate-pulse">
+                      <div className="h-3 bg-purple-300 dark:bg-purple-600 rounded w-12"></div>
+                    </div>
+                  ) : (
+                    `${integrationStatsService.formatGrowth(stats.syncedTodayGrowth)} today`
+                  )}
                 </span>
               </div>
             </div>
@@ -366,7 +415,13 @@ const IntegrationsPage: React.FC = () => {
               <p className={`text-3xl font-bold ${
                 isDark ? 'text-cyan-100' : 'text-teal-900'
               }`}>
-                24.5k
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+                  </div>
+                ) : (
+                  integrationStatsService.formatNumber(stats.apiCalls)
+                )}
               </p>
               <div className="flex items-center mt-2">
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -374,7 +429,13 @@ const IntegrationsPage: React.FC = () => {
                     ? 'bg-cyan-500/20 text-cyan-300' 
                     : 'bg-cyan-100 text-cyan-700'
                 }`}>
-                  99.9% uptime
+                  {isLoadingStats ? (
+                    <div className="animate-pulse">
+                      <div className="h-3 bg-cyan-300 dark:bg-cyan-600 rounded w-16"></div>
+                    </div>
+                  ) : (
+                    `${stats.uptime}% uptime`
+                  )}
                 </span>
               </div>
             </div>
@@ -414,136 +475,208 @@ const IntegrationsPage: React.FC = () => {
         </nav>
       </div>
 
-      {/* Enhanced Integrations Grid with Dark Mode */}
+            {/* Enhanced Integrations Grid with Dark Mode */}
       <div className="space-y-8">
-        {/* HubSpot Integration - Featured */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="mb-4">
-            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              🚀 Featured Integration
-            </h2>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Connect with HubSpot for seamless CRM synchronization
-            </p>
-          </div>
-          <HubSpotIntegration onStatusChange={(connected) => {
-            if (connected) {
-              setConnectedIntegrations(prev => new Set([...prev, 'hubspot']));
-            } else {
-              setConnectedIntegrations(prev => {
-                const newSet = new Set(prev);
-                newSet.delete('hubspot');
-                return newSet;
-              });
-            }
-          }} />
-        </motion.div>
-
-        {/* Salesforce Integration */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="mb-4">
-            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              ☁️ Salesforce CRM
-            </h2>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Connect with the world's #1 CRM platform
-            </p>
-          </div>
-          <SalesforceIntegration onStatusChange={(connected) => {
-            if (connected) {
-              setConnectedIntegrations(prev => new Set([...prev, 'salesforce']));
-            } else {
-              setConnectedIntegrations(prev => {
-                const newSet = new Set(prev);
-                newSet.delete('salesforce');
-                return newSet;
-              });
-            }
-          }} />
-        </motion.div>
-
-        {/* Lemlist Integration */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="mb-4">
-            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              📧 Lemlist Outreach
-            </h2>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Add enriched contacts to your cold email campaigns
-            </p>
-          </div>
-          <LemlistIntegration onStatusChange={(connected) => {
-            if (connected) {
-              setConnectedIntegrations(prev => new Set([...prev, 'lemlist']));
-            } else {
-              setConnectedIntegrations(prev => {
-                const newSet = new Set(prev);
-                newSet.delete('lemlist');
-                return newSet;
-              });
-            }
-          }} />
-        </motion.div>
-
-        {/* Zapier Integration */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="mb-4">
-            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              ⚡ Zapier Automation
-            </h2>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Connect to 5,000+ apps through webhooks
-            </p>
-          </div>
-          <ZapierIntegration onStatusChange={(connected) => {
-            if (connected) {
-              setConnectedIntegrations(prev => new Set([...prev, 'zapier']));
-            } else {
-              setConnectedIntegrations(prev => {
-                const newSet = new Set(prev);
-                newSet.delete('zapier');
-                return newSet;
-              });
-            }
-          }} />
-        </motion.div>
-
-        {/* Other Integrations - Keep for future integrations */}
         <div>
-          <div className="mb-4">
+          <div className="mb-6">
             <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              🔗 More Integrations Coming Soon
+              🔗 Available Integrations
             </h2>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Additional tools and platforms in development
+              Connect with your favorite tools and platforms
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* HubSpot Integration Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className={`rounded-2xl shadow-lg border transition-all duration-300 overflow-hidden ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-700 hover:shadow-gray-900/50' 
+                  : 'bg-white border-gray-100 hover:shadow-xl'
+              }`}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                      <div className="w-6 h-6 bg-orange-600 rounded-sm"></div>
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        HubSpot CRM
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <Database className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                        <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          CRM
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    connectedIntegrations.has('hubspot')
+                      ? isDark 
+                        ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/50'
+                        : 'bg-green-100 text-green-800 border-green-200'
+                      : isDark
+                        ? 'bg-gray-700 text-gray-300 border-gray-600'
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                  }`}>
+                    {connectedIntegrations.has('hubspot') ? '✅ Connected' : '⏳ Available'}
+                  </div>
+                </div>
+                <p className={`text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Push enriched contacts directly to HubSpot CRM
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 border-t border-gray-200 dark:border-gray-700">
+                <HubSpotIntegration onStatusChange={(connected) => {
+                  if (connected) {
+                    setConnectedIntegrations(prev => new Set([...prev, 'hubspot']));
+                  } else {
+                    setConnectedIntegrations(prev => {
+                      const newSet = new Set(prev);
+                      newSet.delete('hubspot');
+                      return newSet;
+                    });
+                  }
+                }} />
+              </div>
+            </motion.div>
+
+            {/* Lemlist Integration Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className={`rounded-2xl shadow-lg border transition-all duration-300 overflow-hidden ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-700 hover:shadow-gray-900/50' 
+                  : 'bg-white border-gray-100 hover:shadow-xl'
+              }`}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                      <div className="w-6 h-6 bg-purple-600 rounded-sm"></div>
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Lemlist
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <Globe className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                        <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          Outreach
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    connectedIntegrations.has('lemlist')
+                      ? isDark 
+                        ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/50'
+                        : 'bg-green-100 text-green-800 border-green-200'
+                      : isDark
+                        ? 'bg-gray-700 text-gray-300 border-gray-600'
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                  }`}>
+                    {connectedIntegrations.has('lemlist') ? '✅ Connected' : '⏳ Available'}
+                  </div>
+                </div>
+                <p className={`text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Add contacts to your cold email campaigns
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 border-t border-gray-200 dark:border-gray-700">
+                <LemlistIntegration onStatusChange={(connected) => {
+                  if (connected) {
+                    setConnectedIntegrations(prev => new Set([...prev, 'lemlist']));
+                  } else {
+                    setConnectedIntegrations(prev => {
+                      const newSet = new Set(prev);
+                      newSet.delete('lemlist');
+                      return newSet;
+                    });
+                  }
+                }} />
+              </div>
+            </motion.div>
+
+            {/* Zapier Integration Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className={`rounded-2xl shadow-lg border transition-all duration-300 overflow-hidden ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-700 hover:shadow-gray-900/50' 
+                  : 'bg-white border-gray-100 hover:shadow-xl'
+              }`}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
+                      <div className="w-6 h-6 bg-amber-600 rounded-sm"></div>
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Zapier
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <Zap className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                        <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          Automation
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    connectedIntegrations.has('zapier')
+                      ? isDark 
+                        ? 'bg-emerald-900/30 text-emerald-300 border-emerald-700/50'
+                        : 'bg-green-100 text-green-800 border-green-200'
+                      : isDark
+                        ? 'bg-gray-700 text-gray-300 border-gray-600'
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                  }`}>
+                    {connectedIntegrations.has('zapier') ? '✅ Connected' : '⏳ Available'}
+                  </div>
+                </div>
+                <p className={`text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Connect to 5,000+ apps through webhooks
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 border-t border-gray-200 dark:border-gray-700">
+                <ZapierIntegration onStatusChange={(connected) => {
+                  if (connected) {
+                    setConnectedIntegrations(prev => new Set([...prev, 'zapier']));
+                  } else {
+                    setConnectedIntegrations(prev => {
+                      const newSet = new Set(prev);
+                      newSet.delete('zapier');
+                      return newSet;
+                    });
+                  }
+                }} />
+              </div>
+            </motion.div>
+
+            {/* Coming Soon Integrations */}
             <AnimatePresence>
-              {filteredIntegrations.filter(int => !['hubspot', 'salesforce', 'lemlist', 'zapier'].includes(int.id)).map((integration, index) => (
+              {filteredIntegrations.filter(int => !['hubspot', 'lemlist', 'zapier'].includes(int.id)).map((integration, index) => (
                 <motion.div
                   key={integration.id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: (index + 3) * 0.1 }}
                   whileHover={{ scale: 1.02, y: -4 }}
                   className={`rounded-2xl shadow-lg border transition-all duration-300 h-full flex flex-col ${
                     isDark 
