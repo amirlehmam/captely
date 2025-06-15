@@ -999,8 +999,8 @@ const CRMPage: React.FC = () => {
                           </motion.button>
                         </>
                       )}
-                    </div>
-                  </td>
+                        </div>
+                      </td>
                 </motion.tr>
               ))}
             </tbody>
