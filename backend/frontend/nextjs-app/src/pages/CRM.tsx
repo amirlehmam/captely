@@ -2,20 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Users, Search, Filter, Download, Mail, Phone, Building2, Building,
+  Users, Search, Filter, Download, Mail, Phone, Building2, 
   MapPin, Tag, Star, Edit, Trash2, Eye, MoreVertical,
   CheckCircle, XCircle, AlertCircle, Clock, TrendingUp,
   RefreshCw, Settings, X, Save, ChevronDown, ChevronUp,
   Zap, BarChart3, Activity, ArrowUpDown, Target, Globe,
   Calendar, UserPlus, MessageCircle, ExternalLink,
   FileDown, Upload, Check, Plus, Minus, Sparkles,
-  Award, Briefcase, Heart, Shield, Edit2,
-  ChevronRight, Linkedin, Twitter, Facebook, Instagram
+  Award, Briefcase, Heart, Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Link, useNavigate } from 'react-router-dom';
 
 import { apiService } from '../services/api';
 import ExportModal from '../components/modals/ExportModal';
@@ -87,7 +85,6 @@ const CRMPage: React.FC = () => {
   const { t } = useLanguage();
   const { isDark } = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
   
   // State
   const [loading, setLoading] = useState(true);
@@ -118,57 +115,6 @@ const CRMPage: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportContactId, setExportContactId] = useState<string | null>(null);
 
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Add modal state
-  const [showAddModal, setShowAddModal] = useState(false);
-
-  // Sorting state
-  const [sortBy, setSortBy] = useState('created_at');
-
-  // Computed values
-  const contactsWithEmails = stats?.overview.contacts_with_email || 0;
-  const contactsWithPhones = stats?.overview.contacts_with_phone || 0;
-  const highQualityContacts = stats?.lead_quality.high_quality || 0;
-
-  // Filtered and sorted contacts - defensive programming
-  const filteredContacts = (contacts || []).filter(contact => {
-    const matchesSearch = !searchTerm || 
-      `${contact.first_name || ''} ${contact.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.company?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesBatch = batchFilter === 'all' || contact.batch_name === batchFilter;
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'verified' && contact.email_verified) ||
-      (statusFilter === 'unverified' && !contact.email_verified) ||
-      (statusFilter === 'enriched' && contact.enriched);
-    
-    const matchesEmailReliability = emailReliabilityFilter === 'all' || 
-      contact.email_reliability === emailReliabilityFilter;
-    
-    const matchesLeadScore = (contact.lead_score || 0) >= leadScoreMin && (contact.lead_score || 0) <= leadScoreMax;
-    
-    return matchesSearch && matchesBatch && matchesStatus && matchesEmailReliability && matchesLeadScore;
-  });
-
-  const currentContacts = filteredContacts.slice(
-    (currentPage - 1) * limit,
-    currentPage * limit
-  );
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   // Fetch data
   const fetchContacts = useCallback(async () => {
     try {
@@ -184,17 +130,12 @@ const CRMPage: React.FC = () => {
         lead_score_max: leadScoreMax,
       });
       
-      // Defensive programming - ensure we always have arrays
-      setContacts(response?.contacts || []);
-      setTotalContacts(response?.total || 0);
-      setTotalPages(response?.total_pages || 1);
+      setContacts(response.contacts);
+      setTotalContacts(response.total);
+      setTotalPages(response.total_pages);
     } catch (error) {
       console.error('Error fetching contacts:', error);
       toast.error('Failed to fetch contacts');
-      // Set empty state on error
-      setContacts([]);
-      setTotalContacts(0);
-      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -203,20 +144,18 @@ const CRMPage: React.FC = () => {
   const fetchStats = useCallback(async () => {
     try {
       const statsData = await apiService.getCrmContactsStats();
-      setStats(statsData || null);
+      setStats(statsData);
     } catch (error) {
       console.error('Error fetching stats:', error);
-      setStats(null);
     }
   }, []);
 
   const fetchBatches = useCallback(async () => {
     try {
       const batchesData = await apiService.getCrmBatches();
-      setBatches(batchesData?.batches || []);
+      setBatches(batchesData.batches);
     } catch (error) {
       console.error('Error fetching batches:', error);
-      setBatches([]);
     }
   }, []);
 
@@ -309,21 +248,6 @@ const CRMPage: React.FC = () => {
     setEditForm({ position: '', notes: '' });
   };
 
-  const refetch = async () => {
-    await handleRefresh();
-  };
-
-  const handleDeleteContact = async (contactId: string) => {
-    try {
-      // For now, just show a toast since deleteContact API doesn't exist
-      toast.success('Contact marked for deletion');
-      // Remove from local state
-      setContacts(prev => prev.filter(contact => contact.id !== contactId));
-    } catch (error) {
-      toast.error('Failed to delete contact');
-    }
-  };
-
   const handleBulkExport = () => {
     if (selectedContacts.size === 0) {
       toast.error('Please select contacts to export');
@@ -338,14 +262,20 @@ const CRMPage: React.FC = () => {
     setShowExportModal(true);
   };
 
-  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot', customFilename?: string) => {
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot' | 'lemlist' | 'zapier', customFilename?: string) => {
     try {
       if (exportContactId) {
         // Single contact export
-        if (format === 'hubspot') {
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
           // Integration export
-          await apiService.exportContactToHubSpot(exportContactId);
-          toast.success('🚀 Successfully exported contact to HubSpot!');
+          if (format === 'hubspot') {
+            await apiService.exportContactToHubSpot(exportContactId);
+            toast.success('🚀 Successfully exported contact to HubSpot!');
+                     } else if (format === 'lemlist') {
+             await apiService.exportContactToLemlist(exportContactId);
+           } else if (format === 'zapier') {
+             await apiService.exportContactToZapier(exportContactId);
+           }
         } else {
           // For other formats, export as CRM contact with single ID and custom filename
           await apiService.exportCrmContacts([exportContactId], format, customFilename);
@@ -354,10 +284,16 @@ const CRMPage: React.FC = () => {
       } else if (selectedContacts.size > 0) {
         // Bulk export
         const contactIds = Array.from(selectedContacts);
-        if (format === 'hubspot') {
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
           // Integration export for bulk
-          await apiService.exportCrmContacts(contactIds, 'hubspot', customFilename);
-          toast.success(`🚀 Successfully exported ${selectedContacts.size} contacts to HubSpot!`);
+          if (format === 'hubspot') {
+            await apiService.exportCrmContacts(contactIds, 'hubspot', customFilename);
+            toast.success(`🚀 Successfully exported ${selectedContacts.size} contacts to HubSpot!`);
+                     } else if (format === 'lemlist') {
+             await apiService.exportCrmContactsToLemlist(contactIds);
+           } else if (format === 'zapier') {
+             await apiService.exportCrmContactsToZapier(contactIds);
+           }
         } else {
           // File export
           await apiService.exportCrmContacts(contactIds, format, customFilename);
@@ -431,683 +367,838 @@ const CRMPage: React.FC = () => {
   }
 
   return (
-    <div className={`${isMobile ? 'mobile-container' : 'space-y-6'} min-h-screen transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} ${isMobile ? 'p-4' : 'p-6'}`}>
-      {/* Header */}
+    <div className="max-w-7xl mx-auto min-h-screen transition-all duration-300">
+      {/* Enhanced Header with Better Content */}
       <motion.div 
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-center justify-between'}`}
+        className="mb-8 relative overflow-hidden"
       >
-        <div>
-          <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {t('crm.title')}
-          </h1>
-          <p className={`mt-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-            {t('crm.subtitle')}
-          </p>
+        {/* Background Pattern */}
+        <div className={`absolute inset-0 opacity-30 ${
+          isDark ? 'bg-gradient-to-r from-emerald-900/20 to-blue-900/20' : 'bg-gradient-to-r from-emerald-50 to-blue-50'
+        }`}>
+          <div className="absolute inset-0" style={{
+            backgroundImage: isDark 
+              ? 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)'
+              : 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0)',
+            backgroundSize: '20px 20px'
+          }} />
         </div>
         
-        <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center space-x-4'}`}>
-          <motion.button
-            onClick={() => setShowAddModal(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`inline-flex items-center ${isMobile ? 'w-full justify-center px-4 py-3 text-base' : 'px-6 py-3 text-base'} font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 border border-transparent rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200`}
-          >
-            <UserPlus className="h-5 w-5 mr-2" />
-            {t('crm.addContact')}
-          </motion.button>
-          
-          <div className={`flex ${isMobile ? 'w-full space-x-2' : 'space-x-3'}`}>
-            <motion.button
-              onClick={() => refetch()}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`inline-flex items-center ${isMobile ? 'flex-1 justify-center px-3 py-2 text-sm' : 'px-4 py-2 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500`}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {t('common.refresh')}
-            </motion.button>
+        <div className="relative z-10 p-8 rounded-2xl backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              {/* Main Title with Icon */}
+              <div className="flex items-center space-x-4">
+                <div className={`p-3 rounded-xl ${
+                  isDark 
+                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25' 
+                    : 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25'
+                }`}>
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className={`text-4xl font-bold mb-2 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    Contacts Management 
+                  </h1>
+                  <div className="flex items-center space-x-2">
+                    <Award className={`h-5 w-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <span className={`text-lg font-medium ${
+                      isDark ? 'text-emerald-400' : 'text-emerald-600'
+                    }`}>
+                      Advanced CRM Dashboard
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Description */}
+              <div className="max-w-3xl space-y-3">
+                <p className={`text-lg leading-relaxed ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  Manage and enrich your contact database with AI-powered insights. Track lead scores, 
+                  verify email deliverability, and export to your favorite CRM platforms seamlessly.
+                </p>
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Shield className={`h-4 w-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+                      Email Verification
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className={`h-4 w-4 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                      Lead Scoring
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Target className={`h-4 w-4 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-orange-300' : 'text-orange-700'}`}>
+                      Smart Enrichment
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Heart className={`h-4 w-4 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
+                    <span className={`text-sm font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                      CRM Integration
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            {selectedContacts.size > 0 && (
-              <motion.button
-                onClick={handleBulkExport}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`inline-flex items-center ${isMobile ? 'flex-1 justify-center px-3 py-2 text-sm' : 'px-4 py-2 text-sm'} font-medium text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200`}
+            {/* Action Buttons */}
+            <div className="flex space-x-4">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={`inline-flex items-center px-6 py-3 border rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md ${
+                  isDark 
+                    ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50' 
+                    : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50'
+                }`}
+                style={{ willChange: 'background-color, box-shadow' }}
               >
-                <Download className="h-4 w-4 mr-2" />
-                {isMobile ? `Export (${selectedContacts.size})` : `Export Selected (${selectedContacts.size})`}
-              </motion.button>
-            )}
+                <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {t('common.refresh')}
+              </button>
+              
+              {selectedContacts.size > 0 && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleBulkExport}
+                  className={`px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
+                    isDark 
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  <Download className="w-4 h-4 mr-2 inline" />
+                  Export ({selectedContacts.size})
+                </motion.button>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-4 gap-6'}`}
-      >
-        <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border-blue-700/50' 
-              : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
-          }`}
+      {/* Enhanced Stats Cards with Dark Mode */}
+      {stats && stats.overview && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8"
         >
-          <div className="flex items-center">
-            <Users className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('crm.stats.totalContacts')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{totalContacts}</p>
+          {/* Total Contacts Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-700/50 hover:shadow-blue-500/25' 
+                : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-blue-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-blue-300' : 'text-blue-600'
+                }`}>
+                  Total Contacts
+                </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-blue-100' : 'text-blue-900'
+                }`}>
+                  {stats.overview.total_contacts.toLocaleString()}
+                </p>
+                <div className="flex items-center mt-2">
+                  <TrendingUp className={`h-4 w-4 mr-1 ${
+                    isDark ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    isDark ? 'text-blue-400' : 'text-blue-600'
+                  }`}>
+                    Database size
+                  </span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-blue-500/20 text-blue-400' 
+                  : 'bg-blue-500/10 text-blue-600'
+              }`}>
+                <Users className="h-8 w-8" />
+              </div>
             </div>
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50' 
-              : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
-          }`}
-        >
-          <div className="flex items-center">
-            <Mail className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('crm.stats.withEmails')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{contactsWithEmails}</p>
-            </div>
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-700/50' 
-              : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'
-          }`}
-        >
-          <div className="flex items-center">
-            <Phone className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{t('crm.stats.withPhones')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{contactsWithPhones}</p>
-            </div>
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-yellow-900/20 to-yellow-800/10 border-yellow-700/50' 
-              : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200'
-          }`}
-        >
-          <div className="flex items-center">
-            <Star className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-yellow-400' : 'text-yellow-500'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>{t('crm.stats.highQuality')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-yellow-100' : 'text-yellow-900'}`}>{highQualityContacts}</p>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
+          </motion.div>
 
-      {/* Filters and Search */}
+          {/* Enriched Contacts Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 border-emerald-700/50 hover:shadow-emerald-500/25' 
+                : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 hover:shadow-emerald-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-emerald-300' : 'text-emerald-600'
+                }`}>
+                  Enriched Contacts
+                </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-emerald-100' : 'text-emerald-900'
+                }`}>
+                  {stats.overview.enriched_contacts.toLocaleString()}
+                </p>
+                <div className="flex items-center mt-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    isDark 
+                      ? 'bg-emerald-500/20 text-emerald-300' 
+                      : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {stats?.overview?.enriched_contacts && stats?.overview?.total_contacts 
+                      ? ((stats.overview.enriched_contacts / stats.overview.total_contacts) * 100).toFixed(1)
+                      : '0.0'}% success
+                  </span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-emerald-500/20 text-emerald-400' 
+                  : 'bg-emerald-500/10 text-emerald-600'
+              }`}>
+                <Zap className="h-8 w-8" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Lead Score Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-purple-900/30 to-purple-800/20 border-purple-700/50 hover:shadow-purple-500/25' 
+                : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-purple-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-purple-300' : 'text-purple-600'
+                }`}>
+                  Avg Lead Score
+                </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-purple-100' : 'text-purple-900'
+                }`}>
+                                        {(stats?.overview?.avg_lead_score || 0).toFixed(1)}
+                </p>
+                <div className="flex items-center mt-2">
+                  {getLeadScoreStars(stats.overview.avg_lead_score).map((filled, i) => (
+                    <Star key={i} className={`h-4 w-4 ${
+                      filled 
+                        ? 'text-yellow-400 fill-current' 
+                        : isDark ? 'text-gray-600' : 'text-gray-300'
+                    }`} />
+                  ))}
+                </div>
+              </div>
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-purple-500/20 text-purple-400' 
+                  : 'bg-purple-500/10 text-purple-600'
+              }`}>
+                <Target className="h-8 w-8" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Credits Used Card */}
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -4 }}
+            className={`rounded-2xl p-6 border shadow-lg transition-all duration-300 ${
+              isDark 
+                ? 'bg-gradient-to-br from-amber-900/30 to-orange-800/20 border-amber-700/50 hover:shadow-amber-500/25' 
+                : 'bg-gradient-to-br from-amber-50 to-orange-100 border-amber-200 hover:shadow-amber-500/25'
+            }`}
+            style={{ willChange: 'transform, box-shadow' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm font-semibold mb-2 ${
+                  isDark ? 'text-amber-300' : 'text-amber-600'
+                }`}>
+                  Credits Consumed
+                </p>
+                <p className={`text-3xl font-bold ${
+                  isDark ? 'text-amber-100' : 'text-amber-900'
+                }`}>
+                                        {(stats?.overview?.total_credits_consumed || 0).toFixed(0)}
+                </p>
+                <div className="flex items-center mt-2">
+                  <Briefcase className={`h-4 w-4 mr-1 ${
+                    isDark ? 'text-amber-400' : 'text-amber-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    isDark ? 'text-amber-400' : 'text-amber-600'
+                  }`}>
+                    Total investment
+                  </span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-xl ${
+                isDark 
+                  ? 'bg-amber-500/20 text-amber-400' 
+                  : 'bg-amber-500/10 text-amber-600'
+              }`}>
+                <BarChart3 className="h-8 w-8" />
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Enhanced Search and Filters with Dark Mode */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className={`rounded-xl shadow-lg border ${isMobile ? 'p-4' : 'p-6'} transition-all duration-300 ${
+        className={`rounded-2xl shadow-lg border p-6 mb-6 transition-all duration-300 ${
           isDark 
             ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
             : 'bg-white border-gray-100 shadow-gray-200/50'
         }`}
+        style={{ willChange: 'background-color, border-color' }}
       >
-        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6'}`}>
-          <div className={isMobile ? 'w-full' : 'w-full lg:w-1/2'}>
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Enhanced Search */}
+          <div className="flex-1">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
-              </div>
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${
+                isDark ? 'text-gray-500' : 'text-gray-400'
+              }`} />
               <input
                 type="text"
+                placeholder="Search contacts by name, email, company..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`block w-full pl-10 pr-3 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg leading-5 transition-all duration-200 ${
+                onChange={(e) => handleSearch(e.target.value)}
+                className={`w-full pl-10 pr-4 py-3 border rounded-xl transition-all duration-200 ${
                   isDark 
-                    ? 'border-gray-600 bg-gray-700 placeholder-gray-400 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
-                    : 'border-gray-200 bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                }`}
-                placeholder={t('crm.searchPlaceholder')}
+                    ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500' 
+                    : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-teal-500'
+                } focus:outline-none shadow-sm hover:shadow-md`}
+                style={{ willChange: 'border-color, box-shadow' }}
               />
             </div>
           </div>
 
-          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-3'}`}>
+          {/* Enhanced Batch Filter */}
+          <div className="min-w-48">
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={`${isMobile ? 'w-full' : ''} px-4 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg transition-all duration-200 ${
+              value={batchFilter}
+              onChange={(e) => {
+                setBatchFilter(e.target.value);
+                handleFilterChange();
+              }}
+              className={`w-full px-4 py-3 border rounded-xl font-medium transition-all duration-200 ${
                 isDark 
-                  ? 'border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
-                  : 'border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-              }`}
+                  ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500' 
+                  : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-teal-500'
+              } focus:outline-none shadow-sm hover:shadow-md`}
+              style={{ willChange: 'border-color, box-shadow' }}
             >
-              <option value="all">{t('crm.filters.allStatuses')}</option>
-              <option value="verified">{t('crm.filters.verified')}</option>
-              <option value="unverified">{t('crm.filters.unverified')}</option>
-              <option value="enriched">{t('crm.filters.enriched')}</option>
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className={`${isMobile ? 'w-full' : ''} px-4 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg transition-all duration-200 ${
-                isDark 
-                  ? 'border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
-                  : 'border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-              }`}
-            >
-              <option value="created_at">{t('crm.filters.newest')}</option>
-              <option value="name">{t('crm.filters.name')}</option>
-              <option value="company">{t('crm.filters.company')}</option>
-              <option value="score">{t('crm.filters.score')}</option>
+              <option value="all">📊 All Batches</option>
+              {(batches || []).map(batch => (
+                <option key={batch.id} value={batch.id}>
+                  📁 {batch.name} ({batch.contact_count})
+                </option>
+              ))}
             </select>
           </div>
+
+          {/* Enhanced Filters Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`inline-flex items-center px-6 py-3 border rounded-xl font-medium transition-all duration-200 ${
+              isDark 
+                ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+            } shadow-sm hover:shadow-md`}
+            style={{ willChange: 'background-color, box-shadow' }}
+          >
+            <Filter className="h-5 w-5 mr-2" />
+            Advanced Filters
+            {showFilters ? <ChevronUp className="h-5 w-5 ml-2" /> : <ChevronDown className="h-5 w-5 ml-2" />}
+          </button>
         </div>
+
+        {/* Advanced Filters */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className={`mt-4 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      handleFilterChange();
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg transition-all duration-200 ${
+                      isDark 
+                        ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                        : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                    } focus:outline-none`}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="enriched">✅ Enriched</option>
+                    <option value="not_enriched">⏳ Not Enriched</option>
+                    <option value="verified">🔒 Email Verified</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Email Reliability</label>
+                  <select
+                    value={emailReliabilityFilter}
+                    onChange={(e) => {
+                      setEmailReliabilityFilter(e.target.value);
+                      handleFilterChange();
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg transition-all duration-200 ${
+                      isDark 
+                        ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                        : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                    } focus:outline-none`}
+                  >
+                    <option value="all">All Reliability</option>
+                    <option value="excellent">🟢 Excellent</option>
+                    <option value="good">🔵 Good</option>
+                    <option value="fair">🟡 Fair</option>
+                    <option value="poor">🔴 Poor</option>
+                    <option value="no_email">⚫ No Email</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Lead Score Range</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={leadScoreMin}
+                      onChange={(e) => setLeadScoreMin(Number(e.target.value))}
+                      className={`w-16 px-2 py-2 border rounded text-sm transition-all duration-200 ${
+                        isDark 
+                          ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                          : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                      } focus:outline-none`}
+                    />
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>to</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={leadScoreMax}
+                      onChange={(e) => setLeadScoreMax(Number(e.target.value))}
+                      className={`w-16 px-2 py-2 border rounded text-sm transition-all duration-200 ${
+                        isDark 
+                          ? 'border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500' 
+                          : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-teal-500'
+                      } focus:outline-none`}
+                    />
+                    <button
+                      onClick={handleFilterChange}
+                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      ✨ Apply
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
-      {/* Contacts Grid/List */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${isDark ? 'border-primary-400' : 'border-primary-600'}`}></div>
-        </div>
-      ) : filteredContacts.length === 0 ? (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={`text-center py-12 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-        >
-          <Users className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
-          <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-            {searchTerm ? t('crm.noContactsFound') : t('crm.noContacts')}
-          </h3>
-          <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {searchTerm ? t('crm.adjustFilters') : t('crm.getStarted')}
-          </p>
-        </motion.div>
-      ) : (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className={`rounded-xl shadow-lg border transition-all duration-300 ${
-            isDark 
-              ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
-              : 'bg-white border-gray-100 shadow-gray-200/50'
-          }`}
-        >
-          <div className={isMobile ? '' : 'overflow-x-auto'}>
-            {isMobile ? (
-              // Mobile: Stack contacts as cards
-              <div className="p-4 space-y-4">
-                {currentContacts.map((contact) => (
-                  <div key={contact.id} className={`rounded-lg border p-4 ${
+      {/* Enhanced Contacts Table with Dark Mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`rounded-2xl shadow-lg border overflow-hidden transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+            : 'bg-white border-gray-100 shadow-gray-200/50'
+        }`}
+        style={{ willChange: 'background-color, border-color' }}
+      >
+        <div className="overflow-x-auto">
+          <table className={`min-w-full divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+            <thead className={`${
+              isDark 
+                ? 'bg-gradient-to-r from-gray-800 to-gray-750' 
+                : 'bg-gradient-to-r from-gray-50 to-white'
+            }`}>
+              <tr>
+                <th className="px-6 py-4 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedContacts.size === contacts.length && contacts.length > 0}
+                    onChange={handleSelectAll}
+                    className={`h-4 w-4 rounded transition-colors ${
+                      isDark 
+                        ? 'text-emerald-500 focus:ring-emerald-500 border-gray-600 bg-gray-700' 
+                        : 'text-teal-600 focus:ring-teal-500 border-gray-300'
+                    }`}
+                  />
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Contact
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Lead Score
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Email Reliability
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Company & Position
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Batch
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${
+              isDark 
+                ? 'bg-gray-800 divide-gray-700' 
+                : 'bg-white divide-gray-100'
+            }`}>
+              {(contacts || []).map((contact) => (
+                <motion.tr
+                  key={contact.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`transition-all duration-200 ${
                     isDark 
-                      ? 'bg-gray-700 border-gray-600' 
-                      : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedContacts.has(contact.id)}
-                          onChange={() => handleSelectContact(contact.id)}
-                          className={`h-4 w-4 rounded transition-colors ${
-                            isDark 
-                              ? 'text-primary-500 focus:ring-primary-500 border-gray-500 bg-gray-700' 
-                              : 'text-primary-600 focus:ring-primary-500 border-gray-300'
-                          }`}
-                        />
-                        <div>
-                          <div className={`text-sm font-medium ${
-                            isDark ? 'text-gray-100' : 'text-gray-900'
-                          }`}>
-                            {contact.first_name} {contact.last_name}
-                          </div>
-                          {contact.position && (
-                            <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {contact.position}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => handleEditContact(contact.id)}
-                          className={`p-2 rounded-lg transition-all duration-200 ${
-                            isDark 
-                              ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
-                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                          }`}
-                          title={t('crm.editContact')}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteContact(contact.id)}
-                          className={`p-2 rounded-lg transition-all duration-200 ${
-                            isDark 
-                              ? 'text-red-400 hover:text-red-300 hover:bg-red-900/20' 
-                              : 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                          }`}
-                          title={t('crm.deleteContact')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm">
-                      {contact.email && (
-                        <div className="flex items-center">
-                          <Mail className="h-3 w-3 text-green-500 mr-2" />
-                          <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{contact.email}</span>
-                          {contact.email_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
-                        </div>
-                      )}
-                      {contact.phone && (
-                        <div className="flex items-center">
-                          <Phone className="h-3 w-3 text-blue-500 mr-2" />
-                          <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{contact.phone}</span>
-                          {contact.phone_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
-                        </div>
-                      )}
-                      {contact.company && (
-                        <div className="flex items-center">
-                          <Building className="h-3 w-3 text-gray-400 mr-2" />
-                          <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{contact.company}</span>
-                        </div>
-                      )}
-                      {contact.location && (
-                        <div className="flex items-center">
-                          <MapPin className="h-3 w-3 text-gray-400 mr-2" />
-                          <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{contact.location}</span>
-                        </div>
-                      )}
-                      {contact.lead_score !== undefined && (
-                        <div className="flex items-center">
-                          <Star className="h-3 w-3 text-yellow-500 mr-2" />
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            contact.lead_score >= 80
-                              ? isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'
-                              : contact.lead_score >= 60
-                                ? isDark ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800'
-                                : isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {contact.lead_score}%
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              // Desktop: Keep existing table
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className={`${
-                  isDark 
-                    ? 'bg-gradient-to-r from-gray-800 to-gray-900' 
-                    : 'bg-gradient-to-r from-gray-50 to-white'
-                }`}>
-                  <tr>
-                    <th className="px-6 py-4 text-left">
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.size === contacts.length && contacts.length > 0}
-                        onChange={handleSelectAll}
-                        className={`h-4 w-4 rounded transition-colors ${
-                          isDark 
-                            ? 'text-emerald-500 focus:ring-emerald-500 border-gray-600 bg-gray-700' 
-                            : 'text-teal-600 focus:ring-teal-500 border-gray-300'
-                        }`}
-                      />
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Contact
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Lead Score
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Email Reliability
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Company & Position
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Batch
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${
-                  isDark 
-                    ? 'bg-gray-800 divide-gray-700' 
-                    : 'bg-white divide-gray-100'
-                }`}>
-                  {(contacts || []).map((contact) => (
-                    <motion.tr
-                      key={contact.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className={`transition-all duration-200 ${
+                      ? 'hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-750' 
+                      : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-white'
+                  }`}
+                >
+                  <td className="px-6 py-5">
+                    <input
+                      type="checkbox"
+                      checked={selectedContacts.has(contact.id)}
+                      onChange={() => handleSelectContact(contact.id)}
+                      className={`h-4 w-4 rounded transition-colors ${
                         isDark 
-                          ? 'hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-800' 
-                          : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-white'
+                          ? 'text-emerald-500 focus:ring-emerald-500 border-gray-600 bg-gray-700' 
+                          : 'text-teal-600 focus:ring-teal-500 border-gray-300 bg-white'
                       }`}
-                    >
-                      <td className="px-6 py-5">
-                        <input
-                          type="checkbox"
-                          checked={selectedContacts.has(contact.id)}
-                          onChange={() => handleSelectContact(contact.id)}
-                          className={`h-4 w-4 rounded transition-colors ${
-                            isDark 
-                              ? 'text-emerald-500 focus:ring-emerald-500 border-gray-600 bg-gray-700' 
-                              : 'text-teal-600 focus:ring-teal-500 border-gray-300 bg-white'
-                          }`}
-                        />
-                      </td>
-                      
-                      <td className="px-6 py-5">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                              {contact.first_name?.[0]?.toUpperCase() || '?'}
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className={`text-sm font-medium ${
-                              isDark ? 'text-gray-100' : 'text-gray-900'
-                            }`}>
-                              {contact.first_name} {contact.last_name}
-                            </div>
-                            <div className={`text-sm ${
-                              isDark ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                              <div className="flex items-center space-x-3">
-                                {contact.email && (
-                                  <div className="flex items-center">
-                                    <Mail className={`h-3 w-3 mr-1 ${
-                                      isDark ? 'text-gray-500' : 'text-gray-400'
-                                    }`} />
-                                    <span className="truncate max-w-48">{contact.email}</span>
-                                    {contact.email_verified && <CheckCircle className="h-3 w-3 ml-1 text-green-500" />}
-                                  </div>
-                                )}
-                                {contact.phone && (
-                                  <div className="flex items-center">
-                                    <Phone className={`h-3 w-3 mr-1 ${
-                                      isDark ? 'text-gray-500' : 'text-gray-400'
-                                    }`} />
-                                    <span>{contact.phone}</span>
-                                    {contact.phone_verified && <CheckCircle className="h-3 w-3 ml-1 text-green-500" />}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                    />
+                  </td>
+                  
+                  <td className="px-6 py-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-semibold">
+                          {contact.first_name?.[0]?.toUpperCase() || '?'}
                         </div>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <div className="flex items-center">
-                          <span className={`text-lg font-bold ${getLeadScoreColor(contact.lead_score)}`}>
-                            {contact.lead_score}
-                          </span>
-                          <div className="flex ml-2">
-                            {getLeadScoreStars(contact.lead_score).map((filled, i) => (
-                              <Star key={i} className={`h-3 w-3 ${filled ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
-                            ))}
-                          </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className={`text-sm font-medium ${
+                          isDark ? 'text-gray-100' : 'text-gray-900'
+                        }`}>
+                          {contact.first_name} {contact.last_name}
                         </div>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        {contact.email ? (
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getEmailReliabilityColor(contact.email_reliability || 'unknown')}`}>
-                            {(contact.email_reliability || 'unknown').charAt(0).toUpperCase() + (contact.email_reliability || 'unknown').slice(1)}
-                          </span>
-                        ) : (
-                          <span className={`text-sm ${
-                            isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`}>No email</span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <div>
-                          <div className={`text-sm font-medium flex items-center ${
-                            isDark ? 'text-gray-100' : 'text-gray-900'
-                          }`}>
-                            <Building className={`h-4 w-4 mr-2 ${
-                              isDark ? 'text-gray-500' : 'text-gray-400'
-                            }`} />
-                            {contact.company || 'Unknown'}
-                          </div>
-                          {editingContact === contact.id ? (
-                            <input
-                              type="text"
-                              value={editForm.position}
-                              onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
-                              placeholder="Job title..."
-                              className={`mt-1 text-sm border rounded px-2 py-1 w-full transition-all duration-200 ${
-                                isDark 
-                                  ? 'text-gray-100 bg-gray-700 border-gray-600 placeholder-gray-400' 
-                                  : 'text-gray-600 bg-white border-gray-300 placeholder-gray-500'
-                              }`}
-                            />
-                          ) : (
-                            <div className={`text-sm ${
-                              isDark ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                              {contact.position || 'No position'}
-                            </div>
-                          )}
-                          {contact.location && (
-                            <div className={`text-xs flex items-center mt-1 ${
-                              isDark ? 'text-gray-400' : 'text-gray-500'
-                            }`}>
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {contact.location}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-5">
                         <div className={`text-sm ${
                           isDark ? 'text-gray-300' : 'text-gray-600'
                         }`}>
-                          <div className="flex items-center">
-                            <Activity className={`h-3 w-3 mr-1 ${
-                              isDark ? 'text-gray-500' : 'text-gray-400'
-                            }`} />
-                            {contact.batch_name || 'Unknown'}
-                          </div>
-                          <div className={`text-xs mt-1 ${
-                            isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
-                            {contact.batch_created_at && contact.batch_created_at !== 'Invalid Date' 
-                              ? new Date(contact.batch_created_at).toLocaleDateString() 
-                              : '-'}
+                          <div className="flex items-center space-x-3">
+                            {contact.email && (
+                              <div className="flex items-center">
+                                <Mail className={`h-3 w-3 mr-1 ${
+                                  isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`} />
+                                <span className="truncate max-w-48">{contact.email}</span>
+                                {contact.email_verified && <CheckCircle className="h-3 w-3 ml-1 text-green-500" />}
+                              </div>
+                            )}
+                            {contact.phone && (
+                              <div className="flex items-center">
+                                <Phone className={`h-3 w-3 mr-1 ${
+                                  isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`} />
+                                <span>{contact.phone}</span>
+                                {contact.phone_verified && <CheckCircle className="h-3 w-3 ml-1 text-green-500" />}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </td>
+                      </div>
+                    </div>
+                  </td>
 
-                      <td className="px-6 py-5 text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
-                          {editingContact === contact.id ? (
-                            <>
-                              <button
-                                onClick={() => handleEditContact(contact.id)}
-                                className={`p-2 rounded-lg transition-all duration-200 ${
-                                  isDark 
-                                    ? 'text-green-400 hover:text-green-300 hover:bg-green-900/20' 
-                                    : 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                                }`}
-                                title="Save Changes"
-                              >
-                                <Save className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className={`p-2 rounded-lg transition-all duration-200 ${
-                                  isDark 
-                                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
-                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                }`}
-                                title="Cancel"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                              >
-                                <button
-                                  onClick={() => handleEditContact(contact.id)}
-                                  className={`p-2 rounded-lg transition-all duration-200 ${
-                                    isDark 
-                                      ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
-                                      : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                  }`}
-                                  title="View Contact Details"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </button>
-                              </motion.div>
-                              
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                              >
-                                <button
-                                  onClick={() => handleEditContact(contact.id)}
-                                  className={`p-2 rounded-lg transition-all duration-200 ${
-                                    isDark 
-                                      ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
-                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                  }`}
-                                  title="Edit Contact"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                              </motion.div>
-                              
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleSingleExport(contact.id)}
-                                className={`p-2 rounded-lg transition-all duration-200 ${
-                                  isDark 
-                                    ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20' 
-                                    : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
-                                }`}
-                                title="Export contact data"
-                              >
-                                <Download className="h-4 w-4" />
-                              </motion.button>
-                            </>
-                          )}
+                  <td className="px-6 py-5">
+                    <div className="flex items-center">
+                      <span className={`text-lg font-bold ${getLeadScoreColor(contact.lead_score)}`}>
+                        {contact.lead_score}
+                      </span>
+                      <div className="flex ml-2">
+                        {getLeadScoreStars(contact.lead_score).map((filled, i) => (
+                          <Star key={i} className={`h-3 w-3 ${filled ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-5">
+                    {contact.email ? (
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getEmailReliabilityColor(contact.email_reliability || 'unknown')}`}>
+                        {(contact.email_reliability || 'unknown').charAt(0).toUpperCase() + (contact.email_reliability || 'unknown').slice(1)}
+                      </span>
+                    ) : (
+                      <span className={`text-sm ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>No email</span>
+                    )}
+                  </td>
+
+                  <td className="px-6 py-5">
+                    <div>
+                      <div className={`text-sm font-medium flex items-center ${
+                        isDark ? 'text-gray-100' : 'text-gray-900'
+                      }`}>
+                        <Building2 className={`h-4 w-4 mr-2 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
+                        {contact.company || 'Unknown'}
+                      </div>
+                      {editingContact === contact.id ? (
+                        <input
+                          type="text"
+                          value={editForm.position}
+                          onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
+                          placeholder="Job title..."
+                          className={`mt-1 text-sm border rounded px-2 py-1 w-full transition-all duration-200 ${
+                            isDark 
+                              ? 'text-gray-100 bg-gray-700 border-gray-600 placeholder-gray-400' 
+                              : 'text-gray-600 bg-white border-gray-300 placeholder-gray-500'
+                          }`}
+                        />
+                      ) : (
+                        <div className={`text-sm ${
+                          isDark ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                          {contact.position || 'No position'}
                         </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </motion.div>
-      )}
+                      )}
+                      {contact.location && (
+                        <div className={`text-xs flex items-center mt-1 ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {contact.location}
+                        </div>
+                      )}
+                    </div>
+                  </td>
 
-      {/* Enhanced Pagination */}
-      <div className={`px-6 py-4 border-t ${
-        isDark 
-          ? 'bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700' 
-          : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
-      }`}>
-        <div className="flex items-center justify-between">
-          <div className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            📈 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts || 0)} of {(totalContacts || 0).toLocaleString()} contacts
-            {selectedContacts.size > 0 && (
-              <span className={`ml-2 font-semibold ${
-                isDark ? 'text-emerald-400' : 'text-teal-600'
-              }`}>
-                • {selectedContacts.size} selected ✨
-              </span>
-            )}
-          </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
-                isDark 
-                  ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
-                  : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
-              style={{ willChange: 'background-color, box-shadow' }}
-            >
-              ← Previous
-            </button>
-            <span className={`px-6 py-2 text-sm font-medium ${
-              isDark ? 'text-gray-300' : 'text-gray-700'
-            }`}>
-              �� Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
-                isDark 
-                  ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
-                  : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
-              style={{ willChange: 'background-color, box-shadow' }}
-            >
-              Next →
-            </button>
-          </div>
+                  <td className="px-6 py-5">
+                    <div className={`text-sm ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      <div className="flex items-center">
+                        <Activity className={`h-3 w-3 mr-1 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
+                        {contact.batch_name || 'Unknown'}
+                      </div>
+                      <div className={`text-xs mt-1 ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        {contact.batch_created_at && contact.batch_created_at !== 'Invalid Date' 
+                          ? new Date(contact.batch_created_at).toLocaleDateString() 
+                          : '-'}
+                      </div>
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-5 text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      {editingContact === contact.id ? (
+                        <>
+                          <button
+                            onClick={() => handleEditContact(contact.id)}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-green-400 hover:text-green-300 hover:bg-green-900/20' 
+                                : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                            }`}
+                            title="Save Changes"
+                          >
+                            <Save className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                            }`}
+                            title="Cancel"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <button
+                              onClick={() => handleEditContact(contact.id)}
+                              className={`p-2 rounded-lg transition-all duration-200 ${
+                                isDark 
+                                  ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
+                                  : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                              }`}
+                              title="View Contact Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          </motion.div>
+                          
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <button
+                              onClick={() => handleEditContact(contact.id)}
+                              className={`p-2 rounded-lg transition-all duration-200 ${
+                                isDark 
+                                  ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                              }`}
+                              title="Edit Contact"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                          </motion.div>
+                          
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleSingleExport(contact.id)}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20' 
+                                : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                            }`}
+                            title="Export contact data"
+                          >
+                            <Download className="h-4 w-4" />
+                          </motion.button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+
+        {/* Enhanced Pagination */}
+        <div className={`px-6 py-4 border-t ${
+          isDark 
+            ? 'bg-gradient-to-r from-gray-800 to-gray-750 border-gray-700' 
+            : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
+        }`}>
+                      <div className="flex items-center justify-between">
+              <div className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                📈 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts || 0)} of {(totalContacts || 0).toLocaleString()} contacts
+                {selectedContacts.size > 0 && (
+                  <span className={`ml-2 font-semibold ${
+                    isDark ? 'text-emerald-400' : 'text-teal-600'
+                  }`}>
+                    • {selectedContacts.size} selected ✨
+                  </span>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isDark 
+                      ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
+                  } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
+                  style={{ willChange: 'background-color, box-shadow' }}
+                >
+                  ← Previous
+                </button>
+                <span className={`px-6 py-2 text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  📄 Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isDark 
+                      ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
+                  } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
+                  style={{ willChange: 'background-color, box-shadow' }}
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+        </div>
+      </motion.div>
 
       {/* Export Modal */}
       <ExportModal
@@ -1126,6 +1217,13 @@ const CRMPage: React.FC = () => {
         exportCount={exportContactId ? 1 : selectedContacts.size}
         type="contacts"
         contactIds={exportContactId ? [exportContactId] : Array.from(selectedContacts)}
+        originalFilename={
+          exportContactId 
+            ? contacts.find(contact => contact.id === exportContactId)?.batch_name
+            : contacts.length > 0 && selectedContacts.size === 1
+              ? contacts.find(contact => selectedContacts.has(contact.id))?.batch_name
+              : undefined
+        }
       />
     </div>
   );

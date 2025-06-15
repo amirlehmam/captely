@@ -18,11 +18,10 @@ import { useTheme } from '../contexts/ThemeContext';
 import ExportModal from '../components/modals/ExportModal';
 
 const BatchDetailPage: React.FC = () => {
-  const { id: jobId } = useParams<{ id: string }>();
+  const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { isDark } = useTheme();
-  const [isMobile, setIsMobile] = useState(false);
   
   // Hooks
   const { job, loading: jobLoading } = useJob(jobId || '');
@@ -44,17 +43,6 @@ const BatchDetailPage: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportType, setExportType] = useState<'batch' | 'single' | 'bulk'>('batch');
   const [exportContactId, setExportContactId] = useState<string | null>(null);
-
-  // Mobile detection
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Fetch contacts
   const fetchContacts = async (currentPage = 1) => {
@@ -304,28 +292,32 @@ const BatchDetailPage: React.FC = () => {
   }
 
   return (
-    <div className={`${isMobile ? 'mobile-container' : 'space-y-6'} min-h-screen transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} ${isMobile ? 'p-4' : 'p-6'}`}>
+    <div className={`space-y-6 min-h-screen transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} p-6`}>
       {/* Header */}
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'}`}
+        className="flex items-center justify-between"
       >
-        <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center space-x-4'}`}>
+        <div className="flex items-center space-x-4">
           <motion.button
             onClick={() => navigate('/batches')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`inline-flex items-center ${isMobile ? 'px-3 py-2 text-sm' : 'px-4 py-2 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${isMobile ? 'self-start' : ''}`}
+            className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md transition-all duration-200 ${
+              isDark 
+                ? 'border-gray-600 text-gray-200 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 focus:ring-offset-gray-900' 
+                : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
+            }`}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('batches.details.backToBatches')}
           </motion.button>
           <div>
-            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {job.file_name || `Batch ${job.id.substring(0, 8)}`}
             </h1>
-            <div className={`flex ${isMobile ? 'flex-col space-y-1' : 'items-center space-x-4'} mt-1`}>
+            <div className="flex items-center space-x-4 mt-1">
               <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                 {job.total} {t('batches.details.contacts').toLowerCase()}
               </span>
@@ -337,12 +329,16 @@ const BatchDetailPage: React.FC = () => {
           </div>
         </div>
         
-        <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center space-x-3'}`}>
+        <div className="flex items-center space-x-3">
           <motion.button
             onClick={handleBatchExport}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`inline-flex items-center ${isMobile ? 'px-4 py-2 text-sm w-full justify-center' : 'px-4 py-2 text-sm'} font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200`}
+            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
+              isDark 
+                ? 'bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400 focus:ring-offset-gray-900' 
+                : 'bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'
+            }`}
           >
             <Download className="h-4 w-4 mr-2" />
             {t('batches.details.exportBatch')}
@@ -354,90 +350,91 @@ const BatchDetailPage: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-4 gap-6'}`}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
       >
         <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
             isDark 
-              ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border-blue-700/50' 
-              : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
+              ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border-blue-700/50 hover:shadow-blue-500/20' 
+              : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-blue-500/20'
           }`}
         >
           <div className="flex items-center">
-            <Users className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
+            <Users className={`h-8 w-8 mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
             <div>
               <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('batches.details.totalContacts')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{job.total}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{job.total}</p>
             </div>
           </div>
         </motion.div>
         
         <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
             isDark 
-              ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50' 
-              : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
+              ? 'bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700/50 hover:shadow-green-500/25' 
+              : 'bg-gradient-to-br from-green-50 to-green-100 border-green-300 hover:shadow-green-500/25'
           }`}
         >
           <div className="flex items-center">
-            <Mail className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
+            <Mail className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
             <div>
               <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('batches.details.emailsFound')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{job.emails_found || 0}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{job.emails_found || 0}</p>
             </div>
           </div>
         </motion.div>
         
         <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
             isDark 
-              ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-700/50' 
-              : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'
+              ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-700/50 hover:shadow-purple-500/20' 
+              : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 hover:shadow-purple-500/20'
           }`}
         >
           <div className="flex items-center">
-            <Phone className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
+            <Phone className={`h-8 w-8 mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
             <div>
               <p className={`text-sm font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{t('batches.details.phonesFound')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{job.phones_found || 0}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{job.phones_found || 0}</p>
             </div>
           </div>
         </motion.div>
         
         <motion.div 
-          whileHover={{ scale: isMobile ? 1 : 1.02 }}
-          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
+          whileHover={{ scale: 1.02, y: -4 }}
+          className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
             isDark 
-              ? 'bg-gradient-to-br from-yellow-900/20 to-yellow-800/10 border-yellow-700/50' 
-              : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200'
+              ? 'bg-gradient-to-br from-yellow-900/20 to-orange-900/10 border-yellow-700/50 hover:shadow-yellow-500/20' 
+              : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 hover:shadow-yellow-500/20'
           }`}
         >
           <div className="flex items-center">
-            <TrendingUp className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-yellow-400' : 'text-yellow-500'}`} />
+            <TrendingUp className={`h-8 w-8 mr-3 ${isDark ? 'text-yellow-400' : 'text-yellow-500'}`} />
             <div>
               <p className={`text-sm font-semibold ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>{t('batches.details.successRate')}</p>
-              <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-yellow-100' : 'text-yellow-900'}`}>{job.success_rate?.toFixed(1) || 0}%</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-yellow-100' : 'text-yellow-900'}`}>{job.success_rate?.toFixed(1) || 0}%</p>
             </div>
           </div>
         </motion.div>
       </motion.div>
 
       {/* Search and Filters */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className={`rounded-xl shadow-lg border transition-all duration-300 ${isMobile ? 'p-4' : 'p-6'} ${
+        transition={{ delay: 0.2 }}
+        className={`shadow-lg rounded-xl border p-6 transition-all duration-300 ${
           isDark 
             ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
             : 'bg-white border-gray-100 shadow-gray-200/50'
         }`}
       >
-        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6'}`}>
-          <div className={isMobile ? 'w-full' : 'w-full lg:w-1/2'}>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6">
+          <div className="w-full lg:w-1/2">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
@@ -446,7 +443,7 @@ const BatchDetailPage: React.FC = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`block w-full pl-10 pr-3 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg leading-5 transition-all duration-200 ${
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg leading-5 text-sm transition-all duration-200 ${
                   isDark 
                     ? 'border-gray-600 bg-gray-700 placeholder-gray-400 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
                     : 'border-gray-200 bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
@@ -456,11 +453,11 @@ const BatchDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-3'}`}>
+          <div className="flex space-x-3">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`${isMobile ? 'w-full' : ''} px-4 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg transition-all duration-200 ${
+              className={`px-4 py-3 border rounded-lg transition-all duration-200 ${
                 isDark 
                   ? 'border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
                   : 'border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
@@ -474,12 +471,15 @@ const BatchDetailPage: React.FC = () => {
 
             <motion.button
               onClick={() => fetchContacts(page)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`inline-flex items-center ${isMobile ? 'w-full justify-center px-4 py-2 text-sm' : 'px-4 py-3 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`px-4 py-3 border rounded-lg transition-all duration-200 ${
+                isDark 
+                  ? 'border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500' 
+                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500'
+              }`}
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {t('common.refresh')}
+              <RefreshCw className="h-4 w-4" />
             </motion.button>
 
             {selectedContacts.size > 0 && (
@@ -487,10 +487,14 @@ const BatchDetailPage: React.FC = () => {
                 onClick={handleBulkContactExport}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`inline-flex items-center ${isMobile ? 'w-full justify-center px-4 py-2 text-sm' : 'px-4 py-3 text-sm'} font-medium text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200`}
+                className={`px-4 py-3 text-white rounded-lg transition-all duration-200 ${
+                  isDark 
+                    ? 'bg-primary-500 hover:bg-primary-600' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export Selected ({selectedContacts.size})
+                <Download className="h-4 w-4 mr-2 inline" />
+                {t('batches.details.exportSelected').replace('{count}', selectedContacts.size.toString())}
               </motion.button>
             )}
           </div>
@@ -498,425 +502,342 @@ const BatchDetailPage: React.FC = () => {
       </motion.div>
 
       {/* Contacts Table */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className={`rounded-xl shadow-lg border transition-all duration-300 ${
+        transition={{ delay: 0.3 }}
+        className={`shadow-lg overflow-hidden rounded-xl border transition-all duration-300 ${
           isDark 
             ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
             : 'bg-white border-gray-100 shadow-gray-200/50'
         }`}
       >
-        <div className={isMobile ? '' : 'overflow-x-auto'}>
-          {isMobile ? (
-            // Mobile: Stack contacts as cards
-            <div className="p-4 space-y-4">
-              {filteredContacts.map((contact) => (
-                <div key={contact.id} className={`rounded-lg border p-4 ${
-                  isDark 
-                    ? 'bg-gray-700 border-gray-600' 
-                    : 'bg-gray-50 border-gray-200'
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className={`${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800' : 'bg-gradient-to-r from-gray-50 to-white'}`}>
+              <tr>
+                <th className="px-6 py-4 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
+                    onChange={handleSelectAll}
+                    className={`rounded text-primary-600 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'border-gray-500 bg-gray-700' 
+                        : 'border-gray-300'
+                    }`}
+                  />
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.has(contact.id)}
-                        onChange={() => handleSelectContact(contact.id)}
-                        className={`h-4 w-4 rounded transition-colors ${
-                          isDark 
-                            ? 'text-primary-500 focus:ring-primary-500 border-gray-500 bg-gray-700' 
-                            : 'text-primary-600 focus:ring-primary-500 border-gray-300'
-                        }`}
-                      />
-                      <div>
-                        <div className={`text-sm font-medium ${
-                          isDark ? 'text-gray-100' : 'text-gray-900'
-                        }`}>
-                          {contact.first_name} {contact.last_name}
-                        </div>
-                        {getStatusBadge(contact)}
-                      </div>
-                    </div>
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => startEdit(contact)}
-                        className={`p-2 rounded-lg transition-all duration-200 ${
-                          isDark 
-                            ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
-                            : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                        }`}
-                        title={t('batches.details.editContact')}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      {contact.email && (
-                        <button
-                          onClick={() => handleSingleContactExport(contact.id)}
-                          className={`p-2 rounded-lg transition-all duration-200 ${
-                            isDark 
-                              ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20' 
-                              : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
-                          }`}
-                          title={t('batches.details.exportContact')}
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    {contact.email && (
-                      <div className="flex items-center">
-                        <Mail className="h-3 w-3 text-green-500 mr-2" />
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{contact.email}</span>
-                        {contact.email_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
-                      </div>
-                    )}
-                    {contact.phone && (
-                      <div className="flex items-center">
-                        <Phone className="h-3 w-3 text-blue-500 mr-2" />
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{contact.phone}</span>
-                        {contact.phone_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
-                      </div>
-                    )}
-                    {contact.company && (
-                      <div className="flex items-center">
-                        <Building className="h-3 w-3 text-gray-400 mr-2" />
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{contact.company}</span>
-                      </div>
-                    )}
-                    {contact.position && (
-                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {contact.position}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            // Desktop: Keep existing table
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className={`${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800' : 'bg-gradient-to-r from-gray-50 to-white'}`}>
-                <tr>
-                  <th className="px-6 py-4 text-left">
+                  {t('batches.details.contact')}
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {t('batches.details.emailAndPhone')}
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {t('batches.details.companyAndPosition')}
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {t('common.status')}
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {t('batches.details.notes')}
+                </th>
+                <th className="relative px-6 py-4">
+                  <span className="sr-only">{t('common.actions')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${isDark ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-100'}`}>
+              {filteredContacts.map((contact) => (
+                <motion.tr 
+                  key={contact.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`transition-all duration-200 ${
+                    isDark 
+                      ? 'hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-750' 
+                      : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-white'
+                  }`}
+                >
+                  <td className="px-6 py-4">
                     <input
                       type="checkbox"
-                      checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
-                      onChange={handleSelectAll}
+                      checked={selectedContacts.has(contact.id)}
+                      onChange={() => handleSelectContact(contact.id)}
                       className={`rounded text-primary-600 focus:ring-primary-500 ${
                         isDark 
                           ? 'border-gray-500 bg-gray-700' 
                           : 'border-gray-300'
                       }`}
                     />
-                  </th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    {t('batches.details.contact')}
-                  </th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    {t('batches.details.emailAndPhone')}
-                  </th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    {t('batches.details.companyAndPosition')}
-                  </th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    {t('common.status')}
-                  </th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    {t('batches.details.notes')}
-                  </th>
-                  <th className="relative px-6 py-4">
-                    <span className="sr-only">{t('common.actions')}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-100'}`}>
-                {filteredContacts.map((contact) => (
-                  <motion.tr 
-                    key={contact.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className={`transition-all duration-200 ${
-                      isDark 
-                        ? 'hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-750' 
-                        : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-white'
-                    }`}
-                  >
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.has(contact.id)}
-                        onChange={() => handleSelectContact(contact.id)}
-                        className={`rounded text-primary-600 focus:ring-primary-500 ${
-                          isDark 
-                            ? 'border-gray-500 bg-gray-700' 
-                            : 'border-gray-300'
-                        }`}
-                      />
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      {editingContact === contact.id ? (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={editData.first_name || ''}
-                            onChange={(e) => setEditData(prev => ({ ...prev, first_name: e.target.value }))}
-                            className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
-                              isDark 
-                                ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
-                                : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
-                            }`}
-                            placeholder={t('batches.details.firstName')}
-                          />
-                          <input
-                            type="text"
-                            value={editData.last_name || ''}
-                            onChange={(e) => setEditData(prev => ({ ...prev, last_name: e.target.value }))}
-                            className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
-                              isDark 
-                                ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
-                                : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
-                            }`}
-                            placeholder={t('batches.details.lastName')}
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                            {contact.first_name} {contact.last_name}
-                          </div>
-                          {contact.location && (
-                            <div className="text-xs text-gray-500 flex items-center mt-1">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {contact.location}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        {contact.email && (
-                          <div className="flex items-center text-sm">
-                            <Mail className="h-3 w-3 text-green-500 mr-2" />
-                            <span className={`${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{contact.email}</span>
-                            {contact.email_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
-                          </div>
-                        )}
-                        {contact.phone && (
-                          <div className="flex items-center text-sm">
-                            <Phone className="h-3 w-3 text-blue-500 mr-2" />
-                            <span className={`${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{contact.phone}</span>
-                            {contact.phone_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      {editingContact === contact.id ? (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={editData.company || ''}
-                            onChange={(e) => setEditData(prev => ({ ...prev, company: e.target.value }))}
-                            className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
-                              isDark 
-                                ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
-                                : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
-                            }`}
-                            placeholder={t('batches.details.company')}
-                          />
-                          <input
-                            type="text"
-                            value={editData.position || ''}
-                            onChange={(e) => setEditData(prev => ({ ...prev, position: e.target.value }))}
-                            className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
-                              isDark 
-                                ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
-                                : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
-                            }`}
-                            placeholder={t('batches.details.position')}
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          {contact.company && (
-                            <div className={`text-sm font-medium flex items-center ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                              <Building className="h-3 w-3 text-gray-400 mr-1" />
-                              {contact.company}
-                            </div>
-                          )}
-                          {contact.position && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {contact.position}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    
-                    <td className="px-6 py-4">
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    {editingContact === contact.id ? (
                       <div className="space-y-2">
-                        {getStatusBadge(contact)}
-                        {contact.enrichment_provider && (
-                          <div className="text-xs text-gray-500">
-                            {t('batches.details.via')} {contact.enrichment_provider}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      {editingContact === contact.id ? (
-                        <textarea
-                          value={editData.notes || ''}
-                          onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
+                        <input
+                          type="text"
+                          value={editData.first_name || ''}
+                          onChange={(e) => setEditData(prev => ({ ...prev, first_name: e.target.value }))}
                           className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
                             isDark 
                               ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
                               : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
                           }`}
-                          rows={2}
-                          placeholder={t('batches.details.addNotes')}
+                          placeholder={t('batches.details.firstName')}
                         />
-                      ) : (
-                        <div className={`text-sm max-w-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {contact.notes || (
-                            <span className={`italic ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('batches.details.noNotes')}</span>
-                          )}
+                        <input
+                          type="text"
+                          value={editData.last_name || ''}
+                          onChange={(e) => setEditData(prev => ({ ...prev, last_name: e.target.value }))}
+                          className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
+                            isDark 
+                              ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
+                              : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder={t('batches.details.lastName')}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                          {contact.first_name} {contact.last_name}
+                        </div>
+                        {contact.location && (
+                          <div className="text-xs text-gray-500 flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {contact.location}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      {contact.email && (
+                        <div className="flex items-center text-sm">
+                          <Mail className="h-3 w-3 text-green-500 mr-2" />
+                          <span className={`${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{contact.email}</span>
+                          {contact.email_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
                         </div>
                       )}
-                    </td>
-                    
-                    <td className="px-6 py-4 text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        {editingContact === contact.id ? (
-                          <>
+                      {contact.phone && (
+                        <div className="flex items-center text-sm">
+                          <Phone className="h-3 w-3 text-blue-500 mr-2" />
+                          <span className={`${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{contact.phone}</span>
+                          {contact.phone_verified && <CheckCircle className="h-3 w-3 text-green-500 ml-1" />}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    {editingContact === contact.id ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editData.company || ''}
+                          onChange={(e) => setEditData(prev => ({ ...prev, company: e.target.value }))}
+                          className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
+                            isDark 
+                              ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
+                              : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder={t('batches.details.company')}
+                        />
+                        <input
+                          type="text"
+                          value={editData.position || ''}
+                          onChange={(e) => setEditData(prev => ({ ...prev, position: e.target.value }))}
+                          className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
+                            isDark 
+                              ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
+                              : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                          }`}
+                          placeholder={t('batches.details.position')}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        {contact.company && (
+                          <div className={`text-sm font-medium flex items-center ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                            <Building className="h-3 w-3 text-gray-400 mr-1" />
+                            {contact.company}
+                          </div>
+                        )}
+                        {contact.position && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {contact.position}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    <div className="space-y-2">
+                      {getStatusBadge(contact)}
+                      {contact.enrichment_provider && (
+                        <div className="text-xs text-gray-500">
+                          {t('batches.details.via')} {contact.enrichment_provider}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    {editingContact === contact.id ? (
+                      <textarea
+                        value={editData.notes || ''}
+                        onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
+                        className={`block w-full border rounded px-2 py-1 text-sm transition-all duration-200 ${
+                          isDark 
+                            ? 'border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400' 
+                            : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                        }`}
+                        rows={2}
+                        placeholder={t('batches.details.addNotes')}
+                      />
+                    ) : (
+                      <div className={`text-sm max-w-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {contact.notes || (
+                          <span className={`italic ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('batches.details.noNotes')}</span>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  
+                  <td className="px-6 py-4 text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      {editingContact === contact.id ? (
+                        <>
+                          <button
+                            onClick={() => saveEdit(contact.id)}
+                            disabled={updating === contact.id}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-green-400 hover:text-green-300 hover:bg-green-900/20' 
+                                : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                            }`}
+                          >
+                            {updating === contact.id ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
+                                : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEdit(contact)}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isDark 
+                                ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
+                                : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                            }`}
+                            title={t('batches.details.editContact')}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          
+                          {contact.email && (
                             <button
-                              onClick={() => saveEdit(contact.id)}
-                              disabled={updating === contact.id}
+                              onClick={() => handleSingleContactExport(contact.id)}
                               className={`p-2 rounded-lg transition-all duration-200 ${
                                 isDark 
-                                  ? 'text-green-400 hover:text-green-300 hover:bg-green-900/20' 
-                                  : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                  ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20' 
+                                  : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
                               }`}
+                              title={t('batches.details.exportContact')}
                             >
-                              {updating === contact.id ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Save className="h-4 w-4" />
-                              )}
+                              <Download className="h-4 w-4" />
                             </button>
-                            <button
-                              onClick={cancelEdit}
+                          )}
+                          
+                          {contact.profile_url && (
+                            <a
+                              href={contact.profile_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className={`p-2 rounded-lg transition-all duration-200 ${
                                 isDark 
                                   ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
                                   : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'
                               }`}
+                              title={t('batches.details.viewLinkedIn')}
                             >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => startEdit(contact)}
-                              className={`p-2 rounded-lg transition-all duration-200 ${
-                                isDark 
-                                  ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/20' 
-                                  : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                              }`}
-                              title={t('batches.details.editContact')}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            
-                            {contact.email && (
-                              <button
-                                onClick={() => handleSingleContactExport(contact.id)}
-                                className={`p-2 rounded-lg transition-all duration-200 ${
-                                  isDark 
-                                    ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20' 
-                                    : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
-                                }`}
-                                title={t('batches.details.exportContact')}
-                              >
-                                <Download className="h-4 w-4" />
-                              </button>
-                            )}
-                            
-                            {contact.profile_url && (
-                              <a
-                                href={contact.profile_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`p-2 rounded-lg transition-all duration-200 ${
-                                  isDark 
-                                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
-                                    : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'
-                                }`}
-                                title={t('batches.details.viewLinkedIn')}
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className={`px-6 py-4 flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'} border-t ${
+          <div className={`px-6 py-4 flex items-center justify-between border-t ${
             isDark 
               ? 'bg-gray-750 border-gray-700' 
               : 'bg-gray-50 border-gray-200'
           }`}>
-            <div className={`flex items-center ${isMobile ? 'justify-center' : ''}`}>
+            <div className="flex items-center">
               <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 {t('batches.details.pageOf').replace('{current}', page.toString()).replace('{total}', totalPages.toString())}
               </p>
             </div>
-            <div className={`flex ${isMobile ? 'justify-center' : ''} space-x-2`}>
+            <div className="flex space-x-2">
               <motion.button
                 onClick={() => setPage(Math.max(1, page - 1))}
                 disabled={page === 1}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`inline-flex items-center ${isMobile ? 'px-3 py-1 text-sm' : 'px-4 py-2 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-3 py-2 border rounded text-sm disabled:opacity-50 transition-all duration-200 ${
+                  isDark 
+                    ? 'border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600' 
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 {t('batches.details.previous')}
               </motion.button>
               <motion.button
                 onClick={() => setPage(Math.min(totalPages, page + 1))}
                 disabled={page === totalPages}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`inline-flex items-center ${isMobile ? 'px-3 py-1 text-sm' : 'px-4 py-2 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-3 py-2 border rounded text-sm disabled:opacity-50 transition-all duration-200 ${
+                  isDark 
+                    ? 'border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600' 
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 {t('batches.details.next')}
               </motion.button>
@@ -927,10 +848,14 @@ const BatchDetailPage: React.FC = () => {
 
       {/* Empty state */}
       {filteredContacts.length === 0 && !loading && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={`text-center py-12 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`text-center py-12 rounded-xl ${
+            isDark 
+              ? 'bg-gray-800 border border-gray-700' 
+              : 'bg-white border border-gray-100'
+          }`}
         >
           <Users className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
           <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('batches.details.noContactsFound')}</h3>
@@ -948,19 +873,40 @@ const BatchDetailPage: React.FC = () => {
         isOpen={showExportModal}
         onClose={() => {
           setShowExportModal(false);
-          setExportType(null);
           setExportContactId(null);
+          setExportType('batch');
         }}
         onExport={handleExportConfirm}
-        contactCount={
+        title={
           exportType === 'batch' 
-            ? job.total 
-            : exportType === 'single' 
-              ? 1 
+            ? "Export Batch" 
+            : exportType === 'single'
+              ? "Export Contact"
+              : "Export Selected Contacts"
+        }
+        description={
+          exportType === 'batch'
+            ? "Choose your preferred format to export this entire batch"
+            : exportType === 'single'
+              ? "Choose your preferred format to export this contact"
+              : `Export ${selectedContacts.size} selected contacts`
+        }
+        exportCount={
+          exportType === 'batch' 
+            ? job.total
+            : exportType === 'single'
+              ? 1
               : selectedContacts.size
         }
-        exportType={exportType}
-        originalFilename={job.file_name}
+        type="batch"
+        jobId={jobId || undefined}
+        contactIds={
+          exportType === 'single' && exportContactId 
+            ? [exportContactId]
+            : exportType === 'bulk'
+              ? Array.from(selectedContacts)
+              : undefined
+        }
       />
     </div>
   );
