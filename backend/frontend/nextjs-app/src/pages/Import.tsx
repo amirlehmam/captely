@@ -1897,6 +1897,7 @@ const ImportPage: React.FC = () => {
         </motion.div>
       )}
     </div>
+    </div>
   );
 };
 
