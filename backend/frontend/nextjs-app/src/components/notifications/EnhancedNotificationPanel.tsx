@@ -3,40 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, Check, X, Clock, CreditCard, Briefcase, AlertTriangle,
   Settings, Filter, Trash2, MarkAsUnread, Star, ChevronDown,
-  Search, Calendar, Eye, ExternalLink, CheckCircle,
-  Info, AlertCircle, Download, User, Mail, Phone,
-  MoreVertical, Volume2, VolumeX, Smartphone, Archive
+  Search, Calendar, Eye, ExternalLink, CheckCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { formatDistanceToNow } from 'date-fns';
-import toast from 'react-hot-toast';
-
-interface Notification {
-  id: string;
-  type: 'success' | 'warning' | 'error' | 'info';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  actions?: NotificationAction[];
-  data?: any;
-}
-
-interface NotificationAction {
-  label: string;
-  action: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-}
 
 interface EnhancedNotificationPanelProps {
-  notifications: Notification[];
-  onNotificationRead: (id: string) => void;
-  onNotificationDelete: (id: string) => void;
-  onMarkAllAsRead: () => void;
-  onClearAll: () => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -48,18 +21,12 @@ interface GroupedNotifications {
   older: any[];
 }
 
-const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
-  notifications,
-  onNotificationRead,
-  onNotificationDelete,
-  onMarkAllAsRead,
-  onClearAll,
-  isOpen,
-  onClose
+const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({ 
+  isOpen, 
+  onClose 
 }) => {
-  const { notifications: contextNotifications, unreadCount, markAsRead, markAllAsRead, deleteAllNotifications, loading } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteAllNotifications, loading } = useNotifications();
   const { isDark } = useTheme();
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const panelRef = useRef<HTMLDivElement>(null);
   
@@ -67,20 +34,6 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNotifications, setSelectedNotifications] = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Close panel when clicking outside
   useEffect(() => {
@@ -160,8 +113,8 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
     }, { today: [], yesterday: [], thisWeek: [], older: [] });
   };
 
-  // Filter and search notifications with defensive programming
-  const filteredNotifications = (notifications || []).filter(notification => {
+  // Filter and search notifications
+  const filteredNotifications = notifications.filter(notification => {
     // Apply filter
     switch (filter) {
       case 'unread':
@@ -373,7 +326,7 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
           ref={panelRef}
           className={`
-            ${isMobile ? 'w-full max-h-screen rounded-none' : 'w-96 max-h-[600px] rounded-xl'} shadow-2xl border backdrop-blur-md
+            w-96 max-h-[600px] rounded-xl shadow-2xl border backdrop-blur-md
             ${isDark 
               ? 'bg-gray-800/95 border-gray-700' 
               : 'bg-white/95 border-gray-200'

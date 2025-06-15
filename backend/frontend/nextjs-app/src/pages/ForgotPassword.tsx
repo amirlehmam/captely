@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -15,19 +15,6 @@ const ForgotPasswordPage: React.FC = () => {
   const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
-
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -88,19 +75,19 @@ const ForgotPasswordPage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className={`w-full ${isMobile ? 'max-w-sm' : 'max-w-md'}`}
+        className="w-full max-w-md"
       >
         {/* Back to login link */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`${isMobile ? 'mb-6' : 'mb-8'}`}
+          className="mb-8"
         >
           <Link
             to="/login"
-            className={`inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors ${isMobile ? 'text-sm' : ''}`}
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <ArrowLeft className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4'} mr-2`} />
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to login
           </Link>
         </motion.div>
@@ -109,25 +96,25 @@ const ForgotPasswordPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 ${isMobile ? 'p-6' : 'p-8'}`}
+          className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 p-8"
         >
-          <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
+          <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className={`inline-flex items-center justify-center ${isMobile ? 'w-12 h-12' : 'w-16 h-16'} bg-gradient-to-br from-blue-500 to-purple-600 rounded-full ${isMobile ? 'mb-3' : 'mb-4'}`}
+              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4"
             >
               {emailSent ? (
-                <CheckCircle className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white`} />
+                <CheckCircle className="w-8 h-8 text-white" />
               ) : (
-                <Key className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white`} />
+                <Key className="w-8 h-8 text-white" />
               )}
             </motion.div>
-            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 mb-2`}>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
               {emailSent ? 'Check your email' : 'Forgot your password?'}
             </h1>
-            <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>
+            <p className="text-gray-600">
               {emailSent 
                 ? `We've sent a password reset link to ${email}`
                 : "No worries, we'll send you reset instructions."
@@ -143,10 +130,10 @@ const ForgotPasswordPage: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onSubmit={handleSubmit}
-                className={`space-y-${isMobile ? '4' : '6'}`}
+                className="space-y-6"
               >
                 <div>
-                  <label className={`block ${isMobile ? 'text-sm' : 'text-sm'} font-medium text-gray-700 mb-2`}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email address
                   </label>
                   <div className="relative">
@@ -157,14 +144,14 @@ const ForgotPasswordPage: React.FC = () => {
                         setEmail(e.target.value);
                         setError('');
                       }}
-                      className={`w-full ${isMobile ? 'px-3 py-3 pl-10' : 'px-4 py-3 pl-12'} bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                      className={`w-full px-4 py-3 pl-12 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
                         error
                           ? 'border-red-300 focus:ring-red-500'
                           : 'border-gray-300 focus:ring-blue-500'
                       }`}
                       placeholder="you@example.com"
                     />
-                    <Mail className={`absolute ${isMobile ? 'left-3' : 'left-4'} top-1/2 transform -translate-y-1/2 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-gray-400`} />
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   </div>
                   <AnimatePresence>
                     {error && (
@@ -172,7 +159,7 @@ const ForgotPasswordPage: React.FC = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className={`mt-1 ${isMobile ? 'text-xs' : 'text-sm'} text-red-600 flex items-center`}
+                        className="mt-1 text-sm text-red-600 flex items-center"
                       >
                         <AlertCircle className="w-4 h-4 mr-1" />
                         {error}
@@ -184,7 +171,7 @@ const ForgotPasswordPage: React.FC = () => {
                 <motion.button
                   type="submit"
                   disabled={loading}
-                  className={`w-full ${isMobile ? 'py-3 px-3' : 'py-3 px-4'} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  className={`w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 ${
                     loading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                   whileTap={{ scale: 0.98 }}
@@ -192,12 +179,12 @@ const ForgotPasswordPage: React.FC = () => {
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span className={isMobile ? 'text-sm' : ''}>Sending...</span>
+                      <span>Sending...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-5 h-5" />
-                      <span className={isMobile ? 'text-sm' : ''}>Send reset email</span>
+                      <span>Send reset email</span>
                     </>
                   )}
                 </motion.button>
@@ -208,13 +195,13 @@ const ForgotPasswordPage: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className={`space-y-${isMobile ? '4' : '6'}`}
+                className="space-y-6"
               >
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-start">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
                     <div>
-                      <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-green-800`}>
+                      <p className="text-sm text-green-800">
                         We've sent a password reset link to your email address. 
                         Please check your inbox and follow the instructions.
                       </p>
@@ -223,13 +210,13 @@ const ForgotPasswordPage: React.FC = () => {
                 </div>
 
                 <div className="text-center">
-                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 mb-4`}>
+                  <p className="text-sm text-gray-600 mb-4">
                     Didn't receive the email? Check your spam folder or
                   </p>
                   <button
                     onClick={handleResend}
                     disabled={countdown > 0}
-                    className={`inline-flex items-center ${isMobile ? 'px-3 py-2 text-xs' : 'px-4 py-2 text-sm'} border border-gray-300 rounded-lg font-medium transition-all duration-200 ${
+                    className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 ${
                       countdown > 0
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -243,7 +230,7 @@ const ForgotPasswordPage: React.FC = () => {
                 <div className="pt-4 border-t border-gray-200">
                   <button
                     onClick={() => navigate('/login')}
-                    className={`w-full ${isMobile ? 'py-3 px-3 text-sm' : 'py-3 px-4'} bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition-all duration-200`}
+                    className="w-full py-3 px-4 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition-all duration-200"
                   >
                     Return to login
                   </button>
@@ -253,10 +240,10 @@ const ForgotPasswordPage: React.FC = () => {
           </AnimatePresence>
 
           {!emailSent && (
-            <div className={`${isMobile ? 'mt-4' : 'mt-6'} text-center`}>
+            <div className="mt-6 text-center">
               <a
                 href="/help"
-                className={`inline-flex items-center ${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 hover:text-gray-800`}
+                className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800"
               >
                 <HelpCircle className="w-4 h-4 mr-1" />
                 Need help?
@@ -270,9 +257,9 @@ const ForgotPasswordPage: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className={`${isMobile ? 'mt-4' : 'mt-6'} text-center`}
+          className="mt-6 text-center"
         >
-          <div className={`flex items-center justify-center space-x-2 text-gray-500 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+          <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm">
             <Shield className="w-4 h-4" />
             <span>Secure password reset</span>
           </div>

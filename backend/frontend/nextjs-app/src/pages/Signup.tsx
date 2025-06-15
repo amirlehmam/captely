@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle,
   AlertCircle, Loader2, User, Building2, Phone, Check, 
-  ChevronLeft, Shield, Globe, ExternalLink, UserPlus, X
+  ChevronLeft, Shield, Globe, ExternalLink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../services/api';
@@ -81,9 +81,6 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
   const [isValidatingEmail, setIsValidatingEmail] = useState(false);
   const [resendingCode, setResendingCode] = useState(false);
 
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     // Mouse tracking for subtle parallax effect
     const handleMouseMove = (e: MouseEvent) => {
@@ -106,16 +103,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
     loadGoogleOAuth();
 
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', checkMobile);
     };
   }, []);
 

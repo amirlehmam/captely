@@ -1,36 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  User, Mail, Lock, Bell, Shield, Globe, Palette, 
-  Eye, EyeOff, Save, RefreshCw, AlertTriangle, CheckCircle,
-  Settings as SettingsIcon, Camera, Upload, X, Edit3,
-  Smartphone, Desktop, Moon, Sun, Volume2, VolumeX,
-  Key, Database, Download, Trash2, ExternalLink,
-  CreditCard, Crown, Zap, Users, Building, Webhook,
-  Terminal, Wifi, Copy, Plus, UserPlus, XCircle, Code2, FileDown
+  Settings as SettingsIcon, User, CreditCard, Key, Shield, Bell, 
+  Users, Database, Globe, Eye, EyeOff, Check, X, Plus, Trash2,
+  Download, Upload, Save, Lock, Unlock, Mail, Phone, Smartphone,
+  AlertCircle, CheckCircle, Clock, RefreshCw, Copy, ExternalLink,
+  Calendar, DollarSign, TrendingUp, BarChart3, Zap, Target,
+  Filter, Search, Edit, Monitor, Webhook, Cloud, Settings2,
+  UserPlus, Activity, Sliders, Server, HardDrive, Gauge,
+  FileDown, Archive, Share2, Link2, Terminal, Code2, Wifi,
+  ChevronUp, ChevronDown, XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useTheme } from '../contexts/ThemeContext';
+import apiService from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
-import { apiService } from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
-// Type definitions
 interface UserProfile {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
   phone?: string;
-}
-
-interface ApiKey {
-  id: string;
-  name: string;
-  key: string;
+  avatar?: string;
   created_at: string;
-  last_used?: string;
-  status: 'active' | 'inactive';
-  permissions: string[];
 }
 
 interface TeamMember {
@@ -47,36 +41,34 @@ interface SecurityLog {
   id: string;
   event: string;
   ip_address: string;
-  status: 'success' | 'failed';
   timestamp: string;
+  status: 'success' | 'failed';
+}
+
+interface ApiKey {
+  id: string;
+  name: string;
+  key: string;
+  created_at: string;
+  last_used?: string;
+  status: 'active' | 'revoked';
+  permissions: string[];
 }
 
 interface EnrichmentProvider {
   id: string;
   name: string;
   enabled: boolean;
+  apiKey?: string;
   priority: number;
   successRate: number;
   creditsUsed: number;
 }
 
 const SettingsPage: React.FC = () => {
-  const { isDark, toggleTheme } = useTheme();
-  const { t, language, setLanguage } = useLanguage();
+  const { t } = useLanguage();
+  const { theme } = useTheme();
   
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   const [activeSection, setActiveSection] = useState('account');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -581,29 +573,29 @@ const SettingsPage: React.FC = () => {
     <div className="space-y-8">
       <div>
         <h2 className={`text-2xl font-bold mb-6 ${
-          isDark ? 'text-white' : 'text-gray-900'
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
         }`}>👤 Account Settings</h2>
         
         {/* Profile Information */}
         <div className={`${
-          isDark 
+          theme === 'dark' 
             ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
             : 'bg-white border-gray-100'
         } rounded-xl shadow-lg border p-6 mb-8`}>
           <h3 className={`text-lg font-semibold mb-4 ${
-            isDark ? 'text-white' : 'text-gray-900'
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>📝 Profile Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>👤 First Name</label>
               <input
                 type="text"
                 value={profile?.first_name || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, first_name: e.target.value} : null)}
                 className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
-                  isDark 
+                  theme === 'dark' 
                     ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
                     : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
                 } focus:outline-none focus:ring-2`}
@@ -611,14 +603,14 @@ const SettingsPage: React.FC = () => {
             </div>
             <div>
               <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>👤 Last Name</label>
               <input
                 type="text"
                 value={profile?.last_name || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, last_name: e.target.value} : null)}
                 className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
-                  isDark 
+                  theme === 'dark' 
                     ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
                     : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
                 } focus:outline-none focus:ring-2`}
@@ -626,14 +618,14 @@ const SettingsPage: React.FC = () => {
             </div>
             <div>
               <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>📧 Email</label>
               <input
                 type="email"
                 value={profile?.email || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, email: e.target.value} : null)}
                 className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
-                  isDark 
+                  theme === 'dark' 
                     ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
                     : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
                 } focus:outline-none focus:ring-2`}
@@ -641,14 +633,14 @@ const SettingsPage: React.FC = () => {
             </div>
             <div>
               <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>📱 Phone</label>
               <input
                 type="tel"
                 value={profile?.phone || ''}
                 onChange={(e) => setProfile(prev => prev ? {...prev, phone: e.target.value} : null)}
                 className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
-                  isDark 
+                  theme === 'dark' 
                     ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
                     : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
                 } focus:outline-none focus:ring-2`}
@@ -659,7 +651,7 @@ const SettingsPage: React.FC = () => {
             <button 
               onClick={handleProfileUpdate}
               className={`px-6 py-3 rounded-lg shadow-lg hover:shadow-xl font-medium transition-all duration-200 ${
-                isDark
+                theme === 'dark'
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
                   : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
               } text-white`}
@@ -672,17 +664,17 @@ const SettingsPage: React.FC = () => {
 
         {/* Password Change */}
         <div className={`${
-          isDark 
+          theme === 'dark' 
             ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
             : 'bg-white border-gray-100'
         } rounded-xl shadow-lg border p-6`}>
           <h3 className={`text-lg font-semibold mb-4 ${
-            isDark ? 'text-white' : 'text-gray-900'
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>🔐 Change Password</h3>
           <div className="space-y-4">
             <div>
               <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>🔒 Current Password</label>
               <div className="relative">
                 <input
@@ -690,7 +682,7 @@ const SettingsPage: React.FC = () => {
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm(prev => ({...prev, current_password: e.target.value}))}
                   className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-200 ${
-                    isDark 
+                    theme === 'dark' 
                       ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
                       : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
                   } focus:outline-none focus:ring-2`}
@@ -699,7 +691,7 @@ const SettingsPage: React.FC = () => {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${
-                    isDark 
+                    theme === 'dark' 
                       ? 'text-gray-400 hover:text-gray-300' 
                       : 'text-gray-400 hover:text-gray-600'
                   }`}
@@ -710,34 +702,34 @@ const SettingsPage: React.FC = () => {
             </div>
             <div>
               <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>🔑 New Password</label>
               <input
                 type={showPassword ? "text" : "password"}
                 value={passwordForm.new_password}
                 onChange={(e) => setPasswordForm(prev => ({...prev, new_password: e.target.value}))}
                 className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
-                  isDark 
+                  theme === 'dark' 
                     ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
                     : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
                 } focus:outline-none focus:ring-2`}
               />
               <p className={`text-xs mt-1 ${
-                isDark ? 'text-gray-400' : 'text-gray-500'
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
                 Minimum 8 characters with uppercase, numbers, and special characters
               </p>
             </div>
             <div>
               <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>✅ Confirm Password</label>
               <input
                 type={showPassword ? "text" : "password"}
                 value={passwordForm.confirm_password}
                 onChange={(e) => setPasswordForm(prev => ({...prev, confirm_password: e.target.value}))}
                 className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 ${
-                  isDark 
+                  theme === 'dark' 
                     ? 'border-gray-600 bg-gray-700 text-white focus:ring-emerald-500 focus:border-emerald-500' 
                     : 'border-gray-200 bg-white text-gray-900 focus:ring-teal-500 focus:border-teal-500'
                 } focus:outline-none focus:ring-2`}
@@ -765,17 +757,17 @@ const SettingsPage: React.FC = () => {
     <div className="space-y-8">
       <div>
         <h2 className={`text-2xl font-bold mb-6 ${
-          isDark ? 'text-white' : 'text-gray-900'
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
         }`}>📥 Import Settings</h2>
         
         {/* Auto-Enrichment Settings */}
         <div className={`${
-          isDark 
+          theme === 'dark' 
             ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' 
             : 'bg-white border-gray-100'
         } rounded-xl shadow-lg border p-6 mb-8`}>
           <h3 className={`text-lg font-semibold mb-4 ${
-            isDark ? 'text-white' : 'text-gray-900'
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>⚡ Automatic Enrichment</h3>
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -1840,14 +1832,14 @@ const SettingsPage: React.FC = () => {
             }`}>
               Comprehensive account and application configuration
             </p>
-            <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-center items-center gap-6'} mt-4`}>
+            <div className="flex justify-center items-center gap-6 mt-4">
               <div className={`px-4 py-2 rounded-full ${
                 theme === 'dark' 
                   ? 'bg-emerald-500/20 text-emerald-300' 
                   : 'bg-emerald-100 text-emerald-700'
               } border ${
                 theme === 'dark' ? 'border-emerald-400/30' : 'border-emerald-200'
-              } ${isMobile ? 'text-center text-sm' : ''}`}>
+              }`}>
                 🔧 Advanced Configuration
               </div>
               <div className={`px-4 py-2 rounded-full ${
@@ -1856,7 +1848,7 @@ const SettingsPage: React.FC = () => {
                   : 'bg-indigo-100 text-indigo-700'
               } border ${
                 theme === 'dark' ? 'border-indigo-400/30' : 'border-indigo-200'
-              } ${isMobile ? 'text-center text-sm' : ''}`}>
+              }`}>
                 🛡️ Security & Privacy
               </div>
               <div className={`px-4 py-2 rounded-full ${
@@ -1865,7 +1857,7 @@ const SettingsPage: React.FC = () => {
                   : 'bg-purple-100 text-purple-700'
               } border ${
                 theme === 'dark' ? 'border-purple-400/30' : 'border-purple-200'
-              } ${isMobile ? 'text-center text-sm' : ''}`}>
+              }`}>
                 📊 Data Management
               </div>
             </div>
@@ -1873,20 +1865,20 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${isMobile ? 'space-y-6' : 'flex gap-8'}`}>
+      <div className="flex gap-8">
       {/* Sidebar */}
-      <div className={`${isMobile ? 'w-full' : 'w-64 flex-shrink-0'}`}>
+      <div className="w-64 flex-shrink-0">
           <div className={`${
             theme === 'dark' 
               ? 'bg-gray-800 border-gray-700' 
               : 'bg-white border-gray-100'
-          } rounded-xl shadow-lg border ${isMobile ? 'p-4' : 'p-6'}`}>
-          <nav className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'space-y-2'}`}>
+          } rounded-xl shadow-lg border p-6`}>
+          <nav className="space-y-2">
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center ${isMobile ? 'justify-center flex-col space-y-1 px-2 py-3' : 'space-x-3 px-4 py-3'} rounded-lg transition-all duration-200 ${
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   activeSection === item.id 
                       ? theme === 'dark'
                         ? 'bg-gradient-to-r from-emerald-500/20 to-indigo-500/20 text-emerald-300 border border-emerald-400/30' 
@@ -1897,7 +1889,7 @@ const SettingsPage: React.FC = () => {
                 }`}
               >
                 {item.icon}
-                <span className={`font-medium ${isMobile ? 'text-xs text-center' : ''}`}>{item.label}</span>
+                <span className="font-medium">{item.label}</span>
               </button>
             ))}
           </nav>

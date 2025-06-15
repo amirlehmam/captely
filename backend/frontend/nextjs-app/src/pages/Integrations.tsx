@@ -3,13 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle, XCircle, ExternalLink, Link as LinkIcon, 
   RefreshCw, PlusCircle, Trash2, ArrowRight, Settings,
-  Loader2, Shield, Zap, Globe, Database, Webhook, Clock,
-  Plus, AlertCircle, Smartphone, Search, Filter, Download, Upload, Copy,
-  Calendar, Users, Key
+  Loader2, Shield, Zap, Globe, Database, Webhook, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
 import apiService from '../services/api';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
@@ -78,7 +75,6 @@ const integrations: Integration[] = [
 
 const IntegrationsPage: React.FC = () => {
   const { isDark } = useTheme();
-  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('all');
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState<IntegrationStats>({
@@ -90,19 +86,6 @@ const IntegrationsPage: React.FC = () => {
     uptime: 99.9,
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
-
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   useEffect(() => {
     fetchIntegrationConfigs();
@@ -157,6 +140,8 @@ const IntegrationsPage: React.FC = () => {
     }
   };
 
+
+
   const getCategoryIcon = (category: string) => {
     const iconClassName = `w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`;
     
@@ -175,7 +160,7 @@ const IntegrationsPage: React.FC = () => {
       isDark 
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
         : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
-    } ${isMobile ? 'px-4' : ''}`}>
+    }`}>
       {/* Enhanced Page Header with Dark Mode */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -194,24 +179,24 @@ const IntegrationsPage: React.FC = () => {
           }} />
         </div>
         
-        <div className={`relative z-10 ${isMobile ? 'p-4' : 'p-8'} rounded-2xl backdrop-blur-sm`}>
-          <div className={`flex items-center ${isMobile ? 'flex-col text-center' : 'space-x-4'} mb-4`}>
+        <div className="relative z-10 p-8 rounded-2xl backdrop-blur-sm">
+          <div className="flex items-center space-x-4 mb-4">
             <div className={`p-3 rounded-xl ${
               isDark 
                 ? 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/25' 
                 : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/25'
-            } ${isMobile ? 'mb-4' : ''}`}>
-              <LinkIcon className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-white`} />
+            }`}>
+              <LinkIcon className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold mb-2 ${
+              <h1 className={`text-4xl font-bold mb-2 ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
                 Integrations Hub
         </h1>
-              <div className={`flex items-center ${isMobile ? 'justify-center' : ''} space-x-2`}>
+              <div className="flex items-center space-x-2">
                 <Zap className={`h-5 w-5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
-                <span className={`${isMobile ? 'text-base' : 'text-lg'} font-medium ${
+                <span className={`text-lg font-medium ${
                   isDark ? 'text-purple-400' : 'text-purple-600'
                 }`}>
                   Connect & Automate Your Workflow
@@ -251,7 +236,7 @@ const IntegrationsPage: React.FC = () => {
       </motion.div>
 
       {/* Enhanced Stats Cards with Dark Mode */}
-      <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-4 gap-6'} mb-8`}>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -502,7 +487,7 @@ const IntegrationsPage: React.FC = () => {
             </p>
           </div>
           
-          <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* HubSpot Integration Card */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
