@@ -132,10 +132,10 @@ const CRMPage: React.FC = () => {
   const contactsWithPhones = stats?.overview.contacts_with_phone || 0;
   const highQualityContacts = stats?.lead_quality.high_quality || 0;
 
-  // Filtered and sorted contacts
-  const filteredContacts = contacts.filter(contact => {
+  // Filtered and sorted contacts - defensive programming
+  const filteredContacts = (contacts || []).filter(contact => {
     const matchesSearch = !searchTerm || 
-      `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${contact.first_name || ''} ${contact.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.company?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -149,7 +149,7 @@ const CRMPage: React.FC = () => {
     const matchesEmailReliability = emailReliabilityFilter === 'all' || 
       contact.email_reliability === emailReliabilityFilter;
     
-    const matchesLeadScore = contact.lead_score >= leadScoreMin && contact.lead_score <= leadScoreMax;
+    const matchesLeadScore = (contact.lead_score || 0) >= leadScoreMin && (contact.lead_score || 0) <= leadScoreMax;
     
     return matchesSearch && matchesBatch && matchesStatus && matchesEmailReliability && matchesLeadScore;
   });
@@ -184,12 +184,17 @@ const CRMPage: React.FC = () => {
         lead_score_max: leadScoreMax,
       });
       
-      setContacts(response.contacts);
-      setTotalContacts(response.total);
-      setTotalPages(response.total_pages);
+      // Defensive programming - ensure we always have arrays
+      setContacts(response?.contacts || []);
+      setTotalContacts(response?.total || 0);
+      setTotalPages(response?.total_pages || 1);
     } catch (error) {
       console.error('Error fetching contacts:', error);
       toast.error('Failed to fetch contacts');
+      // Set empty state on error
+      setContacts([]);
+      setTotalContacts(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -198,18 +203,20 @@ const CRMPage: React.FC = () => {
   const fetchStats = useCallback(async () => {
     try {
       const statsData = await apiService.getCrmContactsStats();
-      setStats(statsData);
+      setStats(statsData || null);
     } catch (error) {
       console.error('Error fetching stats:', error);
+      setStats(null);
     }
   }, []);
 
   const fetchBatches = useCallback(async () => {
     try {
       const batchesData = await apiService.getCrmBatches();
-      setBatches(batchesData.batches);
+      setBatches(batchesData?.batches || []);
     } catch (error) {
       console.error('Error fetching batches:', error);
+      setBatches([]);
     }
   }, []);
 
