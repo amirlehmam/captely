@@ -262,27 +262,44 @@ const CRMPage: React.FC = () => {
     setShowExportModal(true);
   };
 
-  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot', customFilename?: string) => {
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot' | 'lemlist' | 'zapier', customFilename?: string) => {
     try {
       if (exportContactId) {
         // Single contact export
-        if (format === 'hubspot') {
-          await apiService.exportContactToHubSpot(exportContactId);
-          toast.success('🚀 Successfully exported contact to HubSpot!');
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+          // Integration export
+          if (format === 'hubspot') {
+            await apiService.exportContactToHubSpot(exportContactId);
+            toast.success('🚀 Successfully exported contact to HubSpot!');
+                     } else if (format === 'lemlist') {
+             await apiService.exportContactToLemlist(exportContactId);
+           } else if (format === 'zapier') {
+             await apiService.exportContactToZapier(exportContactId);
+           }
         } else {
           // For other formats, export as CRM contact with single ID and custom filename
           await apiService.exportCrmContacts([exportContactId], format, customFilename);
           toast.success(`Successfully exported contact as ${format.toUpperCase()}!`);
         }
       } else if (selectedContacts.size > 0) {
-        // Bulk export (fallback)
-        await apiService.exportCrmContacts(Array.from(selectedContacts), format, customFilename);
-        setSelectedContacts(new Set());
-        if (format === 'hubspot') {
-          toast.success(`🚀 Successfully exported ${selectedContacts.size} contacts to HubSpot!`);
+        // Bulk export
+        const contactIds = Array.from(selectedContacts);
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+          // Integration export for bulk
+          if (format === 'hubspot') {
+            await apiService.exportCrmContacts(contactIds, 'hubspot', customFilename);
+            toast.success(`🚀 Successfully exported ${selectedContacts.size} contacts to HubSpot!`);
+                     } else if (format === 'lemlist') {
+             await apiService.exportCrmContactsToLemlist(contactIds);
+           } else if (format === 'zapier') {
+             await apiService.exportCrmContactsToZapier(contactIds);
+           }
         } else {
+          // File export
+          await apiService.exportCrmContacts(contactIds, format, customFilename);
           toast.success(`Successfully exported ${selectedContacts.size} contacts as ${format.toUpperCase()}!`);
         }
+        setSelectedContacts(new Set());
       }
     } catch (error) {
       console.error('Export failed:', error);

@@ -153,24 +153,47 @@ const BatchesPage: React.FC = () => {
     setShowExportModal(true);
   };
 
-  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot', customFilename?: string) => {
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot' | 'lemlist' | 'zapier', customFilename?: string) => {
     try {
       if (exportJobId) {
-        // Single job export with custom filename
-        await apiService.exportData(exportJobId, format, customFilename);
-        if (format === 'hubspot') {
-          toast.success('🚀 Batch exported to HubSpot successfully!');
+        // Single job export
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+          // Integration export
+          if (format === 'hubspot') {
+            await apiService.exportJobToHubSpot(exportJobId);
+            toast.success('🚀 Batch exported to HubSpot successfully!');
+                     } else if (format === 'lemlist') {
+             await apiService.exportJobToLemlist(exportJobId);
+           } else if (format === 'zapier') {
+             await apiService.exportJobToZapier(exportJobId);
+           }
+        } else {
+          // File export
+          await apiService.exportData(exportJobId, format as 'csv' | 'excel' | 'json', customFilename);
+          toast.success(`Batch exported as ${format.toUpperCase()} successfully!`);
         }
       } else if (bulkExportJobs.length > 0) {
-        // Bulk export - export each job with custom filename
+        // Bulk export
         for (const jobId of bulkExportJobs) {
-          await apiService.exportData(jobId, format, customFilename);
+          if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+            // Integration export for each batch
+            if (format === 'hubspot') {
+              await apiService.exportJobToHubSpot(jobId);
+                         } else if (format === 'lemlist') {
+               await apiService.exportJobToLemlist(jobId);
+             } else if (format === 'zapier') {
+               await apiService.exportJobToZapier(jobId);
+             }
+                     } else {
+             // File export for each batch
+             await apiService.exportData(jobId, format as 'csv' | 'excel' | 'json', customFilename);
+           }
         }
         setSelectedJobs(new Set());
-        if (format === 'hubspot') {
-          toast.success(`🚀 Successfully exported ${bulkExportJobs.length} batches to HubSpot!`);
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+          toast.success(`🚀 Successfully exported ${bulkExportJobs.length} batches to ${format.charAt(0).toUpperCase() + format.slice(1)}!`);
         } else {
-          toast.success(`Successfully exported ${bulkExportJobs.length} batches!`);
+          toast.success(`Successfully exported ${bulkExportJobs.length} batches as ${format.toUpperCase()}!`);
         }
       }
     } catch (error) {

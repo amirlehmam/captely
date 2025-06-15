@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Download, FileDown, Code2, Settings, 
-  CheckCircle, AlertCircle, Loader, ExternalLink
+  CheckCircle, AlertCircle, Loader, ExternalLink, Database, Globe, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -12,7 +12,7 @@ import { apiService } from '../../services/api';
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (format: 'csv' | 'excel' | 'json' | 'hubspot') => Promise<void>;
+  onExport: (format: 'csv' | 'excel' | 'json' | 'hubspot' | 'lemlist' | 'zapier') => Promise<void>;
   title: string;
   description: string;
   exportCount?: number;
@@ -35,20 +35,57 @@ const ExportModal: React.FC<ExportModalProps> = ({
   const { isDark } = useTheme();
   const { t } = useLanguage();
   
-  const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'json' | 'hubspot'>('csv');
+  const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'json' | 'hubspot' | 'lemlist' | 'zapier'>('csv');
   const [exporting, setExporting] = useState(false);
   const [userSettings, setUserSettings] = useState<any>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [hubspotConnected, setHubspotConnected] = useState(false);
-  const [checkingHubspot, setCheckingHubspot] = useState(true);
+  const [integrationStatuses, setIntegrationStatuses] = useState({
+    hubspot: { connected: false },
+    lemlist: { connected: false },
+    zapier: { connected: false }
+  });
+  const [checkingIntegrations, setCheckingIntegrations] = useState(true);
 
-  // Load user's export preferences and check HubSpot status
+  // Load user's export preferences and check integration statuses
   useEffect(() => {
     const loadUserSettings = async () => {
       try {
-        // Check HubSpot integration status
-        const hubspotStatus = await apiService.getHubSpotIntegrationStatus();
-        setHubspotConnected(hubspotStatus.connected);
+        const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+        
+        // Check all integration statuses in parallel
+        const [hubspotResponse, lemlistResponse, zapierResponse] = await Promise.allSettled([
+          fetch('/api/integrations/hubspot/status', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch('/api/export/lemlist/status', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch('/api/export/zapier/status', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
+
+        const statuses = { hubspot: { connected: false }, lemlist: { connected: false }, zapier: { connected: false } };
+
+        // Process HubSpot
+        if (hubspotResponse.status === 'fulfilled' && hubspotResponse.value.ok) {
+          const hubspotData = await hubspotResponse.value.json();
+          statuses.hubspot = hubspotData;
+        }
+
+        // Process Lemlist
+        if (lemlistResponse.status === 'fulfilled' && lemlistResponse.value.ok) {
+          const lemlistData = await lemlistResponse.value.json();
+          statuses.lemlist = lemlistData;
+        }
+
+        // Process Zapier
+        if (zapierResponse.status === 'fulfilled' && zapierResponse.value.ok) {
+          const zapierData = await zapierResponse.value.json();
+          statuses.zapier = zapierData;
+        }
+
+        setIntegrationStatuses(statuses);
         
         // Try to get user's export settings from localStorage first
         const savedSettings = localStorage.getItem('dataExportSettings');
@@ -63,10 +100,14 @@ const ExportModal: React.FC<ExportModalProps> = ({
       } catch (error) {
         console.error('Error loading export settings:', error);
         setSelectedFormat('csv');
-        setHubspotConnected(false);
+        setIntegrationStatuses({
+          hubspot: { connected: false },
+          lemlist: { connected: false },
+          zapier: { connected: false }
+        });
       } finally {
         setLoadingSettings(false);
-        setCheckingHubspot(false);
+        setCheckingIntegrations(false);
       }
     };
 
@@ -106,16 +147,40 @@ const ExportModal: React.FC<ExportModalProps> = ({
       }
     ];
 
-    // Add HubSpot option if connected
-    if (hubspotConnected) {
+    // Add integration options if connected
+    if (integrationStatuses.hubspot.connected) {
       baseOptions.push({
         value: 'hubspot' as const,
         label: 'HubSpot CRM',
-        icon: ExternalLink,
+        icon: Database,
         description: 'Export directly to your HubSpot account',
         color: isDark ? 'text-orange-400' : 'text-orange-600',
         bgColor: isDark ? 'bg-orange-500/20 border-orange-400/30' : 'bg-orange-50 border-orange-200',
-        type: 'crm'
+        type: 'integration'
+      });
+    }
+
+    if (integrationStatuses.lemlist.connected) {
+      baseOptions.push({
+        value: 'lemlist' as const,
+        label: 'Lemlist',
+        icon: Globe,
+        description: 'Export to your Lemlist campaigns',
+        color: isDark ? 'text-purple-400' : 'text-purple-600',
+        bgColor: isDark ? 'bg-purple-500/20 border-purple-400/30' : 'bg-purple-50 border-purple-200',
+        type: 'integration'
+      });
+    }
+
+    if (integrationStatuses.zapier.connected) {
+      baseOptions.push({
+        value: 'zapier' as const,
+        label: 'Zapier',
+        icon: Zap,
+        description: 'Send to your Zapier workflows',
+        color: isDark ? 'text-amber-400' : 'text-amber-600',
+        bgColor: isDark ? 'bg-amber-500/20 border-amber-400/30' : 'bg-amber-50 border-amber-200',
+        type: 'integration'
       });
     }
 
@@ -128,7 +193,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
       await onExport(selectedFormat);
       
       // Save user's format preference (only for file formats)
-      if (selectedFormat !== 'hubspot') {
+      if (!['hubspot', 'lemlist', 'zapier'].includes(selectedFormat)) {
         const currentSettings = userSettings || {};
         const updatedSettings = { ...currentSettings, format: selectedFormat };
         localStorage.setItem('dataExportSettings', JSON.stringify(updatedSettings));
@@ -142,6 +207,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
+  const isIntegrationFormat = ['hubspot', 'lemlist', 'zapier'].includes(selectedFormat);
+  const connectedIntegrationsCount = Object.values(integrationStatuses).filter(status => status.connected).length;
+
   if (!isOpen) return null;
 
   return (
@@ -154,38 +222,40 @@ const ExportModal: React.FC<ExportModalProps> = ({
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className={`rounded-xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-hidden ${
-            isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className={`relative max-w-lg w-full rounded-2xl shadow-2xl border overflow-hidden ${
+            isDark 
+              ? 'bg-gray-800 border-gray-700' 
+              : 'bg-white border-gray-100'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+          <div className={`px-6 py-4 border-b ${
+            isDark ? 'border-gray-700' : 'border-gray-100'
+          }`}>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  📥 {title}
+                <h3 className={`text-lg font-semibold ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {title}
                 </h3>
-                <p className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-sm mt-1 ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                   {description}
-                  {exportCount && (
-                    <span className={`ml-1 font-medium ${
-                      isDark ? 'text-emerald-400' : 'text-emerald-600'
-                    }`}>
-                      ({exportCount} items)
-                    </span>
-                  )}
+                  {exportCount && ` (${exportCount} ${exportCount === 1 ? 'item' : 'items'})`}
                 </p>
               </div>
               <button
                 onClick={onClose}
                 className={`p-2 rounded-lg transition-colors ${
                   isDark 
-                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 <X className="h-5 w-5" />
@@ -194,38 +264,37 @@ const ExportModal: React.FC<ExportModalProps> = ({
           </div>
 
           {/* Content */}
-          <div className="p-4">
-            {loadingSettings ? (
-              <div className="text-center py-6">
-                <Loader className={`h-6 w-6 animate-spin mx-auto ${
-                  isDark ? 'text-emerald-400' : 'text-emerald-600'
-                }`} />
-                <p className={`mt-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Loading export preferences...
-                </p>
+          <div className="px-6 py-4">
+            {loadingSettings || checkingIntegrations ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="h-6 w-6 animate-spin text-primary-500" />
+                <span className={`ml-2 text-sm ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Loading export options...
+                </span>
               </div>
             ) : (
               <>
-                {/* Format Selection */}
-                <div className="space-y-2 mb-4">
-                  <label className={`block text-sm font-medium ${
+                {/* Format Options */}
+                <div className="space-y-3 mb-4">
+                  <h4 className={`font-medium text-sm ${
                     isDark ? 'text-gray-300' : 'text-gray-700'
                   }`}>
-                    📄 Select Export Destination
-                  </label>
-                  
+                    Select Export Format
+                  </h4>
                   {getFormatOptions().map((format) => (
                     <motion.button
                       key={format.value}
                       onClick={() => setSelectedFormat(format.value)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
                         selectedFormat === format.value
                           ? format.bgColor
                           : isDark
-                            ? 'border-gray-600 bg-gray-700 hover:bg-gray-650'
-                            : 'border-gray-200 bg-white hover:bg-gray-50'
+                            ? 'border-gray-600 bg-gray-700/50 hover:bg-gray-700'
+                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -235,14 +304,14 @@ const ExportModal: React.FC<ExportModalProps> = ({
                               ? format.color
                               : isDark ? 'text-gray-400' : 'text-gray-500'
                           }`} />
-                          <div>
+                          <div className="text-left">
                             <div className={`font-medium ${
                               selectedFormat === format.value
                                 ? format.color
                                 : isDark ? 'text-white' : 'text-gray-900'
                             }`}>
                               {format.label}
-                              {format.value === 'hubspot' && (
+                              {format.type === 'integration' && (
                                 <span className={`ml-2 text-xs px-2 py-1 rounded-full ${
                                   isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
                                 }`}>
@@ -265,8 +334,8 @@ const ExportModal: React.FC<ExportModalProps> = ({
                   ))}
                 </div>
 
-                {/* HubSpot Notice if not connected */}
-                {!hubspotConnected && !checkingHubspot && (
+                {/* Integration Notice if none connected */}
+                {connectedIntegrationsCount === 0 && (
                   <div className={`p-3 rounded-lg border mb-3 ${
                     isDark 
                       ? 'bg-gray-700 border-gray-600' 
@@ -280,14 +349,13 @@ const ExportModal: React.FC<ExportModalProps> = ({
                         <h5 className={`font-medium mb-1 text-sm ${
                           isDark ? 'text-gray-300' : 'text-gray-700'
                         }`}>
-                          🟠 HubSpot Integration
+                          🔗 Integration Options
                         </h5>
                         <p className={`text-xs ${
                           isDark ? 'text-gray-400' : 'text-gray-600'
                         }`}>
-                          Connect HubSpot in{' '}
-                          <span className="font-medium text-orange-500">Integrations</span>{' '}
-                          to export directly to your CRM
+                          Connect <span className="font-medium text-orange-500">HubSpot</span>, <span className="font-medium text-purple-500">Lemlist</span>, or <span className="font-medium text-amber-500">Zapier</span> in{' '}
+                          <span className="font-medium">Integrations</span> to export directly to your tools
                         </p>
                       </div>
                     </div>
@@ -318,8 +386,8 @@ const ExportModal: React.FC<ExportModalProps> = ({
                         <li>• 🔢 Lead scores & ratings</li>
                         {type === 'batch' && <li>• 📊 Provider information</li>}
                         {type === 'crm' && <li>• 📁 Batch associations</li>}
-                        {selectedFormat === 'hubspot' && (
-                          <li>• 🚀 Direct HubSpot sync</li>
+                        {isIntegrationFormat && (
+                          <li>• 🚀 Direct integration sync</li>
                         )}
                       </ul>
                     </div>
@@ -330,7 +398,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+          <div className={`px-6 py-4 border-t ${
+            isDark ? 'border-gray-700' : 'border-gray-100'
+          }`}>
             <div className="flex items-center justify-between">
               <button
                 onClick={onClose}
@@ -347,29 +417,29 @@ const ExportModal: React.FC<ExportModalProps> = ({
                 onClick={handleExport}
                 disabled={exporting || loadingSettings}
                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 ${
-                  selectedFormat === 'hubspot'
-                    ? isDark
+                  isIntegrationFormat
+                    ? selectedFormat === 'hubspot'
                       ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600'
-                      : 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600'
-                    : isDark
-                      ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
-                      : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
+                      : selectedFormat === 'lemlist'
+                        ? 'bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600'
+                        : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600'
+                    : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
                 } text-white shadow-lg hover:shadow-xl`}
               >
                 {exporting ? (
                   <>
                     <Loader className="h-4 w-4 mr-2 animate-spin inline" />
-                    {selectedFormat === 'hubspot' ? 'Syncing...' : 'Exporting...'}
+                    {isIntegrationFormat ? 'Syncing...' : 'Exporting...'}
                   </>
                 ) : (
                   <>
-                    {selectedFormat === 'hubspot' ? (
+                    {isIntegrationFormat ? (
                       <ExternalLink className="h-4 w-4 mr-2 inline" />
                     ) : (
                       <Download className="h-4 w-4 mr-2 inline" />
                     )}
-                    {selectedFormat === 'hubspot' 
-                      ? 'Export to HubSpot' 
+                    {isIntegrationFormat 
+                      ? `Export to ${selectedFormat.charAt(0).toUpperCase() + selectedFormat.slice(1)}` 
                       : `Export ${selectedFormat.toUpperCase()}`
                     }
                   </>

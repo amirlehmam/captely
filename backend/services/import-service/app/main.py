@@ -29,6 +29,8 @@ from common.celery_app import celery_app
 from common.auth import verify_api_token
 from .models import ImportJob, Contact, Base
 from .hubspot_service import HubSpotService
+from .lemlist_service import LemlistService
+from .zapier_service import ZapierService
 # from .routers import jobs, salesnav, enrichment
 
 # ─── App & Config ───────────────────────────────────────────────────────────────
@@ -2516,3 +2518,437 @@ async def export_batch_to_hubspot_proxy(
     except Exception as e:
         print(f"❌ IMPORT: Batch export proxy failed: {e}")
         raise HTTPException(status_code=500, detail=f"Batch export failed: {str(e)}")
+
+# =============================================
+# LEMLIST INTEGRATION ENDPOINTS
+# =============================================
+
+@app.post("/api/integrations/lemlist/setup")
+async def setup_lemlist_integration(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Setup Lemlist integration with API key"""
+    try:
+        api_key = request.get("api_key")
+        if not api_key:
+            raise HTTPException(status_code=400, detail="API key is required")
+
+        lemlist_service = LemlistService()
+        
+        # Verify API key
+        account_info = await lemlist_service.verify_api_key(api_key)
+        
+        # Check if integration already exists
+        existing_query = text("""
+            SELECT id FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+        """)
+        existing = session.execute(existing_query, {"user_id": user_id}).fetchone()
+        
+        if existing:
+            # Update existing integration
+            update_query = text("""
+                UPDATE lemlist_integrations 
+                SET api_key = :api_key, account_email = :account_email, 
+                    account_name = :account_name, updated_at = NOW()
+                WHERE user_id = :user_id AND is_active = true
+            """)
+            session.execute(update_query, {
+                "user_id": user_id,
+                "api_key": api_key,
+                "account_email": account_info.get("email", ""),
+                "account_name": account_info.get("name", "")
+            })
+        else:
+            # Create new integration
+            insert_query = text("""
+                INSERT INTO lemlist_integrations 
+                (user_id, api_key, account_email, account_name, is_active, created_at, updated_at)
+                VALUES (:user_id, :api_key, :account_email, :account_name, true, NOW(), NOW())
+            """)
+            session.execute(insert_query, {
+                "user_id": user_id,
+                "api_key": api_key,
+                "account_email": account_info.get("email", ""),
+                "account_name": account_info.get("name", "")
+            })
+        
+        session.commit()
+        
+        return {
+            "success": True,
+            "message": "Lemlist integration setup successfully!",
+            "account_info": {
+                "email": account_info.get("email", ""),
+                "name": account_info.get("name", "")
+            }
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Lemlist setup error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to setup Lemlist integration: {str(e)}")
+
+@app.get("/api/integrations/lemlist/status")
+async def get_lemlist_integration_status(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get Lemlist integration status"""
+    try:
+        query = text("""
+            SELECT api_key, account_email, account_name, created_at, updated_at
+            FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration = session.execute(query, {"user_id": user_id}).fetchone()
+        
+        if not integration:
+            return {"connected": False}
+        
+        # Test API key validity
+        try:
+            lemlist_service = LemlistService()
+            await lemlist_service.verify_api_key(integration.api_key)
+            api_valid = True
+        except:
+            api_valid = False
+        
+        return {
+            "connected": True,
+            "api_valid": api_valid,
+            "account_email": integration.account_email,
+            "account_name": integration.account_name,
+            "connected_at": integration.created_at.isoformat() if integration.created_at else None,
+            "last_updated": integration.updated_at.isoformat() if integration.updated_at else None
+        }
+        
+    except Exception as e:
+        print(f"Error checking Lemlist status: {e}")
+        return {"connected": False, "error": str(e)}
+
+@app.get("/api/integrations/lemlist/campaigns")
+async def get_lemlist_campaigns(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get available Lemlist campaigns"""
+    try:
+        lemlist_service = LemlistService()
+        campaigns = await lemlist_service.get_campaigns(session, user_id)
+        
+        return {
+            "success": True,
+            "campaigns": campaigns
+        }
+        
+    except Exception as e:
+        print(f"Error fetching Lemlist campaigns: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch campaigns: {str(e)}")
+
+@app.post("/api/integrations/lemlist/import")
+async def import_from_lemlist(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Import contacts from Lemlist campaigns"""
+    try:
+        campaign_id = request.get("campaign_id")
+        
+        # Create a new import job
+        job_id = str(uuid.uuid4())
+        job_insert_sql = text("""
+            INSERT INTO import_jobs (id, user_id, total, status, file_name, created_at, updated_at)
+            VALUES (:job_id, :user_id, 0, 'processing', :file_name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+        
+        filename = f"Lemlist Import - Campaign {campaign_id}" if campaign_id else "Lemlist Import - All Campaigns"
+        session.execute(job_insert_sql, {
+            "job_id": job_id,
+            "user_id": user_id,
+            "file_name": filename
+        })
+        session.commit()
+        
+        # Import contacts from Lemlist
+        lemlist_service = LemlistService()
+        result = await lemlist_service.import_contacts_from_lemlist(session, user_id, job_id, campaign_id)
+        
+        # Update job with final counts
+        update_job_sql = text("""
+            UPDATE import_jobs 
+            SET status = 'completed', total = :total, processed_records = :imported, updated_at = NOW()
+            WHERE id = :job_id
+        """)
+        session.execute(update_job_sql, {
+            "job_id": job_id,
+            "total": result["total_contacts"],
+            "imported": result["imported_count"]
+        })
+        session.commit()
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "imported_count": result["imported_count"],
+            "total_contacts": result["total_contacts"],
+            "message": result["message"],
+            "redirect": "enrichment",
+            "redirect_url": f"/batches/{job_id}"
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Lemlist import error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lemlist import failed: {str(e)}")
+
+@app.post("/api/integrations/lemlist/export")
+async def export_to_lemlist(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Export contacts to Lemlist campaign"""
+    try:
+        contact_ids = request.get("contact_ids", [])
+        campaign_id = request.get("campaign_id")
+        
+        if not contact_ids:
+            raise HTTPException(status_code=400, detail="No contacts provided")
+        if not campaign_id:
+            raise HTTPException(status_code=400, detail="Campaign ID is required")
+        
+        lemlist_service = LemlistService()
+        result = await lemlist_service.export_contacts_to_lemlist(session, user_id, contact_ids, campaign_id)
+        
+        return {
+            "success": True,
+            "exported_count": result["exported_count"],
+            "failed_count": result["failed_count"],
+            "errors": result["errors"]
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Lemlist export error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lemlist export failed: {str(e)}")
+
+@app.delete("/api/integrations/lemlist/disconnect")
+async def disconnect_lemlist(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Disconnect Lemlist integration"""
+    try:
+        query = text("""
+            UPDATE lemlist_integrations 
+            SET is_active = false, updated_at = NOW()
+            WHERE user_id = :user_id AND is_active = true
+        """)
+        
+        result = session.execute(query, {"user_id": user_id})
+        session.commit()
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Lemlist integration not found")
+        
+        return {"success": True, "message": "Lemlist integration disconnected successfully"}
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Error disconnecting Lemlist: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect Lemlist: {str(e)}")
+
+# =============================================
+# ZAPIER INTEGRATION ENDPOINTS
+# =============================================
+
+@app.post("/api/integrations/zapier/setup")
+async def setup_zapier_integration(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Setup Zapier integration with webhook URL"""
+    try:
+        webhook_url = request.get("webhook_url")
+        if not webhook_url:
+            raise HTTPException(status_code=400, detail="Webhook URL is required")
+
+        zapier_service = ZapierService()
+        
+        # Verify webhook URL
+        verification_result = await zapier_service.verify_webhook(webhook_url)
+        if not verification_result["success"]:
+            raise HTTPException(status_code=400, detail=f"Webhook verification failed: {verification_result.get('response', 'Unknown error')}")
+        
+        # Check if integration already exists
+        existing_query = text("""
+            SELECT id FROM zapier_integrations 
+            WHERE user_id = :user_id AND is_active = true
+        """)
+        existing = session.execute(existing_query, {"user_id": user_id}).fetchone()
+        
+        if existing:
+            # Update existing integration
+            update_query = text("""
+                UPDATE zapier_integrations 
+                SET webhook_url = :webhook_url, zap_name = :zap_name, updated_at = NOW()
+                WHERE user_id = :user_id AND is_active = true
+            """)
+            session.execute(update_query, {
+                "user_id": user_id,
+                "webhook_url": webhook_url,
+                "zap_name": "Captely to Zapier Integration"
+            })
+        else:
+            # Create new integration
+            insert_query = text("""
+                INSERT INTO zapier_integrations 
+                (user_id, webhook_url, zap_name, is_active, created_at, updated_at)
+                VALUES (:user_id, :webhook_url, :zap_name, true, NOW(), NOW())
+            """)
+            session.execute(insert_query, {
+                "user_id": user_id,
+                "webhook_url": webhook_url,
+                "zap_name": "Captely to Zapier Integration"
+            })
+        
+        session.commit()
+        
+        return {
+            "success": True,
+            "message": "Zapier integration setup successfully!",
+            "webhook_url": webhook_url,
+            "verification": verification_result
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Zapier setup error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to setup Zapier integration: {str(e)}")
+
+@app.get("/api/integrations/zapier/status")
+async def get_zapier_integration_status(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Get Zapier integration status"""
+    try:
+        query = text("""
+            SELECT webhook_url, zap_name, created_at, updated_at
+            FROM zapier_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration = session.execute(query, {"user_id": user_id}).fetchone()
+        
+        if not integration:
+            return {"connected": False}
+        
+        # Test webhook validity
+        try:
+            zapier_service = ZapierService()
+            test_result = await zapier_service.verify_webhook(integration.webhook_url)
+            webhook_valid = test_result["success"]
+        except:
+            webhook_valid = False
+        
+        return {
+            "connected": True,
+            "webhook_valid": webhook_valid,
+            "webhook_url": integration.webhook_url,
+            "zap_name": integration.zap_name,
+            "connected_at": integration.created_at.isoformat() if integration.created_at else None,
+            "last_updated": integration.updated_at.isoformat() if integration.updated_at else None
+        }
+        
+    except Exception as e:
+        print(f"Error checking Zapier status: {e}")
+        return {"connected": False, "error": str(e)}
+
+@app.post("/api/integrations/zapier/export")
+async def export_to_zapier(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Export contacts to Zapier webhook"""
+    try:
+        contact_ids = request.get("contact_ids", [])
+        batch_mode = request.get("batch_mode", True)
+        
+        if not contact_ids:
+            raise HTTPException(status_code=400, detail="No contacts provided")
+        
+        zapier_service = ZapierService()
+        result = await zapier_service.export_contacts_to_zapier(session, user_id, contact_ids, batch_mode)
+        
+        return {
+            "success": True,
+            "exported_count": result["exported_count"],
+            "failed_count": result["failed_count"],
+            "errors": result["errors"],
+            "batch_mode": result["batch_mode"]
+        }
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Zapier export error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Zapier export failed: {str(e)}")
+
+@app.post("/api/integrations/zapier/webhook")
+async def receive_zapier_webhook(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Receive webhook data from Zapier (for importing contacts)"""
+    try:
+        zapier_service = ZapierService()
+        result = await zapier_service.receive_webhook_data(session, user_id, request)
+        
+        return result
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Zapier webhook error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Webhook processing failed: {str(e)}")
+
+@app.delete("/api/integrations/zapier/disconnect")
+async def disconnect_zapier(
+    user_id: str = Depends(verify_api_token),
+    session: Session = Depends(get_session)
+):
+    """Disconnect Zapier integration"""
+    try:
+        query = text("""
+            UPDATE zapier_integrations 
+            SET is_active = false, updated_at = NOW()
+            WHERE user_id = :user_id AND is_active = true
+        """)
+        
+        result = session.execute(query, {"user_id": user_id})
+        session.commit()
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Zapier integration not found")
+        
+        return {"success": True, "message": "Zapier integration disconnected successfully"}
+        
+    except Exception as e:
+        session.rollback()
+        print(f"Error disconnecting Zapier: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect Zapier: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

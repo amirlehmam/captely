@@ -922,6 +922,160 @@ class ApiService {
     }
   }
 
+  // ==========================================
+  // LEMLIST INTEGRATION EXPORTS
+  // ==========================================
+
+  async exportContactToLemlist(contactId: string): Promise<{
+    success: boolean;
+    platform: string;
+    platform_contact_id: string;
+    contact_data: any;
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        platform: string;
+        platform_contact_id: string;
+        contact_data: any;
+        message: string;
+      }>(`${API_CONFIG.exportUrl}/export/lemlist/single`, { contact_id: contactId });
+      toast.success('Contact exported to Lemlist successfully!');
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to export contact to Lemlist');
+      throw error;
+    }
+  }
+
+  async exportJobToLemlist(jobId: string): Promise<{
+    success: boolean;
+    job_id: string;
+    total_contacts: number;
+    exported_count: number;
+    failed_count: number;
+    exported_contacts: any[];
+    failed_contacts: any[];
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        job_id: string;
+        total_contacts: number;
+        exported_count: number;
+        failed_count: number;
+        exported_contacts: any[];
+        failed_contacts: any[];
+        message: string;
+      }>(`${API_CONFIG.exportUrl}/export/lemlist/batch`, { job_id: jobId });
+      toast.success('Batch exported to Lemlist successfully!');
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to export batch to Lemlist');
+      throw error;
+    }
+  }
+
+  async exportCrmContactsToLemlist(contactIds: string[]): Promise<{
+    success: boolean;
+    exported_count: number;
+    failed_count: number;
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        exported_count: number;
+        failed_count: number;
+        message: string;
+      }>(`${API_CONFIG.exportUrl}/export/lemlist/bulk`, { contact_ids: contactIds });
+      toast.success(`${response.exported_count} contacts exported to Lemlist successfully!`);
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to export contacts to Lemlist');
+      throw error;
+    }
+  }
+
+  // ==========================================
+  // ZAPIER INTEGRATION EXPORTS
+  // ==========================================
+
+  async exportContactToZapier(contactId: string): Promise<{
+    success: boolean;
+    platform: string;
+    webhook_response: any;
+    contact_data: any;
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        platform: string;
+        webhook_response: any;
+        contact_data: any;
+        message: string;
+      }>(`${API_CONFIG.exportUrl}/export/zapier/single`, { contact_id: contactId });
+      toast.success('Contact sent to Zapier successfully!');
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to send contact to Zapier');
+      throw error;
+    }
+  }
+
+  async exportJobToZapier(jobId: string): Promise<{
+    success: boolean;
+    job_id: string;
+    total_contacts: number;
+    exported_count: number;
+    failed_count: number;
+    webhook_responses: any[];
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        job_id: string;
+        total_contacts: number;
+        exported_count: number;
+        failed_count: number;
+        webhook_responses: any[];
+        message: string;
+      }>(`${API_CONFIG.exportUrl}/export/zapier/batch`, { job_id: jobId });
+      toast.success('Batch sent to Zapier successfully!');
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to send batch to Zapier');
+      throw error;
+    }
+  }
+
+  async exportCrmContactsToZapier(contactIds: string[]): Promise<{
+    success: boolean;
+    exported_count: number;
+    failed_count: number;
+    webhook_responses: any[];
+    message: string;
+  }> {
+    try {
+      const response = await client.post<{
+        success: boolean;
+        exported_count: number;
+        failed_count: number;
+        webhook_responses: any[];
+        message: string;
+      }>(`${API_CONFIG.exportUrl}/export/zapier/bulk`, { contact_ids: contactIds });
+      toast.success(`${response.exported_count} contacts sent to Zapier successfully!`);
+      return response;
+    } catch (error: any) {
+      toast.error('Failed to send contacts to Zapier');
+      throw error;
+    }
+  }
+
   async getExportLogs(page: number = 1, limit: number = 50): Promise<{
     logs: Array<{
       id: string;

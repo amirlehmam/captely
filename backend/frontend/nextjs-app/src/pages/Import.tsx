@@ -23,7 +23,10 @@ import {
   UserPlus,
   Building,
   Trash2,
-  Edit3
+  Edit3,
+  Database,
+  Zap,
+  Globe
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -50,6 +53,12 @@ interface ManualContact {
   industry?: string;
 }
 
+// Integration status interface
+interface IntegrationStatus {
+  connected: boolean;
+  [key: string]: any;
+}
+
 const ImportPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, formatMessage } = useLanguage();
@@ -73,7 +82,20 @@ const ImportPage: React.FC = () => {
   });
   const [manualContactErrors, setManualContactErrors] = useState<string[]>([]);
   const [isStartingManualEnrichment, setIsStartingManualEnrichment] = useState(false);
-  const [activeTab, setActiveTab] = useState<'upload' | 'manual'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'manual' | 'hubspot' | 'lemlist' | 'zapier'>('upload');
+  
+  // Integration states
+  const [integrationStatuses, setIntegrationStatuses] = useState<{
+    hubspot: IntegrationStatus;
+    lemlist: IntegrationStatus;
+    zapier: IntegrationStatus;
+  }>({
+    hubspot: { connected: false },
+    lemlist: { connected: false },
+    zapier: { connected: false }
+  });
+  const [loadingIntegrations, setLoadingIntegrations] = useState(true);
+  const [integrationImportLoading, setIntegrationImportLoading] = useState<string | null>(null);
   
   // Hooks
   const { uploadFile, uploading, progress, error: uploadError, reset } = useFileUpload();
@@ -87,6 +109,145 @@ const ImportPage: React.FC = () => {
   
   // Enhanced notification system available from imports
   const [isPaused, setIsPaused] = useState(false);
+
+  // Check integration statuses
+  const checkIntegrationStatuses = useCallback(async () => {
+    try {
+      setLoadingIntegrations(true);
+      const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+      
+      // Check all integrations in parallel
+      const [hubspotResponse, lemlistResponse, zapierResponse] = await Promise.allSettled([
+        fetch('/api/integrations/hubspot/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/export/lemlist/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/export/zapier/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      const statuses = { hubspot: { connected: false }, lemlist: { connected: false }, zapier: { connected: false } };
+
+      // Process HubSpot
+      if (hubspotResponse.status === 'fulfilled' && hubspotResponse.value.ok) {
+        const hubspotData = await hubspotResponse.value.json();
+        statuses.hubspot = hubspotData;
+      }
+
+      // Process Lemlist
+      if (lemlistResponse.status === 'fulfilled' && lemlistResponse.value.ok) {
+        const lemlistData = await lemlistResponse.value.json();
+        statuses.lemlist = lemlistData;
+      }
+
+      // Process Zapier
+      if (zapierResponse.status === 'fulfilled' && zapierResponse.value.ok) {
+        const zapierData = await zapierResponse.value.json();
+        statuses.zapier = zapierData;
+      }
+
+      setIntegrationStatuses(statuses);
+    } catch (error) {
+      console.error('Failed to check integration statuses:', error);
+    } finally {
+      setLoadingIntegrations(false);
+    }
+  }, []);
+
+  // Integration import handlers
+  const handleIntegrationImport = async (provider: string) => {
+    try {
+      setIntegrationImportLoading(provider);
+      const token = localStorage.getItem('captely_jwt') || sessionStorage.getItem('captely_jwt');
+      
+      let endpoint = '';
+      let requestBody = {};
+      
+      switch (provider) {
+        case 'hubspot':
+          endpoint = '/api/integrations/hubspot/import';
+          break;
+        case 'lemlist':
+          endpoint = '/api/integrations/lemlist/import';
+          break;
+        case 'zapier':
+          // Zapier doesn't have import - it's webhook-based
+          toast.error('Zapier is for exporting data, not importing. Use Zapier to send data FROM Captely TO other apps.');
+          return;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.detail || errorData.message || 'Import failed');
+      }
+
+      const result = await response.json();
+      
+      if (result.redirect === 'enrichment' && result.job_id) {
+        // Show enrichment confirmation modal
+        const enrichmentType = await confirmEnrichment(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Import - ${result.imported_count} contacts`);
+        
+        if (!enrichmentType) {
+          console.log(`❌ User cancelled ${provider} enrichment`);
+          return;
+        }
+
+        // Start enrichment for the imported job
+        const enrichResponse = await fetch(`/api/import/jobs/${result.job_id}/enrich`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            enrichment_config: enrichmentType
+          })
+        });
+
+        if (!enrichResponse.ok) {
+          throw new Error('Failed to start enrichment');
+        }
+
+        setCurrentJobId(result.job_id);
+        setUploadSuccess(true);
+        refetchJobs();
+        
+        const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+        toast.success(`🎉 Started enrichment for ${result.imported_count} ${providerName} contacts!`);
+        
+        // Force refresh credits
+        setTimeout(() => {
+          forceRefreshCredits();
+        }, 2000);
+        
+        // Navigate after showing success
+        setTimeout(() => {
+          navigate(`/batches`);
+        }, 2000);
+      } else {
+        toast.success(`Successfully imported ${result.imported_count || 0} contacts from ${provider}!`);
+        refetchJobs();
+      }
+      
+    } catch (error) {
+      console.error(`${provider} import failed:`, error);
+      toast.error(`Failed to import from ${provider}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIntegrationImportLoading(null);
+    }
+  };
 
   // **🚀 FIRE CREDIT DEDUCTION EVENT**
   const fireCreditUsedEvent = useCallback((amount: number, reason: string) => {
@@ -179,6 +340,9 @@ const ImportPage: React.FC = () => {
     setCurrentJobId(null);
     setValidationErrors([]);
     
+    // Check integration statuses
+    checkIntegrationStatuses();
+    
     // Check for HubSpot import redirect (ONLY ONCE!)
     const urlParams = new URLSearchParams(window.location.search);
     const hubspotJobId = urlParams.get('hubspot_job');
@@ -196,6 +360,15 @@ const ImportPage: React.FC = () => {
       }, 1000);
     }
   }, []); // ✅ EMPTY DEPENDENCY ARRAY - ONLY RUN ONCE!
+
+  // Get available integration tabs
+  const getAvailableTabs = () => {
+    const connectedIntegrations = Object.entries(integrationStatuses)
+      .filter(([_, status]) => status.connected)
+      .map(([name]) => name);
+    
+    return connectedIntegrations;
+  };
 
   // File validation
   const validateFile = useCallback((file: File): string[] => {
@@ -656,10 +829,10 @@ const ImportPage: React.FC = () => {
       >
         {/* Tab Navigation */}
         <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <nav className="flex space-x-8 px-8 pt-6" aria-label="Tabs">
+          <nav className="flex space-x-8 px-8 pt-6 overflow-x-auto" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('upload')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                 activeTab === 'upload'
                   ? isDark
                     ? 'border-primary-400 text-primary-400'
@@ -676,7 +849,7 @@ const ImportPage: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('manual')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                 activeTab === 'manual'
                   ? isDark
                     ? 'border-primary-400 text-primary-400'
@@ -698,6 +871,64 @@ const ImportPage: React.FC = () => {
                 )}
               </div>
             </button>
+            
+            {/* Integration Tabs - Only show if connected */}
+            {!loadingIntegrations && integrationStatuses.hubspot.connected && (
+              <button
+                onClick={() => setActiveTab('hubspot')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'hubspot'
+                    ? isDark
+                      ? 'border-orange-400 text-orange-400'
+                      : 'border-orange-500 text-orange-600'
+                    : isDark
+                      ? 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center">
+                  <Database className="h-4 w-4 mr-2" />
+                  Import via HubSpot
+                  <span className="ml-2 text-xs text-green-500">●</span>
+                </div>
+              </button>
+            )}
+            
+            {!loadingIntegrations && integrationStatuses.lemlist.connected && (
+              <button
+                onClick={() => setActiveTab('lemlist')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'lemlist'
+                    ? isDark
+                      ? 'border-purple-400 text-purple-400'
+                      : 'border-purple-500 text-purple-600'
+                    : isDark
+                      ? 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center">
+                  <Globe className="h-4 w-4 mr-2" />
+                  Import via Lemlist
+                  <span className="ml-2 text-xs text-green-500">●</span>
+                </div>
+              </button>
+            )}
+            
+            {!loadingIntegrations && integrationStatuses.zapier.connected && (
+              <button
+                onClick={() => setActiveTab('zapier')}
+                disabled={true}
+                className="py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap border-transparent text-gray-400 cursor-not-allowed opacity-60"
+                title="Zapier is for exporting data, not importing"
+              >
+                <div className="flex items-center">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Zapier (Export Only)
+                  <span className="ml-2 text-xs text-green-500">●</span>
+                </div>
+              </button>
+            )}
           </nav>
         </div>
 
@@ -1221,6 +1452,174 @@ const ImportPage: React.FC = () => {
                   )}
                 </>
               )}
+
+              {/* HubSpot Integration Tab */}
+              {activeTab === 'hubspot' && (
+                <div className="text-center space-y-8">
+                  <div className="text-center">
+                    <Database className={`h-16 w-16 mx-auto mb-4 ${
+                      isDark ? 'text-orange-400' : 'text-orange-500'
+                    }`} />
+                    <h3 className={`text-xl font-semibold ${
+                      isDark ? 'text-gray-100' : 'text-gray-900'
+                    }`}>
+                      Import from HubSpot
+                    </h3>
+                    <p className={`text-sm mt-2 ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Import contacts from your connected HubSpot account for enrichment
+                    </p>
+                  </div>
+
+                  <div className={`border-2 border-dashed rounded-xl p-12 ${
+                    isDark 
+                      ? 'border-orange-600 bg-orange-900/20' 
+                      : 'border-orange-300 bg-orange-50'
+                  }`}>
+                    <div className="space-y-6">
+                      <div className="flex justify-center">
+                        <div className={`flex items-center space-x-2 text-sm font-medium ${
+                          isDark ? 'text-green-400' : 'text-green-600'
+                        }`}>
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Connected to HubSpot</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h4 className={`text-lg font-semibold ${
+                          isDark ? 'text-gray-100' : 'text-gray-900'
+                        }`}>
+                          Import Options
+                        </h4>
+                        <ul className={`text-sm space-y-2 text-left max-w-md mx-auto ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Import all contacts for enrichment
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Export enriched data back to HubSpot
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Batch export entire enrichment jobs
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Track sync history and status
+                          </li>
+                        </ul>
+                      </div>
+
+                      <button
+                        onClick={() => handleIntegrationImport('hubspot')}
+                        disabled={integrationImportLoading === 'hubspot'}
+                        className="inline-flex items-center px-8 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-all duration-200"
+                      >
+                        {integrationImportLoading === 'hubspot' ? (
+                          <>
+                            <Loader className="h-5 w-5 mr-2 animate-spin" />
+                            Importing from HubSpot...
+                          </>
+                        ) : (
+                          <>
+                            <Database className="h-5 w-5 mr-2" />
+                            Import from HubSpot
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Lemlist Integration Tab */}
+              {activeTab === 'lemlist' && (
+                <div className="text-center space-y-8">
+                  <div className="text-center">
+                    <Globe className={`h-16 w-16 mx-auto mb-4 ${
+                      isDark ? 'text-purple-400' : 'text-purple-500'
+                    }`} />
+                    <h3 className={`text-xl font-semibold ${
+                      isDark ? 'text-gray-100' : 'text-gray-900'
+                    }`}>
+                      Import from Lemlist
+                    </h3>
+                    <p className={`text-sm mt-2 ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Import leads from your Lemlist campaigns for enrichment
+                    </p>
+                  </div>
+
+                  <div className={`border-2 border-dashed rounded-xl p-12 ${
+                    isDark 
+                      ? 'border-purple-600 bg-purple-900/20' 
+                      : 'border-purple-300 bg-purple-50'
+                  }`}>
+                    <div className="space-y-6">
+                      <div className="flex justify-center">
+                        <div className={`flex items-center space-x-2 text-sm font-medium ${
+                          isDark ? 'text-green-400' : 'text-green-600'
+                        }`}>
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Connected to Lemlist</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h4 className={`text-lg font-semibold ${
+                          isDark ? 'text-gray-100' : 'text-gray-900'
+                        }`}>
+                          Import Options
+                        </h4>
+                        <ul className={`text-sm space-y-2 text-left max-w-md mx-auto ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Import leads from Lemlist campaigns
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Export enriched contacts back to Lemlist
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Add contacts to specific campaigns
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            Track sync history and status
+                          </li>
+                        </ul>
+                      </div>
+
+                      <button
+                        onClick={() => handleIntegrationImport('lemlist')}
+                        disabled={integrationImportLoading === 'lemlist'}
+                        className="inline-flex items-center px-8 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 transition-all duration-200"
+                      >
+                        {integrationImportLoading === 'lemlist' ? (
+                          <>
+                            <Loader className="h-5 w-5 mr-2 animate-spin" />
+                            Importing from Lemlist...
+                          </>
+                        ) : (
+                          <>
+                            <Globe className="h-5 w-5 mr-2" />
+                            Import from Lemlist
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             /* Success State */
@@ -1464,130 +1863,4 @@ const ImportPage: React.FC = () => {
                   isDark 
                     ? 'text-primary-400 hover:text-primary-300' 
                     : 'text-primary-600 hover:text-primary-700'
-                }`}
-              >
-                {t('import.recentJobs.viewAll')}
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </div>
-          </div>
-          <div className="p-8">
-            <div className="space-y-6">
-              {recentJobs.map((job) => {
-                const getStatusBadge = (status: string) => {
-                  if (isDark) {
-                    switch (status) {
-                      case 'completed':
-                        return 'bg-green-900/30 text-green-300 border-green-700/50';
-                      case 'processing':
-                        return 'bg-blue-900/30 text-blue-300 border-blue-700/50';
-                      case 'failed':
-                        return 'bg-red-900/30 text-red-300 border-red-700/50';
-                      case 'pending':
-                        return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
-                      default:
-                        return 'bg-gray-700 text-gray-300 border-gray-600';
-                    }
-                  } else {
-                  switch (status) {
-                    case 'completed':
-                      return 'bg-green-100 text-green-800 border-green-200';
-                    case 'processing':
-                      return 'bg-blue-100 text-blue-800 border-blue-200';
-                    case 'failed':
-                      return 'bg-red-100 text-red-800 border-red-200';
-                    case 'pending':
-                      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                    default:
-                      return 'bg-gray-100 text-gray-800 border-gray-200';
-                    }
-                  }
-                };
-                
-                return (
-                  <motion.div 
-                    key={job.id} 
-                    className={`border rounded-xl p-6 transition-all duration-200 ${
-                      isDark 
-                        ? 'border-gray-700 hover:shadow-lg hover:shadow-gray-900/30 hover:border-gray-600' 
-                        : 'border-gray-200 hover:shadow-md hover:border-gray-300'
-                    }`}
-                    whileHover={{ y: -2 }}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className={`font-semibold flex items-center ${
-                          isDark ? 'text-gray-100' : 'text-gray-900'
-                        }`}>
-                          <FileText className={`h-4 w-4 mr-2 ${
-                            isDark ? 'text-gray-500' : 'text-gray-400'
-                          }`} />
-                          {job.file_name || `Job ${job.id.substring(0, 8)}`}
-                        </h4>
-                        <p className={`text-sm mt-1 ${
-                          isDark ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                          {new Date(job.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(job.status)}`}>
-                        {(job.status || 'unknown').charAt(0).toUpperCase() + (job.status || 'unknown').slice(1)}
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className={`font-medium ${
-                          isDark ? 'text-gray-300' : 'text-gray-700'
-                        }`}>{t('import.recentJobs.progress')}</span>
-                        <div className="mt-1">
-                          <span className={`font-semibold ${
-                            isDark ? 'text-gray-100' : 'text-gray-900'
-                          }`}>{job.completed}/{job.total}</span>
-                          <div className={`w-full rounded-full h-2 mt-1 ${
-                            isDark ? 'bg-gray-700' : 'bg-gray-200'
-                          }`}>
-                            <div
-                              className={`h-2 rounded-full transition-all duration-300 ${
-                                job.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
-                              }`}
-                              style={{ width: `${job.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <span className={`font-medium ${
-                          isDark ? 'text-gray-300' : 'text-gray-700'
-                        }`}>{t('import.recentJobs.successRate')}</span>
-                        <p className="font-semibold text-green-500">{job.success_rate?.toFixed(1) || 0}%</p>
-                      </div>
-                      
-                      <div>
-                        <span className={`font-medium ${
-                          isDark ? 'text-gray-300' : 'text-gray-700'
-                        }`}>{t('import.recentJobs.emailsFound')}</span>
-                        <p className="font-semibold text-blue-500">{job.emails_found || 0}</p>
-                      </div>
-                      
-                      <div>
-                        <span className={`font-medium ${
-                          isDark ? 'text-gray-300' : 'text-gray-700'
-                        }`}>{t('import.recentJobs.creditsUsed')}</span>
-                        <p className="font-semibold text-purple-500">{job.credits_used || 0}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </motion.div>
-      )}
-      </div>
-    </div>
-  );
-};
-
-export default ImportPage;
+                }`

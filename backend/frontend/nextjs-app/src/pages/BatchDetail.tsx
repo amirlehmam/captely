@@ -15,6 +15,7 @@ import { useJob } from '../hooks/useApi';
 import { apiService, Contact, Job } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import ExportModal from '../components/modals/ExportModal';
 
 const BatchDetailPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -39,6 +40,9 @@ const BatchDetailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState<'batch' | 'single' | 'bulk'>('batch');
+  const [exportContactId, setExportContactId] = useState<string | null>(null);
 
   // Fetch contacts
   const fetchContacts = async (currentPage = 1) => {
@@ -101,30 +105,90 @@ const BatchDetailPage: React.FC = () => {
     }
   };
 
-  // Handle HubSpot export
-  const exportToHubSpot = async (contactId: string) => {
-    try {
-      setExporting(contactId);
-      await apiService.exportContactToHubSpot(contactId);
-      toast.success(t('batches.details.exportSuccess'));
-    } catch (err: any) {
-      toast.error(err.message || t('batches.details.exportFailed'));
-    } finally {
-      setExporting(null);
-    }
+  // Handle batch export
+  const handleBatchExport = () => {
+    setExportType('batch');
+    setExportContactId(null);
+    setShowExportModal(true);
   };
 
-  const exportBatchToHubSpot = async () => {
-    if (!jobId) return;
-    
+  // Handle single contact export
+  const handleSingleContactExport = (contactId: string) => {
+    setExportType('single');
+    setExportContactId(contactId);
+    setShowExportModal(true);
+  };
+
+  // Handle bulk contact export
+  const handleBulkContactExport = () => {
+    if (selectedContacts.size === 0) {
+      toast.error('Please select contacts to export');
+      return;
+    }
+    setExportType('bulk');
+    setExportContactId(null);
+    setShowExportModal(true);
+  };
+
+  // Handle export confirmation
+  const handleExportConfirm = async (format: 'csv' | 'excel' | 'json' | 'hubspot' | 'lemlist' | 'zapier') => {
     try {
-      setExporting('batch');
-      const result = await apiService.exportJobToHubSpot(jobId);
-      toast.success(t('batches.details.batchExportSuccess').replace('{count}', result.exported_count.toString()));
-    } catch (err: any) {
-      toast.error(err.message || t('batches.details.batchExportFailed'));
-    } finally {
-      setExporting(null);
+      if (exportType === 'batch' && jobId) {
+        // Export entire batch
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+          // Integration export for batch
+          if (format === 'hubspot') {
+            await apiService.exportJobToHubSpot(jobId);
+            toast.success('🚀 Batch exported to HubSpot successfully!');
+          } else if (format === 'lemlist') {
+            await apiService.exportJobToLemlist(jobId);
+          } else if (format === 'zapier') {
+            await apiService.exportJobToZapier(jobId);
+          }
+        } else {
+          // File export for batch
+          await apiService.exportData(jobId, format);
+          toast.success(`Batch exported as ${format.toUpperCase()} successfully!`);
+        }
+      } else if (exportType === 'single' && exportContactId) {
+        // Export single contact
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+          // Integration export for single contact
+          if (format === 'hubspot') {
+            await apiService.exportContactToHubSpot(exportContactId);
+            toast.success('🚀 Contact exported to HubSpot successfully!');
+          } else if (format === 'lemlist') {
+            await apiService.exportContactToLemlist(exportContactId);
+          } else if (format === 'zapier') {
+            await apiService.exportContactToZapier(exportContactId);
+          }
+        } else {
+          // File export for single contact
+          await apiService.exportCrmContacts([exportContactId], format);
+          toast.success(`Contact exported as ${format.toUpperCase()} successfully!`);
+        }
+      } else if (exportType === 'bulk' && selectedContacts.size > 0) {
+        // Export selected contacts
+        const contactIds = Array.from(selectedContacts);
+        if (['hubspot', 'lemlist', 'zapier'].includes(format)) {
+          // Integration export for bulk contacts
+          if (format === 'hubspot') {
+            await apiService.exportCrmContacts(contactIds, format);
+          } else if (format === 'lemlist') {
+            await apiService.exportCrmContactsToLemlist(contactIds);
+          } else if (format === 'zapier') {
+            await apiService.exportCrmContactsToZapier(contactIds);
+          }
+        } else {
+          // File export for bulk contacts
+          await apiService.exportCrmContacts(contactIds, format);
+          toast.success(`${contactIds.length} contacts exported as ${format.toUpperCase()} successfully!`);
+        }
+        setSelectedContacts(new Set());
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      throw error; // Let the modal handle the error display
     }
   };
 
@@ -267,27 +331,17 @@ const BatchDetailPage: React.FC = () => {
         
         <div className="flex items-center space-x-3">
           <motion.button
-            onClick={exportBatchToHubSpot}
-            disabled={exporting === 'batch'}
+            onClick={handleBatchExport}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 disabled:opacity-50 ${
+            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
               isDark 
-                ? 'bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 focus:ring-offset-gray-900' 
-                : 'bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500'
+                ? 'bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400 focus:ring-offset-gray-900' 
+                : 'bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'
             }`}
           >
-            {exporting === 'batch' ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                {t('batches.details.exporting')}
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                {t('batches.details.exportToHubSpot')}
-              </>
-            )}
+            <Download className="h-4 w-4 mr-2" />
+            {t('batches.details.exportBatch')}
           </motion.button>
         </div>
       </motion.div>
@@ -430,7 +484,7 @@ const BatchDetailPage: React.FC = () => {
 
             {selectedContacts.size > 0 && (
               <motion.button
-                onClick={() => {/* Handle bulk actions */}}
+                onClick={handleBulkContactExport}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className={`px-4 py-3 text-white rounded-lg transition-all duration-200 ${
@@ -439,7 +493,8 @@ const BatchDetailPage: React.FC = () => {
                     : 'bg-primary-600 hover:bg-primary-700'
                 }`}
               >
-                {t('batches.details.bulkActions').replace('{count}', selectedContacts.size.toString())}
+                <Download className="h-4 w-4 mr-2 inline" />
+                {t('batches.details.exportSelected').replace('{count}', selectedContacts.size.toString())}
               </motion.button>
             )}
           </div>
@@ -710,20 +765,15 @@ const BatchDetailPage: React.FC = () => {
                           
                           {contact.email && (
                             <button
-                              onClick={() => exportToHubSpot(contact.id)}
-                              disabled={exporting === contact.id}
+                              onClick={() => handleSingleContactExport(contact.id)}
                               className={`p-2 rounded-lg transition-all duration-200 ${
                                 isDark 
-                                  ? 'text-orange-400 hover:text-orange-300 hover:bg-orange-900/20' 
-                                  : 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
+                                  ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20' 
+                                  : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
                               }`}
                               title={t('batches.details.exportContact')}
                             >
-                              {exporting === contact.id ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Upload className="h-4 w-4" />
-                              )}
+                              <Download className="h-4 w-4" />
                             </button>
                           )}
                           
@@ -817,6 +867,47 @@ const BatchDetailPage: React.FC = () => {
           </p>
         </motion.div>
       )}
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => {
+          setShowExportModal(false);
+          setExportContactId(null);
+          setExportType('batch');
+        }}
+        onExport={handleExportConfirm}
+        title={
+          exportType === 'batch' 
+            ? "Export Batch" 
+            : exportType === 'single'
+              ? "Export Contact"
+              : "Export Selected Contacts"
+        }
+        description={
+          exportType === 'batch'
+            ? "Choose your preferred format to export this entire batch"
+            : exportType === 'single'
+              ? "Choose your preferred format to export this contact"
+              : `Export ${selectedContacts.size} selected contacts`
+        }
+        exportCount={
+          exportType === 'batch' 
+            ? job.total
+            : exportType === 'single'
+              ? 1
+              : selectedContacts.size
+        }
+        type="batch"
+        jobId={jobId || undefined}
+        contactIds={
+          exportType === 'single' && exportContactId 
+            ? [exportContactId]
+            : exportType === 'bulk'
+              ? Array.from(selectedContacts)
+              : undefined
+        }
+      />
     </div>
   );
 };

@@ -1842,6 +1842,776 @@ async def export_batch_to_salesforce(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to export batch to Salesforce: {str(e)}")
 
+# LEMLIST INTEGRATION ENDPOINTS
+class LemlistSetupRequest(BaseModel):
+    api_key: str
+
+@app.post("/api/export/lemlist/setup")
+async def setup_lemlist_integration(
+    request: LemlistSetupRequest,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Setup Lemlist integration with API key"""
+    try:
+        print(f"Setting up Lemlist integration for user {user_id}")
+        
+        # Verify API key
+        lemlist = get_integration("lemlist", {"api_key": request.api_key})
+        account_info = await lemlist.verify_api_key()
+        
+        # Check if integration already exists
+        existing_query = text("""
+            SELECT id FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            LIMIT 1
+        """)
+        
+        existing_result = await session.execute(existing_query, {"user_id": user_id})
+        existing = existing_result.fetchone()
+        
+        if existing:
+            # Update existing integration
+            update_query = text("""
+                UPDATE lemlist_integrations 
+                SET api_key = :api_key, account_email = :account_email, 
+                    account_name = :account_name, updated_at = NOW()
+                WHERE user_id = :user_id AND is_active = true
+            """)
+            
+            await session.execute(update_query, {
+                "user_id": user_id,
+                "api_key": request.api_key,
+                "account_email": account_info.get("email", ""),
+                "account_name": account_info.get("name", "")
+            })
+        else:
+            # Create new integration
+            insert_query = text("""
+                INSERT INTO lemlist_integrations 
+                (user_id, api_key, account_email, account_name, is_active, created_at, updated_at)
+                VALUES (:user_id, :api_key, :account_email, :account_name, true, NOW(), NOW())
+            """)
+            
+            await session.execute(insert_query, {
+                "user_id": user_id,
+                "api_key": request.api_key,
+                "account_email": account_info.get("email", ""),
+                "account_name": account_info.get("name", "")
+            })
+        
+        await session.commit()
+        
+        return {
+            "success": True,
+            "message": "Lemlist integration setup successfully!",
+            "account_info": {
+                "email": account_info.get("email", ""),
+                "name": account_info.get("name", "")
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Lemlist setup error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to setup Lemlist integration: {str(e)}")
+
+@app.get("/api/export/lemlist/status")
+async def get_lemlist_integration_status(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get Lemlist integration status"""
+    try:
+        query = text("""
+            SELECT api_key, account_email, account_name, created_at, updated_at
+            FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        result = await session.execute(query, {"user_id": user_id})
+        integration = result.fetchone()
+        
+        if not integration:
+            return {"connected": False}
+        
+        # Test API key validity
+        try:
+            lemlist = get_integration("lemlist", {"api_key": integration.api_key})
+            await lemlist.verify_api_key()
+            api_valid = True
+        except:
+            api_valid = False
+        
+        return {
+            "connected": True,
+            "api_valid": api_valid,
+            "account_email": integration.account_email,
+            "account_name": integration.account_name,
+            "connected_at": integration.created_at.isoformat() if integration.created_at else None,
+            "last_updated": integration.updated_at.isoformat() if integration.updated_at else None
+        }
+        
+    except Exception as e:
+        print(f"Error checking Lemlist status: {e}")
+        return {"connected": False, "error": str(e)}
+
+@app.delete("/api/export/lemlist/disconnect")
+async def disconnect_lemlist(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Disconnect Lemlist integration"""
+    try:
+        query = text("""
+            UPDATE lemlist_integrations 
+            SET is_active = false, updated_at = NOW()
+            WHERE user_id = :user_id AND is_active = true
+        """)
+        
+        result = await session.execute(query, {"user_id": user_id})
+        await session.commit()
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Lemlist integration not found")
+        
+        return {"success": True, "message": "Lemlist integration disconnected successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error disconnecting Lemlist: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect Lemlist: {str(e)}")
+
+@app.get("/api/export/lemlist/campaigns")
+async def get_lemlist_campaigns(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get available Lemlist campaigns"""
+    try:
+        # Get Lemlist integration
+        integration_query = text("""
+            SELECT api_key FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration_result = await session.execute(integration_query, {"user_id": user_id})
+        integration = integration_result.fetchone()
+        
+        if not integration:
+            raise HTTPException(status_code=400, detail="Lemlist integration not found. Please setup Lemlist first.")
+        
+        # Get campaigns
+        lemlist = get_integration("lemlist", {"api_key": integration.api_key})
+        campaigns = await lemlist.get_campaigns()
+        
+        return {
+            "success": True,
+            "campaigns": campaigns
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching Lemlist campaigns: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch campaigns: {str(e)}")
+
+@app.post("/api/export/contacts/{contact_id}/export/lemlist")
+async def export_single_contact_to_lemlist(
+    contact_id: str,
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Export a single contact to Lemlist campaign"""
+    try:
+        print(f"Exporting single contact {contact_id} to Lemlist for user {user_id}")
+        
+        campaign_id = request.get("campaign_id")
+        if not campaign_id:
+            raise HTTPException(status_code=422, detail="campaign_id is required")
+        
+        # Get contact details with user verification
+        contact_query = text("""
+            SELECT 
+                c.first_name, c.last_name, c.email, c.phone, c.company, c.position,
+                c.location, c.industry, c.notes, c.enriched, c.enrichment_score
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE c.id = :contact_id AND ij.user_id = :user_id
+        """)
+        
+        contact_result = await session.execute(contact_query, {"contact_id": int(contact_id), "user_id": user_id})
+        contact_row = contact_result.fetchone()
+        
+        if not contact_row:
+            raise HTTPException(status_code=404, detail="Contact not found or access denied")
+        
+        # Get Lemlist integration
+        integration_query = text("""
+            SELECT api_key FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration_result = await session.execute(integration_query, {"user_id": user_id})
+        integration = integration_result.fetchone()
+        
+        if not integration:
+            raise HTTPException(status_code=400, detail="Lemlist integration not found. Please setup Lemlist first.")
+        
+        # Prepare contact data for Lemlist
+        contact_data = {
+            "first_name": contact_row[0] or "",
+            "last_name": contact_row[1] or "",
+            "email": contact_row[2] or "",
+            "phone": contact_row[3] or "",
+            "company": contact_row[4] or "",
+            "position": contact_row[5] or "",
+            "location": contact_row[6] or "",
+            "industry": contact_row[7] or "",
+            "enriched": contact_row[9] if contact_row[9] is not None else False,
+            "enrichment_score": contact_row[10] if contact_row[10] else 0
+        }
+        
+        # Export to Lemlist
+        lemlist = get_integration("lemlist", {"api_key": integration.api_key})
+        result = await lemlist.add_to_campaign(campaign_id, [contact_data])
+        
+        if result["added"] > 0:
+            # Log the export
+            try:
+                log_sync_query = text("""
+                    INSERT INTO lemlist_sync_logs 
+                    (user_id, integration_id, sync_type, operation, status, total_records, processed_records, started_at)
+                    SELECT :user_id, li.id, 'export', 'contact', 'completed', 1, 1, NOW()
+                    FROM lemlist_integrations li 
+                    WHERE li.user_id = :user_id AND li.is_active = true
+                    LIMIT 1
+                """)
+                
+                await session.execute(log_sync_query, {"user_id": user_id})
+                await session.commit()
+            except Exception as log_error:
+                print(f"Failed to log export: {log_error}")
+            
+            return {
+                "success": True,
+                "platform": "lemlist",
+                "campaign_id": campaign_id,
+                "message": "Contact exported to Lemlist campaign successfully!"
+            }
+        else:
+            errors = result.get("errors", [])
+            error_msg = errors[0].get("error", "Unknown error") if errors else "Unknown error"
+            raise HTTPException(status_code=500, detail=f"Lemlist export failed: {error_msg}")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Single contact export to Lemlist failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+@app.post("/api/export/integrations/lemlist/export-batch")
+async def export_batch_to_lemlist(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Export a batch to Lemlist campaign"""
+    try:
+        print(f"Exporting batch to Lemlist for user {user_id}")
+        
+        job_id = request.get("job_id")
+        campaign_id = request.get("campaign_id")
+        
+        if not job_id:
+            raise HTTPException(status_code=422, detail="job_id is required")
+        if not campaign_id:
+            raise HTTPException(status_code=422, detail="campaign_id is required")
+        
+        # Get contacts from the batch
+        contacts_query = text("""
+            SELECT 
+                c.id, c.first_name, c.last_name, c.email, c.phone, 
+                c.company, c.position, c.location, c.industry,
+                c.enriched, c.enrichment_status, c.enrichment_score,
+                c.notes, c.created_at, c.job_id
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id
+            WHERE c.job_id = :job_id AND j.user_id = :user_id AND c.email IS NOT NULL
+            ORDER BY c.created_at DESC
+        """)
+        
+        result = await session.execute(contacts_query, {
+            "job_id": job_id, 
+            "user_id": user_id
+        })
+        contacts = result.fetchall()
+        
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No contacts found in this batch")
+        
+        # Get Lemlist integration
+        integration_query = text("""
+            SELECT api_key FROM lemlist_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration_result = await session.execute(integration_query, {"user_id": user_id})
+        integration = integration_result.fetchone()
+        
+        if not integration:
+            raise HTTPException(status_code=400, detail="Lemlist integration not found. Please setup Lemlist first.")
+        
+        # Convert contacts to Lemlist format
+        lemlist_contacts = []
+        for contact in contacts:
+            contact_data = {
+                "first_name": contact[1] or "",
+                "last_name": contact[2] or "",
+                "email": contact[3] or "",
+                "phone": contact[4] or "",
+                "company": contact[5] or "",
+                "position": contact[6] or "",
+                "location": contact[7] or "",
+                "industry": contact[8] or "",
+                "enriched": contact[9] if contact[9] is not None else False,
+                "enrichment_score": contact[11] if contact[11] else 0
+            }
+            lemlist_contacts.append(contact_data)
+        
+        # Export to Lemlist
+        lemlist = get_integration("lemlist", {"api_key": integration.api_key})
+        export_result = await lemlist.add_to_campaign(campaign_id, lemlist_contacts)
+        
+        exported_count = export_result.get("added", 0)
+        failed_count = len(export_result.get("errors", []))
+        
+        # Log the export
+        try:
+            log_sync_query = text("""
+                INSERT INTO lemlist_sync_logs 
+                (user_id, integration_id, sync_type, operation, status, total_records, processed_records, failed_records, started_at)
+                SELECT :user_id, li.id, 'export', 'batch', :status, :total_records, :processed_records, :failed_records, NOW()
+                FROM lemlist_integrations li 
+                WHERE li.user_id = :user_id AND li.is_active = true
+                LIMIT 1
+            """)
+            
+            status = "completed" if failed_count == 0 else ("partial" if exported_count > 0 else "failed")
+            
+            await session.execute(log_sync_query, {
+                "user_id": user_id,
+                "status": status,
+                "total_records": len(contacts),
+                "processed_records": exported_count,
+                "failed_records": failed_count
+            })
+            await session.commit()
+        except Exception as log_error:
+            print(f"Failed to log batch export: {log_error}")
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "campaign_id": campaign_id,
+            "exported": exported_count,
+            "failed": failed_count,
+            "total_contacts": len(contacts),
+            "message": f"Successfully exported {exported_count} out of {len(contacts)} contacts to Lemlist campaign"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error exporting batch to Lemlist: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to export batch to Lemlist: {str(e)}")
+
+# ZAPIER INTEGRATION ENDPOINTS
+class ZapierSetupRequest(BaseModel):
+    webhook_url: str
+
+@app.post("/api/export/zapier/setup")
+async def setup_zapier_integration(
+    request: ZapierSetupRequest,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Setup Zapier integration with webhook URL"""
+    try:
+        print(f"Setting up Zapier integration for user {user_id}")
+        
+        # Verify webhook URL
+        zapier = get_integration("zapier", {"webhook_url": request.webhook_url})
+        verification_result = await zapier.verify_webhook()
+        
+        if not verification_result["success"]:
+            raise HTTPException(status_code=400, detail=f"Webhook verification failed: {verification_result.get('response', 'Unknown error')}")
+        
+        # Check if integration already exists
+        existing_query = text("""
+            SELECT id FROM zapier_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            LIMIT 1
+        """)
+        
+        existing_result = await session.execute(existing_query, {"user_id": user_id})
+        existing = existing_result.fetchone()
+        
+        if existing:
+            # Update existing integration
+            update_query = text("""
+                UPDATE zapier_integrations 
+                SET webhook_url = :webhook_url, zap_name = :zap_name, 
+                    updated_at = NOW()
+                WHERE user_id = :user_id AND is_active = true
+            """)
+            
+            await session.execute(update_query, {
+                "user_id": user_id,
+                "webhook_url": request.webhook_url,
+                "zap_name": "Captely to Zapier Integration"
+            })
+        else:
+            # Create new integration
+            insert_query = text("""
+                INSERT INTO zapier_integrations 
+                (user_id, webhook_url, zap_name, is_active, created_at, updated_at)
+                VALUES (:user_id, :webhook_url, :zap_name, true, NOW(), NOW())
+            """)
+            
+            await session.execute(insert_query, {
+                "user_id": user_id,
+                "webhook_url": request.webhook_url,
+                "zap_name": "Captely to Zapier Integration"
+            })
+        
+        await session.commit()
+        
+        return {
+            "success": True,
+            "message": "Zapier integration setup successfully!",
+            "webhook_url": request.webhook_url,
+            "verification": verification_result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Zapier setup error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to setup Zapier integration: {str(e)}")
+
+@app.get("/api/export/zapier/status")
+async def get_zapier_integration_status(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get Zapier integration status"""
+    try:
+        query = text("""
+            SELECT webhook_url, zap_name, created_at, updated_at
+            FROM zapier_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        result = await session.execute(query, {"user_id": user_id})
+        integration = result.fetchone()
+        
+        if not integration:
+            return {"connected": False}
+        
+        # Test webhook validity
+        try:
+            zapier = get_integration("zapier", {"webhook_url": integration.webhook_url})
+            test_result = await zapier.verify_webhook()
+            webhook_valid = test_result["success"]
+        except:
+            webhook_valid = False
+        
+        return {
+            "connected": True,
+            "webhook_valid": webhook_valid,
+            "webhook_url": integration.webhook_url,
+            "zap_name": integration.zap_name,
+            "connected_at": integration.created_at.isoformat() if integration.created_at else None,
+            "last_updated": integration.updated_at.isoformat() if integration.updated_at else None
+        }
+        
+    except Exception as e:
+        print(f"Error checking Zapier status: {e}")
+        return {"connected": False, "error": str(e)}
+
+@app.delete("/api/export/zapier/disconnect")
+async def disconnect_zapier(
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Disconnect Zapier integration"""
+    try:
+        query = text("""
+            UPDATE zapier_integrations 
+            SET is_active = false, updated_at = NOW()
+            WHERE user_id = :user_id AND is_active = true
+        """)
+        
+        result = await session.execute(query, {"user_id": user_id})
+        await session.commit()
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Zapier integration not found")
+        
+        return {"success": True, "message": "Zapier integration disconnected successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error disconnecting Zapier: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect Zapier: {str(e)}")
+
+@app.post("/api/export/contacts/{contact_id}/export/zapier")
+async def export_single_contact_to_zapier(
+    contact_id: str,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Export a single contact to Zapier webhook"""
+    try:
+        print(f"Exporting single contact {contact_id} to Zapier for user {user_id}")
+        
+        # Get contact details with user verification
+        contact_query = text("""
+            SELECT 
+                c.first_name, c.last_name, c.email, c.phone, c.company, c.position,
+                c.location, c.industry, c.notes, c.enriched, c.enrichment_score
+            FROM contacts c
+            JOIN import_jobs ij ON c.job_id = ij.id
+            WHERE c.id = :contact_id AND ij.user_id = :user_id
+        """)
+        
+        contact_result = await session.execute(contact_query, {"contact_id": int(contact_id), "user_id": user_id})
+        contact_row = contact_result.fetchone()
+        
+        if not contact_row:
+            raise HTTPException(status_code=404, detail="Contact not found or access denied")
+        
+        # Get Zapier integration
+        integration_query = text("""
+            SELECT webhook_url FROM zapier_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration_result = await session.execute(integration_query, {"user_id": user_id})
+        integration = integration_result.fetchone()
+        
+        if not integration:
+            raise HTTPException(status_code=400, detail="Zapier integration not found. Please setup Zapier first.")
+        
+        # Prepare contact data for Zapier
+        contact_data = {
+            "first_name": contact_row[0] or "",
+            "last_name": contact_row[1] or "",
+            "email": contact_row[2] or "",
+            "phone": contact_row[3] or "",
+            "company": contact_row[4] or "",
+            "position": contact_row[5] or "",
+            "location": contact_row[6] or "",
+            "industry": contact_row[7] or "",
+            "enriched": contact_row[9] if contact_row[9] is not None else False,
+            "enrichment_score": contact_row[10] if contact_row[10] else 0
+        }
+        
+        # Export to Zapier
+        zapier = get_integration("zapier", {"webhook_url": integration.webhook_url})
+        result = await zapier.send_single_contact(contact_data)
+        
+        if result["sent"] > 0:
+            # Log the export
+            try:
+                log_sync_query = text("""
+                    INSERT INTO zapier_sync_logs 
+                    (user_id, integration_id, sync_type, operation, status, total_records, processed_records, started_at)
+                    SELECT :user_id, zi.id, 'export', 'contact', 'completed', 1, 1, NOW()
+                    FROM zapier_integrations zi 
+                    WHERE zi.user_id = :user_id AND zi.is_active = true
+                    LIMIT 1
+                """)
+                
+                await session.execute(log_sync_query, {"user_id": user_id})
+                await session.commit()
+            except Exception as log_error:
+                print(f"Failed to log export: {log_error}")
+            
+            return {
+                "success": True,
+                "platform": "zapier",
+                "webhook_url": integration.webhook_url,
+                "message": "Contact sent to Zapier webhook successfully!"
+            }
+        else:
+            errors = result.get("errors", [])
+            error_msg = errors[0] if errors else "Unknown error"
+            raise HTTPException(status_code=500, detail=f"Zapier export failed: {error_msg}")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Single contact export to Zapier failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+@app.post("/api/export/integrations/zapier/export-batch")
+async def export_batch_to_zapier(
+    request: dict,
+    user_id: str = Depends(verify_api_token),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Export a batch to Zapier webhook"""
+    try:
+        print(f"Exporting batch to Zapier for user {user_id}")
+        
+        job_id = request.get("job_id")
+        batch_mode = request.get("batch_mode", True)
+        
+        if not job_id:
+            raise HTTPException(status_code=422, detail="job_id is required")
+        
+        # Get contacts from the batch
+        contacts_query = text("""
+            SELECT 
+                c.id, c.first_name, c.last_name, c.email, c.phone, 
+                c.company, c.position, c.location, c.industry,
+                c.enriched, c.enrichment_status, c.enrichment_score,
+                c.notes, c.created_at, c.job_id
+            FROM contacts c
+            JOIN import_jobs j ON c.job_id = j.id
+            WHERE c.job_id = :job_id AND j.user_id = :user_id AND c.email IS NOT NULL
+            ORDER BY c.created_at DESC
+        """)
+        
+        result = await session.execute(contacts_query, {
+            "job_id": job_id, 
+            "user_id": user_id
+        })
+        contacts = result.fetchall()
+        
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No contacts found in this batch")
+        
+        # Get Zapier integration
+        integration_query = text("""
+            SELECT webhook_url FROM zapier_integrations 
+            WHERE user_id = :user_id AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        integration_result = await session.execute(integration_query, {"user_id": user_id})
+        integration = integration_result.fetchone()
+        
+        if not integration:
+            raise HTTPException(status_code=400, detail="Zapier integration not found. Please setup Zapier first.")
+        
+        # Convert contacts to Zapier format
+        zapier_contacts = []
+        for contact in contacts:
+            contact_data = {
+                "id": contact[0],
+                "first_name": contact[1] or "",
+                "last_name": contact[2] or "",
+                "email": contact[3] or "",
+                "phone": contact[4] or "",
+                "company": contact[5] or "",
+                "position": contact[6] or "",
+                "location": contact[7] or "",
+                "industry": contact[8] or "",
+                "enriched": contact[9] if contact[9] is not None else False,
+                "enrichment_score": contact[11] if contact[11] else 0
+            }
+            zapier_contacts.append(contact_data)
+        
+        # Export to Zapier
+        zapier = get_integration("zapier", {"webhook_url": integration.webhook_url})
+        
+        if batch_mode:
+            # Send as batch
+            webhook_payload = {
+                "event": "batch.exported",
+                "job_id": job_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "total_contacts": len(zapier_contacts),
+                "contacts": zapier_contacts
+            }
+            
+            export_result = await zapier.send_webhook(session, user_id, webhook_payload, "batch_export")
+            exported_count = len(zapier_contacts) if export_result.get("success") else 0
+            failed_count = 0 if export_result.get("success") else len(zapier_contacts)
+        else:
+            # Send individually
+            export_result = await zapier.send_contacts(zapier_contacts)
+            exported_count = export_result.get("sent", 0)
+            failed_count = len(export_result.get("errors", []))
+        
+        # Log the export
+        try:
+            log_sync_query = text("""
+                INSERT INTO zapier_sync_logs 
+                (user_id, integration_id, sync_type, operation, status, total_records, processed_records, failed_records, started_at)
+                SELECT :user_id, zi.id, 'export', 'batch', :status, :total_records, :processed_records, :failed_records, NOW()
+                FROM zapier_integrations zi 
+                WHERE zi.user_id = :user_id AND zi.is_active = true
+                LIMIT 1
+            """)
+            
+            status = "completed" if failed_count == 0 else ("partial" if exported_count > 0 else "failed")
+            
+            await session.execute(log_sync_query, {
+                "user_id": user_id,
+                "status": status,
+                "total_records": len(contacts),
+                "processed_records": exported_count,
+                "failed_records": failed_count
+            })
+            await session.commit()
+        except Exception as log_error:
+            print(f"Failed to log batch export: {log_error}")
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "exported": exported_count,
+            "failed": failed_count,
+            "total_contacts": len(contacts),
+            "batch_mode": batch_mode,
+            "message": f"Successfully sent {exported_count} out of {len(contacts)} contacts to Zapier webhook"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error exporting batch to Zapier: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to export batch to Zapier: {str(e)}")
+
 # Integration stats endpoints
 @app.get("/api/integrations/stats")
 async def get_integration_stats(
