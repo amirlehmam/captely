@@ -160,8 +160,8 @@ const EnhancedNotificationPanel: React.FC<EnhancedNotificationPanelProps> = ({
     }, { today: [], yesterday: [], thisWeek: [], older: [] });
   };
 
-  // Filter and search notifications
-  const filteredNotifications = notifications.filter(notification => {
+  // Filter and search notifications with defensive programming
+  const filteredNotifications = (notifications || []).filter(notification => {
     // Apply filter
     switch (filter) {
       case 'unread':

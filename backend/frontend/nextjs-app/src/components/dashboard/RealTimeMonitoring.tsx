@@ -47,10 +47,10 @@ const RealTimeMonitoring: React.FC = () => {
     );
   }
 
-  const activeTasks = tasks.filter(task => task.state === 'STARTED');
-  const completedTasks = tasks.filter(task => task.state === 'SUCCESS');
-  const failedTasks = tasks.filter(task => task.state === 'FAILURE');
-  const pendingTasks = tasks.filter(task => task.state === 'PENDING');
+  const activeTasks = (tasks || []).filter(task => task.state === 'STARTED');
+  const completedTasks = (tasks || []).filter(task => task.state === 'SUCCESS');
+  const failedTasks = (tasks || []).filter(task => task.state === 'FAILURE');
+  const pendingTasks = (tasks || []).filter(task => task.state === 'PENDING');
 
   const getTaskIcon = (state: string) => {
     switch (state) {
@@ -144,13 +144,13 @@ const RealTimeMonitoring: React.FC = () => {
         </div>
 
         {/* Workers Status */}
-        {workers.length > 0 && (
+        {(workers || []).length > 0 && (
           <div className="px-6 py-5 border-b border-gray-100">
             <h4 className="text-sm font-semibold text-gray-900 mb-4">
-              Workers ({workers.length} online)
+              Workers ({(workers || []).length} online)
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {workers.map((worker: any, index: number) => (
+              {(workers || []).map((worker: any, index: number) => (
                 <div
                   key={`worker-${worker.hostname || worker.name || index}`}
                   className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl"
@@ -181,14 +181,14 @@ const RealTimeMonitoring: React.FC = () => {
             Recent Tasks
           </h4>
           
-          {tasks.length === 0 ? (
+          {(tasks || []).length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-sm font-medium">No active tasks</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {tasks.slice(0, 10).map((task) => (
+              {(tasks || []).slice(0, 10).map((task) => (
                 <div
                   key={task.task_id}
                   className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200"
