@@ -6,10 +6,10 @@ import {
   RefreshCw, Trash2, Eye, EyeOff, Settings, ChevronDown,
   Info, AlertTriangle, Loader2, PlayCircle, PauseCircle,
   Calendar, Clock, BarChart3, Target, Zap, Crown, Plus,
-  Clipboard, FileUp, FileDown, Star
+  Clipboard, FileUp, FileDown, Star, ArrowRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiService, Job, Contact } from '../services/api';
@@ -1832,4 +1832,72 @@ const ImportPage: React.FC = () => {
                   isDark 
                     ? 'text-primary-400 hover:text-primary-300' 
                     : 'text-primary-600 hover:text-primary-700'
-                }`
+                }`}
+              >
+                {t('import.recentJobs.viewAll')}
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {recentJobs.slice(0, 3).map((job) => (
+              <div key={job.id} className="px-8 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                      job.status === 'completed' 
+                        ? 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400'
+                        : job.status === 'processing'
+                        ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400'
+                        : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-400'
+                    }`}>
+                      {job.status === 'completed' ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : job.status === 'processing' ? (
+                        <Loader className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Clock className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div>
+                      <p className={`font-medium ${
+                        isDark ? 'text-gray-100' : 'text-gray-900'
+                      }`}>
+                        {job.batch_name || `Batch ${job.id}`}
+                      </p>
+                      <p className={`text-sm ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        {job.total} contacts • {new Date(job.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-medium ${
+                      job.status === 'completed' 
+                        ? 'text-green-600 dark:text-green-400'
+                        : job.status === 'processing'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-yellow-600 dark:text-yellow-400'
+                    }`}>
+                      {job.status === 'completed' ? 'Completed' : 
+                       job.status === 'processing' ? 'Processing' : 'Pending'}
+                    </p>
+                    <p className={`text-sm ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {job.progress}% complete
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+export default ImportPage;
