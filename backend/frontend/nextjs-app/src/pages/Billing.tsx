@@ -107,6 +107,19 @@ const BillingPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Real data states
   const [currentPlan, setCurrentPlan] = useState<CurrentPlan | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -440,9 +453,9 @@ const BillingPage: React.FC = () => {
 
   if (loading && !currentPlan) {
     return (
-      <div className={`max-w-7xl mx-auto min-h-screen ${
+      <div className={`${isMobile ? 'mobile-container' : 'max-w-7xl mx-auto'} min-h-screen ${
         theme === 'dark' ? 'bg-gray-900' : 'bg-white'
-      }`}>
+      } ${isMobile ? 'p-4' : ''}`}>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <Loader2 className={`w-12 h-12 animate-spin mx-auto ${
@@ -458,14 +471,14 @@ const BillingPage: React.FC = () => {
   }
 
   return (
-    <div className={`max-w-7xl mx-auto min-h-screen ${
+    <div className={`${isMobile ? 'mobile-container' : 'max-w-7xl mx-auto'} min-h-screen ${
       theme === 'dark' ? 'bg-gray-900' : 'bg-white'
-    }`}>
+    } ${isMobile ? 'p-4' : ''}`}>
       {/* Enhanced Header */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`relative mb-8 ${
+        className={`relative ${isMobile ? 'mb-6' : 'mb-8'} ${
           theme === 'dark' 
             ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-emerald-900' 
             : 'bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50'
@@ -476,23 +489,23 @@ const BillingPage: React.FC = () => {
             ? 'bg-gradient-to-r from-emerald-500/20 via-teal-500/10 to-blue-500/20' 
             : 'bg-gradient-to-r from-emerald-300/20 via-teal-300/10 to-blue-300/20'
         }`} />
-        <div className="relative px-8 py-8">
-        <div className="flex items-center justify-between">
-            <div className="text-center sm:text-left">
-              <h1 className={`text-4xl font-bold mb-3 ${
+        <div className={`relative ${isMobile ? 'px-4 py-6' : 'px-8 py-8'}`}>
+        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-center justify-between'}`}>
+            <div className={`${isMobile ? 'text-center' : 'text-center sm:text-left'}`}>
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold ${isMobile ? 'mb-2' : 'mb-3'} ${
                 theme === 'dark' 
                   ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-400 bg-clip-text text-transparent' 
                   : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 bg-clip-text text-transparent'
               }`}>
                 {t('billing.title')}
             </h1>
-              <p className={`text-lg ${
+              <p className={`${isMobile ? 'text-base' : 'text-lg'} ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
               }`}>
               {t('billing.subtitle')}
             </p>
-              <div className="flex flex-wrap justify-center sm:justify-start items-center gap-4 mt-4">
-                <div className={`px-4 py-2 rounded-full ${
+              <div className={`flex flex-wrap ${isMobile ? 'justify-center' : 'justify-center sm:justify-start'} items-center gap-4 mt-4`}>
+                <div className={`${isMobile ? 'px-3 py-1 text-xs' : 'px-4 py-2'} rounded-full ${
                   theme === 'dark' 
                     ? 'bg-emerald-500/20 text-emerald-300' 
                     : 'bg-emerald-100 text-emerald-700'
@@ -501,7 +514,7 @@ const BillingPage: React.FC = () => {
                 }`}>
                   💰 Credit Management
           </div>
-                <div className={`px-4 py-2 rounded-full ${
+                <div className={`${isMobile ? 'px-3 py-1 text-xs' : 'px-4 py-2'} rounded-full ${
                   theme === 'dark' 
                     ? 'bg-blue-500/20 text-blue-300' 
                     : 'bg-blue-100 text-blue-700'
@@ -510,7 +523,7 @@ const BillingPage: React.FC = () => {
                 }`}>
                   📊 Usage Analytics
                 </div>
-                <div className={`px-4 py-2 rounded-full ${
+                <div className={`${isMobile ? 'px-3 py-1 text-xs' : 'px-4 py-2'} rounded-full ${
                   theme === 'dark' 
                     ? 'bg-purple-500/20 text-purple-300' 
                     : 'bg-purple-100 text-purple-700'
@@ -521,11 +534,11 @@ const BillingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <div className={`flex ${isMobile ? 'flex-col space-y-3 w-full' : 'flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4'}`}>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-                className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
+                className={`inline-flex items-center ${isMobile ? 'justify-center px-4 py-2 text-sm w-full' : 'px-4 py-2'} border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
                   theme === 'dark' 
                     ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
                     : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
@@ -536,7 +549,7 @@ const BillingPage: React.FC = () => {
             </button>
             <button
               onClick={() => setShowHistory(!showHistory)}
-                className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 ${
+                className={`inline-flex items-center ${isMobile ? 'justify-center px-4 py-2 text-sm w-full' : 'px-4 py-2'} border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 ${
                   theme === 'dark' 
                     ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600' 
                     : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
@@ -548,7 +561,7 @@ const BillingPage: React.FC = () => {
             <button 
               onClick={() => handleDownloadInvoice()}
               disabled={downloadingInvoice}
-                className={`inline-flex items-center px-4 py-2 rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
+                className={`inline-flex items-center ${isMobile ? 'justify-center px-4 py-2 text-sm w-full' : 'px-4 py-2'} rounded-lg shadow-lg hover:shadow-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 ${
                   theme === 'dark'
                     ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600'
                     : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600'
@@ -565,8 +578,6 @@ const BillingPage: React.FC = () => {
           </div>
         </div>
       </motion.div>
-
-
 
       {/* Current Plan & Credits Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
@@ -907,7 +918,7 @@ const BillingPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
           {packages
             .filter(pack => 
               pack.plan_type !== 'enterprise' && 
@@ -926,7 +937,7 @@ const BillingPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className={`relative rounded-xl shadow-lg border-2 transition-all duration-300 ${
+              className={`relative rounded-xl shadow-lg border-2 transition-all duration-300 ${isMobile ? 'mx-2' : ''} ${
                 theme === 'dark' 
                   ? 'bg-gradient-to-br from-gray-800 to-gray-900' 
                   : 'bg-white'
@@ -944,7 +955,7 @@ const BillingPage: React.FC = () => {
             >
                 {pack.credits_monthly === 2000 && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className={`px-4 py-1 rounded-full text-xs font-bold text-white ${
+                  <span className={`${isMobile ? 'px-3 py-1 text-xs' : 'px-4 py-1 text-xs'} rounded-full font-bold text-white ${
                     theme === 'dark'
                       ? 'bg-gradient-to-r from-emerald-600 to-emerald-500'
                       : 'bg-gradient-to-r from-teal-600 to-teal-500'
@@ -956,19 +967,19 @@ const BillingPage: React.FC = () => {
               
                 {isCurrentPack && (
                 <div className="absolute -top-3 right-4">
-                  <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                  <span className={`bg-green-500 text-white ${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'} rounded-full font-bold`}>
                     ✅ {t('billing.current')}
                   </span>
                 </div>
               )}
 
-              <div className="p-6">
-                <div className="text-center mb-6">
-                    <h3 className={`text-xl font-bold ${
+              <div className={`${isMobile ? 'p-4' : 'p-6'}`}>
+                <div className={`text-center ${isMobile ? 'mb-4' : 'mb-6'}`}>
+                    <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
                     }`}> {pack.display_name}</h3>
                   <div className="mt-4">
-                        <span className={`text-3xl font-bold ${
+                        <span className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
                         }`}>
                         €{(monthlyPrice || 0).toFixed(0)}
@@ -979,7 +990,7 @@ const BillingPage: React.FC = () => {
                       
                       {billingType === 'annual' && savings > 0 && (
                         <div className="mt-2">
-                          <p className={`text-sm font-medium ${
+                          <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium ${
                             theme === 'dark' ? 'text-green-400' : 'text-green-600'
                           }`}>
                              {t('billing.save')} €{(savings || 0).toFixed(0)}/{t('billing.year')}
@@ -993,7 +1004,7 @@ const BillingPage: React.FC = () => {
                     )}
                   </div>
                   
-                    <p className={`text-sm mt-2 ${
+                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} mt-2 ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
                       {billingType === 'annual' ? (pack.credits_monthly * 12).toLocaleString() : pack.credits_monthly.toLocaleString()} 
@@ -1001,43 +1012,43 @@ const BillingPage: React.FC = () => {
                     </p>
                 </div>
 
-                  <div className="space-y-3 mb-6">
-                    <div className={`flex items-center text-sm ${
+                  <div className={`space-y-3 ${isMobile ? 'mb-4' : 'mb-6'}`}>
+                    <div className={`flex items-center ${isMobile ? 'text-xs' : 'text-sm'} ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                      <Mail className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                      <Mail className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
                       }`} />
                        {billingType === 'annual' ? (pack.credits_monthly * 12).toLocaleString() : pack.credits_monthly.toLocaleString()} {t('billing.emails')}
                     </div>
-                    <div className={`flex items-center text-sm ${
+                    <div className={`flex items-center ${isMobile ? 'text-xs' : 'text-sm'} ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                      <Phone className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                      <Phone className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-purple-400' : 'text-purple-500'
                       }`} />
                        {billingType === 'annual' ? (Math.round(pack.credits_monthly / 10) * 12).toLocaleString() : Math.round(pack.credits_monthly / 10).toLocaleString()} {t('billing.phones')}
                     </div>
-                    <div className={`flex items-center text-sm ${
+                    <div className={`flex items-center ${isMobile ? 'text-xs' : 'text-sm'} ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                      <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                      <Check className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-green-400' : 'text-green-500'
                       }`} />
                        {t('billing.apiAccessIntegrations')}
                     </div>
-                    <div className={`flex items-center text-sm ${
+                    <div className={`flex items-center ${isMobile ? 'text-xs' : 'text-sm'} ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                      <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                      <Check className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-green-400' : 'text-green-500'
                       }`} />
                        {t('billing.chromeExtension')}
                     </div>
-                    <div className={`flex items-center text-sm ${
+                    <div className={`flex items-center ${isMobile ? 'text-xs' : 'text-sm'} ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                      <Check className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                      <Check className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-2 flex-shrink-0 ${
                         theme === 'dark' ? 'text-green-400' : 'text-green-500'
                       }`} />
                        {t('billing.emailSupport')}
@@ -1047,7 +1058,7 @@ const BillingPage: React.FC = () => {
                 <button
                     onClick={() => handlePlanUpgrade(pack.name, billingType)}
                     disabled={isCurrentPack || loading}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                  className={`w-full ${isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-4'} rounded-lg font-medium transition-all duration-200 ${
                       isCurrentPack
                       ? theme === 'dark'
                         ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
@@ -1062,7 +1073,7 @@ const BillingPage: React.FC = () => {
                   }`}
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                  <Loader2 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} animate-spin mx-auto`} />
                     ) : isCurrentPack ? (
                       ` ${t('billing.currentPack')}`
                 ) : (
@@ -1379,91 +1390,160 @@ const BillingPage: React.FC = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-8"
+            className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'} overflow-hidden ${isMobile ? 'mb-6' : 'mb-8'}`}
           >
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className={`${isMobile ? 'p-4' : 'p-6'} border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
+              <h3 className={`${isMobile ? 'text-lg' : 'text-lg'} font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                 {t('billing.enrichmentHistoryTitle')}
               </h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mt-1`}>
                 {t('billing.enrichmentHistorySubtitle')}
               </p>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('billing.contact')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('billing.type')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('billing.status')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('billing.credits')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('billing.source')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('billing.date')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('billing.result')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {enrichmentHistory.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{item.contact_name || 'Unknown'}</div>
+            {isMobile ? (
+              // Mobile: Show as cards
+              <div className="p-4 space-y-4">
+                {enrichmentHistory.map((item) => (
+                  <div key={item.id} className={`rounded-lg border p-4 ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className={`text-sm font-medium ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {item.contact_name || 'Unknown'}
+                        </div>
                         {item.contact_email && (
-                          <div className="text-xs text-gray-500">{item.contact_email}</div>
+                          <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {item.contact_email}
+                          </div>
                         )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(item.status)}
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           item.enrichment_type === 'email' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-purple-100 text-purple-800'
+                            ? theme === 'dark' ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'
+                            : theme === 'dark' ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'
                         }`}>
                           {item.enrichment_type}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getStatusIcon(item.status)}
-                          <span className="ml-2 text-sm text-gray-900 capitalize">{item.status}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-sm font-medium ${
-                          item.credits_used > 0 ? 'text-red-600' : 'text-gray-500'
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Credits:</span>
+                        <span className={`font-medium ${
+                          item.credits_used > 0 ? 'text-red-500' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                         }`}>
                           {item.credits_used > 0 ? `-${item.credits_used}` : '0'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getSourceColor(item.source)}`}>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Source:</span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getSourceColor(item.source)}`}>
                           {item.source}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(item.created_at)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.result_data || '-'}
-                      </td>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Date:</span>
+                        <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                          {formatDate(item.created_at)}
+                        </span>
+                      </div>
+                      {item.result_data && (
+                        <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
+                          <span className={`text-xs ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {item.result_data}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Desktop: Keep existing table
+              <div className="overflow-x-auto">
+                <table className={`min-w-full divide-y ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                  <thead className={theme === 'dark' ? 'bg-gray-750' : 'bg-gray-50'}>
+                    <tr>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                        {t('billing.contact')}
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                        {t('billing.type')}
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                        {t('billing.status')}
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                        {t('billing.credits')}
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                        {t('billing.source')}
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                        {t('billing.date')}
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                        {t('billing.result')}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} divide-y ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                    {enrichmentHistory.map((item) => (
+                      <tr key={item.id} className={theme === 'dark' ? 'hover:bg-gray-750' : 'hover:bg-gray-50'}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{item.contact_name || 'Unknown'}</div>
+                          {item.contact_email && (
+                            <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{item.contact_email}</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            item.enrichment_type === 'email' 
+                              ? theme === 'dark' ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'
+                              : theme === 'dark' ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {item.enrichment_type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {getStatusIcon(item.status)}
+                            <span className={`ml-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'} capitalize`}>{item.status}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-medium ${
+                            item.credits_used > 0 ? 'text-red-600' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            {item.credits_used > 0 ? `-${item.credits_used}` : '0'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getSourceColor(item.source)}`}>
+                            {item.source}
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {formatDate(item.created_at)}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                          {item.result_data || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

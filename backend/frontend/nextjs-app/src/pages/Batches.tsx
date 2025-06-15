@@ -5,9 +5,10 @@ import {
   CheckCircle, XCircle, Clock, AlertTriangle, FileDown, Package,
   RefreshCw, Eye, ExternalLink, MoreVertical, Trash2, Pause,
   Play, BarChart3, TrendingUp, Users, Mail, Phone, Zap,
-  AlertCircle, Info, Calendar, Timer, Activity, Loader, FileText
+  AlertCircle, Info, Calendar, Timer, Activity, Loader, FileText,
+  Upload
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -74,6 +75,8 @@ const BatchesPage: React.FC = () => {
   const { t } = useLanguage();
   const { isDark } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
 
   // Get highlight parameter from URL
   const searchParams = new URLSearchParams(location.search);
@@ -119,6 +122,17 @@ const BatchesPage: React.FC = () => {
   const [exportJobId, setExportJobId] = useState<string | null>(null);
   const [bulkExportJobs, setBulkExportJobs] = useState<string[]>([]);
   
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -313,173 +327,58 @@ const BatchesPage: React.FC = () => {
   }
   
   return (
-    <div className={`space-y-6 transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen p-6`}>
-      {/* Page header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+    <div className={`${isMobile ? 'mobile-container' : 'space-y-6'} min-h-screen transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} ${isMobile ? 'p-4' : 'p-6'}`}>
+      {/* Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-center justify-between'}`}
+      >
         <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('batches.title')}</h1>
-          <p className={`mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{t('batches.subtitle')}</p>
+          <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            {t('batches.title')}
+          </h1>
+          <p className={`mt-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+            {t('batches.subtitle')}
+          </p>
         </div>
-        <div className="mt-4 md:mt-0 flex space-x-3">
-          <motion.button 
-            onClick={handleRefresh}
-            disabled={refreshing}
+        
+        <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center space-x-4'}`}>
+          <motion.button
+            onClick={() => navigate('/import')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`inline-flex items-center px-4 py-2 border rounded-lg shadow-sm text-sm font-medium transition-all duration-200 ${
-              isDark 
-                ? 'border-gray-600 text-gray-200 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 focus:ring-offset-gray-900' 
-                : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
-            }`}
+            className={`inline-flex items-center ${isMobile ? 'w-full justify-center px-4 py-3 text-base' : 'px-6 py-3 text-base'} font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 border border-transparent rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200`}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {t('common.refresh')}
+            <Upload className="h-5 w-5 mr-2" />
+            {t('batches.newBatch')}
           </motion.button>
           
-          <motion.div
+          <motion.button
+            onClick={refetch}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            className={`inline-flex items-center ${isMobile ? 'w-full justify-center px-4 py-2 text-sm' : 'px-4 py-2 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500`}
           >
-          <Link
-            to="/import"
-              className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
-                isDark
-                  ? 'bg-gradient-to-r from-primary-500 to-primary-400 hover:from-primary-600 hover:to-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 focus:ring-offset-gray-900'
-                  : 'bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
-              }`}
-          >
-            <Package className="h-4 w-4 mr-2" />
-            {t('navigation.import')}
-          </Link>
-          </motion.div>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            {t('common.refresh')}
+          </motion.button>
         </div>
-      </div>
-
-      {/* Error Display */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`rounded-xl p-4 ${
-              isDark 
-                ? 'bg-red-900/20 border border-red-800/50' 
-                : 'bg-red-50 border border-red-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertCircle className={`h-5 w-5 mr-3 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
-                <div>
-                  <h4 className={`text-sm font-semibold ${isDark ? 'text-red-300' : 'text-red-800'}`}>{t('errors.generic')}</h4>
-                  <p className={`text-sm mt-1 ${isDark ? 'text-red-200' : 'text-red-700'}`}>{error}</p>
-                </div>
-              </div>
-              <button
-                onClick={handleRefresh}
-                className={`text-sm font-medium transition-colors ${
-                  isDark 
-                    ? 'text-red-300 hover:text-red-100' 
-                    : 'text-red-600 hover:text-red-800'
-                }`}
-              >
-                {t('common.retry')}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Stats Overview - Enhanced for dark mode */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-6"
-      >
-        <motion.div 
-          whileHover={{ scale: 1.02, y: -4 }}
-          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border-blue-700/50 hover:shadow-blue-500/20' 
-              : 'bg-gradient-to-br from-blue-50 to-white border-blue-200 hover:shadow-blue-500/20'
-          }`}
-        >
-          <div className="flex items-center">
-            <Activity className={`h-8 w-8 mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('dashboard.stats.activeJobs')}</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{activeJobs.length}</p>
-            </div>
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          whileHover={{ scale: 1.02, y: -4 }}
-          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50 hover:shadow-green-500/20' 
-              : 'bg-gradient-to-br from-green-50 to-white border-green-200 hover:shadow-green-500/20'
-          }`}
-        >
-          <div className="flex items-center">
-            <CheckCircle className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('dashboard.stats.completedJobs')}</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{completedJobs.length}</p>
-            </div>
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          whileHover={{ scale: 1.02, y: -4 }}
-          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-700/50 hover:shadow-purple-500/20' 
-              : 'bg-gradient-to-br from-purple-50 to-white border-purple-200 hover:shadow-purple-500/20'
-          }`}
-        >
-          <div className="flex items-center">
-            <Users className={`h-8 w-8 mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{t('dashboard.stats.totalContacts')}</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{totalContacts.toLocaleString()}</p>
-            </div>
-          </div>
-        </motion.div>
-        
-        <motion.div 
-          whileHover={{ scale: 1.02, y: -4 }}
-          className={`rounded-xl p-6 shadow-lg border transition-all duration-300 ${
-            isDark 
-              ? 'bg-gradient-to-br from-red-900/20 to-red-800/10 border-red-700/50 hover:shadow-red-500/20' 
-              : 'bg-gradient-to-br from-red-50 to-white border-red-200 hover:shadow-red-500/20'
-          }`}
-        >
-          <div className="flex items-center">
-            <XCircle className={`h-8 w-8 mr-3 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${isDark ? 'text-red-300' : 'text-red-700'}`}>{t('dashboard.stats.failedJobs')}</p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-red-100' : 'text-red-900'}`}>{failedJobs.length}</p>
-            </div>
-          </div>
-        </motion.div>
       </motion.div>
-      
-      {/* Search and Filters - Enhanced dark mode */}
-      <motion.div
+
+      {/* Filters */}
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className={`shadow-lg rounded-xl border p-6 transition-all duration-300 ${
+        className={`rounded-xl shadow-lg border ${isMobile ? 'p-4' : 'p-6'} transition-all duration-300 ${
           isDark 
             ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
             : 'bg-white border-gray-100 shadow-gray-200/50'
         }`}
       >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6">
-          {/* Search */}
-          <div className="w-full lg:w-1/3">
+        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-6'}`}>
+          <div className={isMobile ? 'w-full' : 'w-full md:w-1/2'}>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
@@ -488,370 +387,212 @@ const BatchesPage: React.FC = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg leading-5 text-sm transition-all duration-200 ${
+                className={`block w-full pl-10 pr-3 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg leading-5 transition-all duration-200 ${
                   isDark 
                     ? 'border-gray-600 bg-gray-700 placeholder-gray-400 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
                     : 'border-gray-200 bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                 }`}
-                placeholder={t('search.placeholder')}
+                placeholder={t('batches.searchPlaceholder')}
               />
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-3'}`}>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`px-4 py-3 border rounded-lg transition-all duration-200 ${
+              className={`${isMobile ? 'w-full' : ''} px-4 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg transition-all duration-200 ${
                 isDark 
                   ? 'border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
                   : 'border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
               }`}
             >
-              <option value="all">{t('batches.filters.all')}</option>
-              <option value="pending">{t('batches.filters.pending')}</option>
+              <option value="all">{t('batches.filters.allStatuses')}</option>
               <option value="processing">{t('batches.filters.processing')}</option>
               <option value="completed">{t('batches.filters.completed')}</option>
               <option value="failed">{t('batches.filters.failed')}</option>
-              <option value="credit_insufficient">{t('errors.insufficientCredits')}</option>
             </select>
-            
+
             <select
-              value={`${sortBy}_${sortOrder}`}
-              onChange={(e) => {
-                const [field, order] = e.target.value.split('_');
-                setSortBy(field);
-                setSortOrder(order as 'asc' | 'desc');
-              }}
-              className={`px-4 py-3 border rounded-lg transition-all duration-200 ${
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={`${isMobile ? 'w-full' : ''} px-4 ${isMobile ? 'py-2 text-sm' : 'py-3'} border rounded-lg transition-all duration-200 ${
                 isDark 
                   ? 'border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500' 
                   : 'border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
               }`}
             >
-              <option value="created_at_desc">{t('common.createdAt')} (newest)</option>
-              <option value="created_at_asc">{t('common.createdAt')} (oldest)</option>
-              <option value="total_desc">{t('batches.table.contacts')} (most)</option>
-              <option value="completed_desc">{t('batches.table.progress')} (highest)</option>
-              <option value="success_rate_desc">{t('batches.table.successRate')} (highest)</option>
+              <option value="newest">{t('batches.filters.newest')}</option>
+              <option value="oldest">{t('batches.filters.oldest')}</option>
+              <option value="name">{t('batches.filters.name')}</option>
+              <option value="size">{t('batches.filters.size')}</option>
             </select>
-
-            {/* Bulk Actions */}
-            {selectedJobs.size > 0 && (
-              <div className="flex space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleBulkExport}
-                  className={`px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
-                    isDark 
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-                >
-                  <Download className="w-4 h-4 mr-2 inline" />
-                  Export ({selectedJobs.size})
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setSelectedJobs(new Set())}
-                  className={`px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
-                    isDark 
-                      ? 'bg-gray-600 text-white hover:bg-gray-700' 
-                      : 'bg-gray-600 text-white hover:bg-gray-700'
-                  }`}
-                >
-                  {t('common.cancel')}
-                </motion.button>
-              </div>
-            )}
           </div>
         </div>
       </motion.div>
-      
-      {/* Batches table - Enhanced dark mode */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className={`shadow-lg overflow-hidden rounded-xl border transition-all duration-300 ${
-          isDark 
-            ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
-            : 'bg-white border-gray-100 shadow-gray-200/50'
-        }`}
-      >
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className={`${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800' : 'bg-gradient-to-r from-gray-50 to-white'}`}>
-              <tr>
-                <th className="px-6 py-4 text-left">
-                  <input
-                    type="checkbox"
-                    checked={selectedJobs.size === filteredJobs.length && filteredJobs.length > 0}
-                    onChange={handleSelectAll}
-                    className={`rounded text-primary-600 focus:ring-primary-500 ${
-                      isDark 
-                        ? 'border-gray-500 bg-gray-700' 
-                        : 'border-gray-300'
-                    }`}
-                  />
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {t('batches.table.fileName')}
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {t('batches.table.status')}
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {t('batches.table.progress')}
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {t('batches.table.contacts')}
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {t('batches.table.createdAt')}
-                </th>
-                <th className="relative px-6 py-4">
-                  <span className="sr-only">{t('batches.table.actions')}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${isDark ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'}`}>
-              {currentJobs.map((job) => (
-                <motion.tr 
-                  key={job.id} 
-                  data-job-id={job.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  whileHover={{ scale: 1.005 }}
-                  className={`transition-all duration-200 ${
-                    isDark 
-                      ? 'hover:bg-gray-750 hover:shadow-lg' 
-                      : 'hover:bg-gray-50 hover:shadow-lg'
-                  } ${
-                    highlightJobId === job.id 
-                      ? isDark
-                        ? 'bg-green-900/30 border-l-4 border-green-500 shadow-lg shadow-green-500/10'
-                        : 'bg-green-50 border-l-4 border-green-500 shadow-lg shadow-green-500/20'
-                      : ''
-                  }`}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      checked={selectedJobs.has(job.id)}
-                      onChange={() => handleSelectJob(job.id)}
-                      className={`rounded text-primary-600 focus:ring-primary-500 ${
-                        isDark 
-                          ? 'border-gray-500 bg-gray-700' 
-                          : 'border-gray-300'
-                      }`}
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <FileText className={`h-5 w-5 mr-3 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
-                      <div>
-                        <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                          {job.file_name || `Batch ${job.id.substring(0, 8)}`}
-                        </div>
-                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          ID: {job.id.substring(0, 8)}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                      job.progress >= 100 ? 'completed' : job.status
-                    )}`}>
-                      {getStatusIcon(job.progress >= 100 ? 'completed' : job.status)}
-                      <span className="ml-1">{t(`enrichment.status.${job.progress >= 100 ? 'completed' : job.status}`)}</span>
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <div className={`w-full rounded-full h-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              job.status === 'completed' ? 'bg-green-500' : 
-                              job.status === 'failed' ? 'bg-red-500' : 'bg-blue-500'
-                            }`}
-                            style={{ width: `${job.progress}%` }}
-                          />
-                        </div>
-                        <div className={`text-xs mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {(job.progress || 0).toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    <div>
-                      <div className="font-medium">{job.completed}/{job.total}</div>
-                      {job.success_rate !== undefined && (
-                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {(job.success_rate || 0).toFixed(1)}% {t('batches.table.successRate').toLowerCase()}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    <div>
-                      <div>{new Date(job.created_at).toLocaleDateString()}</div>
-                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {new Date(job.created_at).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Link
-                          to={`/batches/${job.id}`}
-                          className={`transition-colors ${
-                            isDark 
-                              ? 'text-primary-400 hover:text-primary-300' 
-                              : 'text-primary-600 hover:text-primary-900'
-                          }`}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                      </motion.div>
-                      {/* 🔥 FIXED: Show export button when progress >= 100% OR status is completed */}
-                      {(job.status === 'completed' || job.progress >= 100) && (
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleSingleExport(job.id)}
-                          className={`transition-colors ${
-                            isDark 
-                              ? 'text-emerald-400 hover:text-emerald-300' 
-                              : 'text-emerald-600 hover:text-emerald-900'
-                          }`}
-                          title="Export batch data"
-                        >
-                          <Download className="h-4 w-4" />
-                        </motion.button>
-                      )}
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className={`px-6 py-4 border-t ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('common.total')}: {filteredJobs.length} {t('batches.title').toLowerCase()}
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-3 py-2 rounded-l-lg border text-sm font-medium transition-all duration-200 ${
-                      currentPage === 1
-                        ? isDark 
-                          ? 'text-gray-500 cursor-not-allowed border-gray-600 bg-gray-700'
-                          : 'text-gray-300 cursor-not-allowed border-gray-200 bg-white'
-                        : isDark
-                          ? 'text-gray-300 border-gray-600 bg-gray-700 hover:bg-gray-600 hover:text-primary-400'
-                          : 'text-gray-700 border-gray-200 bg-white hover:bg-gray-50 hover:text-primary-600'
-                    }`}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </motion.button>
-                  
-                  <span className={`relative inline-flex items-center px-4 py-2 border text-sm font-semibold ${
-                    isDark 
-                      ? 'border-gray-600 bg-primary-900/50 text-primary-300' 
-                      : 'border-gray-200 bg-primary-50 text-primary-700'
-                  }`}>
-                    {currentPage} / {totalPages || 1}
-                  </span>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className={`relative inline-flex items-center px-3 py-2 rounded-r-lg border text-sm font-medium transition-all duration-200 ${
-                      currentPage === totalPages || totalPages === 0
-                        ? isDark 
-                          ? 'text-gray-500 cursor-not-allowed border-gray-600 bg-gray-700'
-                          : 'text-gray-300 cursor-not-allowed border-gray-200 bg-white'
-                        : isDark
-                          ? 'text-gray-300 border-gray-600 bg-gray-700 hover:bg-gray-600 hover:text-primary-400'
-                          : 'text-gray-700 border-gray-200 bg-white hover:bg-gray-50 hover:text-primary-600'
-                    }`}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </motion.button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
-      </motion.div>
 
-      {/* Empty state */}
-      {filteredJobs.length === 0 && !loading && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+      {/* Batches Grid/List */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader className={`h-8 w-8 animate-spin ${isDark ? 'text-white' : 'text-gray-900'}`} />
+        </div>
+      ) : filteredJobs.length === 0 ? (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className={`text-center py-12 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
         >
-          <Package className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
-          <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('batches.empty.title')}</h3>
+          <FileText className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
+          <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+            {searchTerm ? t('batches.noBatchesFound') : t('batches.noBatches')}
+          </h3>
           <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {searchTerm || statusFilter !== 'all' 
-              ? t('search.noResults')
-              : t('batches.empty.subtitle')
-            }
+            {searchTerm ? t('batches.adjustFilters') : t('batches.getStarted')}
           </p>
-          {!searchTerm && statusFilter === 'all' && (
+          {!searchTerm && (
             <div className="mt-6">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <motion.button
+                onClick={() => navigate('/import')}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`inline-flex items-center ${isMobile ? 'px-4 py-2 text-sm' : 'px-4 py-2 text-sm'} font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200`}
               >
-              <Link
-                to="/import"
-                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                    isDark 
-                      ? 'bg-primary-500 hover:bg-primary-600' 
-                      : 'bg-primary-600 hover:bg-primary-700'
-                  }`}
-              >
-                <Package className="h-4 w-4 mr-2" />
-                {t('batches.empty.cta')}
-              </Link>
-              </motion.div>
+                <Upload className="h-4 w-4 mr-2" />
+                {t('batches.createFirstBatch')}
+              </motion.button>
             </div>
           )}
+        </motion.div>
+      ) : (
+        <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'}`}>
+          {filteredJobs.map((job, index) => (
+            <motion.div
+              key={job.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -4 }}
+              className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg cursor-pointer transition-all duration-300 ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-700 hover:shadow-2xl hover:shadow-gray-900/50' 
+                  : 'bg-white border-gray-100 hover:shadow-xl hover:shadow-gray-200/50'
+              }`}
+              onClick={() => navigate(`/batches/${job.id}`)}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-lg font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {job.file_name || `Batch ${job.id.substring(0, 8)}`}
+                  </h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'} mt-1`}>
+                    {new Date(job.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="ml-4 flex-shrink-0">
+                  {getStatusBadge(job.status)}
+                </div>
+              </div>
+
+              <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-2 gap-4'} mb-4`}>
+                <div className="text-center">
+                  <div className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                    {job.total}
+                  </div>
+                  <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {t('batches.contacts')}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                    {job.emails_found || 0}
+                  </div>
+                  <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {t('batches.emails')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Users className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {job.total} {t('batches.contactsLower')}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {job.success_rate !== undefined && (
+                    <div className="flex items-center space-x-1">
+                      <TrendingUp className={`h-4 w-4 ${
+                        job.success_rate > 70 
+                          ? isDark ? 'text-green-400' : 'text-green-500'
+                          : job.success_rate > 40
+                            ? isDark ? 'text-yellow-400' : 'text-yellow-500'
+                            : isDark ? 'text-red-400' : 'text-red-500'
+                      }`} />
+                      <span className={`text-sm font-medium ${
+                        job.success_rate > 70 
+                          ? isDark ? 'text-green-400' : 'text-green-600'
+                          : job.success_rate > 40
+                            ? isDark ? 'text-yellow-400' : 'text-yellow-600'
+                            : isDark ? 'text-red-400' : 'text-red-600'
+                      }`}>
+                        {job.success_rate.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {isMobile && (
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>
+                      {t('batches.tapToView')}
+                    </span>
+                    <Eye className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredJobs.length > 0 && totalPages > 1 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-center'} space-x-0 ${isMobile ? '' : 'md:space-x-2'}`}
+        >
+          <div className={`flex items-center ${isMobile ? 'justify-center mb-2' : ''}`}>
+            <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              {t('batches.pageOf')
+                .replace('{current}', currentPage.toString())
+                .replace('{total}', totalPages.toString())}
+            </p>
+          </div>
+          <div className={`flex ${isMobile ? 'justify-center' : ''} space-x-2`}>
+            <motion.button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`inline-flex items-center ${isMobile ? 'px-3 py-1 text-sm' : 'px-4 py-2 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+            >
+              {t('batches.previous')}
+            </motion.button>
+            <motion.button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`inline-flex items-center ${isMobile ? 'px-3 py-1 text-sm' : 'px-4 py-2 text-sm'} font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+            >
+              {t('batches.next')}
+            </motion.button>
+          </div>
         </motion.div>
       )}
 

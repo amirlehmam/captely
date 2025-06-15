@@ -49,6 +49,9 @@ const Dashboard: React.FC = () => {
   const { t } = useLanguage();
   const { creditData } = useCreditContext();
   const { isDark } = useTheme();
+  
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
 
   // Hooks for data fetching
   const { 
@@ -64,6 +67,16 @@ const Dashboard: React.FC = () => {
   useServiceHealth(); // Keep hook to maintain data fetching
 
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     // Set initial loading to false once we have stats or an error
@@ -151,8 +164,21 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className={`min-h-screen transition-all duration-300 ${isDark ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="p-6 space-y-6">
-        {/* Quick Actions - ULTRA COMPACT design */}
+      <div className={`p-6 space-y-6 ${isMobile ? 'mobile-padding' : ''}`}>
+        
+        {/* Mobile Welcome Message (only on mobile) */}
+        {isMobile && (
+          <div className="mb-4">
+            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>
+              Welcome back! 👋
+            </h1>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Here's your contact enrichment overview
+            </p>
+          </div>
+        )}
+
+        {/* Quick Actions - Responsive Grid */}
         <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border shadow-sm p-4`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -163,24 +189,35 @@ const Dashboard: React.FC = () => {
               Fast Access
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          
+          {/* Responsive grid: 2 columns on mobile, 4 on desktop */}
+          <div className={`grid gap-2 ${
+            isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'
+          }`}>
             <motion.button
               onClick={() => navigate('/import')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center ${
+                isMobile ? 'p-3' : 'p-3'
+              } rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
+              style={{ minHeight: isMobile ? '80px' : 'auto' }}
             >
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
+              <div className={`flex items-center justify-center ${
+                isMobile ? 'w-10 h-10' : 'w-8 h-8'
+              } rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-600'
               } group-hover:${isDark ? 'bg-blue-900/30' : 'bg-blue-200'}`}>
-                <Upload className="h-4 w-4" />
+                <Upload className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'}`} />
               </div>
-              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('dashboard.quickActions.newUpload')}
+              <span className={`${
+                isMobile ? 'text-xs' : 'text-xs'
+              } font-medium text-center ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                {isMobile ? 'New Upload' : t('dashboard.quickActions.newUpload')}
               </span>
             </motion.button>
 
@@ -188,19 +225,26 @@ const Dashboard: React.FC = () => {
               onClick={() => navigate('/batches')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center ${
+                isMobile ? 'p-3' : 'p-3'
+              } rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
+              style={{ minHeight: isMobile ? '80px' : 'auto' }}
             >
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
+              <div className={`flex items-center justify-center ${
+                isMobile ? 'w-10 h-10' : 'w-8 h-8'
+              } rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-green-900/20 text-green-400' : 'bg-green-100 text-green-600'
               } group-hover:${isDark ? 'bg-green-900/30' : 'bg-green-200'}`}>
-                <ListChecks className="h-4 w-4" />
+                <ListChecks className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'}`} />
               </div>
-              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('dashboard.quickActions.viewResults')}
+              <span className={`${
+                isMobile ? 'text-xs' : 'text-xs'
+              } font-medium text-center ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                {isMobile ? 'View Results' : t('dashboard.quickActions.viewResults')}
               </span>
             </motion.button>
 
@@ -208,19 +252,26 @@ const Dashboard: React.FC = () => {
               onClick={() => navigate('/billing')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center ${
+                isMobile ? 'p-3' : 'p-3'
+              } rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
+              style={{ minHeight: isMobile ? '80px' : 'auto' }}
             >
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
+              <div className={`flex items-center justify-center ${
+                isMobile ? 'w-10 h-10' : 'w-8 h-8'
+              } rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-purple-900/20 text-purple-400' : 'bg-purple-100 text-purple-600'
               } group-hover:${isDark ? 'bg-purple-900/30' : 'bg-purple-200'}`}>
-                <CreditCard className="h-4 w-4" />
-      </div>
-              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('common.buy_credits')}
+                <CreditCard className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'}`} />
+              </div>
+              <span className={`${
+                isMobile ? 'text-xs' : 'text-xs'
+              } font-medium text-center ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                {isMobile ? 'Buy Credits' : t('common.buy_credits')}
               </span>
             </motion.button>
 
@@ -228,30 +279,41 @@ const Dashboard: React.FC = () => {
               onClick={() => navigate('/crm')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              className={`group flex flex-col items-center ${
+                isMobile ? 'p-3' : 'p-3'
+              } rounded-lg border transition-all duration-200 hover:shadow-md ${
                 isDark 
                   ? 'bg-gray-700 border-gray-600 hover:bg-gray-650 hover:border-gray-500' 
                   : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
               }`}
+              style={{ minHeight: isMobile ? '80px' : 'auto' }}
             >
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full mb-1 transition-colors ${
+              <div className={`flex items-center justify-center ${
+                isMobile ? 'w-10 h-10' : 'w-8 h-8'
+              } rounded-full mb-1 transition-colors ${
                 isDark ? 'bg-orange-900/20 text-orange-400' : 'bg-orange-100 text-orange-600'
               } group-hover:${isDark ? 'bg-orange-900/30' : 'bg-orange-200'}`}>
-                <Database className="h-4 w-4" />
+                <Database className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'}`} />
               </div>
-              <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                {t('navigation.contacts')}
+              <span className={`${
+                isMobile ? 'text-xs' : 'text-xs'
+              } font-medium text-center ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                {isMobile ? 'Contacts' : t('navigation.contacts')}
               </span>
             </motion.button>
           </div>
         </div>
 
-        {/* Stats Grid - Stable structure to prevent flashing */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Stats Grid - Responsive: 1 column on mobile, original on desktop */}
+        <div className={`grid gap-6 ${
+          isMobile ? 'grid-cols-1 space-y-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+        }`}>
           {initialLoading && statsLoading ? (
             // Loading state for stats - maintain grid structure
             Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className={`rounded-xl p-6 border shadow-lg animate-pulse ${
+              <div key={index} className={`rounded-xl ${
+                isMobile ? 'p-4' : 'p-6'
+              } border shadow-lg animate-pulse ${
                 isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
               }`}>
                 <div className="flex items-center justify-between">
@@ -265,26 +327,33 @@ const Dashboard: React.FC = () => {
               </div>
             ))
           ) : (
-            // Actual stats cards with descriptive text
+            // Actual stats cards with mobile responsiveness
             statsCards.map((card, index) => (
-        <motion.div
+              <motion.div
                 key={card.title}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -4, scale: 1.02 }}
-                className={`${card.bgColor} rounded-xl p-6 border ${card.borderColor} shadow-lg hover:shadow-xl transition-all duration-300`}
-        >
-          <div className="flex items-center justify-between">
+                className={`${card.bgColor} rounded-xl ${
+                  isMobile ? 'p-4' : 'p-6'
+                } border ${card.borderColor} shadow-lg hover:shadow-xl transition-all duration-300`}
+              >
+                <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className={`text-sm font-medium ${card.iconColor} uppercase tracking-wide`}>
+                    <p className={`${
+                      isMobile ? 'text-xs' : 'text-sm'
+                    } font-medium ${card.iconColor} uppercase tracking-wide`}>
                       {card.title}
                     </p>
-                    <p className={`text-3xl font-bold ${card.textColor} mt-2 mb-1`}>
+                    <p className={`${
+                      isMobile ? 'text-2xl' : 'text-3xl'
+                    } font-bold ${card.textColor} mt-2 mb-1`}>
                       {card.value.toLocaleString()}
                     </p>
-                    {/* Descriptive subtitle */}
-                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'} flex items-center`}>
+                    <p className={`${
+                      isMobile ? 'text-xs' : 'text-xs'
+                    } ${isDark ? 'text-gray-400' : 'text-gray-600'} flex items-center`}>
                       <div className={`w-2 h-2 rounded-full ${
                         card.color === 'blue' ? 'bg-blue-400' :
                         card.color === 'green' ? 'bg-green-400' :
@@ -294,18 +363,20 @@ const Dashboard: React.FC = () => {
                     </p>
                   </div>
                   <div className={`flex-shrink-0 ${card.iconColor}`}>
-                    <card.icon className="h-8 w-8" />
-              </div>
-            </div>
+                    <card.icon className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
+                  </div>
+                </div>
               </motion.div>
             ))
           )}
         </div>
 
-        {/* Main Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Dashboard Grid - Stack on mobile, side-by-side on desktop */}
+        <div className={`grid gap-8 ${
+          isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'
+        }`}>
           {/* Left Column - Batch Progress */}
-          <div className="lg:col-span-2">
+          <div className={isMobile ? '' : 'lg:col-span-2'}>
             <BatchProgress />
           </div>
 
@@ -314,55 +385,65 @@ const Dashboard: React.FC = () => {
             <CreditUsage />
 
             {/* System Health */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
             >
-              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className={`${
+                isMobile ? 'px-4 py-3' : 'px-6 py-4'
+              } border-b border-gray-100 dark:border-gray-700`}>
+                <h3 className={`${
+                  isMobile ? 'text-base' : 'text-lg'
+                } font-semibold text-gray-900 dark:text-gray-100`}>
                   {t('dashboard.systemHealth.title')}
                 </h3>
               </div>
-              <div className="p-6">
+              <div className={`${isMobile ? 'p-4' : 'p-6'}`}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Wifi className="h-5 w-5 text-green-500" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <span className={`${
+                        isMobile ? 'text-sm' : 'text-sm'
+                      } font-medium text-gray-900 dark:text-gray-100`}>
                         {t('dashboard.systemHealth.enrichmentService')}
                       </span>
-            </div>
+                    </div>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                       {t('common.active')}
                     </span>
-          </div>
+                  </div>
                   
-          <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Wifi className="h-5 w-5 text-green-500" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <span className={`${
+                        isMobile ? 'text-sm' : 'text-sm'
+                      } font-medium text-gray-900 dark:text-gray-100`}>
                         {t('dashboard.systemHealth.apiService')}
-                </span>
-              </div>
+                      </span>
+                    </div>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                       {t('common.active')}
                     </span>
-          </div>
+                  </div>
                   
-          <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Wifi className="h-5 w-5 text-green-500" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <span className={`${
+                        isMobile ? 'text-sm' : 'text-sm'
+                      } font-medium text-gray-900 dark:text-gray-100`}>
                         {t('dashboard.systemHealth.dataProcessing')}
                       </span>
                     </div>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                       {t('common.active')}
-                </span>
-              </div>
-            </div>
+                    </span>
+                  </div>
+                </div>
                 
                 <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="flex items-center">
@@ -370,10 +451,10 @@ const Dashboard: React.FC = () => {
                     <span className="text-sm font-medium text-green-800 dark:text-green-400">
                       {t('dashboard.systemHealth.allSystemsOperational')}
                     </span>
-          </div>
-      </div>
+                  </div>
+                </div>
               </div>
-        </motion.div>
+            </motion.div>
           </div>
         </div>
       </div>

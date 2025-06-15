@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, FileText, Shield, Users, Globe, AlertTriangle, Building2, CreditCard } from 'lucide-react';
@@ -7,17 +7,30 @@ import { Link } from 'react-router-dom';
 const TermsOfService: React.FC = () => {
   const { theme } = useTheme();
 
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const sections = [
     {
       title: "1. Acceptance of Terms",
-      icon: <FileText className="h-5 w-5" />,
+      icon: <FileText className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `By accessing and using Captely's contact enrichment and CRM services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
 
 These terms apply to all users, including businesses, organizations, and individuals who access or use our services in any manner.`
     },
     {
       title: "2. Description of Services",
-      icon: <Users className="h-5 w-5" />,
+      icon: <Users className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `Captely provides B2B contact enrichment services including:
 
 • Email discovery and verification
@@ -31,7 +44,7 @@ Our services help businesses find and verify professional contact information fo
     },
     {
       title: "3. User Obligations and Compliance",
-      icon: <Shield className="h-5 w-5" />,
+      icon: <Shield className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `You agree to:
 
 • Use our services only for legitimate business purposes
@@ -45,7 +58,7 @@ Our services help businesses find and verify professional contact information fo
     },
     {
       title: "4. Data Protection and Privacy",
-      icon: <Globe className="h-5 w-5" />,
+      icon: <Globe className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `We take data protection seriously and comply with international privacy laws including GDPR, CCPA, and other applicable regulations.
 
 • You retain ownership of your data
@@ -57,7 +70,7 @@ Our services help businesses find and verify professional contact information fo
     },
     {
       title: "5. Payment Terms and Billing",
-      icon: <CreditCard className="h-5 w-5" />,
+      icon: <CreditCard className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `Credit Consumption:
 • Email enrichment: 1 credit per valid email found
 • Phone enrichment: 10 credits per valid phone number found
@@ -72,7 +85,7 @@ Billing:
     },
     {
       title: "6. Prohibited Uses",
-      icon: <AlertTriangle className="h-5 w-5" />,
+      icon: <AlertTriangle className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `You may not use our services to:
 
 • Send unsolicited emails or spam
@@ -87,7 +100,7 @@ Billing:
     },
     {
       title: "7. Service Availability and Limitations",
-      icon: <Globe className="h-5 w-5" />,
+      icon: <Globe className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `Service Level:
 • We strive for high availability but do not guarantee uninterrupted service
 • Planned maintenance will be announced in advance when possible
@@ -101,7 +114,7 @@ Data Accuracy:
     },
     {
       title: "8. Intellectual Property",
-      icon: <Building2 className="h-5 w-5" />,
+      icon: <Building2 className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `All content, trademarks, logos, and technology used in our services remain our property or that of our licensors.
 
 • You are granted a limited license to use our services as described
@@ -112,7 +125,7 @@ Data Accuracy:
     },
     {
       title: "9. Limitation of Liability",
-      icon: <AlertTriangle className="h-5 w-5" />,
+      icon: <AlertTriangle className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `Limitation of Damages:
 • Our liability is limited to the amount paid by you in the 12 months preceding any claim
 • We are not liable for indirect, incidental, or consequential damages
@@ -126,7 +139,7 @@ Service Warranty:
     },
     {
       title: "10. Account Termination",
-      icon: <Users className="h-5 w-5" />,
+      icon: <Users className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `Either party may terminate this agreement with 30 days written notice.
 
 Immediate Termination:
@@ -142,7 +155,7 @@ Upon Termination:
     },
     {
       title: "11. Governing Law and Disputes",
-      icon: <Globe className="h-5 w-5" />,
+      icon: <Globe className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `These terms are governed by the laws of France without regard to conflict of law principles.
 
 Dispute Resolution:
@@ -157,7 +170,7 @@ Severability:
     },
     {
       title: "12. Contact Information and Support",
-      icon: <Building2 className="h-5 w-5" />,
+      icon: <Building2 className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />,
       content: `For questions about these terms or our services:
 
 Legal Inquiries:
@@ -184,36 +197,36 @@ We are committed to addressing your concerns promptly and professionally.`
       <div className={`border-b transition-all duration-300 ${
         theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
       }`}>
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className={`${isMobile ? 'mobile-container' : 'max-w-4xl mx-auto'} ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
           <div className="flex items-center space-x-4">
             <Link
               to="/signup"
-              className={`flex items-center space-x-2 text-sm font-medium transition-colors ${
+              className={`flex items-center space-x-2 ${isMobile ? 'text-xs' : 'text-sm'} font-medium transition-colors ${
                 theme === 'dark' 
                   ? 'text-gray-400 hover:text-gray-200' 
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
               <span>Back to Signup</span>
             </Link>
           </div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4"
+            className={`${isMobile ? 'mt-3' : 'mt-4'}`}
           >
             <div className="flex items-center space-x-3">
-              <FileText className={`h-8 w-8 ${
+              <FileText className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} ${
                 theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
               }`} />
               <div>
-                <h1 className={`text-3xl font-bold ${
+                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold ${
                   theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
                 }`}>
                   Terms of Service
                 </h1>
-                <p className={`mt-2 text-lg ${
+                <p className={`${isMobile ? 'mt-1 text-base' : 'mt-2 text-lg'} ${
                   theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                 }`}>
                   Last updated: January 2025
@@ -225,28 +238,28 @@ We are committed to addressing your concerns promptly and professionally.`
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className={`${isMobile ? 'mobile-container' : 'max-w-4xl mx-auto'} ${isMobile ? 'px-4 py-6' : 'px-4 py-8'}`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className={`rounded-xl p-6 mb-8 border ${
+          className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} ${isMobile ? 'mb-6' : 'mb-8'} border ${
             theme === 'dark' 
               ? 'bg-blue-900/20 border-blue-700/50' 
               : 'bg-blue-50 border-blue-200'
           }`}
         >
           <div className="flex items-start space-x-3">
-            <FileText className={`h-6 w-6 mt-1 ${
+            <FileText className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} mt-1 ${
               theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
             }`} />
             <div>
-              <h2 className={`text-lg font-semibold mb-2 ${
+              <h2 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold ${isMobile ? 'mb-1' : 'mb-2'} ${
                 theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
               }`}>
                 Important Notice
               </h2>
-              <p className={`text-sm ${
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} ${
                 theme === 'dark' ? 'text-blue-200' : 'text-blue-800'
               }`}>
                 These Terms of Service govern your use of Captely's contact enrichment and CRM services. 
@@ -256,21 +269,21 @@ We are committed to addressing your concerns promptly and professionally.`
           </div>
         </motion.div>
 
-        <div className="space-y-8">
+        <div className={`space-y-${isMobile ? '6' : '8'}`}>
           {sections.map((section, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + index * 0.05 }}
-              className={`rounded-xl p-6 border transition-all duration-300 ${
+              className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border transition-all duration-300 ${
                 theme === 'dark' 
                   ? 'bg-gray-800 border-gray-700' 
                   : 'bg-white border-gray-200'
               }`}
             >
               <div className="flex items-start space-x-3">
-                <div className={`p-2 rounded-lg ${
+                <div className={`${isMobile ? 'p-1.5' : 'p-2'} rounded-lg ${
                   theme === 'dark' 
                     ? 'bg-emerald-900/30 text-emerald-400' 
                     : 'bg-emerald-100 text-emerald-600'
@@ -278,12 +291,12 @@ We are committed to addressing your concerns promptly and professionally.`
                   {section.icon}
                 </div>
                 <div className="flex-1">
-                  <h3 className={`text-lg font-semibold mb-3 ${
+                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold ${isMobile ? 'mb-2' : 'mb-3'} ${
                     theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
                   }`}>
                     {section.title}
                   </h3>
-                  <div className={`text-sm leading-relaxed whitespace-pre-line ${
+                  <div className={`${isMobile ? 'text-xs' : 'text-sm'} leading-relaxed whitespace-pre-line ${
                     theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                   }`}>
                     {section.content}
@@ -299,23 +312,23 @@ We are committed to addressing your concerns promptly and professionally.`
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className={`mt-12 p-6 rounded-xl border ${
+          className={`${isMobile ? 'mt-8' : 'mt-12'} ${isMobile ? 'p-4' : 'p-6'} rounded-xl border ${
             theme === 'dark' 
               ? 'bg-gray-800 border-gray-700' 
               : 'bg-white border-gray-200'
           }`}
         >
-          <p className={`text-sm ${
+          <p className={`${isMobile ? 'text-xs' : 'text-sm'} ${
             theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
           }`}>
             These terms may be updated from time to time. We will notify users of material changes 
             via email or through our service. Continued use of our services after changes constitutes 
             acceptance of the updated terms.
           </p>
-          <div className="mt-4 flex items-center space-x-4">
+          <div className={`${isMobile ? 'mt-3' : 'mt-4'} flex ${isMobile ? 'flex-col space-y-2' : 'items-center space-x-4'}`}>
             <Link
               to="/privacy-policy"
-              className={`text-sm font-medium transition-colors ${
+              className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium transition-colors ${
                 theme === 'dark' 
                   ? 'text-emerald-400 hover:text-emerald-300' 
                   : 'text-emerald-600 hover:text-emerald-700'
@@ -323,12 +336,14 @@ We are committed to addressing your concerns promptly and professionally.`
             >
               View Privacy Policy
             </Link>
-            <span className={`text-sm ${
-              theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-            }`}>•</span>
+            {!isMobile && (
+              <span className={`text-sm ${
+                theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+              }`}>•</span>
+            )}
             <a
               href="mailto:legal@captely.com"
-              className={`text-sm font-medium transition-colors ${
+              className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium transition-colors ${
                 theme === 'dark' 
                   ? 'text-emerald-400 hover:text-emerald-300' 
                   : 'text-emerald-600 hover:text-emerald-700'

@@ -1,69 +1,38 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Upload,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  Loader,
-  Download,
-  Users,
-  Mail,
-  Phone,
-  X,
-  FileSpreadsheet,
-  Eye,
-  RefreshCw,
-  ArrowRight,
-  Clock,
-  AlertTriangle,
-  TrendingUp,
-  BarChart3,
-  Plus,
-  UserPlus,
-  Building,
-  Trash2,
-  Edit3,
-  Database,
-  Zap,
-  Globe
+  Upload, X, CheckCircle, AlertCircle, Download, FileText,
+  Users, Mail, Phone, Building, MapPin, ExternalLink,
+  RefreshCw, Trash2, Eye, EyeOff, Settings, ChevronDown,
+  Info, AlertTriangle, Loader2, PlayCircle, PauseCircle,
+  Calendar, Clock, BarChart3, Target, Zap, Crown, Plus,
+  Clipboard, FileUp, FileDown, Star
 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-
-// Enhanced notification system
-import { showManualImportStarted, showError, showFileImportStarted } from '../components/notifications/NotificationManager';
-
-// Updated hooks for production
-import { useFileUpload, useJobs, useJob } from '../hooks/useApi';
-import { useEnrichmentConfirm } from '../hooks/useEnrichmentConfirm';
-import { EnrichmentType } from '../components/modals/EnrichmentConfirmModal';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { useCreditContext } from '../contexts/CreditContext';
-
-// Type for manual contacts
-interface ManualContact {
-  id: string;
-  first_name: string;
-  last_name: string;
-  company: string;
-  position?: string;
-  location?: string;
-  industry?: string;
-}
-
-// Integration status interface
-interface IntegrationStatus {
-  connected: boolean;
-  [key: string]: any;
-}
+import { useLanguage } from '../contexts/LanguageContext';
+import { apiService, Job, Contact } from '../services/api';
 
 const ImportPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, formatMessage } = useLanguage();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // File upload state
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -71,8 +40,8 @@ const ImportPage: React.FC = () => {
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   
   // Manual contact entry state
-  const [manualContacts, setManualContacts] = useState<ManualContact[]>([]);
-  const [currentContact, setCurrentContact] = useState<Partial<ManualContact>>({
+  const [manualContacts, setManualContacts] = useState<Contact[]>([]);
+  const [currentContact, setCurrentContact] = useState<Partial<Contact>>({
     first_name: '',
     last_name: '',
     company: '',
@@ -532,7 +501,7 @@ const ImportPage: React.FC = () => {
   };
 
   // Manual contact functions
-  const validateManualContact = (contact: Partial<ManualContact>): string[] => {
+  const validateManualContact = (contact: Partial<Contact>): string[] => {
     const errors: string[] = [];
     
     if (!contact.first_name?.trim()) {
@@ -556,7 +525,7 @@ const ImportPage: React.FC = () => {
       return;
     }
     
-    const newContact: ManualContact = {
+    const newContact: Contact = {
       id: Date.now().toString(),
       first_name: currentContact.first_name!.trim(),
       last_name: currentContact.last_name!.trim(),
@@ -680,8 +649,8 @@ const ImportPage: React.FC = () => {
     : 0;
   
   return (
-    <div className={`min-h-screen transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} p-6`}>
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className={`min-h-screen transition-all duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} ${isMobile ? 'p-4' : 'p-6'}`}>
+    <div className={`${isMobile ? 'mobile-container' : 'max-w-6xl mx-auto'} space-y-8`}>
       {/* Enrichment Confirmation Modal */}
       <EnrichmentConfirmDialog />
 
@@ -691,10 +660,10 @@ const ImportPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h1 className={`text-3xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold ${isMobile ? 'mb-3' : 'mb-4'} ${isDark ? 'text-white' : 'text-gray-900'}`}>
           {t('import.title')}
         </h1>
-        <p className={`text-lg max-w-2xl mx-auto ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+        <p className={`${isMobile ? 'text-base' : 'text-lg'} ${isMobile ? 'mx-auto' : 'max-w-2xl mx-auto'} ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
           {t('import.subtitle')}
         </p>
       </motion.div>
@@ -706,26 +675,26 @@ const ImportPage: React.FC = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`border rounded-xl p-6 ${
+            className={`border rounded-xl ${isMobile ? 'p-4' : 'p-6'} ${
               isDark 
                 ? 'bg-red-900/20 border-red-700/50' 
                 : 'bg-red-50 border-red-200'
             }`}
           >
             <div className="flex items-start">
-              <AlertTriangle className="h-6 w-6 text-red-500 mr-4 mt-1" />
+              <AlertTriangle className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-red-500 mr-4 mt-1`} />
               <div className="flex-1">
-                <h3 className={`text-lg font-semibold ${
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold ${
                   isDark ? 'text-red-300' : 'text-red-800'
                 }`}>
                   🚨 Backend Services Unavailable
                 </h3>
-                <p className={`text-sm mt-2 ${
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} mt-2 ${
                   isDark ? 'text-red-400' : 'text-red-700'
                 }`}>
                   The backend services are temporarily down. This means:
                 </p>
-                <ul className={`text-sm mt-3 list-disc list-inside space-y-1 ${
+                <ul className={`${isMobile ? 'text-xs' : 'text-sm'} mt-3 list-disc list-inside space-y-1 ${
                   isDark ? 'text-red-400' : 'text-red-700'
                 }`}>
                   <li>Cannot load recent batches/jobs</li>
@@ -733,10 +702,10 @@ const ImportPage: React.FC = () => {
                   <li>Cannot start manual contact enrichment</li>
                   <li>Credit information may not be accurate</li>
                 </ul>
-                <div className={`mt-4 p-3 rounded-lg ${
+                <div className={`mt-4 ${isMobile ? 'p-2' : 'p-3'} rounded-lg ${
                   isDark ? 'bg-red-800/30' : 'bg-red-100'
                 }`}>
-                  <p className={`text-sm font-medium ${
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium ${
                     isDark ? 'text-red-200' : 'text-red-800'
                   }`}>
                     🔧 <strong>Solution:</strong> Contact your system administrator to restart the Docker services on the cloud server.
@@ -744,7 +713,7 @@ const ImportPage: React.FC = () => {
                 </div>
                 <button
                   onClick={() => refetchJobs()}
-                  className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-lg hover:bg-red-200 transition-colors"
+                  className={`mt-4 inline-flex items-center ${isMobile ? 'px-3 py-2 text-xs' : 'px-4 py-2 text-sm'} font-medium text-red-700 bg-red-100 border border-red-300 rounded-lg hover:bg-red-200 transition-colors`}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Try Again
@@ -761,55 +730,55 @@ const ImportPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-6'} ${isMobile ? 'mb-6' : 'mb-8'}`}
         >
           <motion.div 
-            whileHover={{ scale: 1.02, y: -4 }}
-            className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
+            whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -4 }}
+            className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
               isDark 
                 ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border-blue-700/50 hover:shadow-blue-500/20' 
                 : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-blue-500/20'
             }`}
           >
             <div className="flex items-center">
-              <Users className={`h-8 w-8 mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
+              <Users className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
               <div>
-                <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('import.stats.totalProcessed')}</p>
-                <p className={`text-2xl font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{totalContactsProcessed.toLocaleString()}</p>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('import.stats.totalProcessed')}</p>
+                <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>{totalContactsProcessed.toLocaleString()}</p>
               </div>
             </div>
           </motion.div>
           
           <motion.div 
-            whileHover={{ scale: 1.02, y: -4 }}
-            className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
+            whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -4 }}
+            className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
               isDark 
                 ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50 hover:shadow-green-500/20' 
                 : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:shadow-green-500/20'
             }`}
           >
             <div className="flex items-center">
-              <TrendingUp className={`h-8 w-8 mr-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
+              <TrendingUp className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
               <div>
-                <p className={`text-sm font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('import.stats.avgSuccessRate')}</p>
-                <p className={`text-2xl font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{(avgSuccessRate || 0).toFixed(1)}%</p>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{t('import.stats.avgSuccessRate')}</p>
+                <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-green-100' : 'text-green-900'}`}>{(avgSuccessRate || 0).toFixed(1)}%</p>
               </div>
             </div>
           </motion.div>
           
           <motion.div 
-            whileHover={{ scale: 1.02, y: -4 }}
-            className={`rounded-xl p-6 border shadow-lg transition-all duration-300 ${
+            whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -4 }}
+            className={`rounded-xl ${isMobile ? 'p-4' : 'p-6'} border shadow-lg transition-all duration-300 ${
               isDark 
                 ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-700/50 hover:shadow-purple-500/20' 
                 : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 hover:shadow-purple-500/20'
             }`}
           >
             <div className="flex items-center">
-              <BarChart3 className={`h-8 w-8 mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
+              <BarChart3 className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mr-3 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
               <div>
-                <p className={`text-sm font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{t('import.stats.totalBatches')}</p>
-                <p className={`text-2xl font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{jobs.length}</p>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{t('import.stats.totalBatches')}</p>
+                <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${isDark ? 'text-purple-100' : 'text-purple-900'}`}>{jobs.length}</p>
               </div>
             </div>
           </motion.div>
@@ -829,10 +798,10 @@ const ImportPage: React.FC = () => {
       >
         {/* Tab Navigation */}
         <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <nav className="flex space-x-8 px-8 pt-6 overflow-x-auto" aria-label="Tabs">
+          <nav className={`flex space-x-8 ${isMobile ? 'px-4 pt-4' : 'px-8 pt-6'} overflow-x-auto`} aria-label="Tabs">
             <button
               onClick={() => setActiveTab('upload')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              className={`py-2 px-1 border-b-2 font-medium ${isMobile ? 'text-xs' : 'text-sm'} transition-colors whitespace-nowrap ${
                 activeTab === 'upload'
                   ? isDark
                     ? 'border-primary-400 text-primary-400'
@@ -843,13 +812,13 @@ const ImportPage: React.FC = () => {
               }`}
             >
               <div className="flex items-center">
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} mr-2`} />
                 {t('import.tabs.fileUpload')}
               </div>
             </button>
             <button
               onClick={() => setActiveTab('manual')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              className={`py-2 px-1 border-b-2 font-medium ${isMobile ? 'text-xs' : 'text-sm'} transition-colors whitespace-nowrap ${
                 activeTab === 'manual'
                   ? isDark
                     ? 'border-primary-400 text-primary-400'
@@ -860,10 +829,10 @@ const ImportPage: React.FC = () => {
               }`}
             >
               <div className="flex items-center">
-                <UserPlus className="h-4 w-4 mr-2" />
+                <UserPlus className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} mr-2`} />
                 {t('import.tabs.manualEntry')}
                 {manualContacts.length > 0 && (
-                  <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <span className={`ml-2 inline-flex items-center ${isMobile ? 'px-1 py-0.5 text-xs' : 'px-2 py-0.5 text-xs'} rounded-full font-medium ${
                     isDark ? 'bg-primary-900/50 text-primary-300' : 'bg-primary-100 text-primary-800'
                   }`}>
                     {manualContacts.length}
@@ -876,7 +845,7 @@ const ImportPage: React.FC = () => {
             {!loadingIntegrations && integrationStatuses.hubspot.connected && (
               <button
                 onClick={() => setActiveTab('hubspot')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                className={`py-2 px-1 border-b-2 font-medium ${isMobile ? 'text-xs' : 'text-sm'} transition-colors whitespace-nowrap ${
                   activeTab === 'hubspot'
                     ? isDark
                       ? 'border-orange-400 text-orange-400'
