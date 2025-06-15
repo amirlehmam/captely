@@ -1042,63 +1042,65 @@ const CRMPage: React.FC = () => {
                           )}
                         </div>
                       </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </motion.div>
+      )}
 
-        {/* Enhanced Pagination */}
-        <div className={`px-6 py-4 border-t ${
-          isDark 
-            ? 'bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700' 
-            : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
-        }`}>
-                      <div className="flex items-center justify-between">
-              <div className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                📈 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts || 0)} of {(totalContacts || 0).toLocaleString()} contacts
-                {selectedContacts.size > 0 && (
-                  <span className={`ml-2 font-semibold ${
-                    isDark ? 'text-emerald-400' : 'text-teal-600'
-                  }`}>
-                    • {selectedContacts.size} selected ✨
-                  </span>
-                )}
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isDark 
-                      ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
-                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
-                  } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
-                  style={{ willChange: 'background-color, box-shadow' }}
-                >
-                  ← Previous
-                </button>
-                <span className={`px-6 py-2 text-sm font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  📄 Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isDark 
-                      ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
-                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
-                  } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
-                  style={{ willChange: 'background-color, box-shadow' }}
-                >
-                  Next →
-                </button>
-              </div>
-            </div>
+      {/* Enhanced Pagination */}
+      <div className={`px-6 py-4 border-t ${
+        isDark 
+          ? 'bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700' 
+          : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            📈 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalContacts || 0)} of {(totalContacts || 0).toLocaleString()} contacts
+            {selectedContacts.size > 0 && (
+              <span className={`ml-2 font-semibold ${
+                isDark ? 'text-emerald-400' : 'text-teal-600'
+              }`}>
+                • {selectedContacts.size} selected ✨
+              </span>
+            )}
+          </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
+                isDark 
+                  ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
+                  : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
+              style={{ willChange: 'background-color, box-shadow' }}
+            >
+              ← Previous
+            </button>
+            <span className={`px-6 py-2 text-sm font-medium ${
+              isDark ? 'text-gray-300' : 'text-gray-700'
+            }`}>
+              �� Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-6 py-2 border rounded-xl text-sm font-medium transition-all duration-200 ${
+                isDark 
+                  ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-emerald-500' 
+                  : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-teal-500'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md`}
+              style={{ willChange: 'background-color, box-shadow' }}
+            >
+              Next →
+            </button>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Export Modal */}
       <ExportModal
